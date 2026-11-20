@@ -21,5 +21,14 @@ export const touchTarget = 44;
 /** Width above which the layout switches to side-by-side (court left, bench right). */
 export const wideBreakpoint = 768;
 
+/** Border widths. */
+export const borderWidth = {
+  thin: 1,
+  thick: 3,
+} as const;
+
+/** Max width of a centred dialog card. */
+export const dialogMaxWidth = 420;
+
 /** Max content width on desktop. */
 export const maxContentWidth = 1100;

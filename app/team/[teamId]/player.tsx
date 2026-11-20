@@ -1,7 +1,51 @@
-import { Placeholder } from '@/components';
-import { t } from '@/i18n/en';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
-/** Placeholder — owned by Worker A (roster). */
+import { Screen } from '@/components';
+import { NotFound } from '@/features/roster/components/NotFound';
+import { PlayerForm } from '@/features/roster/components/PlayerForm';
+import { useGoBack } from '@/features/roster/hooks/useGoBack';
+import { t } from '@/i18n/en';
+import { useAppStore, usePlayer, useTeam } from '@/store';
+
+/** `/team/[teamId]/player?playerId=` — add (no id) or edit a player. Modal. */
 export default function PlayerEditorScreen() {
-  return <Placeholder title={t.nav.player} />;
+  const { teamId, playerId } = useLocalSearchParams<{ teamId: string; playerId?: string }>();
+  const team = useTeam(teamId);
+  const player = usePlayer(playerId);
+  const goBack = useGoBack(`/team/${teamId}`);
+  const router = useRouter();
+
+  if (!team)
+    return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
+  // A player id from another team must not be edited here (it would bypass per-team checks).
+  if (playerId && (!player || player.teamId !== team.id))
+    return (
+      <NotFound
+        message={t.roster.player.notFound}
+        onBack={goBack}
+        backLabel={t.roster.backToTeam}
+      />
+    );
+
+  return (
+    <Screen>
+      <Stack.Screen
+        options={{ title: player ? t.roster.player.editTitle : t.roster.player.addTitle }}
+      />
+      <PlayerForm
+        key={player?.id ?? 'new'}
+        teamId={team.id}
+        player={player}
+        onDone={goBack}
+        onDelete={
+          player
+            ? () => {
+                goBack();
+                useAppStore.getState().deletePlayer(player.id);
+              }
+            : undefined
+        }
+      />
+    </Screen>
+  );
 }
