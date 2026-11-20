@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/i18n/en';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
+import { EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { useDropZone } from './drag/useDropZone';
 import type { LineupEditor } from './useLineupEditor';
@@ -54,7 +55,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     padding: spacing.sm,
-    minWidth: 104,
+    minWidth: LIBERO_BOX_MIN_WIDTH,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 3,
@@ -63,8 +64,8 @@ const styles = StyleSheet.create({
   error: { borderColor: colors.error },
   title: { ...typography.label, color: colors.text },
   empty: {
-    minWidth: touchTarget + 12,
-    minHeight: touchTarget + 12,
+    minWidth: EMPTY_SLOT_SIZE,
+    minHeight: EMPTY_SLOT_SIZE,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 2,

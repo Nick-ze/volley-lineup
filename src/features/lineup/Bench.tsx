@@ -5,6 +5,7 @@ import { locatePlayer } from '@/domain/lineupEditing';
 import { t } from '@/i18n/en';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
+import { BENCH_MIN_HEIGHT } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { useDropZone } from './drag/useDropZone';
 import type { LineupEditor } from './useLineupEditor';
@@ -42,7 +43,7 @@ export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable
       testID="bench"
     >
       <Text style={styles.title} accessibilityRole="header">
-        {t.lineup.bench} ({bench.length})
+        {t.lineup.benchTitle(bench.length)}
       </Text>
       {selectedOffBench ? (
         <Pressable
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.border,
   },
-  fill: { flex: 1, minHeight: 240 },
+  fill: { flex: 1, minHeight: BENCH_MIN_HEIGHT },
   scroll: { flex: 1 },
   title: { ...typography.subheading, color: colors.text },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, paddingVertical: spacing.xs },

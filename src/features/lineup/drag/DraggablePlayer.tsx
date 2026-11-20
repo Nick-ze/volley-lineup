@@ -7,6 +7,7 @@ import type { Player } from '@/domain/types';
 import { t } from '@/i18n/en';
 import { dragActivation } from '@/lib/dragActivation';
 
+import { CHIP_SIZE, DRAG_GHOST_OPACITY } from '../constants';
 import { useDrag } from './DragContext';
 
 export interface DraggablePlayerProps {
@@ -25,7 +26,7 @@ export function DraggablePlayer({
   from,
   selected,
   onPress,
-  size = 56,
+  size = CHIP_SIZE,
   accessibilityLabel,
   testID,
 }: DraggablePlayerProps) {
@@ -60,4 +61,4 @@ export function DraggablePlayer({
   );
 }
 
-const styles = StyleSheet.create({ ghost: { opacity: 0.35 } });
+const styles = StyleSheet.create({ ghost: { opacity: DRAG_GHOST_OPACITY } });

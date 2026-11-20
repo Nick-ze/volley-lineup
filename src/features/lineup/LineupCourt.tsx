@@ -3,8 +3,9 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { Court } from '@/components';
 import type { CourtPosition } from '@/domain/types';
 import { t } from '@/i18n/en';
-import { colors, radius, touchTarget, typography } from '@/theme';
+import { colors, radius, typography } from '@/theme';
 
+import { EMPTY_SLOT_SIZE } from './constants';
 import { useDrag } from './drag/DragContext';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { zoneFeedback } from './drag/useDropZone';
@@ -43,7 +44,7 @@ export function LineupCourt({ editor }: { editor: LineupEditor }) {
         style={[styles.empty, selectedId !== null && styles.emptyArmed]}
         testID={`slot-empty-${position}`}
       >
-        <Text style={styles.plus}>+</Text>
+        <Text style={styles.plus}>{t.lineup.emptySlotGlyph}</Text>
       </Pressable>
     );
   };
@@ -66,8 +67,8 @@ const styles = StyleSheet.create({
   slot: { borderWidth: 3, borderColor: colors.transparent },
   error: { borderColor: colors.error, borderStyle: 'dashed' },
   empty: {
-    width: touchTarget + 12,
-    height: touchTarget + 12,
+    width: EMPTY_SLOT_SIZE,
+    height: EMPTY_SLOT_SIZE,
     borderRadius: radius.round,
     borderWidth: 2,
     borderStyle: 'dashed',

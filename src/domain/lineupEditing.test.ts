@@ -90,8 +90,9 @@ describe('placePlayer', () => {
     expect(next.liberoId).toBeNull();
   });
 
-  it('is a no-op when placing a player on their own slot', () => {
-    expect(placePlayer(base(), 'a', 1)).toEqual(base());
+  it('returns the same object when placing a player on their own slot', () => {
+    const s = base();
+    expect(placePlayer(s, 'a', 1)).toBe(s);
   });
 });
 
@@ -110,7 +111,8 @@ describe('swapSlots / removeFromCourt / removePlayer', () => {
   it('removes a player from anywhere', () => {
     expect(removePlayer(base(), 'a').slots[1]).toBeNull();
     expect(removePlayer(base(), 'l').liberoId).toBeNull();
-    expect(removePlayer(base(), 'x')).toEqual(base());
+    const s = base();
+    expect(removePlayer(s, 'x')).toBe(s);
   });
 });
 
@@ -211,10 +213,13 @@ describe('lineupForSet / previousSet', () => {
     expect(lineupForSet(sets, 4)).toEqual(emptySetLineup(4));
   });
 
-  it('returns the previous set when it exists', () => {
+  it('returns the nearest earlier stored set', () => {
     expect(previousSet(sets, 2)?.setNumber).toBe(1);
     expect(previousSet(sets, 1)).toBeNull();
-    expect(previousSet(sets, 4)).toBeNull();
+    expect(previousSet(sets, 4)?.setNumber).toBe(2);
+    const unordered = [sets[1], { ...emptySetLineup(3) }, sets[0]];
+    expect(previousSet(unordered, 5)?.setNumber).toBe(3);
+    expect(previousSet([emptySetLineup(3)], 2)).toBeNull();
   });
 });
 
@@ -274,5 +279,23 @@ describe('parseSetNumber', () => {
     expect(parseSetNumber(undefined)).toBe(1);
     expect(parseSetNumber('7')).toBe(1);
     expect(parseSetNumber('abc')).toBe(1);
+  });
+});
+
+describe('no-op operations return the same object (nothing to save)', () => {
+  it('covers swap, remove, libero, serve and clear', () => {
+    const s = base();
+    expect(swapSlots(s, 3, 3)).toBe(s);
+    expect(swapSlots(s, 3, 4)).toBe(s); // both empty
+    expect(removeFromCourt(s, 3)).toBe(s);
+    expect(setLibero(s, 'l')).toBe(s);
+    expect(setServeFirst(s, true)).toBe(s);
+    expect(movePlayer(s, 'x', { kind: 'bench' })).toBe(s);
+    expect(movePlayer(s, 'a', { kind: 'slot', position: 1 })).toBe(s);
+    const empty = emptySetLineup(2);
+    expect(clearLineup(empty)).toBe(empty);
+    expect(setLibero(empty, null)).toBe(empty);
+    const onlyLibero = { ...empty, liberoId: 'l' };
+    expect(clearLineup(onlyLibero).liberoId).toBeNull();
   });
 });

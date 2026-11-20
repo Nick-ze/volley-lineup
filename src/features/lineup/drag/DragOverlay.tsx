@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reani
 import { PlayerChip } from '@/components';
 import type { Player } from '@/domain/types';
 
-export const DRAG_CHIP_SIZE = 64;
+import { DRAG_CHIP_SIZE } from '../constants';
 
 /** The "lifted" chip that follows the pointer while dragging (scaled up, yellow glow). */
 export function DragOverlay({

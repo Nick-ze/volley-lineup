@@ -1,6 +1,7 @@
 /**
  * Pure lineup editing operations used by the lineup builder (drag & drop and tap-to-select).
- * Every function returns a new `SetLineup` and never mutates its input.
+ * Every function returns a new `SetLineup` and never mutates its input. When an operation
+ * changes nothing, the SAME object is returned, so callers can skip saving no-ops by identity.
  *
  * Invariant kept by every operation: a player id appears at most once in a set
  * (in one of the six slots OR as the libero, never both, never twice).
@@ -37,6 +38,7 @@ export function locatePlayer(set: SetLineup, playerId: string): PlayerLocation {
 
 /** Removes a player from every slot and the libero spot. */
 export function removePlayer(set: SetLineup, playerId: string): SetLineup {
+  if (locatePlayer(set, playerId).kind === 'bench') return set;
   const slots = { ...set.slots };
   COURT_POSITIONS.forEach((p) => {
     if (slots[p] === playerId) slots[p] = null;
@@ -46,6 +48,7 @@ export function removePlayer(set: SetLineup, playerId: string): SetLineup {
 
 /** Swaps the contents of two court positions (either may be empty). */
 export function swapSlots(set: SetLineup, a: CourtPosition, b: CourtPosition): SetLineup {
+  if (set.slots[a] === set.slots[b]) return set;
   const slots = { ...set.slots, [a]: set.slots[b], [b]: set.slots[a] };
   return { ...set, slots };
 }
@@ -65,21 +68,24 @@ export function placePlayer(set: SetLineup, playerId: string, position: CourtPos
 
 /** Empties one court position (the player goes back to the bench). */
 export function removeFromCourt(set: SetLineup, position: CourtPosition): SetLineup {
+  if (set.slots[position] === null) return set;
   return { ...set, slots: { ...set.slots, [position]: null } };
 }
 
 /** Sets (or clears with `null`) the libero. A player taken as libero leaves the court. */
 export function setLibero(set: SetLineup, playerId: string | null): SetLineup {
+  if (set.liberoId === playerId) return set;
   const base = playerId === null ? set : removePlayer(set, playerId);
   return { ...base, liberoId: playerId };
 }
 
 export function setServeFirst(set: SetLineup, weServeFirst: boolean): SetLineup {
-  return { ...set, weServeFirst };
+  return set.weServeFirst === weServeFirst ? set : { ...set, weServeFirst };
 }
 
 /** Empties the court and libero, keeping set number and serve choice. */
 export function clearLineup(set: SetLineup): SetLineup {
+  if (set.liberoId === null && COURT_POSITIONS.every((p) => set.slots[p] === null)) return set;
   return { ...emptySetLineup(set.setNumber), weServeFirst: set.weServeFirst };
 }
 
@@ -116,7 +122,7 @@ export function movePlayer(set: SetLineup, playerId: string, target: DropTarget)
     case 'slot':
       return placePlayer(set, playerId, target.position);
     case 'libero':
-      return set.liberoId === playerId ? set : setLibero(set, playerId);
+      return setLibero(set, playerId);
     case 'bench':
       return removePlayer(set, playerId);
   }
@@ -127,9 +133,13 @@ export function lineupForSet(sets: SetLineup[], setNumber: SetNumber): SetLineup
   return sets.find((s) => s.setNumber === setNumber) ?? emptySetLineup(setNumber);
 }
 
-/** The previous set's lineup if it exists (never for set 1). */
+/** The nearest earlier stored set (N−1, else N−2, …), or null (always null for set 1). */
 export function previousSet(sets: SetLineup[], setNumber: SetNumber): SetLineup | null {
-  return sets.find((s) => s.setNumber === setNumber - 1) ?? null;
+  const earlier = sets.filter((s) => s.setNumber < setNumber);
+  return earlier.reduce<SetLineup | null>(
+    (best, s) => (best === null || s.setNumber > best.setNumber ? s : best),
+    null,
+  );
 }
 
 /** Result of a tap in tap-to-select mode: the new lineup and the new selection. */

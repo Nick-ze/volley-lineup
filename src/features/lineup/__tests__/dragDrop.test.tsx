@@ -20,11 +20,9 @@ const layout: Record<string, { x: number; y: number; width: number; height: numb
 };
 const ORIGIN = { x: 0, y: 0, width: 0, height: 0 };
 
-// A synchronous thenable, so measurements are ready before the simulated drop.
 jest.mock('@/lib/measureInWindow', () => ({
-  measureInWindow: (view: { props?: { testID?: string } }) => ({
-    then: (resolve: (r: unknown) => void) => resolve(layout[view.props?.testID ?? ''] ?? ORIGIN),
-  }),
+  measureInWindow: (view: { props?: { testID?: string } }) =>
+    Promise.resolve(layout[view.props?.testID ?? ''] ?? ORIGIN),
 }));
 
 const player = (n: number): Player => ({
@@ -37,7 +35,8 @@ const player = (n: number): Player => ({
   active: true,
 });
 
-const set1 = () => useAppStore.getState().matches[0].sets[0];
+const sets = () => useAppStore.getState().matches[0].sets;
+const set1 = () => sets()[0];
 
 async function dragTo(gestureTestId: string, x: number, y: number) {
   const gesture = getByGestureTestId(gestureTestId);
@@ -97,5 +96,12 @@ describe('lineup builder drag & drop', () => {
     await screen.findByTestId('bench');
     await dragTo('drag-bench-player-1', 900, 900);
     expect(set1().slots).toEqual(emptySetLineup(1).slots);
+  });
+
+  it('dropping a chip back on its own zone does not save an unsaved set', async () => {
+    await renderRouter('./app', { initialUrl: '/match/m1?set=2' });
+    await screen.findByTestId('bench');
+    await dragTo('drag-bench-player-1', 100, 600);
+    expect(sets()).toHaveLength(1);
   });
 });

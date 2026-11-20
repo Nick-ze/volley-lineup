@@ -116,6 +116,19 @@ describe('lineup builder (tap-to-select)', () => {
     await fireEvent.press(screen.getByTestId('clear-lineup'));
     expect(sets().find((s) => s.setNumber === 2)?.slots[1]).toBeNull();
   });
+  it('copies from the nearest earlier saved set when the one before was never saved', async () => {
+    await renderRouter('./app', { initialUrl: '/match/m1?set=3' });
+    await fireEvent.press(await screen.findByTestId('copy-previous'));
+    const set3 = sets().find((s) => s.setNumber === 3)!;
+    expect([set3.slots[1], set3.slots[2]]).toEqual(['p1', 'p2']);
+  });
+
+  it('does not save an unsaved set for no-op actions', async () => {
+    await renderRouter('./app', { initialUrl: '/match/m1?set=2' });
+    await fireEvent.press(await screen.findByTestId('serve-us')); // already active
+    await fireEvent.press(screen.getByTestId('clear-lineup')); // already empty
+    expect(sets()).toHaveLength(1);
+  });
 });
 
 describe('lineup builder validation panel', () => {

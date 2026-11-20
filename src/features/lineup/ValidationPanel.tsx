@@ -22,13 +22,13 @@ export function ValidationPanel({ result }: { result: ValidationResult }) {
       ) : null}
       {errors.map((e, i) => (
         <Text key={`e${i}`} style={styles.error} testID={`validation-error-${e.code}`}>
-          {'✕ '}
+          {t.lineup.errorPrefix}
           {issueText(e, t.lineup.errors)}
         </Text>
       ))}
       {warnings.map((w, i) => (
         <Text key={`w${i}`} style={styles.warning} testID={`validation-warning-${w.code}`}>
-          {'! '}
+          {t.lineup.warningPrefix}
           {issueText(w, t.lineup.warnings)}
         </Text>
       ))}

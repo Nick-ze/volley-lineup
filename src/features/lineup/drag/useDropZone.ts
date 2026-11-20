@@ -31,11 +31,22 @@ export function useDropZone(target: DropTarget) {
 }
 
 export const zoneStyles = StyleSheet.create({
-  valid: { borderWidth: 3, borderColor: colors.highlight, borderRadius: radius.md },
+  // Yellow ring + near-black outer ring: yellow alone is ~1.6:1 against the orange court.
+  valid: {
+    borderWidth: 3,
+    borderColor: colors.highlight,
+    borderRadius: radius.md,
+    outlineWidth: 3,
+    outlineStyle: 'solid',
+    outlineColor: colors.background,
+  },
   hover: {
     borderWidth: 3,
     borderColor: colors.highlight,
     borderRadius: radius.md,
+    outlineWidth: 3,
+    outlineStyle: 'solid',
+    outlineColor: colors.background,
     backgroundColor: colors.highlightGlow,
   },
 });

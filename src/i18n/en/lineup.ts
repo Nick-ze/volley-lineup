@@ -9,6 +9,7 @@ export const lineup = {
   setTabHint: 'Shows the lineup for this set',
   court: 'Court',
   bench: 'Bench',
+  benchTitle: (count: number) => `Bench (${count})`,
   benchEmpty: 'No more active players. Add players in the roster.',
   benchDropHint: 'Tap here to move the selected player to the bench',
   benchDropLabel: 'Move selected player to the bench',
@@ -48,5 +49,8 @@ export const lineup = {
     INACTIVE_PLAYER: 'An inactive or injured player is in the lineup.',
     LIBERO_NOT_LIBERO: 'The libero is not listed as a libero in the roster.',
   } satisfies Record<ValidationWarningCode, string>,
+  errorPrefix: '✕ ',
+  warningPrefix: '! ',
+  emptySlotGlyph: '+',
   issuePositions: (positions: number[]) => `Positions ${positions.join(', ')}`,
 } as const;

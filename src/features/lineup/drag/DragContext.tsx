@@ -8,33 +8,21 @@ import {
   type ReactNode,
 } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 
-import type { CourtSlotRef } from '@/components';
-
-import {
-  hitTest,
-  type DropTarget,
-  type PlayerLocation,
-  type ZoneRect,
-} from '@/domain/lineupEditing';
+import { hitTest, type DropTarget, type PlayerLocation } from '@/domain/lineupEditing';
 import type { Player } from '@/domain/types';
 import { measureInWindow } from '@/lib/measureInWindow';
 
 import { DragOverlay } from './DragOverlay';
+import { targetKey, useZoneMeasurements, type MeasurableView } from './useZoneMeasurements';
 
-/** Any host view (court slots, libero box, bench box). */
-export type MeasurableView = CourtSlotRef;
+export { targetKey, type MeasurableView };
 
 export interface DragItem {
   player: Player;
   from: PlayerLocation;
 }
-
-/** Stable string key of a drop target ("slot-3", "libero", "bench"). */
-export const targetKey = (t: DropTarget): string =>
-  t.kind === 'slot' ? `slot-${t.position}` : t.kind;
 
 interface DragApi {
   registerZone(target: DropTarget, view: MeasurableView | null): void;
@@ -58,10 +46,8 @@ export function useDrag(): DragApi {
   return ctx;
 }
 
-interface Zone {
-  target: DropTarget;
-  view: MeasurableView;
-}
+/** A press this soon after a drag ended is the drag's own trailing click: ignore it. */
+const CLICK_AFTER_DRAG_MS = 250;
 
 export interface DragProviderProps {
   onDrop(item: DragItem, target: DropTarget): void;
@@ -71,14 +57,15 @@ export interface DragProviderProps {
 
 /**
  * Drag & drop for the lineup builder. Draggable chips report pointer positions (window
- * coordinates) on the JS thread; drop zones register their views and are measured with
- * `measureInWindow` when a drag starts; the drop is hit-tested with the pure `hitTest`.
+ * coordinates) on the JS thread; drop zones are measured with `measureInWindow` when a drag
+ * starts, and the drop awaits that measurement before hit-testing with the pure `hitTest`.
+ * Dropping a chip back where it came from does nothing.
  */
 export function DragProvider({ onDrop, children, style }: DragProviderProps) {
   const rootRef = useRef<MeasurableView>(null);
-  const zones = useRef(new Map<string, Zone>());
-  const rects = useRef<ZoneRect<string>[]>([]);
+  const zones = useZoneMeasurements();
   const origin = useRef({ x: 0, y: 0 });
+  const dragId = useRef(0);
   const lastDragEnd = useRef(0);
   const activeRef = useRef<DragItem | null>(null);
   const hoverRef = useRef<string | null>(null);
@@ -93,41 +80,40 @@ export function DragProvider({ onDrop, children, style }: DragProviderProps) {
     setHoverKey(key);
   }, []);
 
-  const registerZone = useCallback((target: DropTarget, view: MeasurableView | null) => {
-    const key = targetKey(target);
-    if (view) zones.current.set(key, { target, view });
-    else zones.current.delete(key);
-  }, []);
+  const placeOverlay = useCallback(
+    (px: number, py: number) => {
+      x.set(px - origin.current.x);
+      y.set(py - origin.current.y);
+    },
+    [x, y],
+  );
 
   const begin = useCallback(
     (item: DragItem, px: number, py: number) => {
       activeRef.current = item;
       setActive(item);
-      rects.current = [];
-      if (rootRef.current) {
-        void measureInWindow(rootRef.current).then((r) => {
+      placeOverlay(px, py); // last known origin: correct unless the page scrolled
+      const id = zones.measureAll();
+      dragId.current = id;
+      const root = rootRef.current;
+      if (root) {
+        void measureInWindow(root).then((r) => {
+          if (dragId.current !== id) return;
           origin.current = { x: r.x, y: r.y };
-          x.set(px - r.x);
-          y.set(py - r.y);
+          if (activeRef.current === item) placeOverlay(px, py);
         });
       }
-      zones.current.forEach((zone, key) => {
-        void measureInWindow(zone.view).then((r) => {
-          rects.current.push({ key, ...r });
-        });
-      });
     },
-    [x, y],
+    [zones, placeOverlay],
   );
 
   const move = useCallback(
     (px: number, py: number) => {
       if (!activeRef.current) return;
-      x.set(px - origin.current.x);
-      y.set(py - origin.current.y);
-      setHover(hitTest(rects.current, px, py));
+      placeOverlay(px, py);
+      setHover(hitTest(zones.current(), px, py));
     },
-    [x, y, setHover],
+    [zones, placeOverlay, setHover],
   );
 
   const end = useCallback(
@@ -139,15 +125,18 @@ export function DragProvider({ onDrop, children, style }: DragProviderProps) {
       if (!item) return;
       lastDragEnd.current = Date.now();
       if (canceled) return;
-      const key = hitTest(rects.current, px, py);
-      const zone = key ? zones.current.get(key) : undefined;
-      if (zone) onDrop(item, zone.target);
+      void zones.settled(dragId.current).then((rects) => {
+        const key = rects ? hitTest(rects, px, py) : null;
+        const target = zones.targetOf(key);
+        if (target && key !== targetKey(item.from)) onDrop(item, target);
+      });
     },
-    [onDrop, setHover],
+    [zones, onDrop, setHover],
   );
 
-  const justDragged = useCallback(() => Date.now() - lastDragEnd.current < 250, []);
+  const justDragged = useCallback(() => Date.now() - lastDragEnd.current < CLICK_AFTER_DRAG_MS, []);
 
+  const registerZone = zones.register;
   const api = useMemo<DragApi>(
     () => ({ registerZone, begin, move, end, justDragged, active, hoverKey, x, y }),
     [registerZone, begin, move, end, justDragged, active, hoverKey, x, y],
