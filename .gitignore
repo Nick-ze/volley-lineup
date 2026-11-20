@@ -44,3 +44,6 @@ example
 
 # test coverage
 coverage/
+
+# agent worktrees
+.claude/worktrees/
