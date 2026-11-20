@@ -1,0 +1,72 @@
+import { StyleSheet, Text, View } from 'react-native';
+
+import { PlayerChip } from '@/components';
+import type { Player } from '@/domain/types';
+import { t } from '@/i18n/en';
+import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+
+export interface SetInfoProps {
+  libero: Player | undefined;
+  /** The set's libero id, to tell "no libero" from "unknown libero". */
+  liberoId: string | null;
+  weServeFirst: boolean;
+  compact?: boolean;
+}
+
+/** Libero + "we serve / receive first" — shown next to (wide) or under (phone) the court. */
+export function SetInfo({ libero, liberoId, weServeFirst, compact = false }: SetInfoProps) {
+  const serveText = weServeFirst ? t.rotation.weServeFirst : t.rotation.weReceiveFirst;
+  return (
+    <View style={[styles.wrap, compact && styles.compact]}>
+      <View style={styles.libero}>
+        <Text style={styles.caption}>{t.rotation.libero}</Text>
+        {libero ? (
+          <PlayerChip player={libero} size={compact ? touchTarget : 56} testID="libero-chip" />
+        ) : (
+          <Text style={styles.muted}>
+            {liberoId ? t.rotation.unknownPlayer : t.rotation.noLibero}
+          </Text>
+        )}
+      </View>
+      <View
+        style={[styles.serve, weServeFirst && styles.serveUs]}
+        accessible
+        accessibilityLabel={serveText}
+        testID="serve-info"
+      >
+        <Text style={[styles.serveText, weServeFirst && styles.serveTextUs]}>{serveText}</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    gap: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  compact: {
+    padding: spacing.sm,
+    gap: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  libero: { alignItems: 'center', gap: spacing.xs },
+  caption: { ...typography.label, color: colors.textMuted },
+  muted: { ...typography.body, color: colors.textMuted },
+  serve: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.round,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  serveUs: { backgroundColor: colors.highlight, borderColor: colors.highlight },
+  serveText: { ...typography.label, color: colors.text },
+  serveTextUs: { color: colors.onHighlight },
+});

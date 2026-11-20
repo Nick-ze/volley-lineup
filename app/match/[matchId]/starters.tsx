@@ -1,7 +1,24 @@
-import { Placeholder } from '@/components';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+
+import { Screen } from '@/components';
+import { StartersOverview } from '@/features/rotation';
 import { t } from '@/i18n/en';
 
-/** Placeholder — owned by Worker B (rotation). */
 export default function StartersScreen() {
-  return <Placeholder title={t.nav.starters} />;
+  const { matchId } = useLocalSearchParams<{ matchId: string }>();
+  const router = useRouter();
+  return (
+    <Screen>
+      <Stack.Screen options={{ title: t.rotation.startersTitle }} />
+      <StartersOverview
+        matchId={matchId}
+        onOpenSet={(set) =>
+          router.push({
+            pathname: '/match/[matchId]/rotation',
+            params: { matchId, set: String(set) },
+          })
+        }
+      />
+    </Screen>
+  );
 }

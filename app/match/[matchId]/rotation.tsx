@@ -1,7 +1,18 @@
-import { Placeholder } from '@/components';
-import { t } from '@/i18n/en';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-/** Placeholder — owned by Worker B (rotation). */
+import { Screen } from '@/components';
+import { RotationViewer } from '@/features/rotation';
+
 export default function RotationScreen() {
-  return <Placeholder title={t.nav.rotation} />;
+  const { matchId, set } = useLocalSearchParams<{ matchId: string; set?: string }>();
+  const router = useRouter();
+  return (
+    <Screen>
+      <RotationViewer
+        matchId={matchId}
+        setParam={set}
+        onSelectSet={(s) => router.setParams({ set: String(s) })}
+      />
+    </Screen>
+  );
 }
