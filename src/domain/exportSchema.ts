@@ -13,13 +13,11 @@ import { ALL_POSITIONS } from './types';
 export const EXPORT_APP_ID = 'volley-lineup' as const;
 export const EXPORT_SCHEMA_VERSION = 1 as const;
 
-/** The four persisted collections (structurally identical to the store's `AppData`). */
-export interface TransferData {
-  profiles: ManagerProfile[];
-  teams: Team[];
-  players: Player[];
-  matches: Match[];
-}
+/**
+ * The four persisted collections. Derived from `ExportFile` (the domain layer can't import the
+ * store); it is structurally identical to the store's `AppData`.
+ */
+export type TransferData = Pick<ExportFile, 'profiles' | 'teams' | 'players' | 'matches'>;
 
 /* ------------------------------------------------------------------ schema */
 
@@ -49,7 +47,7 @@ const playerSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   number: z.number().int().nonnegative(),
-  positions: z.array(positionSchema),
+  positions: z.array(positionSchema).min(1),
   active: z.boolean(),
 });
 
@@ -139,7 +137,7 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
 export function slugify(name: string): string {
   const slug = name
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
@@ -199,7 +197,8 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - every team's profile, every player's / match's team exists;
  * - jersey numbers are unique within a team;
  * - set numbers are unique within a match;
- * - every lineup slot / libero refers to a player of the match's own team.
+ * - every lineup slot / libero refers to a player of the match's own team;
+ * - within a set, no player is in two slots and the libero is not also a starter.
  */
 export function isConsistent(data: TransferData): boolean {
   const { profiles, teams, players, matches } = data;
@@ -219,11 +218,14 @@ export function isConsistent(data: TransferData): boolean {
   }
   return matches.every((m) => {
     if (hasDuplicates(m.sets.map((s) => s.setNumber))) return false;
-    return m.sets.every((set) =>
-      [...Object.values(set.slots), set.liberoId].every(
+    return m.sets.every((set) => {
+      const starters = Object.values(set.slots).filter((x): x is string => x !== null);
+      if (hasDuplicates(starters)) return false; // a player in two slots
+      if (set.liberoId !== null && starters.includes(set.liberoId)) return false;
+      return [...starters, set.liberoId].every(
         (playerId) => playerId === null || teamOfPlayer.get(playerId) === m.teamId,
-      ),
-    );
+      );
+    });
   });
 }
 
@@ -244,7 +246,14 @@ export function parseImport(jsonText: string): ParseImportResult {
   }
   const parsed = exportFileSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'INVALID_SHAPE' };
-  const file: ExportFile = parsed.data;
+  // The store keeps sets ordered by set number; do the same for imported files.
+  const file: ExportFile = {
+    ...parsed.data,
+    matches: parsed.data.matches.map((m) => ({
+      ...m,
+      sets: [...m.sets].sort((a, b) => a.setNumber - b.setNumber),
+    })),
+  };
   if (!isConsistent(file)) return { ok: false, error: 'INCONSISTENT_REFERENCES' };
   return { ok: true, file, summary: summarize(file) };
 }
@@ -276,8 +285,8 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * item wins** (it replaces the existing one in place); items only in `existing` are kept, items
  * only in `incoming` are appended. Nothing is deleted.
  *
- * If the combined data would be inconsistent — in practice two different players with the same
- * jersey number in one team — the merge is refused with `MERGE_CONFLICT` (the user can choose
+ * If the combined data would be inconsistent (e.g. two different players with the same jersey
+ * number in one team, or an id that belongs to a different team in each data set) the merge is refused with `MERGE_CONFLICT` (the user can choose
  * Replace instead); data is never silently dropped or renumbered.
  */
 export function mergeData(existing: TransferData, incoming: TransferData): MergeResult {

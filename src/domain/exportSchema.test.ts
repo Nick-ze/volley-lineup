@@ -159,6 +159,13 @@ describe('round trip', () => {
     expect(result.ok && replaceData(result.file)).toEqual(empty);
   });
 
+  it("sorts each match's sets by set number", () => {
+    const data = fixture();
+    data.matches[0].sets.reverse();
+    const result = parseImport(exportText(data));
+    expect(result.ok && result.file.matches[0].sets.map((x) => x.setNumber)).toEqual([1, 2]);
+  });
+
   it('drops unknown extra keys', () => {
     const raw = rawExport();
     raw.extra = true;
@@ -242,6 +249,11 @@ describe('parseImport rejects', () => {
     ['home as text', (raw) => ((raw.matches as Record<string, unknown>[])[0].home = 'true')],
   ];
 
+  shapeCases.push([
+    'player without positions',
+    (raw) => ((raw.players as Record<string, unknown>[])[0].positions = []),
+  ]);
+
   it.each(shapeCases)('a wrong shape: %s', (_label, breakIt) => {
     const raw = rawExport();
     breakIt(raw);
@@ -261,6 +273,8 @@ describe('parseImport rejects', () => {
     ['slot with a player of another team', (d) => (d.matches[0].sets[0].slots[3] = 'p4')],
     ['libero unknown', (d) => (d.matches[0].sets[0].liberoId = 'ghost')],
     ['set number twice in a match', (d) => (d.matches[0].sets[1].setNumber = 1)],
+    ['same player in two slots', (d) => (d.matches[0].sets[0].slots[3] = 'p1')],
+    ['libero also in a starting slot', (d) => (d.matches[0].sets[0].liberoId = 'p2')],
   ];
 
   it.each(consistencyCases)('inconsistent references: %s', (_label, breakIt) => {
