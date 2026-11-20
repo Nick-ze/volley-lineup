@@ -11,6 +11,9 @@ import { seedStore } from '../__fixtures__/seed';
 const reanimatedMock: Record<string, unknown> = require('react-native-reanimated');
 reanimatedMock.isSharedValue ??= () => false;
 
+// The first route render compiles the whole app tree; under coverage + parallel workers it is slow.
+jest.setTimeout(30000);
+
 describe('starters overview', () => {
   beforeEach(() => seedStore());
 

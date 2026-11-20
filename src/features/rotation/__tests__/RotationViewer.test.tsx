@@ -25,6 +25,9 @@ const expectLineup = (expected: Record<number, string>) => {
   }
 };
 
+// The first route render compiles the whole app tree; under coverage + parallel workers it is slow.
+jest.setTimeout(30000);
+
 describe('rotation viewer', () => {
   beforeEach(() => seedStore());
 

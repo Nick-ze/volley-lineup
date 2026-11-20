@@ -40,5 +40,5 @@ export function StartersOverview({ matchId, onOpenSet }: StartersOverviewProps) 
 
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, justifyContent: 'center' },
-  row: { gap: spacing.md, paddingBottom: spacing.sm },
+  row: { gap: spacing.md, paddingBottom: spacing.sm, alignItems: 'flex-start' },
 });
