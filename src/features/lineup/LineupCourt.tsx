@@ -18,7 +18,10 @@ const playerName = (p: { firstName: string; lastName: string }) =>
 export function LineupCourt({ editor }: { editor: LineupEditor }) {
   const drag = useDrag();
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
-  const errorPositions = new Set(validation.errors.flatMap((e) => e.positions ?? []));
+  // Empty slots already look empty, so INCOMPLETE is only listed in the panel, not outlined.
+  const errorPositions = new Set(
+    validation.errors.filter((e) => e.code !== 'INCOMPLETE').flatMap((e) => e.positions ?? []),
+  );
 
   const renderSlot = ({ position }: { position: CourtPosition }) => {
     const player = playerById(set.slots[position]);
