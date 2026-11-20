@@ -7,6 +7,9 @@ import { STORAGE_KEY, useAppStore } from '@/store';
 
 import { resetStartupRedirect } from '../hooks/useStartupRedirect';
 
+// Route-level tests are slow on a cold Jest cache (every route is transformed on first render).
+jest.setTimeout(30_000);
+
 const s = t.roster;
 const store = () => useAppStore.getState();
 
