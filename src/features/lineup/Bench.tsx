@@ -1,0 +1,87 @@
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+
+import { locatePlayer } from '@/domain/lineupEditing';
+import { t } from '@/i18n/en';
+import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+
+import { BENCH_MIN_HEIGHT } from './constants';
+import { DraggablePlayer } from './drag/DraggablePlayer';
+import { useDropZone } from './drag/useDropZone';
+import type { LineupEditor } from './useLineupEditor';
+
+/**
+ * Active players not on court and not libero. Also a drop zone: dropping a court / libero
+ * player here takes them off. `scrollable` gives the bench its own scroll area (wide layout).
+ */
+export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable: boolean }) {
+  const { bench, set, selectedId, pressPlayer, pressTarget } = editor;
+  const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'bench' });
+  const selectedOffBench = selectedId !== null && locatePlayer(set, selectedId).kind !== 'bench';
+
+  const grid = (
+    <View style={styles.grid}>
+      {bench.map((p) => (
+        <DraggablePlayer
+          key={p.id}
+          player={p}
+          from={{ kind: 'bench' }}
+          selected={selectedId === p.id}
+          onPress={() => pressPlayer(p.id)}
+          testID={`bench-player-${p.number}`}
+        />
+      ))}
+      {bench.length === 0 ? <Text style={styles.empty}>{t.lineup.benchEmpty}</Text> : null}
+    </View>
+  );
+
+  return (
+    <View
+      ref={zoneRef}
+      collapsable={false}
+      style={[styles.box, scrollable && styles.fill, zoneStyle]}
+      testID="bench"
+    >
+      <Text style={styles.title} accessibilityRole="header">
+        {t.lineup.benchTitle(bench.length)}
+      </Text>
+      {selectedOffBench ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t.lineup.benchDropLabel}
+          onPress={() => pressTarget({ kind: 'bench' })}
+          style={styles.dropTarget}
+          testID="bench-drop"
+        >
+          <Text style={styles.dropText}>{t.lineup.benchDropHint}</Text>
+        </Pressable>
+      ) : null}
+      {scrollable ? <ScrollView style={styles.scroll}>{grid}</ScrollView> : grid}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 3,
+    borderColor: colors.border,
+  },
+  fill: { flex: 1, minHeight: BENCH_MIN_HEIGHT },
+  scroll: { flex: 1 },
+  title: { ...typography.subheading, color: colors.text },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, paddingVertical: spacing.xs },
+  empty: { ...typography.body, color: colors.textMuted },
+  dropTarget: {
+    minHeight: touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: colors.highlight,
+  },
+  dropText: { ...typography.label, color: colors.highlight },
+});
