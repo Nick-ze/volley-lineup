@@ -178,12 +178,12 @@ Layout: on phones, the court is on top and the bench is a scrollable list below.
 
 ## 10. Acceptance checklist (v1)
 
-- [ ] Create a profile, a team, 12 players, a match with 5 sets, all with no errors.
-- [ ] Drag and drop works with a mouse (web), touch (phone), and tap-to-select.
-- [ ] A player can't be placed twice in the same set.
-- [ ] The rotation viewer shows correct positions for all 6 rotations (verified by tests).
-- [ ] Reloading the page / restarting the app keeps all data.
-- [ ] Exporting, deleting all data and importing restores everything exactly.
-- [ ] Importing a broken or foreign JSON file shows an error and changes nothing.
-- [ ] Lint, typecheck and tests pass in CI; the web build is live on GitHub Pages.
-- [ ] The app looks right on a small phone (375 px wide) and on desktop.
+- [x] Create a profile, a team, 12 players, a match with 5 sets, all with no errors.
+- [x] Drag and drop works with a mouse (web), touch (phone), and tap-to-select. — _Mouse, emulated touch and tap verified in a browser; native touch drag in Expo Go still needs a manual check on a real phone._
+- [x] A player can't be placed twice in the same set.
+- [x] The rotation viewer shows correct positions for all 6 rotations (verified by tests).
+- [x] Reloading the page / restarting the app keeps all data.
+- [x] Exporting, deleting all data and importing restores everything exactly.
+- [x] Importing a broken or foreign JSON file shows an error and changes nothing.
+- [ ] Lint, typecheck and tests pass in CI; the web build is live on GitHub Pages. — _CI green ✅; Pages deploy workflow ready but GitHub Pages must be enabled by the repo owner (private repo, see DECISIONS #49)._
+- [x] The app looks right on a small phone (375 px wide) and on desktop.

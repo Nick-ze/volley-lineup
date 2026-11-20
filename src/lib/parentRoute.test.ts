@@ -29,6 +29,13 @@ describe('parentRoute', () => {
     });
   });
 
+  it('keeps the set when going back from rotation to the match', () => {
+    expect(parentRoute('match/[matchId]/rotation', { matchId: 'm1', set: '2' }, lookup)).toEqual({
+      pathname: '/match/[matchId]',
+      params: { matchId: 'm1', set: '2' },
+    });
+  });
+
   it('falls back to /teams when params or the match are missing', () => {
     expect(parentRoute('team/[teamId]/player', {}, lookup)).toBe('/teams');
     expect(parentRoute('team/[teamId]/match-new', { teamId: '' }, lookup)).toBe('/teams');
