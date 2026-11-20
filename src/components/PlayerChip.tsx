@@ -110,5 +110,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   number: { ...typography.jersey, color: colors.text, lineHeight: undefined },
-  name: { ...typography.caption, color: colors.text, maxWidth: 88, borderRadius: radius.sm },
+  // Dark pill behind the name so it stays AA-readable on the orange court (white on orange ≈ 2.9:1).
+  name: {
+    ...typography.caption,
+    color: colors.text,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.xs,
+    maxWidth: 88,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+  },
 });

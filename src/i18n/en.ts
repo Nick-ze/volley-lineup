@@ -19,10 +19,13 @@ export const en = {
     edit: 'Edit',
     add: 'Add',
     back: 'Back',
+    backWithChevron: '‹ Back',
     confirm: 'Confirm',
     rename: 'Rename',
     empty: 'Nothing here yet',
     notFound: 'Not found',
+    pageNotFound: 'This page does not exist.',
+    goHome: 'Go to start',
     loading: 'Loading',
   },
   nav: {

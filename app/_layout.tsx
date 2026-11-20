@@ -4,7 +4,9 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { HeaderBack } from '@/components/HeaderBack';
 import { t } from '@/i18n/en';
+import { parentRoute } from '@/lib/parentRoute';
 import { useAppStore } from '@/store';
 import { colors } from '@/theme';
 
@@ -21,6 +23,9 @@ const navTheme = {
   },
 };
 
+const teamIdOfMatch = (matchId: string) =>
+  useAppStore.getState().matches.find((m) => m.id === matchId)?.teamId;
+
 export default function RootLayout() {
   const hydrated = useAppStore((s) => s.hydrated);
 
@@ -31,11 +36,23 @@ export default function RootLayout() {
           <StatusBar style="light" />
           {hydrated ? (
             <Stack
-              screenOptions={{
+              screenOptions={({ route }) => ({
                 headerStyle: { backgroundColor: colors.surface },
                 headerTintColor: colors.text,
                 contentStyle: { backgroundColor: colors.background },
-              }}
+                headerLeft:
+                  route.name === 'index'
+                    ? undefined
+                    : () => (
+                        <HeaderBack
+                          fallback={parentRoute(
+                            route.name,
+                            route.params as Record<string, unknown> | undefined,
+                            teamIdOfMatch,
+                          )}
+                        />
+                      ),
+              })}
             >
               <Stack.Screen name="index" options={{ title: t.nav.profiles }} />
               <Stack.Screen name="teams" options={{ title: t.nav.teams }} />

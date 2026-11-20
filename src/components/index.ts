@@ -4,3 +4,4 @@ export * from './Placeholder';
 export * from './PlayerChip';
 export * from './PositionBadge';
 export * from './Screen';
+export * from './HeaderBack';

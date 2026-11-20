@@ -8,6 +8,7 @@ import { parseSetNumber } from '@/domain/lineupEditing';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { SetTabs } from '@/features/lineup/SetTabs';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
+import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { t } from '@/i18n/en';
 import { colors, maxContentWidth, spacing, typography } from '@/theme';
 
@@ -22,6 +23,9 @@ export default function MatchScreen() {
   const setNumber = parseSetNumber(params.set);
   const editor = useLineupEditor(matchId, setNumber);
   const { match } = editor;
+  useCorrectSetParam(params.set, match ? setNumber : undefined, (n) =>
+    router.setParams({ set: String(n) }),
+  );
 
   if (!match) {
     return (

@@ -69,3 +69,13 @@ Newest at the bottom. Format: **Decision** — why.
 41. **After an import**, if no valid profile is selected and the data has exactly one profile, it is selected. Otherwise the user picks one.
 42. **Switch profile** in Settings clears the selection and returns to `/`. **Delete all data** stays on Settings so the user can import straight away.
 43. **Native picker accepts any file type** (Android often mislabels `.json`); validation rejects anything that isn't a Volley Lineup file.
+
+## Phase 3/4 — Integration, polish, deploy (orchestrator)
+
+44. **Merge order B → A → C → D** with an independent reviewer per PR; all four passed review after one round of fixes. Branches were rebased onto `main` after each merge; no conflicts.
+45. **Header back button** (`src/components/HeaderBack.tsx`, ≥ 44×44) on every screen except the profile picker. With history it goes back; after a reload or deep link it goes to the logical parent (`src/lib/parentRoute.ts`: rotation/starters → match → team's Matches tab → teams → profiles). — The default react-navigation back button is 30×30 and disappears when the stack has only one screen.
+46. **Player names on chips sit on a dark pill** — white 11 px text directly on the orange court was ~2.9:1 (fails AA).
+47. **Unknown URLs** show an in-app not-found page (`app/+not-found.tsx`) instead of Expo's default.
+48. **Disabled/selected state is also exposed as `aria-disabled` / `aria-selected`** on shared `Button` / `PlayerChip`, since react-native-web ignores `accessibilityState`.
+49. **GitHub Pages**: the repository is private and Pages was not enabled, and the workflow token cannot enable it ("Resource not accessible by integration"). The deploy workflow builds with `EXPO_BASE_URL=/volley-lineup`, copies `index.html` to `404.html` for deep links, and skips the deploy with a warning until the owner enables Pages (Settings → Pages → Source: GitHub Actions; private repos need a paid plan, or make the repo public). Sub-path build verified locally.
+50. **Known limitation (mobile _web_ only)**: on touch browsers, a vertical swipe that starts on a player chip does not scroll the page (the drag handle must block browser scrolling for touch drag to work). Swipe elsewhere to scroll. The native app (Expo Go) uses a 200 ms long-press to start a drag, so scrolling works there.
