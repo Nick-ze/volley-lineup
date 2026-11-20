@@ -21,6 +21,23 @@ Built with Expo (React Native + react-native-web), TypeScript, Expo Router and Z
 
 Deployed by `.github/workflows/deploy-pages.yml` on every push to `main`. One-time setup by the repository owner: **Settings → Pages → Build and deployment → Source: GitHub Actions**. GitHub Pages on a private repository needs a paid GitHub plan; on the free plan, make the repository public. Until Pages is enabled the workflow builds the site and skips the deploy step with a warning.
 
+## Install on Android (APK)
+
+An installable APK is built automatically by `.github/workflows/android-apk.yml` on every push to `main` and published as the GitHub release **android-latest**.
+
+1. On your Android phone, open **https://github.com/Nick-ze/volley-lineup/releases/tag/android-latest** (sign in to GitHub first while the repository is private — only people with access to the repo can download it).
+2. Under **Assets**, tap **`volley-lineup.apk`** to download it.
+3. Open the downloaded file. If Android asks, allow your browser / file manager to **install unknown apps** (Settings → Apps → Special app access → Install unknown apps).
+4. Tap **Install**, then open **Volley Lineup**.
+
+To update, download the newest APK from the same link and install it over the old one — your data stays on the phone. (Use Settings → Export first if you want a backup.)
+
+Notes:
+
+- The APK is signed with a debug key, which is fine for installing directly but not for the Play Store. If Play Protect warns about an unknown developer, choose **Install anyway**.
+- You can also build one yourself: Actions → **Android APK** → **Run workflow**, then download the `volley-lineup-apk` artifact from the run.
+- iPhone: there is no installable file; use Expo Go (below) or the web app.
+
 ## Run it on your phone (Expo Go)
 
 1. Install **Expo Go** from the App Store / Play Store (a version that supports Expo SDK 58).
