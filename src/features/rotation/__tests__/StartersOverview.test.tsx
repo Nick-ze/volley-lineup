@@ -1,18 +1,9 @@
-// Must load before gesture-handler: it registers gesture-handler's and Reanimated's Jest mocks.
 import { renderRouter } from 'expo-router/testing-library';
 import { fireEvent, screen, within } from '@testing-library/react-native';
 
 import { useAppStore } from '@/store';
 
 import { seedStore } from '../__fixtures__/seed';
-
-// See RotationViewer.test.tsx: patch the `{}` Reanimated mock for gesture-handler v3 hooks.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const reanimatedMock: Record<string, unknown> = require('react-native-reanimated');
-reanimatedMock.isSharedValue ??= () => false;
-
-// The first route render compiles the whole app tree; under coverage + parallel workers it is slow.
-jest.setTimeout(30000);
 
 describe('starters overview', () => {
   beforeEach(() => seedStore());

@@ -1,19 +1,10 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-// Must load before gesture-handler: it registers gesture-handler's and Reanimated's Jest mocks.
 import { renderRouter } from 'expo-router/testing-library';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import { useAppStore } from '@/store';
 
 import { seedStore } from '../__fixtures__/seed';
-
-// expo-router/testing-library mocks Reanimated with `{}` when Reanimated's own Jest mock fails to
-// load (it does with Reanimated 4.7 + worklets 0.13). Gesture-handler v3 hooks then crash calling
-// `Reanimated.isSharedValue`. The viewer uses no shared values, so patch that one function onto the
-// (shared, cached) mock object.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const reanimatedMock: Record<string, unknown> = require('react-native-reanimated');
-reanimatedMock.isSharedValue ??= () => false;
 
 /** Jersey number shown at a court spot. */
 const numberAt = (position: number) =>
@@ -24,9 +15,6 @@ const expectLineup = (expected: Record<number, string>) => {
     expect(within(numberAt(Number(pos))).getByText(num)).toBeTruthy();
   }
 };
-
-// The first route render compiles the whole app tree; under coverage + parallel workers it is slow.
-jest.setTimeout(30000);
 
 describe('rotation viewer', () => {
   beforeEach(() => seedStore());
