@@ -1,0 +1,50 @@
+import type { ManagerProfile, Match, Player, SetLineup, Team } from '@/domain/types';
+
+/** The persisted data. Bump STORE_VERSION and add a migration when this shape changes. */
+export interface AppData {
+  profiles: ManagerProfile[];
+  teams: Team[];
+  players: Player[];
+  matches: Match[];
+}
+
+export interface AppState extends AppData {
+  currentProfileId: string | null;
+  /** True once persisted state has been loaded from storage. Not persisted. */
+  hydrated: boolean;
+}
+
+export type NewProfile = Pick<ManagerProfile, 'name' | 'color'>;
+export type NewTeam = Pick<Team, 'profileId' | 'name' | 'season'>;
+export type NewPlayer = Omit<Player, 'id'>;
+export type NewMatch = Pick<Match, 'teamId' | 'opponent' | 'date' | 'home'> & {
+  sets?: SetLineup[];
+};
+
+export interface AppActions {
+  // profiles
+  addProfile(input: NewProfile): ManagerProfile;
+  updateProfile(id: string, patch: Partial<Omit<ManagerProfile, 'id' | 'createdAt'>>): void;
+  deleteProfile(id: string): void;
+  selectProfile(id: string | null): void;
+  // teams
+  addTeam(input: NewTeam): Team;
+  updateTeam(id: string, patch: Partial<Omit<Team, 'id' | 'profileId' | 'createdAt'>>): void;
+  deleteTeam(id: string): void;
+  // players
+  addPlayer(input: NewPlayer): Player;
+  updatePlayer(id: string, patch: Partial<Omit<Player, 'id' | 'teamId'>>): void;
+  deletePlayer(id: string): void;
+  // matches
+  addMatch(input: NewMatch): Match;
+  updateMatch(id: string, patch: Partial<Omit<Match, 'id' | 'teamId'>>): void;
+  deleteMatch(id: string): void;
+  /** Insert or replace the lineup for `set.setNumber` in a match. */
+  setLineup(matchId: string, set: SetLineup): void;
+  // whole-data operations (used by import / settings)
+  replaceAll(data: AppData): void;
+  resetAll(): void;
+  setHydrated(value: boolean): void;
+}
+
+export type AppStore = AppState & AppActions;

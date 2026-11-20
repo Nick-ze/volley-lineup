@@ -1,6 +1,7 @@
 # Volley Lineup — Project Plan
 
 ## 1. Vision
+
 A mobile + web app for volleyball team managers to manage their roster, build starting lineups for each set with simple drag and drop, and see the rotation for every set. Everything is stored locally on the device; data moves between devices with JSON export/import.
 
 **Platforms:** iOS, Android, Web — one codebase.
@@ -8,6 +9,7 @@ A mobile + web app for volleyball team managers to manage their roster, build st
 **Backend:** none. All data stays on the device.
 
 ## 2. Assumptions (confirm or change before building)
+
 - Indoor volleyball, 6 vs 6, court positions 1–6.
 - Up to 5 sets per match.
 - One libero per set (optional).
@@ -17,6 +19,7 @@ A mobile + web app for volleyball team managers to manage their roster, build st
 ## 3. Features
 
 ### v1 (must have)
+
 1. **Manager profiles** — create, select, rename, delete a local profile. Each profile owns its teams.
 2. **Teams** — create, rename, delete teams (e.g. "Herren 1", season 2026/27).
 3. **Roster** — add, edit, delete players: first name, last name, jersey number (unique per team), positions (Setter, Outside Hitter, Middle Blocker, Opposite, Libero, Defensive Specialist), active/injured flag.
@@ -41,6 +44,7 @@ A mobile + web app for volleyball team managers to manage their roster, build st
 9. **Persistence** — data survives app restarts and page reloads.
 
 ### Later (v2+ ideas, NOT in v1)
+
 - Automatic libero swaps in the rotation view (libero replaces a chosen back-row player).
 - Live match mode: tap "point won / lost" to rotate automatically, with a score per set.
 - Substitution tracking (6 per set).
@@ -50,6 +54,7 @@ A mobile + web app for volleyball team managers to manage their roster, build st
 - Printable / PDF lineup sheet.
 
 ## 4. Rotation rules (domain logic)
+
 - Positions: 1 = back right (server), 2 = front right, 3 = front middle, 4 = front left, 5 = back left, 6 = back middle.
 - Rotating (after a side-out) moves each player clockwise: 2→1, 3→2, 4→3, 5→4, 6→5, 1→6.
 - Rotation 1 = the starting lineup; rotations 2–6 follow by repeating the rule above.
@@ -57,43 +62,61 @@ A mobile + web app for volleyball team managers to manage their roster, build st
 - All of this lives in pure functions (`src/domain/rotation.ts`) with full unit tests.
 
 ## 5. Tech stack
-| Area | Choice |
-|---|---|
-| Framework | Expo (latest stable SDK) + React Native + react-native-web |
-| Language | TypeScript (strict) |
-| Navigation | Expo Router |
-| Drag & drop | react-native-gesture-handler + react-native-reanimated |
-| State | Zustand with `persist` middleware |
-| Storage | @react-native-async-storage/async-storage (uses localStorage on web) |
-| Validation | zod (import files + forms) |
+
+| Area          | Choice                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| Framework     | Expo (latest stable SDK) + React Native + react-native-web                                          |
+| Language      | TypeScript (strict)                                                                                 |
+| Navigation    | Expo Router                                                                                         |
+| Drag & drop   | react-native-gesture-handler + react-native-reanimated                                              |
+| State         | Zustand with `persist` middleware                                                                   |
+| Storage       | @react-native-async-storage/async-storage (uses localStorage on web)                                |
+| Validation    | zod (import files + forms)                                                                          |
 | Export/import | expo-file-system + expo-sharing + expo-document-picker on phones; Blob download + file input on web |
-| IDs | nanoid / expo-crypto `randomUUID` |
-| Tests | Jest (jest-expo) + React Native Testing Library |
-| Lint/format | ESLint + Prettier |
-| CI | GitHub Actions: lint, typecheck, test, web export |
-| Web hosting | GitHub Pages (via Actions, `expo export -p web`, base URL set for the repo path) |
-| Phone testing | Expo Go (QR code) |
+| IDs           | nanoid / expo-crypto `randomUUID`                                                                   |
+| Tests         | Jest (jest-expo) + React Native Testing Library                                                     |
+| Lint/format   | ESLint + Prettier                                                                                   |
+| CI            | GitHub Actions: lint, typecheck, test, web export                                                   |
+| Web hosting   | GitHub Pages (via Actions, `expo export -p web`, base URL set for the repo path)                    |
+| Phone testing | Expo Go (QR code)                                                                                   |
 
 ## 6. Data model
+
 ```ts
 type Position = 'S' | 'OH' | 'MB' | 'OPP' | 'L' | 'DS';
 
-interface ManagerProfile { id: string; name: string; color: string; createdAt: string; }
+interface ManagerProfile {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
 
 interface Player {
-  id: string; teamId: string;
-  firstName: string; lastName: string;
-  number: number;            // unique within team
-  positions: Position[];     // first = primary
+  id: string;
+  teamId: string;
+  firstName: string;
+  lastName: string;
+  number: number; // unique within team
+  positions: Position[]; // first = primary
   active: boolean;
 }
 
-interface Team { id: string; profileId: string; name: string; season?: string; createdAt: string; }
+interface Team {
+  id: string;
+  profileId: string;
+  name: string;
+  season?: string;
+  createdAt: string;
+}
 
 interface Match {
-  id: string; teamId: string;
-  opponent: string; date: string; home: boolean;
-  sets: SetLineup[];         // length 1–5
+  id: string;
+  teamId: string;
+  opponent: string;
+  date: string;
+  home: boolean;
+  sets: SetLineup[]; // length 1–5
 }
 
 interface SetLineup {
@@ -107,11 +130,15 @@ interface ExportFile {
   app: 'volley-lineup';
   schemaVersion: 1;
   exportedAt: string;
-  profiles: ManagerProfile[]; teams: Team[]; players: Player[]; matches: Match[];
+  profiles: ManagerProfile[];
+  teams: Team[];
+  players: Player[];
+  matches: Match[];
 }
 ```
 
 ## 7. Screens
+
 1. **Profile picker** — list of profiles + "New profile".
 2. **Teams** — the profile's teams.
 3. **Team** — tabs: Roster | Matches.
@@ -125,6 +152,7 @@ interface ExportFile {
 Layout: on phones, the court is on top and the bench is a scrollable list below. On wide screens (web/tablet), the court is on the left and the bench on the right.
 
 ## 8. Design
+
 - **Dark theme** by default.
 - Colours (design tokens in `src/theme/colors.ts`):
   - Black background `#0D0D0D`, surface `#1A1A1A`, border `#2A2A2A`
@@ -137,17 +165,19 @@ Layout: on phones, the court is on top and the bench is a scrollable list below.
 - Clear visual feedback while dragging: the lifted chip grows, and valid drop slots glow yellow.
 
 ## 9. Milestones
-| # | Milestone | Done when |
-|---|---|---|
-| M0 | Scaffold | App runs on web + Expo Go, theme, navigation shell, store, CI is green |
-| M1 | Profiles, teams & roster | CRUD works and persists |
-| M2 | Rotation domain logic | Pure functions + 100% unit test coverage |
-| M3 | Lineup builder | Drag and drop + tap fallback work on web and phone; validation |
-| M4 | Rotation viewer + starters overview | All 6 rotations are correct for every set |
-| M5 | Export / import | Round trip export → wipe → import restores identical data; bad files are rejected |
-| M6 | Polish + review | Independent review passed, README written, web deployed to GitHub Pages |
+
+| #   | Milestone                           | Done when                                                                         |
+| --- | ----------------------------------- | --------------------------------------------------------------------------------- |
+| M0  | Scaffold                            | App runs on web + Expo Go, theme, navigation shell, store, CI is green            |
+| M1  | Profiles, teams & roster            | CRUD works and persists                                                           |
+| M2  | Rotation domain logic               | Pure functions + 100% unit test coverage                                          |
+| M3  | Lineup builder                      | Drag and drop + tap fallback work on web and phone; validation                    |
+| M4  | Rotation viewer + starters overview | All 6 rotations are correct for every set                                         |
+| M5  | Export / import                     | Round trip export → wipe → import restores identical data; bad files are rejected |
+| M6  | Polish + review                     | Independent review passed, README written, web deployed to GitHub Pages           |
 
 ## 10. Acceptance checklist (v1)
+
 - [ ] Create a profile, a team, 12 players, a match with 5 sets, all with no errors.
 - [ ] Drag and drop works with a mouse (web), touch (phone), and tap-to-select.
 - [ ] A player can't be placed twice in the same set.

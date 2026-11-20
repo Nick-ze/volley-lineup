@@ -1,0 +1,69 @@
+/**
+ * Data model — copied verbatim from docs/PLAN.md §6.
+ * These types are the single source of truth; never redefine them elsewhere.
+ */
+
+export type Position = 'S' | 'OH' | 'MB' | 'OPP' | 'L' | 'DS';
+
+export interface ManagerProfile {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface Player {
+  id: string;
+  teamId: string;
+  firstName: string;
+  lastName: string;
+  number: number; // unique within team
+  positions: Position[]; // first = primary
+  active: boolean;
+}
+
+export interface Team {
+  id: string;
+  profileId: string;
+  name: string;
+  season?: string;
+  createdAt: string;
+}
+
+export interface Match {
+  id: string;
+  teamId: string;
+  opponent: string;
+  date: string;
+  home: boolean;
+  sets: SetLineup[]; // length 1–5
+}
+
+export interface SetLineup {
+  setNumber: 1 | 2 | 3 | 4 | 5;
+  slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>; // court position -> playerId
+  liberoId: string | null;
+  weServeFirst: boolean;
+}
+
+export interface ExportFile {
+  app: 'volley-lineup';
+  schemaVersion: 1;
+  exportedAt: string;
+  profiles: ManagerProfile[];
+  teams: Team[];
+  players: Player[];
+  matches: Match[];
+}
+
+/* ---- Derived helper types (not part of the persisted shape) ---- */
+
+/** Court position number 1–6. */
+export type CourtPosition = keyof SetLineup['slots'];
+
+/** Set number 1–5. */
+export type SetNumber = SetLineup['setNumber'];
+
+export const COURT_POSITIONS: readonly CourtPosition[] = [1, 2, 3, 4, 5, 6] as const;
+export const SET_NUMBERS: readonly SetNumber[] = [1, 2, 3, 4, 5] as const;
+export const ALL_POSITIONS: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'L', 'DS'] as const;
