@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Screen } from '@/components';
 import { NotFound } from '@/features/roster/components/NotFound';
@@ -13,9 +13,19 @@ export default function PlayerEditorScreen() {
   const team = useTeam(teamId);
   const player = usePlayer(playerId);
   const goBack = useGoBack(`/team/${teamId}`);
+  const router = useRouter();
 
-  if (!team) return <NotFound message={t.roster.teamNotFound} onBack={goBack} />;
-  if (playerId && !player) return <NotFound message={t.roster.player.notFound} onBack={goBack} />;
+  if (!team)
+    return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
+  // A player id from another team must not be edited here (it would bypass per-team checks).
+  if (playerId && (!player || player.teamId !== team.id))
+    return (
+      <NotFound
+        message={t.roster.player.notFound}
+        onBack={goBack}
+        backLabel={t.roster.backToTeam}
+      />
+    );
 
   return (
     <Screen>

@@ -61,7 +61,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   numberInactive: { backgroundColor: colors.surfaceRaised },
-  numberText: { ...typography.subheading, fontWeight: '800', color: colors.onPrimary },
+  numberText: {
+    ...typography.subheading,
+    fontWeight: typography.jersey.fontWeight,
+    color: colors.onPrimary,
+  },
   numberTextInactive: { color: colors.textMuted },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
 });

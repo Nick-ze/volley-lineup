@@ -44,6 +44,7 @@ export const roster = {
     settings: 'Settings',
   },
   team: {
+    title: (name: string, season?: string) => (season ? `${name} · ${season}` : name),
     tabs: 'Team sections',
     rosterTab: 'Roster',
     matchesTab: 'Matches',
@@ -92,4 +93,5 @@ export const roster = {
   },
   teamNotFound: 'This team no longer exists.',
   backToTeams: 'Back to teams',
+  backToTeam: 'Back to team',
 } as const;

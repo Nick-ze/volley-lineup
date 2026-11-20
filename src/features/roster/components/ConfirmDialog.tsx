@@ -2,7 +2,7 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { t } from '@/i18n/en';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
 
 export interface ConfirmDialogProps {
   visible: boolean;
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: dialogMaxWidth,
     backgroundColor: colors.surfaceRaised,
     borderRadius: radius.lg,
     padding: spacing.xl,

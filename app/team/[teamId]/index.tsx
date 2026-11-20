@@ -30,9 +30,7 @@ export default function TeamScreen() {
 
   return (
     <Screen>
-      <Stack.Screen
-        options={{ title: team.season ? `${team.name} · ${team.season}` : team.name }}
-      />
+      <Stack.Screen options={{ title: t.roster.team.title(team.name, team.season) }} />
       <SegmentedTabs<Tab>
         tabs={TABS}
         value={tab}

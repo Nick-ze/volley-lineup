@@ -4,7 +4,6 @@ import {
   makePrimaryPosition,
   NAME_MAX_LENGTH,
   SEASON_MAX_LENGTH,
-  sortByNumber,
   toIsoDate,
   togglePosition,
   validateMatchForm,
@@ -63,14 +62,6 @@ describe('dates', () => {
     expect(isValidIsoDate('2026-1-01')).toBe(false);
     expect(isValidIsoDate('20.11.2026')).toBe(false);
     expect(isValidIsoDate('')).toBe(false);
-  });
-});
-
-describe('sortByNumber', () => {
-  it('sorts without mutating', () => {
-    const input = [player('a', 5), player('b', 1)];
-    expect(sortByNumber(input).map((p) => p.number)).toEqual([1, 5]);
-    expect(input[0].number).toBe(5);
   });
 });
 

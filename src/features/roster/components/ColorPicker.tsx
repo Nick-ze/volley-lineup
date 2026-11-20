@@ -1,7 +1,15 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/i18n/en';
-import { colors, profileColors, radius, spacing, touchTarget, typography } from '@/theme';
+import {
+  borderWidth,
+  colors,
+  profileColors,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '@/theme';
 
 export interface ColorPickerProps {
   value: string;
@@ -21,7 +29,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               key={c}
               accessibilityRole="radio"
               accessibilityLabel={t.roster.profiles.colorOption(i + 1)}
-              accessibilityState={{ checked: selected }}
+              aria-checked={selected}
               onPress={() => onChange(c)}
               style={[styles.swatch, { backgroundColor: c }, selected && styles.selected]}
             />
@@ -40,7 +48,7 @@ const styles = StyleSheet.create({
     width: touchTarget,
     height: touchTarget,
     borderRadius: radius.round,
-    borderWidth: 3,
+    borderWidth: borderWidth.thick,
     borderColor: colors.transparent,
   },
   selected: { borderColor: colors.text },

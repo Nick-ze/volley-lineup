@@ -64,11 +64,6 @@ export function isValidIsoDate(value: string): boolean {
   return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
 }
 
-/** Players ordered by jersey number (does not mutate). */
-export function sortByNumber(players: readonly Player[]): Player[] {
-  return [...players].sort((a, b) => a.number - b.number);
-}
-
 /* ---------- zod plumbing ---------- */
 
 const name = z.string().trim().min(1, 'required').max(NAME_MAX_LENGTH, 'tooLong');

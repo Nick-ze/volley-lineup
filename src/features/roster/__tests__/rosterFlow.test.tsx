@@ -7,9 +7,6 @@ import { STORAGE_KEY, useAppStore } from '@/store';
 
 import { resetStartupRedirect } from '../hooks/useStartupRedirect';
 
-// Route-level tests are slow on a cold Jest cache (every route is transformed on first render).
-jest.setTimeout(30_000);
-
 const s = t.roster;
 const store = () => useAppStore.getState();
 
@@ -131,8 +128,17 @@ describe('roster flows', () => {
       screen.getByRole('radio', { name: s.player.makePrimary(t.positions.OH) }),
     );
     await type(s.player.number, '7'); // own number is fine
+    await fireEvent.press(
+      screen.getByRole('switch', { name: s.player.activeLabel, checked: false }),
+    );
+    expect(screen.getByRole('switch', { name: s.player.activeLabel, checked: true })).toBeTruthy();
     await press(t.common.save);
-    expect(store().players[0]).toMatchObject({ id: p.id, positions: ['OH', 'S'], number: 7 });
+    expect(store().players[0]).toMatchObject({
+      id: p.id,
+      positions: ['OH', 'S'],
+      number: 7,
+      active: true,
+    });
   });
 
   it('deletes a player after confirmation', async () => {
@@ -229,6 +235,22 @@ describe('roster flows', () => {
   it('redirects /teams to the picker without a selected profile', async () => {
     await renderRouter('./app', { initialUrl: '/teams' });
     await waitFor(() => expect(screen).toHavePathname('/'));
+  });
+
+  it("refuses to edit a player through another team's URL", async () => {
+    const { profile, team } = seedTeam();
+    const other = store().addTeam({ profileId: profile.id, name: 'Damen' });
+    const p = store().addPlayer({
+      teamId: other.id,
+      firstName: 'Ana',
+      lastName: 'Ace',
+      number: 7,
+      positions: ['S'],
+      active: true,
+    });
+    await renderRouter('./app', { initialUrl: `/team/${team.id}/player?playerId=${p.id}` });
+    expect(screen.getByText(s.player.notFound)).toBeTruthy();
+    expect(screen.getByRole('button', { name: s.backToTeam })).toBeTruthy();
   });
 
   it('shows not-found for an unknown team', async () => {

@@ -23,12 +23,13 @@ export function ChoiceChip({
   style,
   testID,
 }: ChoiceChipProps) {
-  const state = role === 'tab' ? { selected } : { checked: selected };
   return (
     <Pressable
       accessibilityRole={role}
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={state}
+      // aria-* (not accessibilityState) so react-native-web also exposes the state.
+      aria-selected={role === 'tab' ? selected : undefined}
+      aria-checked={role === 'tab' ? undefined : selected}
       onPress={onPress}
       testID={testID}
       style={({ pressed }) => [

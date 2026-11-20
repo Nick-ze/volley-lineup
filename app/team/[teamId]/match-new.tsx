@@ -14,7 +14,8 @@ export default function NewMatchScreen() {
   const team = useTeam(teamId);
   const goBack = useGoBack(`/team/${teamId}?tab=matches`);
 
-  if (!team) return <NotFound message={t.roster.teamNotFound} onBack={goBack} />;
+  if (!team)
+    return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
 
   return (
     <Screen>
