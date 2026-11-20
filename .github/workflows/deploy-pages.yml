@@ -35,15 +35,24 @@ jobs:
         run: |
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      # Pages must be enabled once by the repo owner (Settings → Pages → Source: GitHub Actions;
+      # private repos need a paid plan). Until then, skip the upload/deploy instead of failing.
+      - id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+      - if: steps.pages.outcome != 'success'
+        run: |
+          echo "::warning::GitHub Pages is not enabled for this repository - skipping deploy. Enable it in Settings > Pages > Source = GitHub Actions."
+      - if: steps.pages.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+    outputs:
+      pages_enabled: ${{ steps.pages.outcome == 'success' }}
 
   deploy:
     needs: build
+    if: needs.build.outputs.pages_enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
