@@ -1,5 +1,3 @@
-import 'react-native-gesture-handler/jestSetup';
-
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 

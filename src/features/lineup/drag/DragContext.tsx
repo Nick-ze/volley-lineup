@@ -9,8 +9,9 @@ import {
 } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import type { CourtSlotRef } from '@/components';
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
+
+import type { CourtSlotRef } from '@/components';
 
 import {
   hitTest,
@@ -19,6 +20,7 @@ import {
   type ZoneRect,
 } from '@/domain/lineupEditing';
 import type { Player } from '@/domain/types';
+import { measureInWindow } from '@/lib/measureInWindow';
 
 import { DragOverlay } from './DragOverlay';
 
@@ -60,9 +62,6 @@ interface Zone {
   target: DropTarget;
   view: MeasurableView;
 }
-
-const measure = (view: MeasurableView): Promise<{ x: number; y: number; w: number; h: number }> =>
-  new Promise((resolve) => view.measureInWindow((x, y, w, h) => resolve({ x, y, w, h })));
 
 export interface DragProviderProps {
   onDrop(item: DragItem, target: DropTarget): void;
@@ -106,15 +105,15 @@ export function DragProvider({ onDrop, children, style }: DragProviderProps) {
       setActive(item);
       rects.current = [];
       if (rootRef.current) {
-        void measure(rootRef.current).then((r) => {
+        void measureInWindow(rootRef.current).then((r) => {
           origin.current = { x: r.x, y: r.y };
           x.set(px - r.x);
           y.set(py - r.y);
         });
       }
       zones.current.forEach((zone, key) => {
-        void measure(zone.view).then((r) => {
-          rects.current.push({ key, x: r.x, y: r.y, width: r.w, height: r.h });
+        void measureInWindow(zone.view).then((r) => {
+          rects.current.push({ key, ...r });
         });
       });
     },

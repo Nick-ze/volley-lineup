@@ -34,6 +34,7 @@ export function DraggablePlayer({
     minDistance: dragActivation.minDistance,
     activateAfterLongPress: dragActivation.activateAfterLongPress,
     runOnJS: true,
+    testID: testID ? `drag-${testID}` : undefined,
     onActivate: (e) => drag.begin({ player, from }, e.absoluteX, e.absoluteY),
     onUpdate: (e) => drag.move(e.absoluteX, e.absoluteY),
     onDeactivate: (e) => drag.end(e.absoluteX, e.absoluteY, e.canceled),
