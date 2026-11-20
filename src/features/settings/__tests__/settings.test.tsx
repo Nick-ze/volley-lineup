@@ -208,7 +208,7 @@ describe('profile, delete all and version', () => {
   it('shows the current profile and switches profile', async () => {
     seed();
     await renderSettings();
-    expect(screen.getByText('Signed in as Coach')).toBeTruthy();
+    expect(screen.getByText('Current profile: Coach')).toBeTruthy();
     expect(screen.getByText(/Version/)).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Switch profile'));
     expect(store().currentProfileId).toBeNull();

@@ -4,7 +4,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 export const transfer = {
   profile: {
     title: 'Profile',
-    current: (name: string) => `Signed in as ${name}`,
+    current: (name: string) => `Current profile: ${name}`,
     none: 'No profile selected.',
     switch: 'Switch profile',
   },
