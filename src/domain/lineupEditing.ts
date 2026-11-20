@@ -8,19 +8,20 @@
 import { emptySetLineup } from './lineup';
 import {
   COURT_POSITIONS,
+  SET_NUMBERS,
   type CourtPosition,
   type Player,
   type SetLineup,
   type SetNumber,
 } from './types';
 
-/** Where a player currently is within a set. */
-export type PlayerLocation =
-  { kind: 'slot'; position: CourtPosition } | { kind: 'libero' } | { kind: 'bench' };
-
-/** A place a player can be dropped onto (drag & drop and tap-to-select share this). */
+/**
+ * A place a player can be dropped onto (drag & drop and tap-to-select share this).
+ * Also describes where a player currently is (`locatePlayer`).
+ */
 export type DropTarget =
   { kind: 'slot'; position: CourtPosition } | { kind: 'libero' } | { kind: 'bench' };
+export type PlayerLocation = DropTarget;
 
 /** Court position of a player in this set, or null if not on court. */
 export function findSlot(set: SetLineup, playerId: string): CourtPosition | null {
@@ -129,4 +130,63 @@ export function lineupForSet(sets: SetLineup[], setNumber: SetNumber): SetLineup
 /** The previous set's lineup if it exists (never for set 1). */
 export function previousSet(sets: SetLineup[], setNumber: SetNumber): SetLineup | null {
   return sets.find((s) => s.setNumber === setNumber - 1) ?? null;
+}
+
+/** Result of a tap in tap-to-select mode: the new lineup and the new selection. */
+export interface TapResult {
+  set: SetLineup;
+  selectedId: string | null;
+}
+
+/**
+ * Tap-to-select: the user tapped a player chip (bench, court or libero).
+ * - Nothing selected → select it. Same player → deselect.
+ * - Both on the bench → selection switches to the tapped player.
+ * - Tapped player on the bench, selected one on court/libero → the bench player takes that place.
+ * - Tapped player on court/libero → the selected player moves there (swap on court).
+ */
+export function tapPlayer(set: SetLineup, selectedId: string | null, tappedId: string): TapResult {
+  if (selectedId === null) return { set, selectedId: tappedId };
+  if (selectedId === tappedId) return { set, selectedId: null };
+  const tapped = locatePlayer(set, tappedId);
+  const selected = locatePlayer(set, selectedId);
+  if (tapped.kind === 'bench') {
+    if (selected.kind === 'bench') return { set, selectedId: tappedId };
+    return { set: movePlayer(set, tappedId, selected), selectedId: null };
+  }
+  return { set: movePlayer(set, selectedId, tapped), selectedId: null };
+}
+
+/** Tap-to-select: the user tapped an empty slot, the libero slot or the bench area. */
+export function tapTarget(
+  set: SetLineup,
+  selectedId: string | null,
+  target: DropTarget,
+): TapResult {
+  if (selectedId === null) return { set, selectedId: null };
+  return { set: movePlayer(set, selectedId, target), selectedId: null };
+}
+
+/** A measured drop zone in window coordinates. */
+export interface ZoneRect<K> {
+  key: K;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The zone under a point, or null. Later zones win when they overlap (drawn on top). */
+export function hitTest<K>(zones: ZoneRect<K>[], x: number, y: number): K | null {
+  for (let i = zones.length - 1; i >= 0; i -= 1) {
+    const z = zones[i];
+    if (x >= z.x && x <= z.x + z.width && y >= z.y && y <= z.y + z.height) return z.key;
+  }
+  return null;
+}
+
+/** Parses a `?set=N` route param into a set number 1–5 (anything else → 1). */
+export function parseSetNumber(value: string | string[] | undefined): SetNumber {
+  const n = Number(Array.isArray(value) ? value[0] : value);
+  return (SET_NUMBERS as readonly number[]).includes(n) ? (n as SetNumber) : 1;
 }

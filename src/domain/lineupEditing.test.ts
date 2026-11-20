@@ -4,9 +4,11 @@ import {
   clearLineup,
   copyLineup,
   findSlot,
+  hitTest,
   lineupForSet,
   locatePlayer,
   movePlayer,
+  parseSetNumber,
   placePlayer,
   previousSet,
   removeFromCourt,
@@ -14,6 +16,8 @@ import {
   setLibero,
   setServeFirst,
   swapSlots,
+  tapPlayer,
+  tapTarget,
 } from './lineupEditing';
 import { COURT_POSITIONS, type Player, type SetLineup } from './types';
 
@@ -211,5 +215,64 @@ describe('lineupForSet / previousSet', () => {
     expect(previousSet(sets, 2)?.setNumber).toBe(1);
     expect(previousSet(sets, 1)).toBeNull();
     expect(previousSet(sets, 4)).toBeNull();
+  });
+});
+
+describe('tapPlayer / tapTarget (tap-to-select)', () => {
+  it('selects, then deselects the same player', () => {
+    const s = base();
+    expect(tapPlayer(s, null, 'c')).toEqual({ set: s, selectedId: 'c' });
+    expect(tapPlayer(s, 'c', 'c')).toEqual({ set: s, selectedId: null });
+  });
+
+  it('switches selection between two bench players', () => {
+    const s = base();
+    expect(tapPlayer(s, 'c', 'd')).toEqual({ set: s, selectedId: 'd' });
+  });
+
+  it('puts a tapped bench player in the selected court player’s place', () => {
+    const r = tapPlayer(base(), 'a', 'c');
+    expect(r.set.slots[1]).toBe('c');
+    expect(findSlot(r.set, 'a')).toBeNull();
+    expect(r.selectedId).toBeNull();
+    expect(tapPlayer(base(), 'l', 'c').set.liberoId).toBe('c');
+  });
+
+  it('moves the selected player onto a tapped court player (swap)', () => {
+    const r = tapPlayer(base(), 'a', 'b');
+    expect([r.set.slots[1], r.set.slots[2]]).toEqual(['b', 'a']);
+    expect(tapPlayer(base(), 'c', 'l').set.liberoId).toBe('c');
+  });
+
+  it('moves the selected player to a tapped target, or does nothing without selection', () => {
+    const s = base();
+    expect(tapTarget(s, null, { kind: 'slot', position: 3 })).toEqual({ set: s, selectedId: null });
+    const r = tapTarget(s, 'c', { kind: 'slot', position: 3 });
+    expect(r.set.slots[3]).toBe('c');
+    expect(r.selectedId).toBeNull();
+  });
+});
+
+describe('hitTest', () => {
+  const zones = [
+    { key: 'a', x: 0, y: 0, width: 100, height: 100 },
+    { key: 'b', x: 50, y: 50, width: 100, height: 100 },
+  ];
+  it('finds the zone under a point, preferring later zones', () => {
+    expect(hitTest(zones, 10, 10)).toBe('a');
+    expect(hitTest(zones, 60, 60)).toBe('b');
+    expect(hitTest(zones, 150, 150)).toBe('b');
+    expect(hitTest(zones, 151, 10)).toBeNull();
+    expect(hitTest(zones, 10, 120)).toBeNull();
+  });
+});
+
+describe('parseSetNumber', () => {
+  it('accepts 1–5 and falls back to 1', () => {
+    expect(parseSetNumber('3')).toBe(3);
+    expect(parseSetNumber(['5', '2'])).toBe(5);
+    expect(parseSetNumber(undefined)).toBe(1);
+    expect(parseSetNumber('7')).toBe(1);
+    expect(parseSetNumber('abc')).toBe(1);
   });
 });

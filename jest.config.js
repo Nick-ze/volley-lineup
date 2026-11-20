@@ -2,6 +2,9 @@
 module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  // Reanimated 4 / Worklets ship a resolver that picks their JS (non-native) builds under Jest;
+  // without it, importing reanimated (e.g. via gesture-handler v3 hooks) crashes.
+  resolver: 'react-native-reanimated/jest/resolver',
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/.claude/', '<rootDir>/dist/'],
   modulePathIgnorePatterns: ['<rootDir>/.claude/', '<rootDir>/dist/'],
   transformIgnorePatterns: [

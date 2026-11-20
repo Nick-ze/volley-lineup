@@ -1,2 +1,52 @@
 /** Strings for Worker C — lineup builder. */
-export const lineup = {} as const;
+import type { ValidationErrorCode, ValidationWarningCode } from '@/domain/lineupValidation';
+
+export const lineup = {
+  title: (opponent: string) => `vs ${opponent}`,
+  matchNotFound: 'This match does not exist (anymore).',
+  setTabs: 'Sets',
+  setTab: (n: number) => `Set ${n}`,
+  setTabHint: 'Shows the lineup for this set',
+  court: 'Court',
+  bench: 'Bench',
+  benchEmpty: 'No more active players. Add players in the roster.',
+  benchDropHint: 'Tap here to move the selected player to the bench',
+  benchDropLabel: 'Move selected player to the bench',
+  libero: 'Libero',
+  liberoEmpty: 'No libero',
+  liberoSlotLabel: (name: string | null) => (name ? `Libero slot, ${name}` : 'Empty libero slot'),
+  slotLabel: (position: number, name: string | null) =>
+    name ? `Position ${position}, ${name}` : `Empty position ${position}`,
+  playerHint: 'Tap to select, then tap a position, the libero slot or the bench. Or drag it.',
+  slotHintSelected: 'Moves the selected player here',
+  selected: (name: string) => `Selected: ${name}. Tap a position, the libero slot or the bench.`,
+  instructions: 'Drag players onto the court, or tap a player and then a position.',
+  copyPrevious: 'Copy lineup from previous set',
+  copyPreviousHint: 'Replaces this set’s starters and libero with those of the previous set',
+  clear: 'Clear',
+  clearLabel: 'Clear this set’s lineup',
+  serveLabel: 'Who serves first',
+  weServe: 'We serve first',
+  theyServe: 'Opponent serves first',
+  rotation: 'Rotation',
+  rotationLabel: 'Open the rotation viewer for this set',
+  starters: 'Starters',
+  startersLabel: 'Open the starters overview for all sets',
+  validationTitle: 'Lineup check',
+  validationOk: 'Lineup is complete.',
+  errorsHeading: 'Errors',
+  warningsHeading: 'Warnings',
+  errors: {
+    INCOMPLETE: 'Fewer than 6 players on court.',
+    DUPLICATE_PLAYER: 'A player is in more than one position.',
+    LIBERO_ON_COURT: 'The libero is also in the starting six.',
+    UNKNOWN_PLAYER: 'A position holds a player who is not in the roster.',
+  } satisfies Record<ValidationErrorCode, string>,
+  warnings: {
+    NO_SETTER: 'No setter in the starting six.',
+    UNUSUAL_LAYOUT: 'Unusual position layout.',
+    INACTIVE_PLAYER: 'An inactive or injured player is in the lineup.',
+    LIBERO_NOT_LIBERO: 'The libero is not listed as a libero in the roster.',
+  } satisfies Record<ValidationWarningCode, string>,
+  issuePositions: (positions: number[]) => `Positions ${positions.join(', ')}`,
+} as const;
