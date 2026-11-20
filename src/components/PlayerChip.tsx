@@ -81,6 +81,7 @@ export function PlayerChip({
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ selected }}
+      aria-selected={selected}
       onPress={onPress}
       onLongPress={onLongPress}
       testID={testID}
