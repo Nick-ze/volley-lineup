@@ -92,7 +92,7 @@ describe('import', () => {
 
     await fireEvent.press(screen.getByLabelText('Replace'));
     expect(selectAppData(store())).toEqual(otherData());
-    expect(store().currentProfileId).toBeNull(); // the old current profile is gone
+    expect(store().currentProfileId).toBe('x-pr'); // old profile gone; the only one is selected
     expect(screen.getByText('Import complete: data replaced.')).toBeTruthy();
     expect(screen.queryByTestId('import-preview')).toBeNull();
   });
@@ -201,6 +201,27 @@ describe('export', () => {
     await renderSettings();
     await fireEvent.press(screen.getByLabelText('Export everything'));
     expect(await screen.findByText('Export failed. Please try again.')).toBeTruthy();
+  });
+});
+
+describe('round trip through the screen', () => {
+  it('export → delete all → import (replace) restores identical data', async () => {
+    seed();
+    const original = selectAppData(store());
+    await renderSettings();
+
+    await fireEvent.press(screen.getByLabelText('Export everything'));
+    const [name, text] = mockSave.mock.calls[0];
+
+    await fireEvent.press(screen.getByLabelText('Delete all data'));
+    await fireEvent.press(screen.getByLabelText('Yes, delete everything'));
+    expect(store().profiles).toEqual([]);
+
+    mockPick.mockResolvedValue({ name, text });
+    await fireEvent.press(screen.getByLabelText('Import from file'));
+    await fireEvent.press(await screen.findByLabelText('Replace'));
+    expect(selectAppData(store())).toEqual(original);
+    expect(store().currentProfileId).toBeNull(); // two profiles: the user picks one
   });
 });
 

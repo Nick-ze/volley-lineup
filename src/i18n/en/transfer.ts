@@ -48,7 +48,7 @@ export const transfer = {
       INCONSISTENT_REFERENCES:
         'This file contains data that doesn’t fit together (for example a player in an unknown team). Nothing was changed.',
       MERGE_CONFLICT:
-        'Merging would give two players the same jersey number in one team. Nothing was changed — use Replace, or fix the numbers first.',
+        'Merging would make your data inconsistent (for example two players with the same jersey number in one team). Nothing was changed — use Replace instead.',
       READ_FAILED: 'The file could not be read. Nothing was changed.',
     },
   },

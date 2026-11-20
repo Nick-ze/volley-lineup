@@ -20,6 +20,13 @@ export type ImportState =
   | { step: 'done'; mode: ImportMode }
   | { step: 'error'; error: ImportError };
 
+/** After an import: if no valid profile is selected and there is exactly one, select it. */
+function selectOnlyProfile() {
+  const { profiles, currentProfileId, selectProfile } = useAppStore.getState();
+  const hasValid = profiles.some((p) => p.id === currentProfileId);
+  if (!hasValid && profiles.length === 1) selectProfile(profiles[0].id);
+}
+
 /**
  * Import flow: pick a file → parse + validate → preview → merge or replace.
  * The store is only written in `apply`, and only with data that passed validation, so any
@@ -59,6 +66,7 @@ export function useImport() {
         }
         store.replaceAll(merged.data);
       }
+      selectOnlyProfile();
       setState({ step: 'done', mode });
     },
     [state],
