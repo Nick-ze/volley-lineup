@@ -103,10 +103,11 @@ describe('rotation viewer', () => {
     expect(screen.getByLabelText('Position 1, Back row: empty')).toBeTruthy();
   });
 
-  it('falls back to the first set for an unknown set param', async () => {
+  it('falls back to the first set for an unknown set param and corrects the URL', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=9' });
     expect(await screen.findByText('We serve first')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Show set 1' })).toBeSelected();
+    expect(screen).toHaveSearchParams({ matchId: 'm1', set: '1' });
   });
 
   it('shows a message for a missing match or a match without sets', async () => {

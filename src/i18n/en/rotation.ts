@@ -6,10 +6,9 @@ export const rotation = {
   noSets: 'This match has no sets yet.',
   emptySet: 'No players in this set yet. Build the lineup on the match screen first.',
   rotationOf: (n: number, total: number) => `Rotation ${n} of ${total}`,
-  rotationShort: (n: number) => `R${n}`,
   goToRotation: (n: number) => `Show rotation ${n}`,
-  previous: 'Previous',
-  next: 'Next',
+  previous: '‹ Previous',
+  next: 'Next ›',
   previousLabel: 'Previous rotation',
   nextLabel: 'Next rotation',
   swipeHint: 'Swipe left or right on the court to change rotation.',
@@ -24,11 +23,17 @@ export const rotation = {
   server: 'Server',
   frontRow: 'Front row',
   backRow: 'Back row',
-  empty: 'Empty',
+  emptyGlyph: '–',
+  unknownGlyph: '?',
   spotLabel: (position: number, row: string, player: string, isServer: boolean) =>
     `Position ${position}, ${row}: ${player}${isServer ? ', server' : ''}`,
   emptySpotLabel: (position: number, row: string) => `Position ${position}, ${row}: empty`,
   unknownPlayer: 'Unknown player',
-  openRotation: (set: number) => `Set ${set}: open rotation viewer`,
+  /** Screen-reader summary of a starters card: what the card shows + what tapping does. */
+  cardLabel: (set: number, starters: string, libero: string, serve: string) =>
+    `Set ${set}: open rotation viewer. Starters: ${starters}. Libero: ${libero}. ${serve}.`,
+  starterSummary: (position: number, player: string) => `position ${position} ${player}`,
+  emptySummary: 'empty',
+  playerSummary: (number: number, name: string) => `number ${number} ${name}`,
   openRotationHint: 'Shows rotations 1 to 6 for this set',
 } as const;

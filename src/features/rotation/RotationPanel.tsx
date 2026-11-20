@@ -12,6 +12,7 @@ import { t } from '@/i18n/en';
 import { useIsWide } from '@/lib/useIsWide';
 import { colors, spacing, typography } from '@/theme';
 
+import { COURT_MAX_WIDTH, SIDE_PANEL_WIDTH } from './layout';
 import { RotationCourt } from './RotationCourt';
 import { RotationStepper } from './RotationStepper';
 import { SetInfo } from './SetInfo';
@@ -66,7 +67,13 @@ const styles = StyleSheet.create({
   wrap: { gap: spacing.lg },
   body: { gap: spacing.lg },
   bodyWide: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' },
-  courtCol: { flexShrink: 1, flexGrow: 1, maxWidth: 520, width: '100%', gap: spacing.sm },
-  sideWide: { width: 200 },
+  courtCol: {
+    flexShrink: 1,
+    flexGrow: 1,
+    maxWidth: COURT_MAX_WIDTH,
+    width: '100%',
+    gap: spacing.sm,
+  },
+  sideWide: { width: SIDE_PANEL_WIDTH },
   hint: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
 });

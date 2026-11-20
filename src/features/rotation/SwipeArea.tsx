@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
+import { SWIPE_ACTIVATION_OFFSET as OFFSET } from './layout';
 import { swipeStep } from './swipe';
 
 export interface SwipeAreaProps {
@@ -11,15 +12,15 @@ export interface SwipeAreaProps {
 
 /**
  * Horizontal swipe detection with the gesture-handler v3 hook API. Only activates after
- * 20 px of horizontal movement and fails on vertical movement, so page scrolling still works.
+ * `SWIPE_ACTIVATION_OFFSET` px of horizontal movement and fails on vertical movement, so page scrolling still works.
  * Buttons remain the primary, always-available control.
  */
 export function SwipeArea({ children, onSwipeLeft, onSwipeRight }: SwipeAreaProps) {
   const pan = usePanGesture({
     runOnJS: true,
     testID: 'rotation-swipe',
-    activeOffsetX: [-20, 20],
-    failOffsetY: [-20, 20],
+    activeOffsetX: [-OFFSET, OFFSET],
+    failOffsetY: [-OFFSET, OFFSET],
     onDeactivate: (e) => {
       const step = swipeStep(e.translationX);
       if (step === 1) onSwipeLeft();

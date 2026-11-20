@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PlayerChip } from '@/components';
 import type { Player } from '@/domain/types';
 import { t } from '@/i18n/en';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
+
+import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
 
 export interface SetInfoProps {
   libero: Player | undefined;
@@ -21,7 +23,11 @@ export function SetInfo({ libero, liberoId, weServeFirst, compact = false }: Set
       <View style={styles.libero}>
         <Text style={styles.caption}>{t.rotation.libero}</Text>
         {libero ? (
-          <PlayerChip player={libero} size={compact ? touchTarget : 56} testID="libero-chip" />
+          <PlayerChip
+            player={libero}
+            size={compact ? COMPACT_CHIP_SIZE : CHIP_SIZE}
+            testID="libero-chip"
+          />
         ) : (
           <Text style={styles.muted}>
             {liberoId ? t.rotation.unknownPlayer : t.rotation.noLibero}

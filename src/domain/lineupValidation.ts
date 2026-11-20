@@ -5,7 +5,7 @@
  * Domain code returns codes, never user-facing text: the UI maps `code` to a string in
  * `src/i18n/en/*.ts`.
  *
- * Rules (see docs/DECISIONS.md, "Worker B"):
+ * Rules:
  * - Errors (block `valid`):
  *   - INCOMPLETE: one issue listing every empty slot position.
  *   - DUPLICATE_PLAYER: one issue per player id placed in 2+ slots (positions = those slots).

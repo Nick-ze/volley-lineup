@@ -5,7 +5,7 @@ import { t } from '@/i18n/en';
 import { useIsWide } from '@/lib/useIsWide';
 import { spacing } from '@/theme';
 
-import { Message } from './RotationViewer';
+import { Message } from './Message';
 import { SetStartersCard } from './SetStartersCard';
 import { useMatchLineups } from './useMatchLineups';
 

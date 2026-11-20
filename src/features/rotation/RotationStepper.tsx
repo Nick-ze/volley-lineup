@@ -5,6 +5,8 @@ import { ROTATION_COUNT, ROTATION_NUMBERS, type RotationNumber } from '@/domain/
 import { t } from '@/i18n/en';
 import { colors, spacing, typography } from '@/theme';
 
+import { COURT_MAX_WIDTH } from './layout';
+
 export interface RotationStepperProps {
   rotation: RotationNumber;
   onPrevious: () => void;
@@ -18,7 +20,7 @@ export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: Rota
     <View style={styles.wrap}>
       <View style={styles.nav}>
         <Button
-          label={`‹ ${t.rotation.previous}`}
+          label={t.rotation.previous}
           accessibilityLabel={t.rotation.previousLabel}
           variant="secondary"
           compact
@@ -29,7 +31,7 @@ export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: Rota
           {t.rotation.rotationOf(rotation, ROTATION_COUNT)}
         </Text>
         <Button
-          label={`${t.rotation.next} ›`}
+          label={t.rotation.next}
           accessibilityLabel={t.rotation.nextLabel}
           variant="secondary"
           compact
@@ -56,7 +58,7 @@ export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: Rota
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.sm, width: '100%', maxWidth: 520, alignSelf: 'center' },
+  wrap: { gap: spacing.sm, width: '100%', maxWidth: COURT_MAX_WIDTH, alignSelf: 'center' },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...typography.subheading, color: colors.text, flexShrink: 1, textAlign: 'center' },
   steps: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'space-between' },

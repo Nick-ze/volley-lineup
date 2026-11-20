@@ -6,6 +6,7 @@ import type { Player } from '@/domain/types';
 import { colors } from '@/theme';
 
 import { CourtSpot } from './CourtSpot';
+import { COMPACT_COURT_MAX_WIDTH, COMPACT_SLOT_MIN_HEIGHT } from './layout';
 
 export interface RotationCourtProps {
   slots: Slots;
@@ -55,6 +56,6 @@ const styles = StyleSheet.create({
   // White text on these fills passes WCAG AA (white directly on orange #FF6B00 is ≈ 2.9:1).
   front: { backgroundColor: colors.secondary },
   back: { backgroundColor: colors.overlay },
-  compactSlot: { minHeight: 84 },
-  compactCourt: { maxWidth: 340 },
+  compactSlot: { minHeight: COMPACT_SLOT_MIN_HEIGHT },
+  compactCourt: { maxWidth: COMPACT_COURT_MAX_WIDTH },
 });

@@ -1,5 +1,6 @@
-/** Horizontal distance (px) a swipe must travel to change rotation. */
-export const SWIPE_THRESHOLD = 50;
+import { SWIPE_THRESHOLD } from './layout';
+
+export { SWIPE_THRESHOLD };
 
 /**
  * Maps a finished horizontal swipe to a rotation step: swiping left (negative x) shows the

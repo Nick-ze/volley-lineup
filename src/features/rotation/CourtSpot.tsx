@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PlayerChip } from '@/components';
 import type { CourtPosition, Player } from '@/domain/types';
 import { t } from '@/i18n/en';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
+
+import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
 
 export interface CourtSpotProps {
   position: CourtPosition;
@@ -13,8 +15,6 @@ export interface CourtSpotProps {
   isServer: boolean;
   compact?: boolean;
 }
-
-const REGULAR_CHIP = 56;
 
 /** One spot in the rotation court: position number + the player (or an empty marker). */
 export function CourtSpot({
@@ -26,7 +26,7 @@ export function CourtSpot({
   compact = false,
 }: CourtSpotProps) {
   const row = isFrontRow ? t.rotation.frontRow : t.rotation.backRow;
-  const size = compact ? touchTarget : REGULAR_CHIP;
+  const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
   const testID = `spot-${position}`;
 
   let content;
@@ -55,7 +55,9 @@ export function CourtSpot({
         style={[styles.empty, { width: size, height: size, borderRadius: size / 2 }]}
         testID={testID}
       >
-        <Text style={styles.emptyText}>{playerId ? '?' : '–'}</Text>
+        <Text style={styles.emptyText}>
+          {playerId ? t.rotation.unknownGlyph : t.rotation.emptyGlyph}
+        </Text>
       </View>
     );
   }
@@ -98,9 +100,10 @@ const styles = StyleSheet.create({
   empty: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.textMuted,
+    // White passes AA on both the blue (front) and dark (back) slot fills.
+    borderColor: colors.text,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyText: { ...typography.subheading, color: colors.textMuted },
+  emptyText: { ...typography.subheading, color: colors.text },
 });
