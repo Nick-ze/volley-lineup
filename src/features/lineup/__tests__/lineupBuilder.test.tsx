@@ -153,7 +153,29 @@ describe('lineup builder validation panel', () => {
     spy.mockRestore();
   });
 
-  it('shows the ok state when there are no issues', async () => {
+  it('shows real validation issues for a partial lineup (unmocked)', async () => {
+    await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
+    expect(
+      await screen.findByText('✕ Fewer than 6 players on court. (Positions 3, 4, 5, 6)'),
+    ).toBeTruthy();
+    expect(screen.getByText('! No setter in the starting six.')).toBeTruthy();
+  });
+
+  it('shows the ok state for a complete lineup (unmocked)', async () => {
+    const extra = [5, 6, 7, 8].map((n) => player(n, `P${n}`, `Q${n}`));
+    extra[0].positions = ['S'];
+    useAppStore.setState((st) => ({
+      players: [...st.players, ...extra],
+      matches: st.matches.map((m) => ({
+        ...m,
+        sets: [
+          {
+            ...m.sets[0],
+            slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p5', 5: 'p6', 6: 'p7' },
+          },
+        ],
+      })),
+    }));
     await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
     expect(await screen.findByText('Lineup is complete.')).toBeTruthy();
   });
