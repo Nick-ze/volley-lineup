@@ -1,0 +1,62 @@
+name: Android APK
+
+# Builds an installable Android APK and publishes it as the GitHub release "android-latest".
+# The APK is signed with the default debug key (fine for sideloading, not for the Play Store).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/android-apk.yml
+      - app.json
+      - app.config.js
+      - package.json
+      - package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Generate native Android project
+        run: npx expo prebuild -p android --no-install
+        env:
+          CI: 1
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk volley-lineup.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: volley-lineup-apk
+          path: volley-lineup.apk
+      - name: Publish release "android-latest"
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest --cleanup-tag --yes || true
+          gh release create android-latest volley-lineup.apk \
+            --target "$GITHUB_SHA" \
+            --title "Volley Lineup – Android APK (latest)" \
+            --notes "Built automatically from main @ ${GITHUB_SHA::7}. Download volley-lineup.apk below and open it on your Android phone (allow installing from unknown sources)."
