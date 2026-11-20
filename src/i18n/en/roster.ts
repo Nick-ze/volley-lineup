@@ -1,2 +1,95 @@
 /** Strings for Worker A — profiles, teams, roster, matches list. */
-export const roster = {} as const;
+export const roster = {
+  errors: {
+    required: 'This field is required.',
+    tooLong: 'This is too long.',
+    notInteger: 'Enter a whole number.',
+    outOfRange: 'Use a number from 0 to 99.',
+    taken: 'This number is already used in this team.',
+    invalidDate: 'Enter a valid date as YYYY-MM-DD.',
+    duplicate: 'A position is selected twice.',
+  },
+  confirm: {
+    title: 'Are you sure?',
+    deleteProfile: (name: string) =>
+      `Delete profile "${name}"? All its teams, players and matches are deleted too.`,
+    deleteTeam: (name: string) => `Delete team "${name}" with all its players and matches?`,
+    deletePlayer: (name: string) => `Delete player "${name}"? They are removed from all lineups.`,
+    deleteMatch: (name: string) => `Delete the match against "${name}"?`,
+  },
+  profiles: {
+    heading: 'Who is managing?',
+    empty: 'No profiles yet. Create one to get started.',
+    new: 'New profile',
+    name: 'Profile name',
+    color: 'Colour',
+    colorOption: (n: number) => `Colour ${n}`,
+    select: (name: string) => `Open profile ${name}`,
+    rename: (name: string) => `Rename profile ${name}`,
+    delete: (name: string) => `Delete profile ${name}`,
+    create: 'Create profile',
+  },
+  teams: {
+    heading: (profile: string) => `${profile}'s teams`,
+    empty: 'No teams yet.',
+    new: 'New team',
+    name: 'Team name',
+    season: 'Season (optional)',
+    seasonPlaceholder: '2026/27',
+    create: 'Create team',
+    open: (name: string) => `Open team ${name}`,
+    rename: (name: string) => `Edit team ${name}`,
+    delete: (name: string) => `Delete team ${name}`,
+    switchProfile: 'Switch profile',
+    settings: 'Settings',
+  },
+  team: {
+    tabs: 'Team sections',
+    rosterTab: 'Roster',
+    matchesTab: 'Matches',
+    playerCount: (n: number) => (n === 1 ? '1 player' : `${n} players`),
+  },
+  roster: {
+    empty: 'No players yet.',
+    addPlayer: 'Add player',
+    active: 'Active',
+    inactive: 'Injured',
+    toggleActive: (name: string, active: boolean) =>
+      active
+        ? `${name} is active. Mark as injured or inactive`
+        : `${name} is injured. Mark as active`,
+    rowLabel: (number: number, name: string, positions: string, active: boolean) =>
+      `Number ${number}, ${name}, ${positions}${active ? '' : ', injured or inactive'}`,
+  },
+  player: {
+    addTitle: 'Add player',
+    editTitle: 'Edit player',
+    firstName: 'First name',
+    lastName: 'Last name',
+    number: 'Jersey number',
+    positions: 'Positions',
+    positionsHint: 'The first selected position is the primary one.',
+    primary: 'Primary',
+    makePrimary: (position: string) => `Make ${position} the primary position`,
+    activeLabel: 'Active (not injured)',
+    delete: 'Delete player',
+    notFound: 'This player no longer exists.',
+  },
+  matches: {
+    empty: 'No matches yet.',
+    newMatch: 'New match',
+    home: 'Home',
+    away: 'Away',
+    vs: (opponent: string) => `vs ${opponent}`,
+    open: (opponent: string, date: string) => `Open match against ${opponent} on ${date}`,
+    delete: (opponent: string) => `Delete match against ${opponent}`,
+  },
+  matchForm: {
+    opponent: 'Opponent',
+    date: 'Date (YYYY-MM-DD)',
+    venue: 'Venue',
+    create: 'Create match',
+  },
+  teamNotFound: 'This team no longer exists.',
+  backToTeams: 'Back to teams',
+} as const;
