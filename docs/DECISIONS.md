@@ -35,6 +35,7 @@ Newest at the bottom. Format: **Decision** — why.
 ## Phase 1 — Feature decisions (from worker PRs)
 
 ### Rotation & validation (Worker B, PR #2)
+
 20. **`NO_SETTER`** is only raised once at least one slot is filled. A secondary `S` position counts as a setter; unknown ids don't.
 21. **`UNUSUAL_LAYOUT`** looks only at primary positions. It fires when the single primary S and the single primary OPP aren't opposite (positions differ by 3), or when exactly two primary MBs aren't opposite. A 6-2 (two setters) gives no layout warning.
 22. **Issue grouping**: `INCOMPLETE` is one issue listing all empty positions; `DUPLICATE_PLAYER` is one per duplicated player; `UNKNOWN_PLAYER` is one per slot plus one for the libero.
@@ -44,6 +45,7 @@ Newest at the bottom. Format: **Decision** — why.
 26. **Court contrast**: the court's own position numbers are hidden in the rotation screens; spots use blue (front row) / dark (back row) fills with white text, since white on orange fails AA.
 
 ### Profiles, teams & roster (Worker A, PR #3)
+
 27. **"Injured" = `active: false`** — the data model has one flag.
 28. **Startup redirect**: `/` forwards to `/teams` once per app session, only if `currentProfileId` points to an existing profile. The first visit to any roster screen consumes it, so deep links never cause a later redirect.
 29. **Form limits**: jersey number 0–99 (unique per team, excluding the player being edited), names ≤ 40 characters, season optional ≤ 20 characters, at least one position (first = primary).
@@ -52,6 +54,7 @@ Newest at the bottom. Format: **Decision** — why.
 32. **react-native-web ignores `accessibilityState`** — roster controls also set `aria-checked` / `aria-selected`. The whole switch row is the touch target (≥ 44 px); the web Switch thumb colour is passed via `src/lib/switchProps(.web).ts`.
 
 ### Lineup builder (Worker C, PR #4)
+
 33. **A set is stored on its first real edit**, not when its tab is opened, so browsing never creates empty sets and `match.sets` stays ≤ 5 and sorted.
 34. **Copy from previous set** copies the six starters and the libero, not the serve choice.
 35. **Making a court player the libero** sends the old libero to the bench.
@@ -59,6 +62,7 @@ Newest at the bottom. Format: **Decision** — why.
 37. **Layout**: on phones the whole page scrolls and the bench is a wrapping grid; on wide screens the bench scrolls on its own (gesture-handler `ScrollView`).
 
 ### Export / import (Worker D, PR #1)
+
 38. **Merge** matches items by id and the imported one wins; nothing is deleted. If the result would be inconsistent (e.g. two players with the same number in a team), the merge is refused with `MERGE_CONFLICT` and the user is told to use Replace.
 39. **Unknown keys in a file are dropped**, not rejected. Import validates references (ids, team/profile links, jersey numbers, set numbers, lineup players belonging to the team, no player twice in a set, libero not on court), but not the soft lineup warnings.
 40. **Sets are sorted by `setNumber` on import.**
