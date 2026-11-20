@@ -147,7 +147,7 @@ export function DragProvider({ onDrop, children, style }: DragProviderProps) {
     [onDrop, setHover],
   );
 
-  const justDragged = useCallback(() => Date.now() - lastDragEnd.current < 400, []);
+  const justDragged = useCallback(() => Date.now() - lastDragEnd.current < 250, []);
 
   const api = useMemo<DragApi>(
     () => ({ registerZone, begin, move, end, justDragged, active, hoverKey, x, y }),
