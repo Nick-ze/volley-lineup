@@ -1,7 +1,23 @@
-import { Placeholder } from '@/components';
-import { t } from '@/i18n/en';
+import { useRouter } from 'expo-router';
 
-/** Placeholder — owned by Worker A (roster). */
+import { Screen } from '@/components';
+import { ProfilePicker } from '@/features/roster/components/ProfilePicker';
+import { useStartupRedirect } from '@/features/roster/hooks/useStartupRedirect';
+import { useAppStore } from '@/store';
+
+/** `/` — choose (or create / rename / delete) a manager profile. */
 export default function ProfilePickerScreen() {
-  return <Placeholder title={t.nav.profiles} />;
+  const router = useRouter();
+  useStartupRedirect();
+
+  return (
+    <Screen>
+      <ProfilePicker
+        onSelect={(id) => {
+          useAppStore.getState().selectProfile(id);
+          router.push('/teams');
+        }}
+      />
+    </Screen>
+  );
 }
