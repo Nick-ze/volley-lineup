@@ -97,9 +97,9 @@ describe('lineup builder (tap-to-select)', () => {
 
   it('copies the lineup from the previous set and toggles who serves', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
-    expect(
-      (await screen.findByTestId('copy-previous')).props.accessibilityState?.disabled,
-    ).toBe(true);
+    expect((await screen.findByTestId('copy-previous')).props.accessibilityState?.disabled).toBe(
+      true,
+    );
 
     await fireEvent.press(screen.getByTestId('set-tab-2'));
     expect(sets()).toHaveLength(1); // browsing a tab does not create the set
