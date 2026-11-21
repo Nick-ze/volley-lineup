@@ -2,14 +2,15 @@ import { emptySetLineup } from './lineup';
 import {
   decidingSetNumber,
   defaultWeServeFirst,
-  durationParts,
   hasLaterPlay,
+  isAfterDecision,
   isSetComplete,
   liveSetNumber,
   needsSetup,
   nextSetNumber,
   setupSources,
   undoTarget,
+  withDefaultServe,
 } from './matchFlow';
 import { getMatchState } from './matchState';
 import type { LineupPreset, Match, SetEvent, SetLineup, SetNumber, Side } from './types';
@@ -166,11 +167,26 @@ describe('setupSources', () => {
   });
 });
 
-describe('durationParts', () => {
-  it('splits into hours and minutes', () => {
-    expect(durationParts(92 * 60000)).toEqual({ hours: 1, minutes: 32 });
-    expect(durationParts(45 * 60000 + 29000)).toEqual({ hours: 0, minutes: 45 });
-    expect(durationParts(59 * 60000 + 31000)).toEqual({ hours: 1, minutes: 0 });
-    expect(durationParts(-5)).toEqual({ hours: 0, minutes: 0 });
+describe('withDefaultServe', () => {
+  it('applies the rotating default to a stored set without events', () => {
+    const m = match([set(1, 25, 20), set(2)]); // we served first in set 1 → they serve in set 2
+    expect(withDefaultServe(m, 2)).toEqual({ ...set(2), weServeFirst: false });
+  });
+  it('is null when there is nothing to change', () => {
+    expect(
+      withDefaultServe(match([set(1, 25, 20), { ...set(2), weServeFirst: false }]), 2),
+    ).toBeNull();
+    expect(withDefaultServe(match([set(1, 25, 20), set(2, 1, 0)]), 2)).toBeNull();
+    expect(withDefaultServe(match([set(1, 25, 20)]), 2)).toBeNull();
+    expect(withDefaultServe(match([set(2)]), 2)).toBeNull();
+  });
+});
+
+describe('isAfterDecision', () => {
+  it('marks sets stored after the deciding set', () => {
+    const won = getMatchState(match([set(1, 25, 0), set(2, 25, 0), set(3, 25, 0), set(4)]));
+    expect(isAfterDecision(won, 4)).toBe(true);
+    expect(isAfterDecision(won, 3)).toBe(false);
+    expect(isAfterDecision(getMatchState(match([set(1, 25, 0)])), 4)).toBe(false);
   });
 });

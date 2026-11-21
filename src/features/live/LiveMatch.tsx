@@ -1,7 +1,12 @@
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 
-import { decidingSetNumber, needsSetup } from '@/domain/matchFlow';
+import {
+  decidingSetNumber,
+  isAfterDecision,
+  needsSetup,
+  withDefaultServe,
+} from '@/domain/matchFlow';
 import type { SetNumber } from '@/domain/types';
 import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
@@ -55,61 +60,52 @@ export function LiveMatch({
     if (target !== null && target !== setNumber) onSelectSet(target);
   };
 
-  if (decidingSetNumber(matchState) === setNumber) {
-    return (
-      <>
-        {title}
-        {picker}
-        <MatchSummary
-          state={matchState}
-          opponent={match.opponent}
-          onBack={onBackToMatch}
-          onUndo={undo}
-        />
-      </>
-    );
-  }
-  if (needsSetup(match, setNumber)) {
-    return (
-      <>
-        {title}
-        {picker}
-        <NextSetSetup
-          match={match}
-          setNumber={setNumber}
-          onSave={live.saveSet}
-          onEdit={() => onEditLineup(setNumber)}
-          undoSet={live.undoSet}
-          onUndo={undo}
-        />
-      </>
-    );
-  }
-  if (!set || !state || !court) {
-    return (
-      <>
-        {picker}
-        <Message text={t.live.noSet} />
-      </>
-    );
-  }
-  if (!live.complete) {
-    return (
-      <>
-        {picker}
-        <Message text={t.live.incomplete} />
-      </>
-    );
-  }
-  return (
+  /** Start (or go to) the next set; reached from the previous set, it gets the default serve. */
+  const goToNext = (next: SetNumber) => {
+    const prepared = withDefaultServe(match, next);
+    if (prepared) live.saveSet(prepared);
+    onSelectSet(next);
+  };
+  const screen = (content: ReactNode) => (
     <>
       {title}
       {picker}
-      <LiveSetView
-        live={{ ...live, match, set, state, court, matchState }}
-        onSelectSet={onSelectSet}
-        belowPointButtons={belowPointButtons}
-      />
+      {content}
     </>
+  );
+
+  if (decidingSetNumber(matchState) === setNumber) {
+    return screen(
+      <MatchSummary
+        state={matchState}
+        opponent={match.opponent}
+        onBack={onBackToMatch}
+        onUndo={undo}
+      />,
+    );
+  }
+  if (isAfterDecision(matchState, setNumber))
+    return screen(<Message text={t.live.afterDecision} />);
+  if (needsSetup(match, setNumber)) {
+    return screen(
+      <NextSetSetup
+        match={match}
+        setNumber={setNumber}
+        onSave={live.saveSet}
+        onEdit={() => onEditLineup(setNumber)}
+        undoSet={live.undoSet}
+        onUndo={undo}
+      />,
+    );
+  }
+  if (!set || !state || !court) return screen(<Message text={t.live.noSet} />);
+  if (!live.complete) return screen(<Message text={t.live.incomplete} />);
+  return screen(
+    <LiveSetView
+      live={{ ...live, match, set, state, court, matchState }}
+      onNext={goToNext}
+      onUndo={undo}
+      belowPointButtons={belowPointButtons}
+    />,
   );
 }

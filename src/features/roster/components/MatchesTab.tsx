@@ -43,7 +43,11 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
               />
             }
             onPress={() => onOpenMatch(m.id)}
-            accessibilityLabel={s.open(m.opponent, m.date)}
+            accessibilityLabel={rowLabel(
+              s.open(m.opponent, m.date),
+              matchResultLabel(t, m),
+              t.match.resultLabel,
+            )}
             actions={
               <Button
                 label={t.common.delete}
@@ -61,6 +65,15 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
       <ConfirmDialog {...dialogProps} />
     </>
   );
+}
+
+/** The row's screen-reader label: "Open match against …" plus the result, if any. */
+function rowLabel(
+  open: string,
+  result: string | null,
+  resultLabel: (text: string) => string,
+): string {
+  return result ? `${open}. ${resultLabel(result)}` : open;
 }
 
 /** Date · home/away on one line; the result (never truncated) on its own line below. */

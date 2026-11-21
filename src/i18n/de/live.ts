@@ -73,6 +73,7 @@ export const live: Strings['live'] = {
   startSet: (n: number) => `Satz ${n} starten`,
   startSetLabel: (n: number) => `Satz ${n} starten: Aufstellung und Aufschlag wählen`,
   goToSet: (n: number) => `Zu Satz ${n}`,
+  afterDecision: 'Nach der Entscheidung des Spiels gespielt – zählt nicht.',
   undoLastPoint: 'Letzten Punkt zurücknehmen',
   serveChoice: 'Wer in diesem Satz zuerst aufschlägt',
   setup: {

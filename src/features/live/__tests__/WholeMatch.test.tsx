@@ -301,11 +301,63 @@ describe('whole-match live mode', () => {
     const results = (await screen.findAllByTestId('match-row-result')).map((r) => r.props.children);
     expect(results.sort()).toEqual(['1:3 lost', '2:0 · in progress', '3:1 won', 'in progress']);
     expect(screen.getAllByText('2026-11-20 · Home')).toHaveLength(5);
+    // Screen readers hear the result too.
+    expect(
+      screen.getByLabelText('Open match against Lions on 2026-11-20. Result: 1:3 lost'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Open match against Owls on 2026-11-20')).toBeTruthy();
   });
 
   it('shows the result line in the match header', async () => {
     seed([set(1, 25, 1), set(2, 3, 1)]);
     await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
     expect(await screen.findByTestId('match-result')).toHaveTextContent('1:0 · in progress');
+  });
+
+  it('a prepared next set gets the rotating serve default when reached from the previous set', async () => {
+    seed([set(1, 24, 20), set(2, 0, 0)]); // set 2 built in advance, "we serve first"
+    await renderRouter('./app', { initialUrl: '/match/m1/live' });
+    await screen.findByTestId('scoreboard');
+    await press('point-us');
+    await press('next-set');
+    expect(stored(2)?.weServeFirst).toBe(false); // we served first in set 1
+    expect(screen.getByTestId('serve-them')).toBeChecked();
+    expect(screen.getByText('Rivals serves')).toBeTruthy();
+  });
+
+  it('an incomplete stored next set starts its serve choice from the default', async () => {
+    seed([set(1, 25, 20), { ...set(2, 0, 0), slots: { ...slots, 6: null } }]);
+    await renderRouter('./app', { initialUrl: '/match/m1/live' });
+    expect(await screen.findByTestId('set-setup')).toBeTruthy();
+    expect(screen.getByTestId('serve-them')).toBeChecked();
+    await press('serve-us'); // a choice made here wins
+    await press('setup-starters');
+    await press('setup-start');
+    expect(stored(2)).toMatchObject({ weServeFirst: true, slots: { 6: 'p8' } });
+  });
+
+  it('"Edit lineup" with nobody on court only opens the builder', async () => {
+    seed([set(1, 25, 20)]);
+    await renderRouter('./app', { initialUrl: '/match/m1/live' });
+    await press('setup-edit');
+    expect(await screen.findByTestId('open-live')).toBeTruthy();
+    expect(stored(2)).toBeUndefined();
+  });
+
+  it('a set stored after the deciding set is read-only', async () => {
+    seed([set(1, 25, 1), set(2, 25, 1), set(3, 25, 1), set(4, 3, 0)]);
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=4' });
+    expect(
+      await screen.findByText('Played after the match was decided — not counted.'),
+    ).toBeTruthy();
+    expect(screen.queryByTestId('point-us')).toBeNull();
+  });
+
+  it('hides a duration under one minute', async () => {
+    const at = (i: number) => new Date(Date.UTC(2026, 10, 20, 18, 0, i)).toISOString();
+    seed([1, 2, 3].map((n) => ({ ...set(n as SetNumber, 0, 0), events: points('us', 25, at) })));
+    await renderRouter('./app', { initialUrl: '/match/m1/live' });
+    expect(await screen.findByTestId('match-summary')).toBeTruthy();
+    expect(screen.queryByTestId('summary-duration')).toBeNull();
   });
 });

@@ -13,6 +13,7 @@ import { useLineupEditor } from '@/features/lineup/useLineupEditor';
 import { PrintButton } from '@/features/print/PrintButton';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { useT } from '@/i18n';
+import { useIsWide } from '@/lib/useIsWide';
 import { colors, maxContentWidth, spacing, touchTarget, typography } from '@/theme';
 
 /**
@@ -21,6 +22,7 @@ import { colors, maxContentWidth, spacing, touchTarget, typography } from '@/the
  */
 export default function MatchScreen() {
   const t = useT();
+  const wide = useIsWide();
   const params = useLocalSearchParams<{ matchId: string; set?: string }>();
   const router = useRouter();
   const matchId = String(params.matchId);
@@ -30,6 +32,8 @@ export default function MatchScreen() {
   useCorrectSetParam(params.set, match ? setNumber : undefined, (n) =>
     router.setParams({ set: String(n) }),
   );
+
+  const link = [styles.link, wide ? styles.linkWide : styles.linkPhone];
 
   if (!match) {
     return (
@@ -56,7 +60,7 @@ export default function MatchScreen() {
               accessibilityLabel={t.lineup.rotationLabel}
               variant="secondary"
               compact
-              style={styles.link}
+              style={link}
               onPress={() =>
                 router.push({
                   pathname: '/match/[matchId]/rotation',
@@ -70,19 +74,19 @@ export default function MatchScreen() {
               accessibilityLabel={t.lineup.startersLabel}
               variant="secondary"
               compact
-              style={styles.link}
+              style={link}
               onPress={() =>
                 router.push({ pathname: '/match/[matchId]/starters', params: { matchId } })
               }
               testID="open-starters"
             />
-            <PrintButton matchId={matchId} style={styles.link} />
+            <PrintButton matchId={matchId} style={link} />
             <Button
               label={t.live.open}
               accessibilityLabel={t.live.openLabel}
               variant="secondary"
               compact
-              style={styles.link}
+              style={link}
               onPress={() =>
                 router.push({ pathname: '/match/[matchId]/live', params: { matchId } })
               }
@@ -93,7 +97,7 @@ export default function MatchScreen() {
               accessibilityLabel={t.stats.openLabel}
               variant="secondary"
               compact
-              style={styles.link}
+              style={link}
               onPress={() =>
                 router.push({ pathname: '/match/[matchId]/stats', params: { matchId } })
               }
@@ -124,7 +128,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  // Four links: one row on wide screens, two rows of two on phones.
-  link: { flexGrow: 1, flexBasis: 0, minWidth: touchTarget * 3 },
+  // Five links: one row on wide screens, a row of three and a row of two on phones.
+  link: { flexGrow: 1, minWidth: touchTarget },
+  linkWide: { flexBasis: 0 },
+  linkPhone: { flexBasis: '30%', paddingHorizontal: spacing.sm },
   notFound: { ...typography.body, color: colors.textMuted, padding: spacing.lg },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { durationParts } from '@/domain/matchFlow';
+import { durationParts } from '@/domain/lineupSheet';
 import type { MatchState } from '@/domain/matchState';
 import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
@@ -19,7 +19,11 @@ export function MatchSummary({ state, opponent, onBack, onUndo }: MatchSummaryPr
   const t = useT();
   const s = t.live.summary;
   const { us, them } = state.setsWon;
-  const parts = state.durationMs === null ? null : durationParts(state.durationMs);
+  // Under a minute (or without stamps) shows nothing, as on the printed sheet.
+  const parts =
+    state.durationMs !== null && state.durationMs >= 60_000
+      ? durationParts(state.durationMs)
+      : null;
   const duration = parts ? s.duration(parts.hours, parts.minutes) : null;
 
   return (

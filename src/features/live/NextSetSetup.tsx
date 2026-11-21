@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { presetFromSet, filledCount } from '@/domain/presets';
+import { filledCount } from '@/domain/presets';
 import { COURT_POSITIONS, type Match, type SetLineup, type SetNumber } from '@/domain/types';
 import { ServeToggle } from '@/features/lineup/ServeToggle';
 import { useT } from '@/i18n';
@@ -9,6 +9,7 @@ import { usePlayersForTeam } from '@/store';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
+import { SetupSourceButtons } from './SetupSourceButtons';
 import { useSetupDraft } from './useSetupDraft';
 
 export interface NextSetSetupProps {
@@ -39,18 +40,17 @@ export function NextSetSetup({
   const s = t.live.setup;
   const players = usePlayersForTeam(match.teamId);
   const playersById = new Map(players.map((p) => [p.id, p]));
-  const { draft, sources, skipped, complete, fill, setServe, clear } = useSetupDraft(
-    match,
-    setNumber,
-    players,
-  );
+  const setup = useSetupDraft(match, setNumber, players);
+  const { draft } = setup;
   const ref = (id: string) => playerRef(t, playersById, id);
   const onCourt = COURT_POSITIONS.flatMap((p) => {
     const id = draft.slots[p];
     return id ? [ref(id)] : [];
   });
-  const { starters, presets, previous } = sources;
-  const hasSources = !!starters || !!previous || presets.length > 0;
+  const save = () => {
+    onSave(draft);
+    setup.clear();
+  };
 
   return (
     <View style={styles.box} testID="set-setup">
@@ -62,56 +62,19 @@ export function NextSetSetup({
         {onCourt.length > 0 ? ` · ${s.onCourt(onCourt.join(', '))}` : ''}
         {draft.liberoId ? ` · ${s.libero(ref(draft.liberoId))}` : ''}
       </Text>
-      {hasSources ? <Text style={styles.label}>{s.fillFrom}</Text> : null}
-      <View style={styles.row}>
-        {starters ? (
-          <Button
-            label={s.starters}
-            accessibilityLabel={s.startersLabel}
-            variant="secondary"
-            compact
-            onPress={() => fill(starters)}
-            testID="setup-starters"
-          />
-        ) : null}
-        {previous ? (
-          <Button
-            label={s.copy(previous.setNumber)}
-            accessibilityLabel={s.copyLabel(previous.setNumber)}
-            variant="secondary"
-            compact
-            onPress={() => fill(presetFromSet(previous))}
-            testID="setup-copy"
-          />
-        ) : null}
-        {presets.map((p) => (
-          <Button
-            key={p.id}
-            label={p.name}
-            accessibilityLabel={s.presetLabel(p.name)}
-            variant="secondary"
-            compact
-            onPress={() => fill(p)}
-            testID={`setup-preset-${p.name}`}
-          />
-        ))}
-      </View>
-      {hasSources ? null : <Text style={styles.text}>{s.nothing}</Text>}
-      {skipped.length > 0 ? (
+      <SetupSourceButtons sources={setup.sources} onFill={setup.fill} />
+      {setup.skipped.length > 0 ? (
         <Text style={styles.warn} accessibilityLiveRegion="polite" testID="setup-skipped">
-          {s.skipped(skipped.map(ref).join(', '))}
+          {s.skipped(setup.skipped.map(ref).join(', '))}
         </Text>
       ) : null}
       <Text style={styles.label}>{t.live.serveChoice}</Text>
-      <ServeToggle weServeFirst={draft.weServeFirst} onChange={setServe} />
+      <ServeToggle weServeFirst={draft.weServeFirst} onChange={setup.setServe} />
       <Button
         label={t.live.startSet(setNumber)}
-        accessibilityHint={complete ? undefined : s.startHint}
-        disabled={!complete}
-        onPress={() => {
-          onSave(draft);
-          clear();
-        }}
+        accessibilityHint={setup.complete ? undefined : s.startHint}
+        disabled={!setup.complete}
+        onPress={save}
         testID="setup-start"
       />
       <View style={styles.row}>
@@ -122,8 +85,8 @@ export function NextSetSetup({
           compact
           style={styles.grow}
           onPress={() => {
-            onSave(draft);
-            clear();
+            // An empty draft isn't stored: the builder creates the set on its first edit.
+            if (setup.hasPlayers) save();
             onEdit();
           }}
           testID="setup-edit"

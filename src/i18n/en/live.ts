@@ -69,6 +69,7 @@ export const live = {
   startSet: (n: number) => `Start set ${n}`,
   startSetLabel: (n: number) => `Start set ${n}: choose its lineup and who serves first`,
   goToSet: (n: number) => `Go to set ${n}`,
+  afterDecision: 'Played after the match was decided — not counted.',
   undoLastPoint: 'Undo last point',
   serveChoice: 'Who serves first in this set',
   setup: {

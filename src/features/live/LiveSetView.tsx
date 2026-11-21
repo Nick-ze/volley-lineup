@@ -1,12 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { hasLaterPlay, nextSetNumber } from '@/domain/matchFlow';
 import { setServeFirst } from '@/domain/lineupEditing';
-import type { Match, SetLineup, SetNumber, Side } from '@/domain/types';
 import type { LiveCourtView, LiveState } from '@/domain/liveSet';
+import { hasLaterPlay, nextSetNumber } from '@/domain/matchFlow';
 import type { MatchState } from '@/domain/matchState';
-import { ServeToggle } from '@/features/lineup/ServeToggle';
+import type { Match, SetLineup, SetNumber, Side } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
 import { spacing } from '@/theme';
@@ -15,12 +14,12 @@ import { playerRef } from './format';
 import { CONTROLS_COLUMN_WIDTH } from './layout';
 import { LiveBanners } from './LiveBanners';
 import { LiveCourt } from './LiveCourt';
-import { PointButtons } from './PointButtons';
+import { RallyControls } from './RallyControls';
 import { Scoreboard } from './Scoreboard';
 import { SetWonPanel } from './SetWonPanel';
 import { SubPanel } from './SubPanel';
-import { UndoActions } from './UndoActions';
 import type { LiveSet } from './useLiveSet';
+import { useSubFlow } from './useSubFlow';
 
 export interface LiveSetViewProps {
   live: LiveSet & {
@@ -30,48 +29,28 @@ export interface LiveSetViewProps {
     court: LiveCourtView;
     matchState: MatchState;
   };
-  onSelectSet: (set: SetNumber) => void;
+  /** Go to (start) the next set. */
+  onNext: (set: SetNumber) => void;
+  /** Undo (possibly across a set end). */
+  onUndo: () => void;
   /** Optional content under the point buttons (e.g. point tagging after a rally). */
   belowPointButtons?: ReactNode;
 }
 
 /** One set played live: score, serve, rally buttons (or "set won"), court, undo and subs. */
-export function LiveSetView({ live, onSelectSet, belowPointButtons }: LiveSetViewProps) {
+export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSetViewProps) {
   const t = useT();
   const wide = useIsWide();
-  const [subMode, setSubMode] = useState(false);
-  const [outId, setOutId] = useState<string | null>(null);
+  const sub = useSubFlow();
+  const { reset } = sub;
   const { match, set, state, court, playersById, matchState } = live;
   const won = state.setWinner;
-
   const ref = (id: string | null) => playerRef(t, playersById, id);
-  const reset = () => {
-    setSubMode(false);
-    setOutId(null);
-  };
-  const point = (winner: Side) => {
-    reset();
-    live.point(winner);
-  };
-  const undo = () => {
-    reset();
-    const target = live.undoLast();
-    if (target !== null && target !== set.setNumber) onSelectSet(target);
-  };
-  const pressCourt = (id: string) => {
-    setSubMode(true);
-    setOutId((cur) => (cur === id ? null : id));
-  };
-  const pickIn = (inId: string) => {
-    if (outId) live.substitute(outId, inId);
-    reset();
-  };
   const serveText =
     state.servingSide === 'us'
       ? t.live.weServe(state.serverId ? (playersById.get(state.serverId)?.number ?? null) : null)
       : t.live.theyServe(match.opponent);
   const next = nextSetNumber(set.setNumber);
-  const nextPlayed = !!next && match.sets.some((s) => s.setNumber === next && s.events.length > 0);
   const last = set.events[set.events.length - 1];
 
   const play = won ? (
@@ -81,31 +60,32 @@ export function LiveSetView({ live, onSelectSet, belowPointButtons }: LiveSetVie
       score={state.score}
       opponent={match.opponent}
       next={next}
-      nextPlayed={nextPlayed}
-      onNext={onSelectSet}
-      onUndo={hasLaterPlay(match, set.setNumber) ? null : undo}
+      nextPlayed={match.sets.some((s) => s.setNumber === next && s.events.length > 0)}
+      onNext={onNext}
+      onUndo={hasLaterPlay(match, set.setNumber) ? null : onUndo}
     />
   ) : (
-    <>
-      {set.events.length === 0 ? (
-        <ServeToggle
-          weServeFirst={set.weServeFirst}
-          onChange={(v) => live.saveSet(setServeFirst(set, v))}
-        />
-      ) : null}
-      <PointButtons opponent={match.opponent} onPoint={point} />
-      {belowPointButtons}
-      <UndoActions
-        last={last}
-        acrossSet={!last && live.undoSet !== null ? live.undoSet : null}
-        playersById={playersById}
-        onUndo={undo}
-        onReset={() => {
-          reset();
-          live.resetLive();
-        }}
-      />
-    </>
+    <RallyControls
+      opponent={match.opponent}
+      last={last}
+      weServeFirst={last ? null : set.weServeFirst}
+      onServeChange={(v) => live.saveSet(setServeFirst(set, v))}
+      acrossSet={last ? null : live.undoSet}
+      playersById={playersById}
+      onPoint={(winner: Side) => {
+        reset();
+        live.point(winner);
+      }}
+      onUndo={() => {
+        reset();
+        onUndo();
+      }}
+      onReset={() => {
+        reset();
+        live.resetLive();
+      }}
+      belowPointButtons={belowPointButtons}
+    />
   );
 
   const controls = (
@@ -129,21 +109,24 @@ export function LiveSetView({ live, onSelectSet, belowPointButtons }: LiveSetVie
         view={court}
         playersById={playersById}
         serverId={state.serverId}
-        selectedId={outId}
-        onPressPlayer={pressCourt}
+        selectedId={sub.outId}
+        onPressPlayer={sub.pickOut}
         readOnly={!!won}
       />
       {won ? null : (
         <SubPanel
           subsUsed={state.subsUsed}
-          active={subMode}
-          outRef={outId ? ref(outId) : null}
+          active={sub.active}
+          outRef={sub.outId ? ref(sub.outId) : null}
           bench={live.bench}
           liberoRef={set.liberoId ? ref(set.liberoId) : null}
-          onStart={() => setSubMode(true)}
+          onStart={sub.start}
           onCancel={reset}
-          onPickIn={pickIn}
-          warningsFor={(inId) => (outId ? live.preview(outId, inId) : [])}
+          onPickIn={(inId) => {
+            if (sub.outId) live.substitute(sub.outId, inId);
+            reset();
+          }}
+          warningsFor={(inId) => (sub.outId ? live.preview(sub.outId, inId) : [])}
         />
       )}
     </View>

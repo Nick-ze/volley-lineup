@@ -6,6 +6,7 @@
  * the viewed set has nothing to undo yet (the previous, won set: undoing across a set end).
  * Results themselves come from `matchState.ts` (derived, never stored).
  */
+import { previousSet } from './lineupEditing';
 import { getMatchState, setWinner, type MatchState } from './matchState';
 import { isPresetComplete, namedPresetsFor, startersFor } from './presets';
 import {
@@ -67,6 +68,31 @@ export function defaultWeServeFirst(previous: Pick<SetLineup, 'weServeFirst'> | 
   return previous ? !previous.weServeFirst : true;
 }
 
+/**
+ * The rotating serve default for `setNumber` when it is reached from the previous set: the
+ * stored set with `defaultWeServeFirst(previous)` applied, or null when the set isn't stored,
+ * has events, has no earlier set, or already has that serve choice (nothing to save).
+ */
+export function withDefaultServe(
+  match: Pick<Match, 'sets'>,
+  setNumber: SetNumber,
+): SetLineup | null {
+  const set = match.sets.find((s) => s.setNumber === setNumber);
+  const previous = previousSet(match.sets, setNumber);
+  if (!set || set.events.length > 0 || !previous) return null;
+  const weServeFirst = defaultWeServeFirst(previous);
+  return set.weServeFirst === weServeFirst ? null : { ...set, weServeFirst };
+}
+
+/**
+ * True when `setNumber` comes after the set that decided the match (only possible in data from
+ * before v3): such a set doesn't count and can't be played.
+ */
+export function isAfterDecision(state: MatchState, setNumber: SetNumber): boolean {
+  const deciding = decidingSetNumber(state);
+  return deciding !== null && setNumber > deciding;
+}
+
 /** True when a set after `setNumber` already has events (rallies or subs). */
 export function hasLaterPlay(match: Pick<Match, 'sets'>, setNumber: SetNumber): boolean {
   return match.sets.some((s) => s.setNumber > setNumber && s.events.length > 0);
@@ -103,18 +129,9 @@ export function setupSources(
   presets: readonly LineupPreset[],
 ): SetupSources {
   const starters = startersFor(presets, match.teamId);
-  const previous = match.sets
-    .filter((s) => s.setNumber < setNumber)
-    .sort((a, b) => b.setNumber - a.setNumber)[0];
   return {
     starters: starters && isPresetComplete(starters) ? starters : null,
     presets: namedPresetsFor(presets, match.teamId),
-    previous: previous ?? null,
+    previous: previousSet(match.sets, setNumber),
   };
-}
-
-/** A duration split into whole hours and minutes (rounded to the nearest minute). */
-export function durationParts(ms: number): { hours: number; minutes: number } {
-  const total = Math.max(0, Math.round(ms / 60000));
-  return { hours: Math.floor(total / 60), minutes: total % 60 };
 }
