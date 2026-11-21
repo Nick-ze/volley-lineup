@@ -1,11 +1,32 @@
-import { Placeholder } from '@/components';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+import { Screen } from '@/components';
+import { MatchPerformance } from '@/features/performance/MatchPerformance';
+import { NotFound } from '@/features/roster/components/NotFound';
 import { useT } from '@/i18n';
+import { useMatch } from '@/store';
 
 /**
  * `/match/[matchId]/performance?set=N|all&player=ID` — per-player performance of a set or the
- * whole match, and one player's detail (v6, worker C).
+ * whole match, and one player's detail (v6).
  */
 export default function PerformanceScreen() {
   const t = useT();
-  return <Placeholder title={t.performance.title} />;
+  const router = useRouter();
+  const params = useLocalSearchParams<{ matchId: string; set?: string; player?: string }>();
+  const match = useMatch(String(params.matchId));
+
+  if (!match)
+    return <NotFound message={t.performance.notFound} onBack={() => router.dismissTo('/teams')} />;
+
+  return (
+    <Screen>
+      <MatchPerformance
+        match={match}
+        setParam={params.set}
+        playerParam={params.player}
+        onParams={(next) => router.setParams(next)}
+      />
+    </Screen>
+  );
 }
