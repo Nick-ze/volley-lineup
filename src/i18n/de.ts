@@ -5,10 +5,13 @@
 import { language } from './de/language';
 import { lineup } from './de/lineup';
 import { live } from './de/live';
+import { match } from './de/match';
 import { presets } from './de/presets';
 import { print } from './de/print';
 import { profile } from './de/profile';
 import { roster } from './de/roster';
+import { stats } from './de/stats';
+import { tags } from './de/tags';
 import { rotation } from './de/rotation';
 import { transfer } from './de/transfer';
 import type { Strings } from './en';
@@ -79,4 +82,7 @@ export const de: Strings = {
   language,
   profile,
   presets,
+  match,
+  stats,
+  tags,
 };
