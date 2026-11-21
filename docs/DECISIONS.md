@@ -177,3 +177,7 @@ Newest at the bottom. Format: **Decision** — why.
 108. **Never required**: the row refers only to the rally just recorded; the next rally replaces it, and a substitution, undo, reset, ✕ or switching sets closes it (it doesn't reopen for an earlier rally after undo). It also appears under the set-won panel and the match summary, so the winning rally can be tagged; undo labels name the tag ("· kill #7 Smith").
 109. **Player picker** (kill / ace / block / our error) offers the players on court _during_ that rally — before its side-out rotation, with that moment's libero swap — and replaces the chip row to save height; it stays open so a mistake can be fixed. For an ace our server is preselected (and keeps a yellow outline).
 110. The roster's "can't delete" explanation reads "appears in a played set (lineup, substitution or point details)".
+
+### QA fixes (orchestrator)
+
+111. **Header titles stay on one line** (`HeaderTitle`, set for every screen in `app/_layout.tsx`): long titles such as "vs <long opponent>" end in "…" instead of scrolling the page sideways; the title limits itself to the window width minus room for the back button. German link "Startaufstellung" → "Aufstellungen" (fits the 3 + 2 link row); the Print and Starters links' accessibility labels start with their visible text. "Delete all data" clears the export / import messages shown above it.
