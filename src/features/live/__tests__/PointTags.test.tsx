@@ -30,6 +30,8 @@ const set1 = (
   weServeFirst = false,
   setNumber: SetLineup['setNumber'] = 1,
 ): SetLineup => ({
+  roles: {},
+  liberoActive: true,
   setNumber,
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
   liberoId: 'p7',

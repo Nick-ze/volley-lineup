@@ -191,6 +191,8 @@ describe('presets', () => {
     },
     liberoId,
     liberoReplaces: [] as string[],
+    roles: {},
+    liberoActive: true,
   });
 
   it('adds, renames, edits and deletes a preset', () => {
@@ -332,6 +334,8 @@ describe('migrations', () => {
               weServeFirst: true,
               liberoReplaces: [],
               events: [],
+              roles: {},
+              liberoActive: true,
             },
             'junk',
           ],
@@ -380,15 +384,45 @@ describe('migrations', () => {
         },
       ],
     };
-    // v3 → v4 changes nothing; v4 → v5 only adds the chip setting.
-    expect(migrateStore(v3, 3)).toEqual({ ...v3, chipLabel: 'number' });
+    // v3 → v4 changes nothing; v4 → v5 adds the chip setting; v5 → v6 the lineup defaults.
+    expect(migrateStore(v3, 3)).toEqual({
+      ...v3,
+      chipLabel: 'number',
+      matches: [
+        { ...v3.matches[0], sets: [{ ...v3.matches[0].sets[0], roles: {}, liberoActive: true }] },
+      ],
+    });
   });
 
   it('upgrades v4 data (v3.0 app): player chips keep showing numbers', () => {
     const v4 = { profiles: [], presets: [], matches: [], language: 'de' };
     expect(migrateStore(v4, 4)).toEqual({ ...v4, chipLabel: 'number' });
     expect(migrateStore(null, 4)).toBeNull();
-    expect(STORE_VERSION).toBe(5);
+  });
+
+  it('upgrades v5 data (v3.1 app): sets and presets get no role overrides and the libero on', () => {
+    const v5 = {
+      chipLabel: 'name',
+      presets: [{ id: 'ps', slots: {} }, 'junk'],
+      matches: [{ id: 'm', sets: [{ setNumber: 1 }, 'junk'] }, { id: 'n' }, 'junk'],
+    };
+    expect(migrateStore(v5, 5)).toEqual({
+      chipLabel: 'name',
+      presets: [{ id: 'ps', slots: {}, roles: {}, liberoActive: true }, 'junk'],
+      matches: [
+        { id: 'm', sets: [{ setNumber: 1, roles: {}, liberoActive: true }, 'junk'] },
+        { id: 'n' },
+        'junk',
+      ],
+    });
+    // a stored choice is kept
+    const off = {
+      matches: [{ sets: [{ roles: { a: 'OH' }, liberoActive: false }] }],
+      presets: 'x',
+    };
+    expect(migrateStore(off, 5)).toEqual(off);
+    expect(migrateStore(null, 5)).toBeNull();
+    expect(STORE_VERSION).toBe(6);
   });
 
   it('remembers whether chips show names or numbers, also after delete all', () => {

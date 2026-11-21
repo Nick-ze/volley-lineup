@@ -10,6 +10,7 @@ import { match } from './en/match';
 import { presets } from './en/presets';
 import { print } from './en/print';
 import { profile } from './en/profile';
+import { roles } from './en/roles';
 import { roster } from './en/roster';
 import { stats } from './en/stats';
 import { tags } from './en/tags';
@@ -88,6 +89,7 @@ export const en = {
   match,
   stats,
   tags,
+  roles,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */

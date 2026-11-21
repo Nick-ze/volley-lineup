@@ -6,7 +6,7 @@
  * caused — so the players come from the replay step of that rally, with the libero swap of
  * that moment applied.
  */
-import { applyLiberoSwaps } from './liberoSwap';
+import { activeLiberoReplaces, applyLiberoSwaps } from './liberoSwap';
 import { replaySteps, type RallyStep } from './liveSet';
 import { pointKindsFor } from './pointTags';
 import { serverPosition } from './rotation';
@@ -37,7 +37,7 @@ export function lastRally(set: SetLineup, players: readonly Player[]): LastRally
   // The last step belongs to the last event, which is a point.
   const step = steps[steps.length - 1] as RallyStep;
   const serving = step.servingSide === 'us';
-  const slots = applyLiberoSwaps(step.slots, set.liberoId, set.liberoReplaces, { serving });
+  const slots = applyLiberoSwaps(step.slots, set.liberoId, activeLiberoReplaces(set), { serving });
   return {
     event,
     servingSide: step.servingSide,

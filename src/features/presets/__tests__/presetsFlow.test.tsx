@@ -140,7 +140,10 @@ describe('starters tab', () => {
   });
 
   it('warns when the starters are incomplete', async () => {
-    store().setStarters('team1', { ...fullLineup(), slots: { ...fullLineup().slots, 6: null } });
+    store().setStarters('team1', {
+      ...fullLineup(),
+      slots: { ...fullLineup().slots, 6: null },
+    });
     await renderRouter('./app', { initialUrl: '/team/team1?tab=starters' });
     expect(await screen.findByText(s.starters.incomplete(5))).toBeTruthy();
   });

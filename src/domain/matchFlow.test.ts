@@ -35,6 +35,8 @@ const set = (
 const match = (sets: SetLineup[]): Pick<Match, 'sets' | 'teamId'> => ({ teamId: 't1', sets });
 
 const preset = (over: Partial<LineupPreset>): LineupPreset => ({
+  roles: {},
+  liberoActive: true,
   id: 'x',
   teamId: 't1',
   name: '',

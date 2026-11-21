@@ -1,7 +1,8 @@
 /**
  * Data model — docs/PLAN.md §6 (v2: SetLineup.liberoReplaces + SetLineup.events, schemaVersion 2;
  * v3: LineupPreset — saved team lineups and the team's starters, schemaVersion 3;
- * v4 / app 3.0: optional tags and timestamps on point events, schemaVersion 4 — PLAN §16).
+ * v4 / app 3.0: optional tags and timestamps on point events, schemaVersion 4 — PLAN §16;
+ * v5 / app 4.0: roles on court + libero on/off per lineup, schemaVersion 5 — PLAN §20).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -50,7 +51,17 @@ export interface SetLineup {
   liberoReplaces: string[];
   /** v2: what happened in the set, in order (live match mode). Empty = not played yet. */
   events: SetEvent[];
+  /**
+   * v5: role overrides for starters on court (player id → the role they play in this set).
+   * A starter without an entry plays their primary position. Only starters on court appear.
+   */
+  roles: RoleOverrides;
+  /** v5: false = the libero stays out (no libero swaps), even if one is chosen. */
+  liberoActive: boolean;
 }
+
+/** v5: player id → the role (court position code) they play, when not their primary position. */
+export type RoleOverrides = Record<string, Position>;
 
 /** v2: which team won a rally. */
 export type Side = 'us' | 'them';
@@ -96,12 +107,16 @@ export interface LineupPreset {
   slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>;
   liberoId: string | null;
   liberoReplaces: string[];
+  /** v5: as in `SetLineup`. */
+  roles: RoleOverrides;
+  /** v5: as in `SetLineup`. */
+  liberoActive: boolean;
   createdAt: string;
 }
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 4;
+  schemaVersion: 5;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];

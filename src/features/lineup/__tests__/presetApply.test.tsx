@@ -107,6 +107,8 @@ describe('presets in the match lineup builder', () => {
 
   it('treats empty starters (0/6, no libero) as no starters, so a set is never wiped', async () => {
     store().setStarters('team1', {
+      roles: {},
+      liberoActive: true,
       slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
       liberoId: null,
       liberoReplaces: [],
@@ -122,6 +124,8 @@ describe('presets in the match lineup builder', () => {
 
   it('allows starters that only have a libero', async () => {
     store().setStarters('team1', {
+      roles: {},
+      liberoActive: true,
       slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
       liberoId: 'p7',
       liberoReplaces: [],
@@ -162,7 +166,10 @@ describe('new match', () => {
   });
 
   it('starts empty when the starters are incomplete', async () => {
-    store().setStarters('team1', { ...fullLineup(), slots: { ...fullLineup().slots, 2: null } });
+    store().setStarters('team1', {
+      ...fullLineup(),
+      slots: { ...fullLineup().slots, 2: null },
+    });
     const match = await createMatch();
     expect(match.sets).toEqual([emptySetLineup(1)]);
   });

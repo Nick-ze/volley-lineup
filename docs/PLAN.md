@@ -328,3 +328,46 @@ Set and match results are derived by pure functions (`src/domain/matchState.ts`)
 ## 18. Names instead of numbers
 
 - A switch in Settings ("Show names instead of numbers") makes the player chips show the player's name in the circle and the jersey number below it. Persisted on the device (store version 5), default off; not part of export files.
+
+---
+
+# v4 plan — Roles on court
+
+Owner request after v3.1: roles on the field, rotate before the set, rotation named after the setter, any player in any role (confirmed, marked), and a libero that replaces chosen roles and can be switched off.
+
+## 19. v4 features
+
+1. **Roles on court** — every starter plays a role (S, OH, MB, OPP, DS). Default: the player's primary position. The role is shown at the top of the court spot (e.g. "S", "OPP") in the lineup builder, the rotation viewer, the starters overview, live mode and the print sheet. Roles follow players through swaps and rotations; in live mode a substitute takes over the role of the player they replace.
+2. **Any player, any role** — tap a starter's role to change it (lineup builder and preset / starters editor). A role that is none of the player's positions (primary or secondary, from the roster) asks "Are you sure?" first and shows "*" at the top right of the spot. Roles are locked in a played set (like the starting six).
+3. **Rotate before the set** — "Rotate ↻ / ↺" in the lineup builder (and the live next-set setup) moves the whole starting six one position, so the setter can start anywhere. Only before the set is played.
+4. **Rotation named after the setter** — the setter at position 4 = "Rotation 4" (rotation viewer, live mode, starters overview, stats per rotation). With two setters (6-2) the back-row setter counts. Without a setter role on court, rotations are counted from the start as before.
+5. **Libero** — "Libero replaces": choose roles (Middles / Outsides / Opposite / Setter / DS — sets whom the libero replaces to the starters in those roles; single players can still be toggled). A **"Libero plays"** switch turns the libero off for the set (no swaps anywhere: rotation viewer, live, stats) without removing them.
+
+## 20. v4 data model changes
+
+```ts
+type RoleOverrides = Record<string, Position>; // player id → role, only when not their primary position
+interface SetLineup {
+  /* … */ roles: RoleOverrides;
+  liberoActive: boolean;
+}
+interface LineupPreset {
+  /* … */ roles: RoleOverrides;
+  liberoActive: boolean;
+}
+// ExportFile.schemaVersion: 5 (v1–v4 files upgraded: roles {}, liberoActive true)
+// Store: version 6 (v5 → v6 adds the same defaults)
+```
+
+Pure logic in `src/domain/roles.ts` (`roleOf`, `isOffPosition`, `setRole`, `rotateStarters`, `setLiberoActive`, `startersWithRoles`, `setterRotation`); the live replay (`liveSet.ts`) tracks roles per rally (`RallyStep.roles`, `setterRotation`; `LiveState.roles`, `setterRotation`); `activeLiberoReplaces(set)` is the only way swaps read whom the libero replaces.
+
+## 21. v4 acceptance checklist
+
+- [ ] Each starter's role shows at the top of their spot in the lineup builder, rotation viewer, starters overview, live court and print sheet; changing a role works in matches, presets and team starters; roles follow players through swaps, rotations and substitutions (tests).
+- [ ] Choosing a role that is none of the player's positions asks for confirmation (cancel keeps the old role) and shows "*" at the top right; a secondary position doesn't (tests).
+- [ ] Rotate ↻ / ↺ moves the starting six before the set; disabled once played (tests).
+- [ ] The rotation number follows the setter (setter at 4 = rotation 4, 6-2 back-row setter, fallback without setter) in the rotation viewer, live mode and stats (tests with literal numbers).
+- [ ] The libero can be set to replace roles (e.g. middles, outsides) and switched off; a switched-off libero never swaps in (rotation, live, stats) (tests).
+- [ ] v4.0.0 opens v3.x data (store v5) and v1–v4 export files without loss; export / import round trip with roles and the libero switch restores exactly.
+- [ ] Phone layout 375 px: role tags, asterisks and the new controls fit; EN + DE.
+- [ ] Lint, typecheck and tests pass in CI; `src/domain` 100%.
