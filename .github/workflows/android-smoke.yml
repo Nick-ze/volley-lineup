@@ -40,12 +40,18 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm || echo "NO KVM"
+          nproc; free -m
       - name: Run on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 30
           arch: x86_64
-          target: google_apis
+          target: default
+          cores: 2
+          ram-size: 3072M
+          emulator-boot-timeout: 1500
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: OUT=e2e-out ./scripts/android-smoke.sh android/app/build/outputs/apk/release/app-release.apk
       - uses: actions/upload-artifact@v4
