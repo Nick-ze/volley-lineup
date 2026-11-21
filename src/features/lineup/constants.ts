@@ -3,6 +3,10 @@ import { touchTarget } from '@/theme';
 
 /** Diameter of a player chip on court, libero slot and bench. */
 export const CHIP_SIZE = 56;
+/** Smaller chips in the phone layout so court and bench fit on one screen (≥ touch target). */
+export const COMPACT_CHIP_SIZE = 48;
+/** Court slot height in the phone layout (the shared Court's default is taller). */
+export const COMPACT_SLOT_MIN_HEIGHT = 76;
 /** Diameter of the chip that follows the pointer while dragging (before the 1.15 lift scale). */
 export const DRAG_CHIP_SIZE = 64;
 /** Empty court / libero slot target: same footprint as a chip, never below the touch target. */

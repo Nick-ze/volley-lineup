@@ -118,3 +118,7 @@ Newest at the bottom. Format: **Decision** — why.
 72. **Version 2.0.0**: `version` in `app.json` / `package.json` bumped (Android `versionCode` 20000, so it installs as an update over 1.0.0).
 73. **Deleting a player** clears every reference to them (court, libero, "libero replaces", substitution events) via `removePlayerEverywhere`, so exports stay importable. Deleting a player who is part of a **played** set is blocked with an explanation (mark them injured, or reset that set's live data) — removing them would rewrite the set's score history.
 74. **Locked lineup controls** (court slots, libero slot, bench target, chips, serve toggle) report `disabled` to assistive tech while a set has live data. List-row actions wrap below the name on narrow screens instead of truncating it.
+
+## v2.1
+
+75. **Phone lineup layout**: below 768 px the order is court → libero + serve → bench → instructions → templates / copy / clear → checks, with compact sizes (48 px chips, 76 px court slots, compact libero row). The court, libero and a 10–12-player bench fit on one 390×844 screen without scrolling. Wide screens are unchanged (court left, bench right).
