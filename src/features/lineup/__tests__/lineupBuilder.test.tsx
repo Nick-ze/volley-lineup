@@ -61,6 +61,8 @@ describe('lineup builder (tap-to-select)', () => {
     await fireEvent.press(within(bench).getByTestId('bench-player-3'));
     expect(screen.getByText(/Selected: 3 Cleo Gamma/)).toBeTruthy();
     await fireEvent.press(screen.getByTestId('slot-empty-4'));
+    // v6: spot 4 is the opposite spot and Cleo is an outside → "Are you sure?" first.
+    await fireEvent.press(screen.getByTestId('placement-confirm-button'));
 
     expect(within(screen.getByTestId('court-slot-4')).getByTestId('slot-player-4')).toBeTruthy();
     expect(within(screen.getByTestId('bench')).queryByTestId('bench-player-3')).toBeNull();
@@ -69,6 +71,7 @@ describe('lineup builder (tap-to-select)', () => {
     // Move the same player to another slot: moved, not duplicated.
     await fireEvent.press(screen.getByTestId('slot-player-4'));
     await fireEvent.press(screen.getByTestId('slot-empty-6'));
+    await fireEvent.press(screen.getByTestId('placement-confirm-button')); // MB spot
     const set2 = sets().find((s) => s.setNumber === 2)!;
     expect(set2.slots[6]).toBe('p3');
     expect(set2.slots[4]).toBeNull();
@@ -149,7 +152,7 @@ describe('lineup builder validation panel', () => {
     expect(
       screen.getByText('✕ A player is in more than one position. (Positions 1, 2)'),
     ).toBeTruthy();
-    expect(screen.getByText('! No setter in the starting six.')).toBeTruthy();
+    expect(screen.getByText('! No player listed as setter on the setter spot.')).toBeTruthy();
     spy.mockRestore();
   });
 
@@ -158,7 +161,7 @@ describe('lineup builder validation panel', () => {
     expect(
       await screen.findByText('✕ Fewer than 6 players on court. (Positions 3, 4, 5, 6)'),
     ).toBeTruthy();
-    expect(screen.getByText('! No setter in the starting six.')).toBeTruthy();
+    expect(screen.getByText('! No player listed as setter on the setter spot.')).toBeTruthy();
   });
 
   it('shows the ok state for a complete lineup (unmocked)', async () => {

@@ -18,6 +18,8 @@ export const lineup = {
   liberoSlotLabel: (name: string | null) => (name ? `Libero slot, ${name}` : 'Empty libero slot'),
   slotLabel: (position: number, name: string | null) =>
     name ? `Position ${position}, ${name}` : `Empty position ${position}`,
+  /** An empty court spot with its role (v6: every spot has a role). */
+  emptySlotLabel: (position: number, role: string) => `Empty position ${position}, ${role}`,
   playerHint: 'Tap to select, then tap a position, the libero slot or the bench. Or drag it.',
   slotHintSelected: 'Moves the selected player here',
   selected: (name: string) => `Selected: ${name}. Tap a position, the libero slot or the bench.`,
@@ -44,7 +46,7 @@ export const lineup = {
     UNKNOWN_PLAYER: 'A position holds a player who is not in the roster.',
   } satisfies Record<ValidationErrorCode, string>,
   warnings: {
-    NO_SETTER: 'No setter in the starting six.',
+    NO_SETTER: 'No player listed as setter on the setter spot.',
     UNUSUAL_LAYOUT: 'Unusual position layout.',
     INACTIVE_PLAYER: 'An inactive or injured player is in the lineup.',
     LIBERO_NOT_LIBERO: 'The libero is not listed as a libero in the roster.',
@@ -68,8 +70,21 @@ export const lineup = {
     clockwiseLabel: 'Rotate clockwise',
     counterclockwise: 'Rotate ↺',
     counterclockwiseLabel: 'Rotate counter-clockwise',
-    hint: 'Moves the whole starting six one position, so the setter can start anywhere',
-    emptyHint: 'Put players on court to rotate them',
+    hint: 'Moves the whole starting six and the formation one position, so the setter can start anywhere',
+    setterOn: (n: number) => `Setter on\u00a0${n}`,
+    setterOnLabel: (n: number) => `Setter on ${n}: rotation ${n}`,
+  },
+  formation: {
+    systemGroupLabel: 'System',
+    systemLabel: (system: string, explanation: string) => `${system}: ${explanation}`,
+    systems: {
+      '5-1': 'one setter, the opposite across from them',
+      '6-2': 'two setters across from each other, the back-row one sets',
+    },
+    orderGroupLabel: 'Order from the setter',
+    orders: { outside: 'S → Outside', middle: 'S → Middle' },
+    orderLabel: (order: string, pattern: string) => `${order}: ${pattern}`,
+    pattern: (roles: string) => `From the setter: ${roles}`,
   },
   liberoPlays: 'Libero plays',
   liberoOut: 'The libero stays out this set: no libero swaps.',
@@ -84,13 +99,14 @@ export const lineup = {
     open: 'Fill from template',
     openHint: 'Choose a 5-1 or 6-2 system to fill the starting six from the roster',
     lockedHint: 'This set has already been played, so its starting six cannot be refilled.',
-    choose: 'Fill the starting six with a system. This replaces the current starters.',
+    choose:
+      'Pick a system: it becomes the formation (5-1 or 6-2) and fills the starting six by role from the roster. This replaces the current starters.',
     systemLabel: (system: string) => `Fill the starting six with a ${system} system`,
     cancel: 'Cancel',
     cancelLabel: 'Close the template choice',
-    filled: (system: string) => `Filled with a ${system} system.`,
+    filled: (system: string) => `Formation set to ${system}, players filled in by role.`,
     missing: (system: string, list: string) =>
-      `Filled with a ${system} system. Could not fill: ${list}. Add players with these positions or place someone by hand.`,
+      `Formation set to ${system}, players filled in by role. Could not fill: ${list}. Add players with these positions or place someone by hand.`,
     missingItem: (position: number, role: string) => `position ${position} (${role})`,
   },
 } as const;

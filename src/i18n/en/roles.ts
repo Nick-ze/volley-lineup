@@ -1,4 +1,4 @@
-/** Roles on court (v4.0): role tags, the role picker, setter rotation, libero on/off. Shared by the v4 workers. */
+/** Roles on court (v4.0, v6 formations): role tags, off-position confirmation. */
 export const roles = {
   title: 'Roles',
   /** A player as "#7 Anna Smith". */
@@ -8,22 +8,17 @@ export const roles = {
     offPosition ? `plays ${role}, not one of their positions` : `plays ${role}`,
   /** The role tag button on a court spot; starts with the visible code (e.g. "OPP"). */
   tagLabel: (code: string, role: string, name: string, offPosition: boolean) =>
-    `${code}, ${role}${offPosition ? ', not one of their positions' : ''}. Change the role of ${name}`,
-  tagHint: 'Opens the role choice',
-  picker: {
-    title: (name: string) => `Role of ${name}`,
-    hint: 'Anyone can play any role. Roles marked * are none of the player’s positions.',
-    optionText: (code: string, role: string) => `${code} · ${role}`,
-    optionLabel: (code: string, role: string, offPosition: boolean) =>
-      `${code} · ${role}${offPosition ? ', not one of their positions' : ''}`,
-    offMark: ' *',
-    cancelLabel: 'Cancel: close the role choice',
-  },
+    `${code}, ${role}${offPosition ? ', not one of their positions' : ''}. Select ${name}`,
+  tagHint: 'Selects the player, like tapping the chip',
+  /** "Are you sure?" before a move puts someone on a role that is none of their positions. */
   confirm: {
     title: 'Are you sure?',
-    message: (name: string, role: string) =>
-      `${name} isn’t listed as ${role}. Play them as ${role}?`,
+    notListed: (player: string, role: string) => `${player} isn’t listed as ${role}.`,
+    questionOne: 'Put them on this spot?',
+    questionMany: 'Put them on these spots?',
     confirm: 'Confirm',
-    confirmLabel: (role: string) => `Confirm: play as ${role}`,
+    confirmLabel: 'Confirm: put them on the spot anyway',
+    cancel: 'Cancel',
+    cancelLabel: 'Cancel: nothing changes',
   },
 } as const;

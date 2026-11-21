@@ -1,24 +1,24 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { rotateStarters } from '@/domain/roles';
-import { COURT_POSITIONS } from '@/domain/types';
+import { formationRotation, rotateStarters } from '@/domain/roles';
 import { useT } from '@/i18n';
-import { spacing } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 import type { LineupDraft } from './useLineupDraft';
 
 /**
- * "Rotate ↺ / ↻": moves the whole starting six one position before the set, so the setter can
- * start anywhere. Disabled for played sets and an empty court.
+ * "Rotate ↺ / ↻": moves the whole starting six and the formation one position before the set,
+ * so the setter can start anywhere; between them the setter rotation ("Setter on 4"), which
+ * follows the formation's setter spot (also on an empty court). Disabled for played sets.
  */
 export function RotateButtons({ editor }: { editor: LineupDraft }) {
   const t = useT();
   const { set, locked, update } = editor;
   const s = t.lineup.rotate;
-  const empty = COURT_POSITIONS.every((p) => set.slots[p] === null);
-  const disabled = locked || empty;
-  const hint = locked ? t.live.lineupLocked : empty ? s.emptyHint : s.hint;
+  const disabled = locked;
+  const hint = locked ? t.live.lineupLocked : s.hint;
+  const rotation = formationRotation(set.formation);
 
   return (
     <View style={styles.row}>
@@ -33,6 +33,14 @@ export function RotateButtons({ editor }: { editor: LineupDraft }) {
         testID="rotate-counterclockwise"
         style={styles.grow}
       />
+      <Text
+        style={styles.setter}
+        accessibilityLabel={s.setterOnLabel(rotation)}
+        accessibilityLiveRegion="polite"
+        testID="setter-rotation"
+      >
+        {s.setterOn(rotation)}
+      </Text>
       <Button
         label={s.clockwise}
         accessibilityLabel={s.clockwiseLabel}
@@ -49,6 +57,7 @@ export function RotateButtons({ editor }: { editor: LineupDraft }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: spacing.sm },
+  row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  setter: { ...typography.label, color: colors.text, textAlign: 'center', flexShrink: 1 },
   grow: { flex: 1 },
 });

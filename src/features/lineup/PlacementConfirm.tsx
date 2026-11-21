@@ -1,0 +1,84 @@
+import { Modal, StyleSheet, Text, View } from 'react-native';
+
+import { Button } from '@/components';
+import { useT } from '@/i18n';
+import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
+
+import type { LineupDraft } from './useLineupDraft';
+
+/**
+ * "Are you sure?" before a drag & drop or tap-to-select move puts a player on a spot whose role
+ * is none of their positions (one line per player, e.g. both players of a swap). Cancel changes
+ * nothing; Confirm makes the move (the spot then shows "*").
+ */
+export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
+  const t = useT();
+  const s = t.roles.confirm;
+  const { pending, playerById, confirmPending, cancelPending } = editor;
+  const lines = (pending ?? []).map((p) => {
+    const player = playerById(p.playerId);
+    const name = player
+      ? t.roles.playerRef(player.number, `${player.firstName} ${player.lastName}`.trim())
+      : '';
+    return s.notListed(name, t.positions[p.role]);
+  });
+
+  return (
+    <Modal
+      visible={pending !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={cancelPending}
+    >
+      <View style={styles.backdrop}>
+        <View style={styles.card} accessibilityViewIsModal testID="placement-confirm">
+          <Text style={styles.title} accessibilityRole="header">
+            {s.title}
+          </Text>
+          {lines.map((line) => (
+            <Text key={line} style={styles.message}>
+              {line}
+            </Text>
+          ))}
+          <Text style={styles.message}>{lines.length > 1 ? s.questionMany : s.questionOne}</Text>
+          <View style={styles.actions}>
+            <Button
+              label={s.cancel}
+              accessibilityLabel={s.cancelLabel}
+              variant="secondary"
+              onPress={cancelPending}
+              testID="placement-cancel"
+            />
+            <Button
+              label={s.confirm}
+              accessibilityLabel={s.confirmLabel}
+              onPress={confirmPending}
+              testID="placement-confirm-button"
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  card: {
+    width: '100%',
+    maxWidth: dialogMaxWidth,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
+  title: { ...typography.subheading, color: colors.text },
+  message: { ...typography.body, color: colors.text },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
+});

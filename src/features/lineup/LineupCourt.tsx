@@ -1,19 +1,20 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Court } from '@/components';
+import { Court, RoleTag } from '@/components';
+import { spotRole } from '@/domain/roles';
 import type { CourtPosition } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, typography } from '@/theme';
+import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
-import { COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
+import { COMPACT_CHIP_SIZE, COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
 import { CourtPlayerSpot } from './CourtPlayerSpot';
 import { useDrag } from './drag/DragContext';
 import { zoneFeedback } from './drag/useDropZone';
 import type { LineupDraft } from './useLineupDraft';
 
 /**
- * The court with six drop slots. Slots with validation errors get a red outline. Each starter
- * shows the role of their spot on top (v6: the formation decides the roles).
+ * The court with six drop slots. Slots with validation errors get a red outline. Every spot
+ * shows its role on top, filled or empty (v6: the formation decides the roles).
  */
 export function LineupCourt({
   editor,
@@ -43,19 +44,32 @@ export function LineupCourt({
         />
       );
     }
+    const role = spotRole(set.formation, position);
+    const size = compact ? COMPACT_CHIP_SIZE : EMPTY_SLOT_SIZE;
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t.lineup.slotLabel(position, null)}
+        accessibilityLabel={t.lineup.emptySlotLabel(position, t.positions[role])}
         accessibilityHint={selectedId ? t.lineup.slotHintSelected : undefined}
         disabled={editor.locked}
         accessibilityState={{ disabled: editor.locked }}
         aria-disabled={editor.locked}
         onPress={() => pressTarget({ kind: 'slot', position })}
-        style={[styles.empty, selectedId !== null && styles.emptyArmed]}
+        style={styles.emptySpot}
         testID={`slot-empty-${position}`}
       >
-        <Text style={styles.plus}>{t.lineup.emptySlotGlyph}</Text>
+        <View style={styles.tagArea}>
+          <RoleTag role={role} testID={`role-tag-${position}`} />
+        </View>
+        <View
+          style={[
+            styles.empty,
+            { width: size, height: size },
+            selectedId !== null && styles.emptyArmed,
+          ]}
+        >
+          <Text style={styles.plus}>{t.lineup.emptySlotGlyph}</Text>
+        </View>
       </Pressable>
     );
   };
@@ -81,9 +95,15 @@ const styles = StyleSheet.create({
   slot: { borderWidth: 3, borderColor: colors.transparent },
   compactSlot: { minHeight: COMPACT_SLOT_MIN_HEIGHT, paddingVertical: 0 },
   error: { borderColor: colors.error, borderStyle: 'dashed' },
+  emptySpot: { alignItems: 'center' },
+  // Same height as a filled spot's role tag button, so tags and chips line up in a row.
+  tagArea: {
+    minHeight: touchTarget,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.xxs,
+  },
   empty: {
-    width: EMPTY_SLOT_SIZE,
-    height: EMPTY_SLOT_SIZE,
     borderRadius: radius.round,
     borderWidth: 2,
     borderStyle: 'dashed',

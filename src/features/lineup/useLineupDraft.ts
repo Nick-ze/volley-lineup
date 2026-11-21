@@ -10,6 +10,7 @@ import {
   type DropTarget,
 } from '@/domain/lineupEditing';
 import { validateLineup } from '@/domain/lineupValidation';
+import { newOffPositionPlacements, type OffPositionPlacement } from '@/domain/placementCheck';
 import type { Player, SetLineup } from '@/domain/types';
 
 export interface LineupDraftOptions {
@@ -39,6 +40,14 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     [selectionKey],
   );
 
+  // A move that puts someone on a role that is none of their positions waits for "Are you sure?".
+  const [pendingMove, setPendingMove] = useState<{
+    key: string | number;
+    next: SetLineup;
+    placements: OffPositionPlacement[];
+  } | null>(null);
+  const pending = pendingMove?.key === selectionKey ? pendingMove : null;
+
   const bench = useMemo(() => benchPlayers(set, players), [set, players]);
   const validation = useMemo(() => validateLineup(set, players), [set, players]);
 
@@ -64,12 +73,27 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     [save, set],
   );
 
+  /** Drag & drop and tap-to-select moves: asks first when a role is off position (#134). */
+  const propose = useCallback(
+    (next: SetLineup) => {
+      const placements = newOffPositionPlacements(set, next, players);
+      if (placements.length === 0) update(next);
+      else setPendingMove({ key: selectionKey, next, placements });
+    },
+    [set, players, update, selectionKey],
+  );
+  const confirmPending = useCallback(() => {
+    if (pending) update(pending.next);
+    setPendingMove(null);
+  }, [pending, update]);
+  const cancelPending = useCallback(() => setPendingMove(null), []);
+
   const drop = useCallback(
     (playerId: string, target: DropTarget) => {
       setSelectedId(null);
-      update(movePlayer(set, playerId, target));
+      propose(movePlayer(set, playerId, target));
     },
-    [set, update, setSelectedId],
+    [set, propose, setSelectedId],
   );
 
   const pressPlayer = useCallback(
@@ -77,9 +101,9 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
       if (locked) return;
       const r = tapPlayer(set, selectedId, playerId);
       setSelectedId(r.selectedId);
-      update(r.set);
+      propose(r.set);
     },
-    [set, selectedId, update, setSelectedId, locked],
+    [set, selectedId, propose, setSelectedId, locked],
   );
 
   const pressTarget = useCallback(
@@ -87,9 +111,9 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
       if (locked) return;
       const r = tapTarget(set, selectedId, target);
       setSelectedId(r.selectedId);
-      update(r.set);
+      propose(r.set);
     },
-    [set, selectedId, update, setSelectedId, locked],
+    [set, selectedId, propose, setSelectedId, locked],
   );
 
   const playerById = useCallback(
@@ -110,6 +134,10 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     pressPlayer,
     pressTarget,
     playerById,
+    /** The move waiting for confirmation (off position), or null. */
+    pending: pending?.placements ?? null,
+    confirmPending,
+    cancelPending,
   };
 }
 
