@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-21, after releasing **v3.0.0**.
+Last updated: 2026-11-21, after releasing **v3.1.0**.
 
 ---
 
@@ -17,10 +17,11 @@ Last updated: 2026-11-21, after releasing **v3.0.0**.
 | v2.1.0  | Phone lineup layout (bench under the court), app tab bar (Teams · Profile · Settings), Profile tab with log out                                                        | `v2.1.0` |
 | v2.2.0  | Team nav bar (Roster · Matches · Presets · Starters), saved lineup presets, team starters (pre-fill new matches), data model v3                                        | `v2.2.0` |
 | v3.0.0  | Whole-match live mode (set score, next-set setup, match summary, undo across sets), Stats tab + match stats, optional point tagging, print with results, data model v4 | `v3.0.0` |
+| v3.1.0  | Settings → "Show names instead of numbers" on player chips (store v5)                                                                                                  | `v3.1.0` |
 
-- `main` is green (CI), **587 tests**, `src/domain` at 100% coverage.
-- Current versions: app **3.0.0** (`app.json` + `package.json`, must match), store **4**, export `schemaVersion` **4**.
-- Last decision number in `docs/DECISIONS.md`: **#111**. Continue at #112.
+- `main` is green (CI), **592 tests**, `src/domain` at 100% coverage.
+- Current versions: app **3.1.0** (`app.json` + `package.json`, must match), store **5**, export `schemaVersion` **4** (the store-only `chipLabel` setting isn't exported).
+- Last decision number in `docs/DECISIONS.md`: **#113**. Continue at #114.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -33,6 +34,7 @@ Last updated: 2026-11-21, after releasing **v3.0.0**.
 
 ### Ideas for next versions (from the owner's requests and the plan)
 
+- Possible follow-ups from the v3.1 review: show short names instead of numbers in "We serve · #1" and "L for #4" when names are on; a quick names/numbers switch on the court screens (now only in Settings).
 - Stats ideas not built: per-rotation totals row, charts/trends over the season, CSV export of stats, opponent-side stats.
 - Tagging: more kinds (e.g. dig / serve error), tags for points before v3 can't be added afterwards (only the last rally is taggable).
 - Cloud sync / real accounts (explicitly out of scope so far — needs a backend; see DECISIONS #55).
@@ -44,8 +46,8 @@ Last updated: 2026-11-21, after releasing **v3.0.0**.
 
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
-3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3).
-4. `docs/DECISIONS.md` — every choice made so far (#1–111). Skim headings; read the ones touching your task.
+3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1).
+4. `docs/DECISIONS.md` — every choice made so far (#1–113). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Current as of v3 (its "being built" note about stats is now done: `stats.ts` and the Stats tab are on main).
 6. `README.md` — user-facing features, install, release steps.
 
@@ -57,7 +59,7 @@ Last updated: 2026-11-21, after releasing **v3.0.0**.
 - **Routes** (`app/`): `/` profile picker · `(tabs)` group with `/teams`, `/profile`, `/settings` (bottom app tab bar) · `/team/[teamId]?tab=roster|matches|presets|starters|stats` (team nav bar, a component in `src/features/team/`) · `/team/[teamId]/player` (modal) · `/team/[teamId]/match-new` (modal) · `/team/[teamId]/preset/[presetId]` · `/team/[teamId]/starters` · `/match/[matchId]?set=N` (lineup builder) · `/match/[matchId]/rotation|starters|live|stats` (live without `?set` opens the current set / summary) · `+not-found`. Header titles go through `HeaderTitle` (one line, truncates) set in `app/_layout.tsx`.
 - **Domain** (`src/domain/`, pure, 100% tested): `types.ts` (single source of types), `rotation`, `lineupValidation`, `lineupEditing`, `lineupLock`, `liberoSwap`, `templates`, `liveSet` (replay of the event log; `replaySteps` gives the state before each event), `matchState` (set/match results, current set, duration — derived, never stored), `matchFlow` (next-set setup, serve default, undo across sets), `stats` (rotation / player / season stats incl. tag totals), `pointTags` (tag kinds and validity, `tagLastPoint`), `lastRally` (who was on court during the last rally, plausible tag kinds), `presets`, `playerUsage`, `roster`, `exportSchema` (zod + upgrades of v1–v3 files), `lineupSheet` (print HTML, optional results section).
 - **Data model v4**: point events `{ type: 'point', winner, kind?, playerId?, at? }` (tags + ISO timestamp); subs unchanged. Nothing about results is stored.
-- **Store** (`src/store/`): one `useAppStore` (profiles, teams, players, matches, presets, currentProfileId, language). Version 4 with migrations v1→v2→v3→v4 in `migrations.ts` (v3→v4 changes nothing). List selectors are hooks with `useShallow` (Zustand v5 loops otherwise).
+- **Store** (`src/store/`): one `useAppStore` (profiles, teams, players, matches, presets, currentProfileId, language). Version 5 with migrations v1→…→v5 in `migrations.ts` (v3→v4 changes nothing; v4→v5 adds `chipLabel: 'number'`). Device settings (not exported): `language`, `chipLabel` (`PlayerChip` shows names when `'name'`). List selectors are hooks with `useShallow` (Zustand v5 loops otherwise).
 - **Features** (`src/features/`): roster, team, lineup (builder; `useLineupDraft` is the generic editor), rotation, live (whole match: `LiveMatch` → `LiveSetView` / `NextSetSetup` / `SetWonPanel` / `MatchSummary`, tag row `PointTagRow` + `usePointTagging`, result label `matchResult.ts`), stats (tables with fixed first column), presets, print (choice dialog with/without results), profile, settings.
 - **i18n**: `src/i18n/en/*.ts` + `src/i18n/de/*.ts`, `useT()` hook; the German type is derived from English so missing keys fail typecheck; ESLint forbids importing `@/i18n/en` directly.
 - **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language).
