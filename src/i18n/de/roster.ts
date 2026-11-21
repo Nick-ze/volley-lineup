@@ -17,7 +17,7 @@ export const roster: Strings['roster'] = {
       `Profil „${name}“ löschen? Alle Teams, Spieler und Spiele darin werden ebenfalls gelöscht.`,
     deleteTeam: (name: string) => `Team „${name}“ mit allen Spielern und Spielen löschen?`,
     deletePlayer: (name: string) =>
-      `Spieler „${name}“ löschen? Er wird aus allen Aufstellungen entfernt.`,
+      `Spieler „${name}“ löschen? Die Person wird aus allen Aufstellungen entfernt.`,
     deleteMatch: (name: string) => `Das Spiel gegen „${name}“ löschen?`,
   },
   rowChevron: '›',

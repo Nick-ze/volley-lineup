@@ -64,7 +64,7 @@ export const de: Strings = {
       `Nummer ${number}, ${name}, ${position}`,
   },
   placeholder: {
-    comingSoon: 'Dieser Bildschirm kommt bald.',
+    comingSoon: 'Diese Ansicht kommt bald.',
   },
   roster,
   lineup,

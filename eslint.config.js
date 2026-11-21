@@ -30,6 +30,12 @@ module.exports = defineConfig([
               message: 'Use `const t = useT()` from `@/i18n` so text follows the language setting.',
             },
           ],
+          patterns: [
+            {
+              group: ['@/i18n/en/*', '@/i18n/de', '@/i18n/de/*', '**/i18n/en', '**/i18n/en/*'],
+              message: 'Use `const t = useT()` from `@/i18n` so text follows the language setting.',
+            },
+          ],
         },
       ],
     },

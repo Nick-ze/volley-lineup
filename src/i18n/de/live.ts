@@ -26,7 +26,7 @@ export const live: Strings['live'] = {
   undoNothing: 'Nichts rückgängig zu machen',
   undoPoint: (us: boolean) =>
     us ? 'Letzten Punkt für uns zurücknehmen' : 'Letzten Punkt für den Gegner zurücknehmen',
-  undoSub: (out: string, inn: string) => `Wechsel ${out} für ${inn} zurücknehmen`,
+  undoSub: (out: string, inn: string) => `Wechsel zurücknehmen: ${inn} für ${out}`,
   substitution: 'Wechsel',
   substitutionLabel: 'Einen Wechsel durchführen',
   cancelSub: 'Abbrechen',

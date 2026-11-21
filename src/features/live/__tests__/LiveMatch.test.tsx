@@ -136,7 +136,7 @@ describe('live match mode', () => {
     ).toBeTruthy();
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Undo substitution #8 Sub for #9 Spare' }),
+      screen.getByRole('button', { name: 'Undo substitution: #9 Spare for #8 Sub' }),
     );
     expect(numberAt(3)).toBe(8);
     expect(screen.queryByTestId('warnings-banner')).toBeNull();
