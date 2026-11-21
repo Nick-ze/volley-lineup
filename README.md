@@ -148,6 +148,7 @@ New in **v6 — Players & performance**:
 - **Confidential descriptions** — private notes per player, hidden until you unlock them with your fingerprint / face / device PIN (a confirmation on the web). They lock again when you press Lock, leave the app or restart it. They never show in lists or the print sheet, and go into an export file only if you tick **Include descriptions**.
 - **Performance** — a new link on the match screen shows every player for a set or the whole match: rallies on court, won–lost, kills / aces / blocks vs errors and a simple rating (▲ ● ▼). Tap a player for their error rate and where the errors happened ("3 reception errors, 5 attack errors").
 - **Error types** — "Our error" can now say what kind: Serve · Reception · Attack · Block · Set · Net / foul · Other. Still optional, one tap to skip.
+- **Performance during the match** (v6.1) — in live mode, the **Performance** button at the top right shows every player's overview for the current set (or all sets); tap a player for their detail, then **Live** to go back to the court.
 
 Data and files from v5 open automatically; files exported by v6 (schema version 7, with photos) can't be opened by older versions.
 

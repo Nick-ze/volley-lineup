@@ -23,6 +23,14 @@ export const live = {
   undoNothing: 'Nothing to undo',
   undoPoint: (us: boolean) => (us ? 'Undo last point for us' : 'Undo last point for them'),
   undoSub: (out: string, inn: string) => `Undo substitution: ${inn} for ${out}`,
+  /** v6.1: Live | Performance switch at the top of live mode. */
+  viewTabs: {
+    label: 'Live mode view',
+    live: 'Live',
+    liveLabel: 'Live: score, court and substitutions',
+    performance: 'Performance',
+    performanceLabel: 'Performance: short overview of every player',
+  },
   substitution: 'Substitution',
   substitutionLabel: 'Make a substitution',
   cancelSub: 'Cancel',

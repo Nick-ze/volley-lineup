@@ -27,6 +27,13 @@ export const live: Strings['live'] = {
   undoPoint: (us: boolean) =>
     us ? 'Letzten Punkt für uns zurücknehmen' : 'Letzten Punkt für den Gegner zurücknehmen',
   undoSub: (out: string, inn: string) => `Wechsel zurücknehmen: ${inn} für ${out}`,
+  viewTabs: {
+    label: 'Ansicht im Live-Modus',
+    live: 'Live',
+    liveLabel: 'Live: Spielstand, Feld und Wechsel',
+    performance: 'Leistung',
+    performanceLabel: 'Leistung: kurze Übersicht aller Spieler',
+  },
   substitution: 'Wechsel',
   substitutionLabel: 'Einen Wechsel durchführen',
   cancelSub: 'Abbrechen',

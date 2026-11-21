@@ -24,7 +24,7 @@ Last updated: 2026-11-21, after releasing **v6.0.0**.
 
 - `main` is green (CI), **907 tests**, `src/domain` at 100% coverage.
 - Current versions: app **6.0.0** (`app.json` + `package.json`, must match), store **8**, export `schemaVersion` **7** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
-- Last decision number in `docs/DECISIONS.md`: **#166**. Continue at #167.
+- Last decision number in `docs/DECISIONS.md`: **#167**. Continue at #168.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -55,7 +55,7 @@ Last updated: 2026-11-21, after releasing **v6.0.0**.
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
 3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6).
-4. `docs/DECISIONS.md` — every choice made so far (#1–166). Skim headings; read the ones touching your task.
+4. `docs/DECISIONS.md` — every choice made so far (#1–167). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Written for v3; for v4/v5 the data model notes are outdated (read HANDOFF §3 and PLAN §19–24 instead).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
 7. `README.md` — user-facing features, install, release steps.
