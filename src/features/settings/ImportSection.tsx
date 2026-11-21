@@ -29,6 +29,11 @@ export function ImportSection() {
         <View style={styles.preview} testID="import-preview">
           <Text style={styles.previewTitle}>{t.transfer.import.previewTitle(state.fileName)}</Text>
           <Text style={styles.summary}>{t.transfer.import.summary(state.summary)}</Text>
+          {state.summary.descriptions > 0 ? (
+            <Text style={styles.muted} testID="import-descriptions">
+              {t.transfer.import.descriptions(state.summary.descriptions)}
+            </Text>
+          ) : null}
           <Text style={styles.muted}>{t.transfer.import.mergeHint}</Text>
           <Text style={styles.muted}>{t.transfer.import.replaceHint}</Text>
           <View style={styles.actions}>
