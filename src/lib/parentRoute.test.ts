@@ -4,9 +4,8 @@ const lookup = (id: string) => (id === 'm1' ? 't1' : undefined);
 
 describe('parentRoute', () => {
   it('maps each screen to its logical parent', () => {
-    expect(parentRoute('teams', undefined, lookup)).toBe('/');
     expect(parentRoute('team/[teamId]/index', { teamId: 't1' }, lookup)).toBe('/teams');
-    expect(parentRoute('settings', undefined, lookup)).toBe('/teams');
+    expect(parentRoute('+not-found', undefined, lookup)).toBe('/teams');
     expect(parentRoute('team/[teamId]/player', { teamId: 't1' }, lookup)).toEqual({
       pathname: '/team/[teamId]',
       params: { teamId: 't1' },

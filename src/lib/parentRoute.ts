@@ -6,6 +6,7 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' && v ? v 
 
 /**
  * Where "Back" goes when there is no history (deep link / page reload): the logical parent screen.
+ * The tab screens (teams, profile, settings) have no back button.
  * `teamIdOfMatch` looks up a match's team (from the store) so a match can go back to its team.
  */
 export function parentRoute(
@@ -33,8 +34,6 @@ export function parentRoute(
       return str(params?.set)
         ? { pathname: '/match/[matchId]', params: { matchId, set: str(params?.set) as string } }
         : { pathname: '/match/[matchId]', params: { matchId } };
-    case 'teams':
-      return '/';
     default:
       return '/teams';
   }

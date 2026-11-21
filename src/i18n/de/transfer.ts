@@ -4,12 +4,6 @@ import type { Strings } from '../en';
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export const transfer: Strings['transfer'] = {
-  profile: {
-    title: 'Profil',
-    current: (name: string) => `Aktuelles Profil: ${name}`,
-    none: 'Kein Profil ausgewählt.',
-    switch: 'Profil wechseln',
-  },
   export: {
     title: 'Export',
     hint: 'Speichere deine Daten als .json-Datei, als Sicherung oder für ein anderes Gerät.',

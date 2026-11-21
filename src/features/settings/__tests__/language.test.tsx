@@ -25,28 +25,37 @@ describe('language setting', () => {
     await renderRouter('./app', { initialUrl: '/teams' });
     expect(await screen.findByText(en.roster.teams.heading('Coach'))).toBeTruthy();
 
-    await fireEvent.press(screen.getByLabelText(en.roster.teams.settings));
+    await fireEvent.press(screen.getByLabelText(en.profile.tabs.settingsLabel));
     expect(await screen.findByTestId('settings-screen')).toBeTruthy();
     const deutsch = screen.getByTestId('language-de');
     expect(deutsch.props.accessibilityLabel).toBe(en.language.optionLabel('Deutsch'));
 
     await fireEvent.press(deutsch);
     expect(store().language).toBe('de');
-    expect(screen.getByText(de.transfer.profile.switch)).toBeTruthy();
     expect(screen.getByText(de.transfer.danger.hint)).toBeTruthy();
-    expect(screen.queryByText(en.transfer.profile.switch)).toBeNull();
+    expect(screen.queryByText(en.transfer.danger.hint)).toBeNull();
+    // The tab bar follows the language too.
+    expect(screen.getByLabelText(de.profile.tabs.teamsLabel)).toBeTruthy();
+    expect(screen.getByLabelText(de.profile.tabs.profileLabel)).toHaveTextContent(
+      de.profile.tabs.profile,
+      {
+        exact: false, // the icon glyph is part of the button's text too
+      },
+    );
+    expect(screen.queryByLabelText(en.profile.tabs.teamsLabel)).toBeNull();
     expect(screen.getByTestId('language-de')).toBeChecked();
 
-    // The teams screen stayed mounted underneath; it must not show stale English.
-    await fireEvent.press(screen.getByTestId('header-back'));
+    // The teams tab stayed mounted; it must not show stale English.
+    await fireEvent.press(screen.getByLabelText(de.profile.tabs.teamsLabel));
     expect(await screen.findByText(de.roster.teams.heading('Coach'))).toBeTruthy();
     expect(screen.queryByText(en.roster.teams.heading('Coach'))).toBeNull();
 
-    await fireEvent.press(screen.getByLabelText(de.roster.teams.settings));
+    await fireEvent.press(screen.getByLabelText(de.profile.tabs.settingsLabel));
     await fireEvent.press(await screen.findByTestId('language-en'));
     expect(store().language).toBe('en');
-    expect(screen.getByText(en.transfer.profile.switch)).toBeTruthy();
-    expect(screen.queryByText(de.transfer.profile.switch)).toBeNull();
+    expect(screen.getByText(en.transfer.danger.hint)).toBeTruthy();
+    expect(screen.queryByText(de.transfer.danger.hint)).toBeNull();
+    expect(screen.getByLabelText(en.profile.tabs.teamsLabel)).toBeTruthy();
   });
 
   it('keeps the chosen language across a restart (store rehydrate)', async () => {
@@ -62,7 +71,7 @@ describe('language setting', () => {
     expect(store().language).toBe('de');
 
     await renderRouter('./app', { initialUrl: '/settings' });
-    expect(await screen.findByText(de.transfer.profile.switch)).toBeTruthy();
+    expect(await screen.findByText(de.transfer.danger.hint)).toBeTruthy();
   });
 
   it('keeps the language when all data is deleted', () => {

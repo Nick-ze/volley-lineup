@@ -43,8 +43,6 @@ export const roster = {
     open: (name: string) => `Open team ${name}`,
     rename: (name: string) => `Edit team ${name}`,
     delete: (name: string) => `Delete team ${name}`,
-    switchProfile: 'Switch profile',
-    settings: 'Settings',
   },
   team: {
     title: (name: string, season?: string) => (season ? `${name} · ${season}` : name),

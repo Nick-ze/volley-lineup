@@ -225,15 +225,12 @@ describe('round trip through the screen', () => {
   });
 });
 
-describe('profile, delete all and version', () => {
-  it('shows the current profile and switches profile', async () => {
+describe('delete all and version', () => {
+  it('shows the app version; switching profile moved to the Profile tab', async () => {
     seed();
     await renderSettings();
-    expect(screen.getByText('Current profile: Coach')).toBeTruthy();
     expect(screen.getByText(/Version/)).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Switch profile'));
-    expect(store().currentProfileId).toBeNull();
-    expect(await screen.findByText('Profile picker')).toBeTruthy();
+    expect(screen.queryByLabelText('Switch profile')).toBeNull();
   });
 
   it('asks for confirmation before deleting all data', async () => {
@@ -248,6 +245,6 @@ describe('profile, delete all and version', () => {
     await fireEvent.press(screen.getByLabelText('Yes, delete everything'));
     expect(selectAppData(store())).toEqual({ profiles: [], teams: [], players: [], matches: [] });
     expect(screen.getByText('All data deleted.')).toBeTruthy();
-    expect(screen.getByText('No profile selected.')).toBeTruthy();
+    expect(store().currentProfileId).toBeNull();
   });
 });
