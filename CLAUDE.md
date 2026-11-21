@@ -1,6 +1,6 @@
 # CLAUDE.md — Volley Lineup
 
-Read this file and `docs/PLAN.md` before doing any work. The plan is the source of truth for features, data model, screens and design. If something you need isn't in the plan, choose the simplest option, write it down in `docs/DECISIONS.md`, and continue.
+Read this file, `docs/HANDOFF.md` (current state + how work is done here) and `docs/PLAN.md` before doing any work. In a new chat, run `/start`; before closing a chat, run `/wrap-up`. The plan is the source of truth for features, data model, screens and design. If something you need isn't in the plan, choose the simplest option, write it down in `docs/DECISIONS.md`, and continue.
 
 ## Project
 
