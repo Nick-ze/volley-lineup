@@ -42,6 +42,9 @@ export const stats = {
     sideOutLabel: 'side-out %: rallies won when receiving',
     breakPoints: 'BP',
     breakPointsLabel: 'break points: rallies won on our serve',
+    /** v4: how rotations are numbered (shown under the legend). */
+    numbering:
+      'R4 = setter at position 4 (with two setters, the one in the back row). Without a setter on court, rotations are counted from the start of the set (R1 = starting six).',
   },
   players: {
     heading: 'Players',

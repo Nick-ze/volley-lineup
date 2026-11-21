@@ -4,7 +4,9 @@
  * Everything is derived from the sets' event logs, replayed rally by rally (`replaySteps`):
  *
  * - **Rotations**: a rally counts for our rotation it was played in (before the side-out it may
- *   cause). Received = the opponent served; a side-out = a received rally we won. Break point = a
+ *   cause). v4: the rotation is named after the setter's court position (`RallyStep.setterRotation`
+ *   — "R4" = setter at position 4; with two setters the back-row one); without a setter on court
+ *   it falls back to counting rotations from the start of the set (R1 = starting six). Received = the opponent served; a side-out = a received rally we won. Break point = a
  *   rally won on our serve. Side-out % = side-outs ÷ received (null when nothing was received).
  * - **Players**: a set counts only once it has at least one rally. *Started* = in the stored
  *   starting six; the libero counts as started only if their swap applied in at least one rally.
@@ -151,7 +153,7 @@ export function setStats(set: SetLineup, players: readonly Player[]): Stats {
     }
     const { event, servingSide, slots } = step;
     const won = event.winner === 'us';
-    const line = stats.rotations[step.rotation - 1] as RotationStats;
+    const line = stats.rotations[(step.setterRotation ?? step.rotation) - 1] as RotationStats;
     stats.points[event.winner] += 1;
     line[won ? 'won' : 'lost'] += 1;
     for (const p of COURT_POSITIONS) if (slots[p] !== null) played.add(slots[p] as string);
