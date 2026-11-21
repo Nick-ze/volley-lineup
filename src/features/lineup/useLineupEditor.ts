@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
+import { withSuggestedLiberoReplaces } from '@/domain/liberoSwap';
 import {
   benchPlayers,
   lineupForSet,
@@ -38,11 +39,12 @@ export function useLineupEditor(matchId: string, setNumber: SetNumber) {
   const bench = useMemo(() => benchPlayers(set, players), [set, players]);
   const validation = useMemo(() => validateLineup(set, players), [set, players]);
 
+  // Assigning a libero pre-selects the middles they replace (docs/DECISIONS.md).
   const update = useCallback(
     (next: SetLineup) => {
-      if (next !== set) saveLineup(matchId, next);
+      if (next !== set) saveLineup(matchId, withSuggestedLiberoReplaces(set, next, players));
     },
-    [matchId, saveLineup, set],
+    [matchId, saveLineup, set, players],
   );
 
   const drop = useCallback(

@@ -36,4 +36,8 @@ export const rotation = {
   emptySummary: 'empty',
   playerSummary: (number: number, name: string) => `number ${number} ${name}`,
   openRotationHint: 'Shows rotations 1 to 6 for this set',
+  showLiberoSwaps: 'Show libero swaps',
+  noLiberoReplaces: 'Choose whom the libero replaces in the lineup builder to see libero swaps.',
+  liberoFor: (number: number | null) => (number === null ? 'L' : `L for #${number}`),
+  liberoForLabel: (player: string, replaced: string) => `Libero ${player}, in for ${replaced}`,
 } as const;

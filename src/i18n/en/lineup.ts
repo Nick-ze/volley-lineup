@@ -53,4 +53,26 @@ export const lineup = {
   warningPrefix: '! ',
   emptySlotGlyph: '+',
   issuePositions: (positions: number[]) => `Positions ${positions.join(', ')}`,
+  liberoReplaces: {
+    title: 'Libero replaces',
+    hint: 'In the back row, except when serving.',
+    noStarters: 'Put players on court to choose whom the libero replaces.',
+    groupLabel: 'Players the libero replaces',
+    optionLabel: (number: number, name: string) => `Libero replaces number ${number} ${name}`,
+    optionText: (number: number, name: string) => `#${number} ${name}`,
+    suggest: 'Suggest middles',
+    suggestLabel: 'Suggest the middle blockers on court',
+  },
+  template: {
+    open: 'Fill from template',
+    openHint: 'Choose a 5-1 or 6-2 system to fill the starting six from the roster',
+    choose: 'Fill the starting six with a system. This replaces the current starters.',
+    systemLabel: (system: string) => `Fill the starting six with a ${system} system`,
+    cancel: 'Cancel',
+    cancelLabel: 'Close the template choice',
+    filled: (system: string) => `Filled with a ${system} system.`,
+    missing: (system: string, list: string) =>
+      `Filled with a ${system} system. Could not fill: ${list}. Add players with these positions or place someone by hand.`,
+    missingItem: (position: number, role: string) => `position ${position} (${role})`,
+  },
 } as const;
