@@ -16,6 +16,7 @@ import { LiveSetView } from './LiveSetView';
 import { MatchSummary } from './MatchSummary';
 import { NextSetSetup } from './NextSetSetup';
 import { useLiveSet } from './useLiveSet';
+import { usePointTagging } from './usePointTagging';
 
 export interface LiveMatchProps {
   matchId: string | undefined;
@@ -25,14 +26,12 @@ export interface LiveMatchProps {
   onEditLineup: (set: SetNumber) => void;
   /** Back to the match screen (from the match summary). */
   onBackToMatch: () => void;
-  /** Optional content under the point buttons (e.g. point tagging after a rally). */
-  belowPointButtons?: ReactNode;
 }
 
 /**
  * Live match mode, following the whole match: the set being played (score, serve, court,
  * undo, subs), a "set won" panel with the next set, the setup of a new set, and the match
- * summary once a side has won 3 sets.
+ * summary once a side has won 3 sets. Under the point buttons: optional tags of the last rally.
  */
 export function LiveMatch({
   matchId,
@@ -40,10 +39,9 @@ export function LiveMatch({
   onSelectSet,
   onEditLineup,
   onBackToMatch,
-  belowPointButtons,
 }: LiveMatchProps) {
   const t = useT();
-  const live = useLiveSet(matchId, setNumber);
+  const { live, row: tagRow } = usePointTagging(useLiveSet(matchId, setNumber));
   const { match, set, state, court, matchState } = live;
 
   if (!match || !matchState || setNumber === undefined) {
@@ -105,7 +103,7 @@ export function LiveMatch({
       live={{ ...live, match, set, state, court, matchState }}
       onNext={goToNext}
       onUndo={undo}
-      belowPointButtons={belowPointButtons}
+      belowPointButtons={tagRow}
     />,
   );
 }

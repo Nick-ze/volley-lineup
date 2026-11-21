@@ -3,4 +3,36 @@ import type { Strings } from '../en';
 /** Optional point tagging in live mode (v3). */
 export const tags: Strings['tags'] = {
   title: 'Punkt-Details',
+  kinds: {
+    kill: 'Angriff',
+    ace: 'Ass',
+    block: 'Block',
+    opponentError: 'Gegn. Fehler',
+    ourError: 'Eigenfehler',
+    opponentKill: 'Gegn. Angriff',
+    opponentAce: 'Gegn. Ass',
+  },
+  kindNames: {
+    kill: 'Angriffspunkt',
+    ace: 'Ass',
+    block: 'Blockpunkt',
+    opponentError: 'Fehler des Gegners',
+    ourError: 'eigener Fehler',
+    opponentKill: 'Angriffspunkt des Gegners',
+    opponentAce: 'Ass des Gegners',
+  },
+  rowLabel: (us: boolean) =>
+    us
+      ? 'Optional: Wie haben wir den Punkt gewonnen?'
+      : 'Optional: Wie haben wir den Punkt verloren?',
+  chooseKind: (kind: string) => `Letzten Punkt markieren als ${kind}`,
+  clearKind: (kind: string) => `Markierung ${kind} entfernen`,
+  playersLabel: (kind: string) => `Optional: Wer war es? (${kind})`,
+  choosePlayer: (desc: string, kind: string) => `${desc}: ${kind}`,
+  clearPlayer: (desc: string) => `${desc} aus der Markierung entfernen`,
+  close: '✕',
+  skipLabel: 'Punkt-Details überspringen',
+  doneLabel: 'Punkt-Details schließen',
+  detail: (kind: string, player: string | null) => (player ? `${kind} ${player}` : kind),
+  withDetail: (undo: string, detail: string) => `${undo} · ${detail}`,
 };

@@ -1,4 +1,38 @@
-/** Optional point tagging in live mode (v3). Owned by one v3 worker. */
+/** Optional point tagging in live mode (v3, docs/PLAN.md §15.3). */
 export const tags = {
   title: 'Point details',
+  /** Short chip text per kind. */
+  kinds: {
+    kill: 'Kill',
+    ace: 'Ace',
+    block: 'Block',
+    opponentError: 'Opp. error',
+    ourError: 'Our error',
+    opponentKill: 'Their kill',
+    opponentAce: 'Their ace',
+  },
+  /** Spoken / undo-label name per kind. */
+  kindNames: {
+    kill: 'kill',
+    ace: 'ace',
+    block: 'block',
+    opponentError: 'opponent error',
+    ourError: 'our error',
+    opponentKill: 'their kill',
+    opponentAce: 'their ace',
+  },
+  rowLabel: (us: boolean) =>
+    us ? 'Optional: how did we win the point?' : 'Optional: how did we lose the point?',
+  chooseKind: (kind: string) => `Tag the last point as ${kind}`,
+  clearKind: (kind: string) => `Remove the tag ${kind}`,
+  playersLabel: (kind: string) => `Optional: which player? (${kind})`,
+  choosePlayer: (desc: string, kind: string) => `${desc}: ${kind}`,
+  clearPlayer: (desc: string) => `Remove ${desc} from the tag`,
+  close: '✕',
+  skipLabel: 'Skip point details',
+  doneLabel: 'Close point details',
+  /** "kill #7 Smith": the tag as named in the undo label. */
+  detail: (kind: string, player: string | null) => (player ? `${kind} ${player}` : kind),
+  /** "Undo last point for us · kill #7 Smith". */
+  withDetail: (undo: string, detail: string) => `${undo} · ${detail}`,
 } as const;

@@ -53,17 +53,21 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
   const next = nextSetNumber(set.setNumber);
   const last = set.events[set.events.length - 1];
 
+  // The set's winning rally can still be tagged: the tag row stays under the "set won" panel.
   const play = won ? (
-    <SetWonPanel
-      setNumber={set.setNumber}
-      winner={won}
-      score={state.score}
-      opponent={match.opponent}
-      next={next}
-      nextPlayed={match.sets.some((s) => s.setNumber === next && s.events.length > 0)}
-      onNext={onNext}
-      onUndo={hasLaterPlay(match, set.setNumber) ? null : onUndo}
-    />
+    <>
+      <SetWonPanel
+        setNumber={set.setNumber}
+        winner={won}
+        score={state.score}
+        opponent={match.opponent}
+        next={next}
+        nextPlayed={match.sets.some((s) => s.setNumber === next && s.events.length > 0)}
+        onNext={onNext}
+        onUndo={hasLaterPlay(match, set.setNumber) ? null : onUndo}
+      />
+      {belowPointButtons}
+    </>
   ) : (
     <RallyControls
       opponent={match.opponent}
