@@ -45,8 +45,6 @@ export const roster: Strings['roster'] = {
     open: (name: string) => `Team ${name} öffnen`,
     rename: (name: string) => `Team ${name} bearbeiten`,
     delete: (name: string) => `Team ${name} löschen`,
-    switchProfile: 'Profil wechseln',
-    settings: 'Einstellungen',
   },
   team: {
     title: (name: string, season?: string) => (season ? `${name} · ${season}` : name),

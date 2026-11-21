@@ -7,6 +7,7 @@ import { language } from './en/language';
 import { lineup } from './en/lineup';
 import { live } from './en/live';
 import { print } from './en/print';
+import { profile } from './en/profile';
 import { roster } from './en/roster';
 import { rotation } from './en/rotation';
 import { transfer } from './en/transfer';
@@ -74,6 +75,7 @@ export const en = {
   print,
   live,
   language,
+  profile,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */

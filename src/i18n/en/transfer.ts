@@ -2,12 +2,6 @@
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export const transfer = {
-  profile: {
-    title: 'Profile',
-    current: (name: string) => `Current profile: ${name}`,
-    none: 'No profile selected.',
-    switch: 'Switch profile',
-  },
   export: {
     title: 'Export',
     hint: 'Save your data as a .json file to keep a backup or move it to another device.',

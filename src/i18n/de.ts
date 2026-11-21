@@ -6,6 +6,7 @@ import { language } from './de/language';
 import { lineup } from './de/lineup';
 import { live } from './de/live';
 import { print } from './de/print';
+import { profile } from './de/profile';
 import { roster } from './de/roster';
 import { rotation } from './de/rotation';
 import { transfer } from './de/transfer';
@@ -73,4 +74,5 @@ export const de: Strings = {
   print,
   live,
   language,
+  profile,
 };

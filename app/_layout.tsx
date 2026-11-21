@@ -45,8 +45,9 @@ export default function RootLayout() {
                 headerStyle: { backgroundColor: colors.surface },
                 headerTintColor: colors.text,
                 contentStyle: { backgroundColor: colors.background },
+                // The picker and the tabs (headerShown: false) never get a back button.
                 headerLeft:
-                  route.name === 'index'
+                  route.name === 'index' || route.name === '(tabs)'
                     ? undefined
                     : () => (
                         <HeaderBack
@@ -60,7 +61,8 @@ export default function RootLayout() {
               })}
             >
               <Stack.Screen name="index" options={{ title: t.nav.profiles }} />
-              <Stack.Screen name="teams" options={{ title: t.nav.teams }} />
+              {/* Teams / Profile / Settings: bottom tabs with their own headers. */}
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, title: t.nav.teams }} />
               <Stack.Screen name="team/[teamId]/index" options={{ title: t.nav.team }} />
               <Stack.Screen
                 name="team/[teamId]/player"
@@ -74,7 +76,6 @@ export default function RootLayout() {
               <Stack.Screen name="match/[matchId]/rotation" options={{ title: t.nav.rotation }} />
               <Stack.Screen name="match/[matchId]/starters" options={{ title: t.nav.starters }} />
               <Stack.Screen name="match/[matchId]/live" options={{ title: t.nav.live }} />
-              <Stack.Screen name="settings" options={{ title: t.nav.settings }} />
             </Stack>
           ) : (
             <View style={styles.loading}>
