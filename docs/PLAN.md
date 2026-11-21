@@ -230,3 +230,30 @@ Derived live state is computed by a pure function (`src/domain/liveSet.ts`): `re
 - [x] The whole app can be switched to German and back; the choice survives a restart.
 - [x] v1 data on a device and v1 export files open in v2 without loss.
 - [x] Lint, typecheck and tests pass in CI; `src/domain` 100% coverage.
+
+---
+
+# v2.2 additions
+
+## 14. Team nav bar, presets and starters
+
+- In the team view a bottom nav bar: **Roster · Matches · Presets · Starters**.
+- **Starters**: the team's usual starting six + libero (+ whom the libero replaces). New matches start set 1 with them.
+- **Presets**: named lineups for the team, edited with the lineup builder; in a match set: "Use team starters" / "Apply preset…".
+
+Data model v3:
+
+```ts
+interface LineupPreset {
+  id: string;
+  teamId: string;
+  name: string;
+  kind: 'starters' | 'preset'; // at most one 'starters' per team
+  slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>;
+  liberoId: string | null;
+  liberoReplaces: string[];
+  createdAt: string;
+}
+// ExportFile: + presets: LineupPreset[], schemaVersion: 3 (v1/v2 files upgraded on import)
+// Store: version 3 (v2 → v3 adds presets: [])
+```
