@@ -24,10 +24,13 @@ const set = (setNumber: SetLineup['setNumber'], over: Partial<SetLineup>): SetLi
 });
 
 /*
- * Set 1 (they serve): L, W kill #2 (side-out → R2, #2 serves), W ace #2, L.
+ * Set 1 (they serve): L, W kill #2 (side-out, #2 serves), W ace #2, L.
+ * v4: rotations are named after the setter's position. #1 (Sina, primary S) starts at 1, so the
+ * first two rallies are R1; after the side-out she is at 6, so the last two are R6.
  * By hand: R1 won 1, lost 1, received 2, side-outs 1 → 50 %, no break point;
- * R2 won 1, lost 1, nothing received → "–", 1 break point. #2: 1 serve turn, 1 point on serve.
- * Set 2 (we serve): W, W → R1 won 2, 2 break points; #1 serves one turn, 2 points.
+ * R6 won 1, lost 1, nothing received → "–", 1 break point. #2: 1 serve turn, 1 point on serve.
+ * Set 2 (we serve): W, W → R1 (setter at 1) won 2, 2 break points; #1 serves one turn, 2 points.
+ * R2–R5 are never played.
  */
 const match: Match = {
   id: 'm1',
@@ -71,8 +74,16 @@ describe('Stats tab', () => {
       ['won', 'lost', 'sideOut', 'breakPoints'].map((c) => cell('rotation-table', 'r1', c)),
     ).toEqual(['3', '1', '50%', '2']);
     expect(
-      ['won', 'lost', 'sideOut', 'breakPoints'].map((c) => cell('rotation-table', 'r2', c)),
+      ['won', 'lost', 'sideOut', 'breakPoints'].map((c) => cell('rotation-table', 'r6', c)),
     ).toEqual(['1', '1', '–', '1']);
+    expect(
+      ['won', 'lost', 'sideOut', 'breakPoints'].map((c) => cell('rotation-table', 'r2', c)),
+    ).toEqual(['0', '0', '–', '0']);
+    // The legend explains the numbering (setter's position, fallback without a setter).
+    expect(screen.getByTestId('rotation-table-note')).toHaveTextContent(
+      t.stats.rotations.numbering,
+    );
+    expect(t.stats.rotations.numbering).toMatch(/^R4 = setter at position 4/);
     const p2 = ['setsStarted', 'setsPlayed', 'subIn', 'serveTurns', 'servePoints', 'kills', 'aces'];
     expect(p2.map((c) => cell('player-table', 'p2', c))).toEqual([
       '2',
@@ -104,6 +115,10 @@ describe('Stats tab', () => {
       expect(await screen.findByText(de.stats.season.heading)).toBeTruthy();
       expect(screen.getByText(de.stats.players.kills)).toBeTruthy();
       expect(cell('rotation-table', 'r1', 'sideOut')).toBe('50 %');
+      expect(screen.getByTestId('rotation-table-note')).toHaveTextContent(
+        de.stats.rotations.numbering,
+      );
+      expect(de.stats.rotations.numbering).toMatch(/^R4 = Zuspieler auf Position 4/);
     } finally {
       useAppStore.getState().setLanguage('en');
     }

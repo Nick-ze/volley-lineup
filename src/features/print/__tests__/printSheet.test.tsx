@@ -184,6 +184,46 @@ describe('print lineup sheet', () => {
     }
   });
 
+  /** v4: p2 plays setter (off position) in set 1, the libero is switched off in set 2. */
+  function rolesAndLiberoOff() {
+    const [s1, s2, s3] = useAppStore.getState().matches[0].sets;
+    useAppStore.setState((st) => ({
+      matches: [
+        {
+          ...st.matches[0],
+          sets: [{ ...s1, roles: { p2: 'S' } }, { ...s2, liberoActive: false }, s3],
+        },
+      ],
+    }));
+  }
+
+  it('prints the roles, the "*" note and "Libero off" (v4)', async () => {
+    rolesAndLiberoOff();
+    await renderRouter('./app', { initialUrl: '/match/m1' });
+    await fireEvent.press(await screen.findByTestId('print-sheet'));
+    await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
+    const [html] = mockPrint.mock.calls[0] as [string];
+    expect(html).toContain('<span class="role">S<span class="off">*</span></span>P2');
+    expect(html).toContain('<span class="role">OH</span>P1');
+    expect(html).toContain('* = plays a role that is none of their positions');
+    expect(html).toContain('<div class="libero-off">Libero off</div>');
+  });
+
+  it('prints "Libero aus" and the "*" note in German', async () => {
+    rolesAndLiberoOff();
+    useAppStore.getState().setLanguage('de');
+    try {
+      await renderRouter('./app', { initialUrl: '/match/m1' });
+      await fireEvent.press(await screen.findByTestId('print-sheet'));
+      await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
+      const [html] = mockPrint.mock.calls[0] as [string];
+      expect(html).toContain('<div class="libero-off">Libero aus</div>');
+      expect(html).toContain('* = spielt eine Rolle außerhalb der eigenen Positionen');
+    } finally {
+      useAppStore.getState().setLanguage('en');
+    }
+  });
+
   it('shows an error when printing fails', async () => {
     mockPrint.mockRejectedValueOnce(new Error('no printer'));
     await renderRouter('./app', { initialUrl: '/match/m1' });

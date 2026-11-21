@@ -1,8 +1,10 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { listStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { touchTarget } from '@/theme';
+
+import { StatsNumbers } from './StatsNumbers';
+import { statsTableStyles as styles } from './statsTableStyles';
 
 export interface StatsColumn {
   key: string;
@@ -28,14 +30,12 @@ export interface StatsTableProps {
   head: StatsColumn;
   columns: StatsColumn[];
   rows: StatsRow[];
+  /** Extra explanation under the legend (e.g. how rotations are numbered). */
+  note?: string;
   /** Width of the sticky first column. */
   headWidth?: number;
   testID: string;
 }
-
-/** Row height and width of a numeric column. */
-const ROW_HEIGHT = spacing.xxl;
-const CELL_WIDTH = touchTarget;
 
 /**
  * A compact table: the first column stays put, the numeric columns scroll sideways when they
@@ -47,6 +47,7 @@ export function StatsTable({
   head,
   columns,
   rows,
+  note,
   headWidth = touchTarget * 1.5,
   testID,
 }: StatsTableProps) {
@@ -82,76 +83,16 @@ export function StatsTable({
             </Text>
           ))}
         </View>
-        <ScrollView
-          horizontal
-          style={styles.scroller}
-          accessibilityLabel={s.tableScrollLabel(heading)}
-        >
-          <View>
-            <View style={styles.row}>
-              {columns.map((c) => (
-                <Text
-                  key={c.key}
-                  style={[styles.cell, styles.header, styles.num]}
-                  accessibilityLabel={c.meaning}
-                >
-                  {c.label}
-                </Text>
-              ))}
-            </View>
-            {rows.map((row) => (
-              <View
-                key={row.key}
-                style={styles.row}
-                importantForAccessibility="no-hide-descendants"
-              >
-                {columns.map((c, i) => (
-                  <Text
-                    key={c.key}
-                    style={[styles.cell, styles.num]}
-                    testID={`${testID}-${row.key}-${c.key}`}
-                  >
-                    {row.cells[i]}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+        <StatsNumbers heading={heading} columns={columns} rows={rows} testID={testID} />
       </View>
       <Text style={styles.legend}>
         {columns.map((c) => s.legend(c.label, c.meaning)).join(' · ')}
       </Text>
+      {note ? (
+        <Text style={styles.legend} testID={`${testID}-note`}>
+          {note}
+        </Text>
+      ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.sm },
-  heading: listStyles.title,
-  // As wide as its columns, but never wider than the screen (then the numbers scroll).
-  table: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  scroller: { flexGrow: 0, flexShrink: 1 },
-  row: { flexDirection: 'row' },
-  cell: {
-    ...typography.body,
-    color: colors.text,
-    height: ROW_HEIGHT,
-    lineHeight: ROW_HEIGHT,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  headCell: { paddingHorizontal: spacing.sm, backgroundColor: colors.surfaceRaised },
-  header: { ...typography.label, color: colors.textMuted, lineHeight: ROW_HEIGHT },
-  num: { width: CELL_WIDTH, textAlign: 'center' },
-  legend: { ...typography.caption, color: colors.textMuted },
-});

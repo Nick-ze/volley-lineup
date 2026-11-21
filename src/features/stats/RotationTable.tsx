@@ -16,7 +16,10 @@ export interface RotationTableProps {
   testID?: string;
 }
 
-/** Rotations 1–6: points won / lost, side-out % and break points. */
+/**
+ * Rotations 1–6 (named after the setter's position, v4): points won / lost, side-out % and break
+ * points.
+ */
 export function RotationTable({ stats, testID = 'rotation-table' }: RotationTableProps) {
   const t = useT();
   const r = t.stats.rotations;
@@ -37,6 +40,7 @@ export function RotationTable({ stats, testID = 'rotation-table' }: RotationTabl
       head={{ key: 'head', label: r.head, meaning: r.headLabel }}
       columns={columns}
       rows={rows}
+      note={r.numbering}
       testID={testID}
     />
   );
