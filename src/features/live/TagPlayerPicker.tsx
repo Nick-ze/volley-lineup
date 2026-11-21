@@ -48,16 +48,22 @@ export function TagPlayerPicker({
   const chosen = rally.event.playerId;
   const served = kind === 'ace' || errorType === 'serve';
 
+  const kindChip = (
+    <TagChip
+      label={t.tags.kinds[kind]}
+      accessibilityLabel={t.tags.clearKind(name)}
+      selected
+      onPress={() => onTag(null, null)}
+      testID={`tag-${kind}`}
+    />
+  );
   return (
     <View style={styles.row} accessibilityLabel={t.tags.playersLabel(name)} testID="point-tag-row">
-      <TagChip
-        label={t.tags.kinds[kind]}
-        accessibilityLabel={t.tags.clearKind(name)}
-        selected
-        onPress={() => onTag(null, null)}
-        testID={`tag-${kind}`}
-      />
-      {kindTakesErrorType(kind) ? <ErrorTypeChips rally={rally} onErrorType={onErrorType} /> : null}
+      {kindTakesErrorType(kind) ? (
+        <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
+      ) : (
+        kindChip
+      )}
       {onCourt.map((p) => {
         const selected = p.id === chosen;
         const desc = playerDescription(t, p);

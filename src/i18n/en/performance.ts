@@ -9,7 +9,7 @@ const errorTypePlurals: Record<ErrorCategory, string> = {
   attack: 'attack errors',
   block: 'block errors',
   set: 'setting errors',
-  netFault: 'net / fouls',
+  netFault: 'net faults / fouls',
   other: 'other errors',
   unspecified: 'unspecified errors',
 };
@@ -22,7 +22,7 @@ export const performance = {
   title: 'Performance',
   /** The link on the match screen. */
   open: 'Performance',
-  openLabel: 'Performance of every player in this match',
+  openLabel: 'Performance: per player, for this set or the whole match',
   heading: (opponent: string) => `Performance vs ${opponent}`,
   notFound: 'This match could not be found.',
   empty: 'No set played yet. Performance appears once rallies are recorded in live mode.',

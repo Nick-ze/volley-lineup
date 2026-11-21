@@ -1,4 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 
 import type { Match, Player, Position, SetEvent, SetLineup } from '@/domain/types';
@@ -223,6 +224,16 @@ describe('performance view', () => {
     expect(await screen.findByTestId('perf-set-all')).toBeSelected();
     expect(screen.queryByTestId('perf-detail')).toBeNull();
     expect(text('perf-record-p2')).toBe('10 rallies · 4–6 (−2)');
+  });
+
+  it('opens a player as a new history entry: Back returns to the overview', async () => {
+    await open('?set=1');
+    await fireEvent.press(await screen.findByTestId('perf-row-p4'));
+    expect(await screen.findByTestId('perf-detail')).toBeTruthy();
+    await act(() => router.back());
+    expect(await screen.findByTestId('perf-row-p4')).toBeTruthy();
+    expect(screen.queryByTestId('perf-detail')).toBeNull();
+    expect(screen.getByTestId('perf-set-1')).toBeSelected();
   });
 
   it('shows an empty state when no set has been played', async () => {

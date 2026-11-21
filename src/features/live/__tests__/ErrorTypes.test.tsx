@@ -190,6 +190,41 @@ describe('error types on "our error" in live mode', () => {
     ).toBeTruthy();
   });
 
+  it('labels the type group and keeps the tagged player plausible for a type chosen later', async () => {
+    seed(true); // we serve: #1 serves; the libero isn't on court in this test's lineup
+    await open();
+    await press('point-them');
+    await press('tag-ourError');
+    expect(screen.getByTestId('tag-error-types').props.accessibilityLabel).toBe(
+      'Optional: what kind of error?',
+    );
+    // A back-row player first, then Block: the player is dropped (front row only).
+    await press('tag-player-p5');
+    await press('tag-error-block');
+    expect(lastTag()).toEqual({
+      type: 'point',
+      winner: 'them',
+      kind: 'ourError',
+      errorType: 'block',
+    });
+    // A front-row player, then Serve instead: our server replaces them.
+    await press('tag-player-p3');
+    await press('tag-error-block');
+    await press('tag-error-serve');
+    expect(lastTag()).toEqual({
+      type: 'point',
+      winner: 'them',
+      kind: 'ourError',
+      errorType: 'serve',
+      playerId: 'p1',
+    });
+    // A plausible player is kept.
+    await press('tag-error-serve');
+    await press('tag-player-p4');
+    await press('tag-error-attack');
+    expect(lastTag()).toMatchObject({ errorType: 'attack', playerId: 'p4' });
+  });
+
   it('keeps old untyped tags valid', async () => {
     seed(false, [{ type: 'point', winner: 'them', kind: 'ourError', playerId: 'p3' }]);
     await open();

@@ -26,6 +26,12 @@ export default function PerformanceScreen() {
         setParam={params.set}
         playerParam={params.player}
         onParams={(next) => router.setParams(next)}
+        onOpenPlayer={(next) =>
+          router.push({
+            pathname: '/match/[matchId]/performance',
+            params: { matchId: match.id, ...next },
+          })
+        }
       />
     </Screen>
   );

@@ -22,6 +22,8 @@ export interface MatchPerformanceProps {
   playerParam: string | undefined;
   /** Updates the URL params (`set`: number or 'all'; `player`: id or undefined). */
   onParams: (params: { set: string; player: string | undefined }) => void;
+  /** Opens a player's detail as a new history entry (so Back returns to the overview). */
+  onOpenPlayer: (params: { set: string; player: string }) => void;
 }
 
 /** The performance view: set switcher, then every player's card, or one player's detail. */
@@ -30,6 +32,7 @@ export function MatchPerformance({
   setParam,
   playerParam,
   onParams,
+  onOpenPlayer,
 }: MatchPerformanceProps) {
   const t = useT();
   const players = usePlayersForTeam(match.teamId);
@@ -82,7 +85,7 @@ export function MatchPerformance({
                 key={player.id}
                 player={player}
                 performance={performance}
-                onPress={() => onParams({ set: setKey, player: player.id })}
+                onPress={() => onOpenPlayer({ set: setKey, player: player.id })}
               />
             ))}
           </View>

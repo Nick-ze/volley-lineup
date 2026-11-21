@@ -53,7 +53,7 @@ export function usePointTagging(live: LiveSet): PointTagging {
         rally={rally}
         playersById={playersById}
         onTag={(kind, playerId) => live.saveSet(tagLastPoint(set, kind, playerId))}
-        onErrorType={(type) => live.saveSet(chooseLastErrorType(set, type, rally.serverId))}
+        onErrorType={(type) => live.saveSet(chooseLastErrorType(set, type, rally))}
         onClose={() => setOpen(false)}
       />
     ) : null;

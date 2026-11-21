@@ -23,7 +23,7 @@ const rallies = (n: number) => (n === 1 ? '1 Ballwechsel' : `${n} Ballwechsel`);
 export const performance: Strings['performance'] = {
   title: 'Leistung',
   open: 'Leistung',
-  openLabel: 'Leistung aller Spieler in diesem Spiel',
+  openLabel: 'Leistung: pro Spieler, für diesen Satz oder das ganze Spiel',
   heading: (opponent: string) => `Leistung gegen ${opponent}`,
   notFound: 'Dieses Spiel wurde nicht gefunden.',
   empty:
