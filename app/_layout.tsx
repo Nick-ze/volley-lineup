@@ -1,11 +1,13 @@
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { HeaderBack } from '@/components/HeaderBack';
 import { useT } from '@/i18n';
+import { setDocumentLanguage } from '@/lib/documentLanguage';
 import { parentRoute } from '@/lib/parentRoute';
 import { useAppStore } from '@/store';
 import { colors } from '@/theme';
@@ -29,6 +31,8 @@ const teamIdOfMatch = (matchId: string) =>
 export default function RootLayout() {
   const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
+  const language = useAppStore((s) => s.language);
+  useEffect(() => setDocumentLanguage(language), [language]);
 
   return (
     <GestureHandlerRootView style={styles.root}>
