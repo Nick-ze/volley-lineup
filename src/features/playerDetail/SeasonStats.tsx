@@ -80,14 +80,16 @@ export function SeasonStats({ season }: { season: PlayerSeason }) {
       <View style={styles.row}>
         <Tile {...count('errors')} />
         <View style={styles.breakdown} testID="season-error-breakdown">
-          <Text style={styles.label}>{s.breakdownHeading}</Text>
-          <Text style={styles.breakdownText}>
-            {breakdown.length === 0
-              ? t.stats.none
-              : breakdown
-                  .map((b) => s.breakdownItem(b.count, t.tags.errorTypeNames[b.category]))
-                  .join(' · ')}
-          </Text>
+          <Text style={styles.breakdownHeading}>{s.breakdownHeading}</Text>
+          {breakdown.length === 0 ? (
+            <Text style={styles.breakdownText}>{t.stats.none}</Text>
+          ) : (
+            breakdown.map((b) => (
+              <Text key={b.category} style={styles.breakdownText}>
+                {s.breakdownItem(b.count, t.tags.errorTypeNames[b.category])}
+              </Text>
+            ))
+          )}
         </View>
       </View>
     </View>
@@ -111,6 +113,7 @@ const styles = StyleSheet.create({
   value: { ...typography.subheading, color: colors.text },
   label: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
   // Two tiles wide, next to the Errors tile.
-  breakdown: { flex: 2, justifyContent: 'center', gap: spacing.xxs, padding: spacing.sm },
-  breakdownText: { ...typography.body, color: colors.text },
+  breakdown: { flex: 2, justifyContent: 'center', padding: spacing.sm },
+  breakdownHeading: { ...typography.caption, color: colors.textMuted },
+  breakdownText: { ...typography.label, color: colors.text },
 });
