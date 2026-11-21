@@ -10,7 +10,7 @@ import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
 import { spacing } from '@/theme';
 
-import { playerRef } from './format';
+import { playerRef, tagDetail } from './format';
 import { CONTROLS_COLUMN_WIDTH } from './layout';
 import { LiveBanners } from './LiveBanners';
 import { LiveCourt } from './LiveCourt';
@@ -65,6 +65,7 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
         nextPlayed={match.sets.some((s) => s.setNumber === next && s.events.length > 0)}
         onNext={onNext}
         onUndo={hasLaterPlay(match, set.setNumber) ? null : onUndo}
+        tagDetail={last?.type === 'point' ? tagDetail(t, playersById, last) : null}
       />
       {belowPointButtons}
     </>

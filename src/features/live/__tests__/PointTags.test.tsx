@@ -195,6 +195,9 @@ describe('point tagging in live mode', () => {
     await press('tag-block');
     await press('tag-player-p3');
     expect(lastTag()).toEqual({ type: 'point', winner: 'us', kind: 'block', playerId: 'p3' });
+    expect(
+      screen.getByRole('button', { name: 'Undo last point for us · block #3 Middle' }),
+    ).toBeTruthy();
   });
 
   it('a tagged rally shows up in the match stats player table', async () => {
