@@ -297,11 +297,10 @@ describe('whole-match live mode', () => {
       ],
     );
     await renderRouter('./app', { initialUrl: '/team/team1?tab=matches' });
-    expect(await screen.findByText('2026-11-20 · Home · 3:1 won')).toBeTruthy();
-    expect(screen.getByText('2026-11-20 · Home · 1:3 lost')).toBeTruthy();
-    expect(screen.getByText('2026-11-20 · Home · 2:0 · in progress')).toBeTruthy();
-    expect(screen.getByText('2026-11-20 · Home · in progress')).toBeTruthy();
-    expect(screen.getAllByText('2026-11-20 · Home')).toHaveLength(1); // not started
+    // The result has its own (never truncated) line under date · home/away.
+    const results = (await screen.findAllByTestId('match-row-result')).map((r) => r.props.children);
+    expect(results.sort()).toEqual(['1:3 lost', '2:0 · in progress', '3:1 won', 'in progress']);
+    expect(screen.getAllByText('2026-11-20 · Home')).toHaveLength(5);
   });
 
   it('shows the result line in the match header', async () => {

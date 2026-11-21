@@ -36,9 +36,12 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
           <ListRow
             key={m.id}
             title={s.vs(m.opponent)}
-            subtitle={[m.date, m.home ? s.home : s.away, matchResultLabel(t, m)]
-              .filter(Boolean)
-              .join(' · ')}
+            subtitle={
+              <MatchSubtitle
+                text={`${m.date} · ${m.home ? s.home : s.away}`}
+                result={matchResultLabel(t, m)}
+              />
+            }
             onPress={() => onOpenMatch(m.id)}
             accessibilityLabel={s.open(m.opponent, m.date)}
             actions={
@@ -56,6 +59,22 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
         ))}
       </View>
       <ConfirmDialog {...dialogProps} />
+    </>
+  );
+}
+
+/** Date · home/away on one line; the result (never truncated) on its own line below. */
+function MatchSubtitle({ text, result }: { text: string; result: string | null }) {
+  return (
+    <>
+      <Text style={styles.subtitle} numberOfLines={1}>
+        {text}
+      </Text>
+      {result ? (
+        <Text style={styles.subtitle} testID="match-row-result">
+          {result}
+        </Text>
+      ) : null}
     </>
   );
 }
