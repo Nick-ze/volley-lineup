@@ -11,7 +11,7 @@ export function ProfileHeader({ profile }: { profile: ManagerProfile }) {
   const t = useT();
   return (
     <View style={styles.who}>
-      <Avatar name={profile.name} color={profile.color} />
+      <Avatar name={profile.name} color={profile.color} photoId={profile.photoId} />
       <Text style={styles.heading} accessibilityRole="header" numberOfLines={2}>
         {t.roster.teams.heading(profile.name)}
       </Text>

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { ManagerProfile } from '@/domain/types';
+import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { Avatar } from '@/features/roster/components/Avatar';
 import { ProfileForm } from '@/features/roster/components/ProfileForm';
 import { useT } from '@/i18n';
@@ -11,7 +12,7 @@ import { colors, radius, spacing, typography } from '@/theme';
 
 const AVATAR_SIZE = 64;
 
-/** The current profile (avatar, name, team/player counts) with inline name/colour editing. */
+/** The current profile (avatar, name, team/player counts) with inline name / colour / photo editing. */
 export function ProfileCard({ profile }: { profile: ManagerProfile }) {
   const t = useT();
   const [editing, setEditing] = useState(false);
@@ -25,10 +26,13 @@ export function ProfileCard({ profile }: { profile: ManagerProfile }) {
     return (
       <ProfileForm
         initial={{ name: profile.name, color: profile.color }}
+        photoId={profile.photoId}
         submitLabel={t.common.save}
         onCancel={() => setEditing(false)}
-        onSubmit={(value) => {
-          useAppStore.getState().updateProfile(profile.id, value);
+        onSubmit={(value, photo) => {
+          const { updateProfile } = useAppStore.getState();
+          updateProfile(profile.id, value);
+          void applyPhotoDraft(photo, (photoId) => updateProfile(profile.id, { photoId }));
           setEditing(false);
         }}
       />
@@ -38,7 +42,12 @@ export function ProfileCard({ profile }: { profile: ManagerProfile }) {
   return (
     <View style={styles.card} testID="profile-card">
       <View style={styles.who}>
-        <Avatar name={profile.name} color={profile.color} size={AVATAR_SIZE} />
+        <Avatar
+          name={profile.name}
+          color={profile.color}
+          photoId={profile.photoId}
+          size={AVATAR_SIZE}
+        />
         <View style={styles.text}>
           <Text style={styles.caption}>{t.profile.current}</Text>
           <Text style={styles.name} accessibilityRole="header" numberOfLines={2}>

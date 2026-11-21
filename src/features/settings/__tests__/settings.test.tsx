@@ -271,7 +271,7 @@ describe('delete all and version', () => {
     await renderSettings();
     expect(
       screen.getByText(
-        'Removes every profile, team, player, match and saved lineup (presets and team starters) from this device.',
+        'Removes every profile, team, player, photo, match and saved lineup (presets and team starters) from this device.',
       ),
     ).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Delete all data'));

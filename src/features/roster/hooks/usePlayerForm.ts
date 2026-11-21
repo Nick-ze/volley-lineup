@@ -7,6 +7,7 @@ import {
   type PlayerFormInput,
 } from '@/domain/roster';
 import type { Player } from '@/domain/types';
+import { applyPhotoDraft, KEEP_PHOTO, type PhotoDraft } from '@/features/photos/photoDraft';
 import { useAppStore } from '@/store';
 
 const emptyForm: PlayerFormInput = {
@@ -25,12 +26,13 @@ const fromPlayer = (p: Player): PlayerFormInput => ({
   active: p.active,
 });
 
-/** Form state + validation + save for the player editor. */
+/** Form state (incl. the unsaved picture) + validation + save for the player editor. */
 export function usePlayerForm(teamId: string, player: Player | undefined) {
   const [form, setForm] = useState<PlayerFormInput>(() =>
     player ? fromPlayer(player) : emptyForm,
   );
   const [errors, setErrors] = useState<FormErrors<PlayerFormField>>({});
+  const [photo, setPhoto] = useState<PhotoDraft>(KEEP_PHOTO);
 
   const set = <K extends PlayerFormField>(key: K, value: PlayerFormInput[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -41,10 +43,11 @@ export function usePlayerForm(teamId: string, player: Player | undefined) {
     const result = validatePlayerForm(form, { players, teamId, playerId: player?.id });
     setErrors(result.errors);
     if (!result.ok) return false;
-    if (player) updatePlayer(player.id, result.value);
-    else addPlayer({ teamId, ...result.value });
+    const id = player ? player.id : addPlayer({ teamId, ...result.value }).id;
+    if (player) updatePlayer(id, result.value);
+    void applyPhotoDraft(photo, (photoId) => updatePlayer(id, { photoId }));
     return true;
   };
 
-  return { form, set, errors, save };
+  return { form, set, errors, save, photo, setPhoto };
 }

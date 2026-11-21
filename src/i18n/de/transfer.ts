@@ -58,11 +58,11 @@ export const transfer: Strings['transfer'] = {
   },
   danger: {
     title: 'Alle Daten löschen',
-    hint: 'Entfernt alle Profile, Teams, Spieler, Spiele und gespeicherten Aufstellungen (Vorlagen und Startsechs) von diesem Gerät.',
+    hint: 'Entfernt alle Profile, Teams, Spieler, Fotos, Spiele und gespeicherten Aufstellungen (Vorlagen und Startsechs) von diesem Gerät.',
     button: 'Alle Daten löschen',
     confirmTitle: 'Alles löschen?',
     confirmBody:
-      'Alle Profile, Teams, Spieler, Spiele und gespeicherten Aufstellungen (Vorlagen und Startsechs) werden gelöscht. Das kann nicht rückgängig gemacht werden. Exportiere deine Daten vorher, wenn du eine Sicherung willst.',
+      'Alle Profile, Teams, Spieler, Fotos, Spiele und gespeicherten Aufstellungen (Vorlagen und Startsechs) werden gelöscht. Das kann nicht rückgängig gemacht werden. Exportiere deine Daten vorher, wenn du eine Sicherung willst.',
     confirm: 'Ja, alles löschen',
     cancel: 'Daten behalten',
     done: 'Alle Daten gelöscht.',

@@ -81,6 +81,7 @@ export function SubPanel({
               <PlayerChip
                 player={p}
                 size={BENCH_CHIP_SIZE}
+                showPhoto
                 onPress={outRef ? () => onPickIn(p.id) : undefined}
                 accessibilityLabel={playerDescription(t, p)}
                 accessibilityHint={outRef ? t.live.benchPlayerHint(outRef, warning) : undefined}

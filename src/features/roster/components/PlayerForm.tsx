@@ -2,6 +2,8 @@ import { Text, View } from 'react-native';
 
 import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
+import { NumberAvatar } from '@/features/photos/NumberAvatar';
+import { FORM_PHOTO_SIZE, PhotoField } from '@/features/photos/PhotoField';
 import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
@@ -22,7 +24,7 @@ export interface PlayerFormProps {
   deleteBlocked?: boolean;
 }
 
-/** Add / edit a player with inline validation. */
+/** Add / edit a player (with photo) with inline validation. */
 export function PlayerForm({
   teamId,
   player,
@@ -31,7 +33,7 @@ export function PlayerForm({
   deleteBlocked = false,
 }: PlayerFormProps) {
   const t = useT();
-  const { form, set, errors, save } = usePlayerForm(teamId, player);
+  const { form, set, errors, save, photo, setPhoto } = usePlayerForm(teamId, player);
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.player;
 
@@ -58,6 +60,12 @@ export function PlayerForm({
         keyboardType="number-pad"
         inputMode="numeric"
         maxLength={3}
+      />
+      <PhotoField
+        photoId={player?.photoId}
+        draft={photo}
+        onChange={setPhoto}
+        fallback={<NumberAvatar number={form.number} size={FORM_PHOTO_SIZE} />}
       />
       <PositionPicker
         value={form.positions}

@@ -2,10 +2,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useAppStore } from '@/store';
+import { useAppStore, usePhotoUri } from '@/store';
 import { colors, fontSize, radius, spacing, touchTarget, typography } from '@/theme';
 
+import { Photo } from './Photo';
 import { PositionBadge } from './PositionBadge';
+
+/** Room between a chip's picture and its outer edge (the thick selection ring). */
+const PHOTO_INSET = 6;
 
 export interface PlayerChipProps {
   player: Player;
@@ -17,6 +21,11 @@ export interface PlayerChipProps {
   /** Visually "lifted" (drag in progress). */
   lifted?: boolean;
   showName?: boolean;
+  /**
+   * v6, bench and pickers: show the player's photo in the circle, with "#7 Name" below
+   * (needs `showName`). Court chips keep the number / name (`chipLabel` setting).
+   */
+  showPhoto?: boolean;
   onPress?: () => void;
   /** Shown and announced as disabled (presses ignored). */
   disabled?: boolean;
@@ -33,6 +42,7 @@ export function PlayerChip({
   highlighted = false,
   lifted = false,
   showName = true,
+  showPhoto = false,
   onPress,
   disabled = false,
   onLongPress,
@@ -53,6 +63,7 @@ export function PlayerChip({
       `${player.firstName} ${player.lastName}`,
       primary ? t.positions[primary] : '',
     );
+  const photoUri = usePhotoUri(showPhoto && showName ? player.photoId : undefined);
   const ringColor = selected ? colors.primary : highlighted ? colors.highlight : colors.border;
 
   const content = (
@@ -65,7 +76,9 @@ export function PlayerChip({
           lifted && styles.lifted,
         ]}
       >
-        {namesFirst ? (
+        {photoUri !== null ? (
+          <Photo photoId={player.photoId} uri={photoUri} size={d - PHOTO_INSET} fallback={null} />
+        ) : namesFirst ? (
           <Text
             style={[
               styles.nameInCircle,
@@ -83,11 +96,19 @@ export function PlayerChip({
         ) : (
           <Text style={[styles.number, { fontSize: Math.round(d * 0.36) }]}>{player.number}</Text>
         )}
-        {primary ? <PositionBadge position={primary} /> : null}
+        {primary ? (
+          <View style={photoUri !== null && styles.badgeOnPhoto}>
+            <PositionBadge position={primary} />
+          </View>
+        ) : null}
       </View>
       {showName ? (
         <Text style={styles.name} numberOfLines={1}>
-          {namesFirst ? t.player.numberTag(player.number) : shortName}
+          {photoUri !== null
+            ? t.photos.chipCaption(player.number, shortName)
+            : namesFirst
+              ? t.player.numberTag(player.number)
+              : shortName}
         </Text>
       ) : null}
     </View>
@@ -129,6 +150,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   ringThick: { borderWidth: 3 },
+  badgeOnPhoto: { position: 'absolute', bottom: spacing.xxs },
   lifted: {
     transform: [{ scale: 1.15 }],
     shadowColor: colors.highlight,

@@ -30,7 +30,7 @@ export const roster: Strings['roster'] = {
     color: 'Farbe',
     colorOption: (n: number) => `Farbe ${n}`,
     select: (name: string) => `Profil ${name} öffnen`,
-    rename: (name: string) => `Profil ${name} umbenennen`,
+    rename: (name: string) => `Profil ${name} bearbeiten`,
     delete: (name: string) => `Profil ${name} löschen`,
     create: 'Profil anlegen',
   },

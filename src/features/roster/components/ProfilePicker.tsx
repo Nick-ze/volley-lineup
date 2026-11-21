@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { ManagerProfile } from '@/domain/types';
+import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 
@@ -41,8 +42,9 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
         <ProfileForm
           submitLabel={s.create}
           onCancel={() => setEditing(null)}
-          onSubmit={(value) => {
+          onSubmit={(value, photo) => {
             const profile = addProfile(value);
+            void applyPhotoDraft(photo, (photoId) => updateProfile(profile.id, { photoId }));
             setEditing(null);
             // Go straight into the new profile: creating it is never the end goal.
             onSelect(profile.id);
@@ -59,10 +61,12 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
             <ProfileForm
               key={p.id}
               initial={{ name: p.name, color: p.color }}
+              photoId={p.photoId}
               submitLabel={t.common.save}
               onCancel={() => setEditing(null)}
-              onSubmit={(value) => {
+              onSubmit={(value, photo) => {
                 updateProfile(p.id, value);
+                void applyPhotoDraft(photo, (photoId) => updateProfile(p.id, { photoId }));
                 setEditing(null);
               }}
             />
@@ -70,13 +74,13 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
             <ListRow
               key={p.id}
               title={p.name}
-              leading={<Avatar name={p.name} color={p.color} />}
+              leading={<Avatar name={p.name} color={p.color} photoId={p.photoId} />}
               onPress={() => onSelect(p.id)}
               accessibilityLabel={s.select(p.name)}
               actions={
                 <>
                   <Button
-                    label={t.common.rename}
+                    label={t.common.edit}
                     accessibilityLabel={s.rename(p.name)}
                     variant="ghost"
                     compact
