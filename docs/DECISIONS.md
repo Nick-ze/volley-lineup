@@ -221,3 +221,15 @@ Newest at the bottom. Format: **Decision** — why.
 
 130. **The libero replaces a role, so substitutes count** (amends #67 / #118): in live play a substitute for a player the libero replaces takes their place in whom the libero replaces (they inherit the role), and the starter coming back takes it again. Tracked by the replay (`RallyStep.liberoReplaces`, `LiveState.liberoReplaces`); live court, stats and the point-tag player list use it. The owner asked to choose which _position_ the libero substitutes.
 131. **Deleting a player also removes their role overrides from presets / team starters** (exports stay importable); copying a preset keeps roles and the libero switch; "Suggest middles" goes by role (players playing MB); imported role overrides must be court roles (S, OH, MB, OPP, DS — not "L"); rotate buttons are ↺ / ↻ in that order everywhere; the stepper keeps "on 4" together with a no-break space. The libero switch stays editable in played sets (like #68): it changes how past rallies are shown and counted.
+
+## v5 — Formations
+
+### Foundation (orchestrator)
+
+132. **Roles belong to the court spots, not to players** (replaces #114–117's per-player overrides): a set / preset has a `formation` (system 5-1 or 6-2, order 'outside' or 'middle', `setterAt`) that fixes every spot's role so the pairs 1–4, 2–5, 3–6 always match (S–OPP or S–S, OH–OH, MB–MB). Owner's choice: only 5-1 and 6-2, and the formation is fixed (no editing single spots). Default: 5-1, setter followed by an outside, setter spot at 1. Patterns and sources: `docs/VOLLEYBALL_RULES.md` §2.
+133. **Rotating before the set turns the formation with the players** (`setterAt` moves like a player), so everyone keeps their role; in live play players carry their starting role and substitutes inherit it (#116 unchanged). The formation is locked in played sets like the starting six.
+134. **Off position** = the spot's role is none of the player's listed positions (#115 unchanged); placing such a player asks for confirmation and the spot shows "*".
+135. **Data model v6**: export `schemaVersion` 6, store version 7. v5 data / files: the per-player roles become the formation that matches where the setter stands (`inferFormation`: first starter playing S → `setterAt`; a second setter opposite → 6-2; a middle right after the setter → 'middle' order; no setter → default). v4 → v5 still adds `roles: {}` first, so older files go through the same inference.
+136. **Templates** fill players into the set's formation by spot role (6-2 hitter spots also accept an opposite); choosing 5-1 / 6-2 sets the system and keeps order and setter spot. The lineup check no longer raises "unusual layout" (the formation can't be unusual); "no setter" means no listed setter on the setter spot(s).
+137. **`docs/VOLLEYBALL_RULES.md`** is the rules reference for the app: rules with sources (FIVB 2025–2028, DVV) and a numbered list of checks with PASS / FAIL / NOT MODELLED; keep it updated when the app changes. Note: the sandbox couldn't open the FIVB PDF itself, so rule sub-numbers follow the usual numbering (caveat in the file).
+138. **Version 5.0.0** (versionCode 50000).

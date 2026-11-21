@@ -1,4 +1,4 @@
-import type { Player, Position } from '@/domain/types';
+import type { Formation, Player, Position } from '@/domain/types';
 import { useAppStore } from '@/store';
 
 /** A 12-player roster: two setters, four outsides, three middles, one opposite, two liberos. */
@@ -45,6 +45,6 @@ export const fullLineup = () => ({
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
   liberoId: 'p7',
   liberoReplaces: ['p3', 'p6'],
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 } satisfies Formation,
   liberoActive: true,
 });

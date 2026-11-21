@@ -43,7 +43,7 @@ const sub = (outPlayerId: string, inPlayerId: string): SetEvent => ({
 });
 
 const lineup = (over: Partial<SetLineup>): SetLineup => ({
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   setNumber: 1,
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
@@ -161,22 +161,43 @@ const line = (values: number[]): PlayerStats => {
 
 describe('setStats — rotations', () => {
   it('counts set 1 per rotation (won, lost, received, side-outs, served, break points)', () => {
+    // v6: the default formation puts the setter spot at 1, so p1 plays S and names the rotation:
+    // the from-start rows (see the fallback test below) move R1 → 1, R2 → 6, R3 → 5, R4 → 4,
+    // R5 → 3, R6 → 2 (re-derived by hand for the new model).
     const s = setStats(set1, players);
     expect(s.points).toEqual({ us: 12, them: 8 });
     expect(s.rotations).toEqual([
-      rot(1, [2, 2, 2, 1, 2, 1]),
-      rot(2, [2, 1, 1, 1, 2, 1]),
-      rot(3, [2, 1, 1, 1, 2, 1]),
-      rot(4, [3, 1, 1, 1, 3, 2]),
-      rot(5, [1, 2, 2, 1, 1, 0]),
-      rot(6, [2, 1, 1, 1, 2, 1]),
+      rot(1, [2, 2, 2, 1, 2, 1]), // from-start R1
+      rot(2, [2, 1, 1, 1, 2, 1]), // from-start R6
+      rot(3, [1, 2, 2, 1, 1, 0]), // from-start R5
+      rot(4, [3, 1, 1, 1, 3, 2]), // from-start R4
+      rot(5, [2, 1, 1, 1, 2, 1]), // from-start R3
+      rot(6, [2, 1, 1, 1, 2, 1]), // from-start R2
     ]);
   });
 
   it('counts set 2 (we serve first) and leaves unplayed rotations at zero', () => {
+    // v6: setter spot at 1 (p1): from-start R1 → 1, R2 → 6, R3 → 5 (re-derived by hand).
     const s = setStats(set2, players);
     expect(s.points).toEqual({ us: 4, them: 3 });
     expect(s.rotations).toEqual([
+      rot(1, [2, 1, 1, 1, 2, 1]), // e0, e2, e3
+      rot(2, [0, 0, 0, 0, 0, 0]),
+      rot(3, [0, 0, 0, 0, 0, 0]),
+      rot(4, [0, 0, 0, 0, 0, 0]),
+      rot(5, [1, 0, 0, 0, 1, 1]), // e7 (p1 at 5)
+      rot(6, [1, 2, 2, 1, 1, 0]), // e4, e5, e6 (p1 at 6)
+    ]);
+  });
+
+  it('without a setter on court counts rotations from the start (fallback)', () => {
+    // v6: roles come from the spots, so "no setter" means the setter spot holds nobody we know
+    // (here an id that is not on the roster). Rows counted from the start (R1 = starting six).
+    const noSetter = (set: SetLineup): SetLineup => ({
+      ...set,
+      slots: { ...set.slots, 1: 'ghost' },
+    });
+    expect(setStats(noSetter(set2), players).rotations).toEqual([
       rot(1, [2, 1, 1, 1, 2, 1]),
       rot(2, [1, 2, 2, 1, 1, 0]),
       rot(3, [1, 0, 0, 0, 1, 1]),
@@ -184,13 +205,7 @@ describe('setStats — rotations', () => {
       rot(5, [0, 0, 0, 0, 0, 0]),
       rot(6, [0, 0, 0, 0, 0, 0]),
     ]);
-  });
-
-  it('without a setter on court counts rotations from the start (fallback)', () => {
-    // Every fixture player is an outside hitter (or libero): no role S on court, so set 1 and
-    // set 2 above are already the fallback counting. A setter role for a bench player (p10, not
-    // a starter, so it is ignored) changes nothing.
-    expect(setStats({ ...set1, roles: { p10: 'S' } }, players).rotations).toEqual([
+    expect(setStats(noSetter(set1), players).rotations).toEqual([
       rot(1, [2, 2, 2, 1, 2, 1]),
       rot(2, [2, 1, 1, 1, 2, 1]),
       rot(3, [2, 1, 1, 1, 2, 1]),
@@ -216,7 +231,7 @@ describe('setStats — rotations', () => {
 describe('setStats — rotations named after the setter', () => {
   it('setter starting at position 4: the first rallies count for R4', () => {
     // p4 (then p9) is at: start R1 → 4, R2 → 3, R3 → 2, R4 → 1, R5 → 6, R6 → 5.
-    const s = setStats({ ...set1, roles: { p4: 'S' } }, players);
+    const s = setStats({ ...set1, formation: { ...set1.formation, setterAt: 4 } }, players);
     expect(s.points).toEqual({ us: 12, them: 8 });
     expect(s.rotations).toEqual([
       rot(1, [3, 1, 1, 1, 3, 2]), // from-start R4 (e9, e11, e12, e13; setter p4 → p9 at 1)
@@ -231,7 +246,7 @@ describe('setStats — rotations named after the setter', () => {
   it('6-2 (setters p1 and p4): the back-row setter names the rotation', () => {
     // From start R1: p1 at 1 → R1. R2: p1 at 6 → R6. R3: p1 at 5 → R5. R4: p1 at 4 (front),
     // p4/p9 at 1 → R1. R5: p9 at 6 → R6. R6: p9 at 5 → R5. R2–R4 are never played.
-    const s = setStats({ ...set1, roles: { p1: 'S', p4: 'S' } }, players);
+    const s = setStats({ ...set1, formation: { ...set1.formation, system: '6-2' } }, players);
     expect(s.rotations).toEqual([
       rot(1, [5, 3, 3, 2, 5, 3]), // [2,2,2,1,2,1] + [3,1,1,1,3,2]
       rot(2, [0, 0, 0, 0, 0, 0]),
@@ -242,8 +257,8 @@ describe('setStats — rotations named after the setter', () => {
     ]);
   });
 
-  it('a setter at position 1 in set 2 (we serve first): R1, then R6, then R5', () => {
-    const s = setStats({ ...set2, roles: { p1: 'S' } }, players);
+  it('a 6-2 in set 2 (setters p1 and p4): R1, then R6, then R5 (p1 stays in the back row)', () => {
+    const s = setStats({ ...set2, formation: { ...set2.formation, system: '6-2' } }, players);
     expect(s.rotations).toEqual([
       rot(1, [2, 1, 1, 1, 2, 1]), // e0, e2, e3
       rot(2, [0, 0, 0, 0, 0, 0]),
@@ -254,19 +269,16 @@ describe('setStats — rotations named after the setter', () => {
     ]);
   });
 
-  it('a setter by roster position (primary S, no override) counts the same', () => {
+  it('roster positions do not move the setter: the formation’s setter spot counts (v6)', () => {
     const withSetter = players.map((p) =>
       p.id === 'p4' ? { ...p, positions: ['S' as const] } : p,
     );
-    expect(setStats(set1, withSetter).rotations).toEqual(
-      setStats({ ...set1, roles: { p4: 'S' } }, players).rotations,
-    );
+    expect(setStats(set1, withSetter).rotations).toEqual(setStats(set1, players).rotations);
   });
 
   it('roles change only the rotation rows, not the player numbers', () => {
-    expect(setStats({ ...set1, roles: { p4: 'S' } }, players).players).toEqual(
-      setStats(set1, players).players,
-    );
+    const setterAt4 = { ...set1, formation: { ...set1.formation, setterAt: 4 as const } };
+    expect(setStats(setterAt4, players).players).toEqual(setStats(set1, players).players);
   });
 });
 
@@ -357,13 +369,14 @@ describe('matchStats', () => {
   it('sums the played sets of the match', () => {
     const s = matchStats(match1, players);
     expect(s.points).toEqual({ us: 16, them: 11 });
+    // v6: both sets are named after the setter spot at 1 (re-derived: set 1 + set 2 above).
     expect(s.rotations).toEqual([
       rot(1, [4, 3, 3, 2, 4, 2]),
-      rot(2, [3, 3, 3, 2, 3, 1]),
-      rot(3, [3, 1, 1, 1, 3, 2]),
+      rot(2, [2, 1, 1, 1, 2, 1]),
+      rot(3, [1, 2, 2, 1, 1, 0]),
       rot(4, [3, 1, 1, 1, 3, 2]),
-      rot(5, [1, 2, 2, 1, 1, 0]),
-      rot(6, [2, 1, 1, 1, 2, 1]),
+      rot(5, [3, 1, 1, 1, 3, 2]),
+      rot(6, [3, 3, 3, 2, 3, 1]),
     ]);
     expect(s.players).toEqual({
       p1: line([2, 2, 0, 0, 2, 2, 0, 0, 0, 0]),

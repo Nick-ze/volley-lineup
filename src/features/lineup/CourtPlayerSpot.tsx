@@ -43,7 +43,7 @@ export function CourtPlayerSpot({
   const drag = useDrag();
   const pressStart = useRef<{ x: number; y: number } | null>(null);
   const { set, selectedId, pressPlayer, locked } = editor;
-  const role = roleOf(set.roles, player);
+  const role = roleOf(set, player.id);
   const off = isOffPosition(player, role);
   const name = `${player.firstName} ${player.lastName}`.trim();
   const base = t.lineup.slotLabel(position, `${player.number} ${name}`);

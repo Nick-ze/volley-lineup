@@ -46,11 +46,6 @@ const tag = (query: 'findByTestId' | 'getByTestId' | 'queryByTestId', id: string
 const set1 = () => useAppStore.getState().matches[0].sets.find((s) => s.setNumber === 1)!;
 const open = () => renderRouter('./app', { initialUrl: '/match/m1?set=1' });
 
-async function pickRole(position: number, role: string) {
-  await fireEvent.press(await screen.findByTestId(`slot-role-${position}`));
-  await fireEvent.press(screen.getByTestId(`role-option-${role}`));
-}
-
 describe('lineup builder — roles', () => {
   beforeEach(() => seed());
 
@@ -65,39 +60,21 @@ describe('lineup builder — roles', () => {
     );
   });
 
-  it('applies a listed (secondary) position directly, without asterisk', async () => {
+  it('marks a role that is none of the player’s positions; a secondary one is fine (v6)', async () => {
+    // Setter spot at 5: S 5 · OH 6 · MB 1 · OPP 2 · OH 3 · MB 4 (the formation decides).
+    seed(lineup({ formation: { system: '5-1', order: 'outside', setterAt: 5 } }));
     await open();
-    await pickRole(2, 'OPP');
-    expect(screen.queryByTestId('role-confirm')).toBeNull();
-    expect(set1().roles).toEqual({ p2: 'OPP' });
-    expect(tag('getByTestId', 'role-tag-2')).toHaveTextContent('OPP');
+    // Olga (OH, OPP) on the OPP spot plays a listed position: no asterisk.
+    expect(await tag('findByTestId', 'role-tag-2')).toHaveTextContent('OPP');
     expect(tag('queryByTestId', 'role-off-2')).toBeNull();
-  });
-
-  it('asks before an unlisted role: cancel keeps, confirm stores and marks it', async () => {
-    await open();
-    await pickRole(4, 'S');
-    expect(
-      screen.getByText('#4 Opal Test isn’t listed as Setter. Play them as Setter?'),
-    ).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('role-confirm-cancel'));
-    expect(screen.queryByTestId('role-confirm')).toBeNull();
-    expect(set1().roles).toEqual({});
-    expect(tag('getByTestId', 'role-tag-4')).toHaveTextContent('OPP');
-
-    await pickRole(4, 'S');
-    await fireEvent.press(screen.getByRole('button', { name: 'Confirm: play as Setter' }));
-    expect(set1().roles).toEqual({ p4: 'S' });
-    expect(tag('getByTestId', 'role-off-4')).toBeTruthy();
-    expect(screen.getByTestId('slot-player-4').props.accessibilityLabel).toMatch(
+    // Ola (OH) on the setter spot: off position.
+    expect(tag('getByTestId', 'role-tag-5')).toHaveTextContent('S');
+    expect(tag('getByTestId', 'role-off-5')).toBeTruthy();
+    expect(screen.getByTestId('slot-player-5').props.accessibilityLabel).toMatch(
       /plays Setter, not one of their positions/,
     );
-
-    // The primary position again removes the override (no confirmation).
-    await pickRole(4, 'OPP');
-    expect(screen.queryByTestId('role-confirm')).toBeNull();
-    expect(set1().roles).toEqual({});
-    expect(tag('queryByTestId', 'role-off-4')).toBeNull();
+    // No role picker any more: the role belongs to the spot.
+    expect(screen.queryByTestId('role-picker')).toBeNull();
   });
 
   it('while a player is selected, the role tag places / swaps like the spot', async () => {
@@ -109,29 +86,36 @@ describe('lineup builder — roles', () => {
     expect(set1().slots[4]).toBe('p1');
   });
 
-  it('ignores a press on the role tag that moved (a drag)', async () => {
+  it('a press on the role tag selects the player like the chip, unless it moved (a drag)', async () => {
     await open();
     const roleTag = await screen.findByTestId('slot-role-2');
     await fireEvent(roleTag, 'pressIn', { nativeEvent: { pageX: 10, pageY: 10 } });
     await fireEvent(roleTag, 'press', { nativeEvent: { pageX: 60, pageY: 40 } });
-    expect(screen.queryByTestId('role-picker')).toBeNull();
-    await fireEvent(roleTag, 'pressIn', { nativeEvent: { pageX: 10, pageY: 10 } });
-    await fireEvent(roleTag, 'press', { nativeEvent: { pageX: 12, pageY: 11 } });
-    expect(screen.getByTestId('role-picker')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancel: close the role choice' }));
+    // The moved press selected nobody: this tap on #4's tag only selects #4 (no swap with #2).
+    const tag4 = screen.getByTestId('slot-role-4');
+    await fireEvent(tag4, 'pressIn', { nativeEvent: { pageX: 10, pageY: 10 } });
+    await fireEvent(tag4, 'press', { nativeEvent: { pageX: 12, pageY: 11 } });
+    expect(set1().slots).toEqual({ 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' });
+    // #4 is selected now: tapping #1 swaps them.
+    await fireEvent.press(screen.getByTestId('slot-player-1'));
+    expect(set1().slots[1]).toBe('p4');
+    expect(set1().slots[4]).toBe('p1');
     expect(screen.queryByTestId('role-picker')).toBeNull();
   });
 
-  it('rotates the starting six both ways, roles following the players', async () => {
-    seed(lineup({ roles: { p2: 'OPP' } }));
+  it('rotates the starting six both ways, the formation (and so the roles) turning along', async () => {
     await open();
     await fireEvent.press(await screen.findByRole('button', { name: 'Rotate clockwise' }));
     expect(set1().slots).toEqual({ 1: 'p2', 2: 'p3', 3: 'p4', 4: 'p5', 5: 'p6', 6: 'p1' });
-    expect(tag('getByTestId', 'role-tag-1')).toHaveTextContent('OPP');
+    expect(set1().formation).toEqual({ system: '5-1', order: 'outside', setterAt: 6 });
+    // Sina keeps S (now at 6), Olga keeps OH (now at 1).
     expect(tag('getByTestId', 'role-tag-6')).toHaveTextContent('S');
+    expect(tag('getByTestId', 'role-tag-1')).toHaveTextContent('OH');
     await fireEvent.press(screen.getByRole('button', { name: 'Rotate counter-clockwise' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Rotate counter-clockwise' }));
     expect(set1().slots).toEqual({ 1: 'p6', 2: 'p1', 3: 'p2', 4: 'p3', 5: 'p4', 6: 'p5' });
+    expect(set1().formation.setterAt).toBe(2);
+    expect(tag('getByTestId', 'role-tag-2')).toHaveTextContent('S');
   });
 
   it('locks rotating and roles in a played set', async () => {
@@ -195,14 +179,14 @@ describe('lineup builder — templates set roles', () => {
     );
     expect(screen.queryByTestId('role-confirm')).toBeNull();
     expect(set1().slots[5]).toBe('p4');
-    expect(set1().roles).toEqual({ p4: 'OH' });
+    expect(set1().formation.system).toBe('6-2');
     expect(tag('getByTestId', 'role-tag-5')).toHaveTextContent('OH');
     expect(tag('getByTestId', 'role-off-5')).toBeTruthy();
   });
 });
 
 describe('preset editor — roles', () => {
-  it('changes a role with confirmation and stores it on the preset', async () => {
+  it('rotating turns the formation with the players and stores it on the preset', async () => {
     seed();
     const preset = useAppStore.getState().addPreset({
       teamId: 'team1',
@@ -210,16 +194,15 @@ describe('preset editor — roles', () => {
       slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
       liberoId: 'p7',
       liberoReplaces: ['p3', 'p6'],
-      roles: {},
+      formation: { system: '5-1', order: 'outside', setterAt: 1 },
       liberoActive: true,
     });
     await renderRouter('./app', { initialUrl: `/team/team1/preset/${preset.id}` });
-    await pickRole(3, 'OH');
-    await fireEvent.press(screen.getByTestId('role-confirm-ok'));
     const stored = () => useAppStore.getState().presets.find((p) => p.id === preset.id)!;
-    expect(stored().roles).toEqual({ p3: 'OH' });
-    expect(tag('getByTestId', 'role-off-3')).toBeTruthy();
+    expect(await tag('findByTestId', 'role-tag-1')).toHaveTextContent('S');
     await fireEvent.press(screen.getByRole('button', { name: 'Rotate clockwise' }));
     expect(stored().slots[2]).toBe('p3');
+    expect(stored().formation).toEqual({ system: '5-1', order: 'outside', setterAt: 6 });
+    expect(tag('getByTestId', 'role-tag-6')).toHaveTextContent('S');
   });
 });

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
 import type { LiveCourtView } from '@/domain/liveSet';
 import { isOffPosition } from '@/domain/roles';
-import type { Player, RoleOverrides } from '@/domain/types';
+import type { Player, PlayerRoles } from '@/domain/types';
 import { ChipWithBadge, RoleRow } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
@@ -16,7 +16,7 @@ export interface LiveCourtProps {
   view: LiveCourtView;
   playersById: Map<string, Player>;
   /** Roles of the players on court now (`LiveState.roles`: substitutes inherit the role). */
-  roles: Readonly<RoleOverrides>;
+  roles: Readonly<PlayerRoles>;
   serverId: string | null;
   /** The court player picked to go out (orange ring). */
   selectedId: string | null;

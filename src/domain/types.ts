@@ -2,7 +2,9 @@
  * Data model — docs/PLAN.md §6 (v2: SetLineup.liberoReplaces + SetLineup.events, schemaVersion 2;
  * v3: LineupPreset — saved team lineups and the team's starters, schemaVersion 3;
  * v4 / app 3.0: optional tags and timestamps on point events, schemaVersion 4 — PLAN §16;
- * v5 / app 4.0: roles on court + libero on/off per lineup, schemaVersion 5 — PLAN §20).
+ * v5 / app 4.0: roles on court + libero on/off per lineup, schemaVersion 5 — PLAN §20;
+ * v6 / app 5.0: roles belong to the court spots (a formation), not players, schemaVersion 6 —
+ * PLAN §23; see docs/VOLLEYBALL_RULES.md).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -52,16 +54,32 @@ export interface SetLineup {
   /** v2: what happened in the set, in order (live match mode). Empty = not played yet. */
   events: SetEvent[];
   /**
-   * v5: role overrides for starters on court (player id → the role they play in this set).
-   * A starter without an entry plays their primary position. Only starters on court appear.
+   * v6: the roles of the six court spots (5-1 or 6-2, fixed by the volleyball rules); whoever
+   * stands on a spot plays its role. Rotates together with the players.
    */
-  roles: RoleOverrides;
+  formation: Formation;
   /** v5: false = the libero stays out (no libero swaps), even if one is chosen. */
   liberoActive: boolean;
 }
 
-/** v5: player id → the role (court position code) they play, when not their primary position. */
-export type RoleOverrides = Record<string, Position>;
+/** v6: team system. 5-1 = one setter + opposite; 6-2 = two setters opposite each other. */
+export type FormationSystem = '5-1' | '6-2';
+
+/**
+ * v6: the order of roles around the court after the setter: 'outside' = S · OH · MB · (OPP|S) ·
+ * OH · MB (the textbook order), 'middle' = S · MB · OH · (OPP|S) · MB · OH.
+ */
+export type FormationOrder = 'outside' | 'middle';
+
+/** v6: a formation — system, order, and the court position of the (first) setter. */
+export interface Formation {
+  system: FormationSystem;
+  order: FormationOrder;
+  setterAt: 1 | 2 | 3 | 4 | 5 | 6;
+}
+
+/** Derived (not stored): player id → the role they play (e.g. in a replay, subs inherit). */
+export type PlayerRoles = Record<string, Position>;
 
 /** v2: which team won a rally. */
 export type Side = 'us' | 'them';
@@ -107,8 +125,8 @@ export interface LineupPreset {
   slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>;
   liberoId: string | null;
   liberoReplaces: string[];
-  /** v5: as in `SetLineup`. */
-  roles: RoleOverrides;
+  /** v6: as in `SetLineup`. */
+  formation: Formation;
   /** v5: as in `SetLineup`. */
   liberoActive: boolean;
   createdAt: string;
@@ -116,7 +134,7 @@ export interface LineupPreset {
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 5;
+  schemaVersion: 6;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];

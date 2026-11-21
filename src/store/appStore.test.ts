@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { buildExport, parseImport } from '@/domain/exportSchema';
 import { emptySetLineup } from '@/domain/lineup';
+import type { Formation } from '@/domain/types';
 
 import { STORAGE_KEY, emptyData, selectAppData, useAppStore } from './appStore';
 import { migrateStore, STORE_VERSION } from './migrations';
@@ -191,7 +192,7 @@ describe('presets', () => {
     },
     liberoId,
     liberoReplaces: [] as string[],
-    roles: {},
+    formation: { system: '5-1', order: 'outside', setterAt: 1 } satisfies Formation,
     liberoActive: true,
   });
 
@@ -334,7 +335,7 @@ describe('migrations', () => {
               weServeFirst: true,
               liberoReplaces: [],
               events: [],
-              roles: {},
+              formation: { system: '5-1', order: 'outside', setterAt: 1 },
               liberoActive: true,
             },
             'junk',
@@ -384,12 +385,16 @@ describe('migrations', () => {
         },
       ],
     };
-    // v3 → v4 changes nothing; v4 → v5 adds the chip setting; v5 → v6 the lineup defaults.
+    // v3 → v4 changes nothing; v4 → v5 adds the chip setting; v5 → v6 the lineup defaults;
+    // v6 → v7 passes this set (it has no slots) through, so its empty `roles` stay.
     expect(migrateStore(v3, 3)).toEqual({
       ...v3,
       chipLabel: 'number',
       matches: [
-        { ...v3.matches[0], sets: [{ ...v3.matches[0].sets[0], roles: {}, liberoActive: true }] },
+        {
+          ...v3.matches[0],
+          sets: [{ ...v3.matches[0].sets[0], roles: {}, liberoActive: true }],
+        },
       ],
     });
   });
@@ -406,9 +411,19 @@ describe('migrations', () => {
       presets: [{ id: 'ps', slots: {} }, 'junk'],
       matches: [{ id: 'm', sets: [{ setNumber: 1 }, 'junk'] }, { id: 'n' }, 'junk'],
     };
+    // v5 → v6 adds `roles: {}`; v6 → v7 turns it into the default formation where there are
+    // slots (the preset) and passes the slot-less set through.
     expect(migrateStore(v5, 5)).toEqual({
       chipLabel: 'name',
-      presets: [{ id: 'ps', slots: {}, roles: {}, liberoActive: true }, 'junk'],
+      presets: [
+        {
+          id: 'ps',
+          slots: {},
+          formation: { system: '5-1', order: 'outside', setterAt: 1 },
+          liberoActive: true,
+        },
+        'junk',
+      ],
       matches: [
         { id: 'm', sets: [{ setNumber: 1, roles: {}, liberoActive: true }, 'junk'] },
         { id: 'n' },
@@ -422,7 +437,83 @@ describe('migrations', () => {
     };
     expect(migrateStore(off, 5)).toEqual(off);
     expect(migrateStore(null, 5)).toBeNull();
-    expect(STORE_VERSION).toBe(6);
+  });
+
+  it('upgrades v6 data (v4 app): per-player roles become a formation per set and preset', () => {
+    const players = [
+      { id: 's', positions: ['S'] },
+      { id: 'oh', positions: ['OH'] },
+      { id: 'mb', positions: ['MB'] },
+      { id: 'opp', positions: ['OPP', 'S'] },
+    ];
+    const slots = { 1: 'opp', 2: null, 3: 's', 4: 'mb', 5: null, 6: 'oh' };
+    const v6 = {
+      players,
+      matches: [
+        {
+          id: 'm',
+          sets: [
+            { setNumber: 1, slots, roles: {}, liberoActive: true }, // setter at 3, MB next
+            { setNumber: 2, slots, roles: { opp: 'S', s: 'OPP' }, liberoActive: false },
+            { setNumber: 3, slots, roles: { s: 'S', oh: 'S' }, liberoActive: true }, // 3 and 6
+            'junk',
+          ],
+        },
+        { id: 'n' },
+        'junk',
+      ],
+      presets: [{ id: 'ps', slots, roles: { mb: 'OH' } }, 'junk'],
+    };
+    expect(migrateStore(v6, 6)).toEqual({
+      players,
+      matches: [
+        {
+          id: 'm',
+          sets: [
+            {
+              setNumber: 1,
+              slots,
+              formation: { system: '5-1', order: 'middle', setterAt: 3 },
+              liberoActive: true,
+            },
+            {
+              setNumber: 2,
+              slots,
+              formation: { system: '5-1', order: 'outside', setterAt: 1 }, // opp sets at 1
+              liberoActive: false,
+            },
+            {
+              setNumber: 3,
+              slots,
+              formation: { system: '6-2', order: 'middle', setterAt: 3 },
+              liberoActive: true,
+            },
+            'junk',
+          ],
+        },
+        { id: 'n' },
+        'junk',
+      ],
+      presets: [
+        { id: 'ps', slots, formation: { system: '5-1', order: 'outside', setterAt: 3 } },
+        'junk',
+      ],
+    });
+    // malformed collections are passed through; without players only overrides count
+    const odd = { players: 'x', matches: 'x', presets: { a: 1 } };
+    expect(migrateStore(odd, 6)).toEqual(odd);
+    const noPlayers = { matches: [{ sets: [{ slots, roles: { oh: 'S' } }] }], presets: [] };
+    expect(migrateStore(noPlayers, 6)).toEqual({
+      matches: [{ sets: [{ slots, formation: { system: '5-1', order: 'outside', setterAt: 6 } }] }],
+      presets: [],
+    });
+    // a lineup that already has a formation is left alone
+    const current = {
+      matches: [{ sets: [{ slots, formation: { system: '6-2', order: 'outside', setterAt: 2 } }] }],
+    };
+    expect(migrateStore(current, 6)).toEqual(current);
+    expect(migrateStore(null, 6)).toBeNull();
+    expect(STORE_VERSION).toBe(7);
   });
 
   it('remembers whether chips show names or numbers, also after delete all', () => {

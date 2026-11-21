@@ -120,7 +120,7 @@ describe('import', () => {
     ['broken JSON', '{"app": "volley-lineup",', 'This file is not valid JSON.'],
     [
       'a newer schema version',
-      JSON.stringify({ app: 'volley-lineup', schemaVersion: 6 }),
+      JSON.stringify({ app: 'volley-lineup', schemaVersion: 7 }),
       'different version',
     ],
   ])('shows an error for %s and changes nothing', async (_label, text, message) => {

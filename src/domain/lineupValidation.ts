@@ -13,18 +13,13 @@
  *   - UNKNOWN_PLAYER: one issue per slot / the libero referencing an id not in `players`
  *     (libero issue has no positions).
  * - Warnings (never block):
- *   - NO_SETTER: at least one slot is filled and no known starter has 'S' in any position.
- *     (An empty lineup only gets INCOMPLETE, so a fresh set isn't noisy.)
- *   - UNUSUAL_LAYOUT, judged on each starter's ROLE (v4: `roleOf` — the role override, else the
- *     primary position):
- *     a) exactly one setter and exactly one opposite who are not opposite each other
- *        (positions differ by 3);
- *     b) exactly two middle blockers who are not opposite each other.
+ *   - NO_SETTER: at least one slot is filled and no player on the formation's setter spot(s)
+ *     has 'S' in any position. (An empty lineup only gets INCOMPLETE, so a fresh set isn't noisy.)
+ *   - (UNUSUAL_LAYOUT is no longer raised since v6: the formation keeps the pairs opposite.)
  *   - INACTIVE_PLAYER: one issue per inactive player in a slot or the libero slot.
  *   - LIBERO_NOT_LIBERO: the libero is a known player without 'L' in positions.
  */
-import { roleOf } from './roles';
-import { oppositePosition } from './rotation';
+import { spotRole } from './roles';
 import { COURT_POSITIONS, type CourtPosition, type Player, type SetLineup } from './types';
 
 export type ValidationErrorCode =
@@ -35,7 +30,7 @@ export type ValidationErrorCode =
 
 export type ValidationWarningCode =
   | 'NO_SETTER' // no starter has 'S' as any position
-  | 'UNUSUAL_LAYOUT' // e.g. setter not opposite the opposite, two middles adjacent
+  | 'UNUSUAL_LAYOUT' // not raised since v6 (formations keep pairs opposite); kept for the UI map
   | 'INACTIVE_PLAYER' // an inactive/injured player is in the lineup
   | 'LIBERO_NOT_LIBERO'; // the libero slot holds a player without 'L' in positions
 
@@ -68,33 +63,6 @@ export function positionsByPlayer(set: SetLineup): Map<string, CourtPosition[]> 
   return map;
 }
 
-function layoutWarnings(
-  placed: Map<string, CourtPosition[]>,
-  byId: Map<string, Player>,
-  roles: SetLineup['roles'],
-) {
-  const byRole = (pos: Player['positions'][number]) =>
-    [...placed]
-      .filter(([id]) => {
-        const player = byId.get(id);
-        return player !== undefined && roleOf(roles, player) === pos;
-      })
-      .map(([, positions]) => positions[0]);
-  const notOpposite = (a: CourtPosition, b: CourtPosition) => oppositePosition(a) !== b;
-
-  const warnings: WarningIssue[] = [];
-  const setters = byRole('S');
-  const opposites = byRole('OPP');
-  if (setters.length === 1 && opposites.length === 1 && notOpposite(setters[0], opposites[0])) {
-    warnings.push({ code: 'UNUSUAL_LAYOUT', positions: [setters[0], opposites[0]] });
-  }
-  const middles = byRole('MB');
-  if (middles.length === 2 && notOpposite(middles[0], middles[1])) {
-    warnings.push({ code: 'UNUSUAL_LAYOUT', positions: [middles[0], middles[1]] });
-  }
-  return warnings;
-}
-
 export function validateLineup(set: SetLineup, players: Player[]): ValidationResult {
   const byId = new Map(players.map((p) => [p.id, p]));
   const placed = positionsByPlayer(set);
@@ -125,11 +93,13 @@ export function validateLineup(set: SetLineup, players: Player[]): ValidationRes
   }
 
   const starters = [...placed.keys()].flatMap((id) => byId.get(id) ?? []);
-  if (placed.size > 0 && !starters.some((p) => p.positions.includes('S'))) {
+  // v6: the setter spot(s) of the formation need a player listed as setter.
+  const onSetterSpots = COURT_POSITIONS.filter((p) => spotRole(set.formation, p) === 'S').flatMap(
+    (p) => byId.get(set.slots[p] ?? '') ?? [],
+  );
+  if (placed.size > 0 && !onSetterSpots.some((p) => p.positions.includes('S'))) {
     warnings.push({ code: 'NO_SETTER' });
   }
-
-  warnings.push(...layoutWarnings(placed, byId, set.roles));
 
   for (const p of starters) {
     if (!p.active)

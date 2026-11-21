@@ -371,3 +371,51 @@ Pure logic in `src/domain/roles.ts` (`roleOf`, `isOffPosition`, `setRole`, `rota
 - [x] v4.0.0 opens v3.x data (store v5) and v1–v4 export files without loss; export / import round trip with roles and the libero switch restores exactly. — _web (localStorage) migration from store v5 verified in a browser; Android AsyncStorage upgrade covered by unit tests only._
 - [x] Phone layout 375 px: role tags, asterisks and the new controls fit; EN + DE. — _verified in a browser (Playwright); not yet on a real phone._
 - [x] Lint, typecheck and tests pass in CI; `src/domain` 100%.
+
+---
+
+# v5 plan — Formations (roles belong to the court spots)
+
+Owner feedback on v4: roles must be fixed on the court even with nobody on it — two middles, two outsides, setter and opposite (or two setters), always opposite each other — so that e.g. two outsides can never stand next to each other. The volleyball background is in `docs/VOLLEYBALL_RULES.md` (researched from FIVB / DVV / coaching sources); it also lists testable checks for the app.
+
+## 22. v5 features
+
+1. **Formation per set** (and per preset / team starters): system **5-1** or **6-2** and the order around the court — setter followed by an **outside** (S · OH · MB · OPP · OH · MB, the textbook order) or by a **middle** (S · MB · OH · OPP · MB · OH); in a 6-2 the opposite spot is the second setter. The pairs 1–4, 2–5, 3–6 always have the same kind of role. The formation is fixed: single spots can't be changed (owner's choice).
+2. **Roles on every spot, also when empty** — every court (lineup builder, rotation viewer, starters overview, team starters, live court, print sheet) shows each spot's role at the top. Players are dragged / tapped onto spots and play that spot's role.
+3. **Off position** — placing a player on a spot whose role is none of their listed positions asks "Are you sure?" first (Cancel = nothing moves) and marks the spot with "*" at the top right.
+4. **Rotate before the set** turns the formation together with the players (everyone keeps their role); the rotation number follows the setter's spot (setter on 4 = rotation 4; 6-2: the back-row setter), also on an incomplete court.
+5. **Templates** fill players into the formation by role; choosing 5-1 / 6-2 sets the formation's system.
+6. **Rules checks** from `docs/VOLLEYBALL_RULES.md`: point tags only offer plausible players (block: front-row, not the libero; ace: the server; kill: not the libero), "no setter" means no listed setter on the setter spot.
+
+## 23. v5 data model changes
+
+```ts
+interface Formation {
+  system: '5-1' | '6-2';
+  order: 'outside' | 'middle';
+  setterAt: 1 | 2 | 3 | 4 | 5 | 6;
+}
+interface SetLineup {
+  /* … */ formation: Formation;
+  liberoActive: boolean;
+} // `roles` removed
+interface LineupPreset {
+  /* … */ formation: Formation;
+  liberoActive: boolean;
+} // `roles` removed
+// ExportFile.schemaVersion: 6 (v5 files: per-player roles → a formation inferred from where the setter stands)
+// Store: version 7 (same conversion)
+```
+
+`src/domain/roles.ts`: `FORMATION_PATTERNS`, `spotRole`, `spotRoles`, `roleOf(set, playerId)`, `isOffPosition`, `setFormation`, `rotateStarters`, `formationRotation`, `inferFormation`, `upgradeLineupToFormation`.
+
+## 24. v5 acceptance checklist
+
+- [ ] Every court shows the formation's roles on all six spots, also when empty; the pairs are always opposite (5-1 / 6-2, both orders) — tests with literal layouts.
+- [ ] Changing system / order in the builder (matches, presets, team starters) and in the live next-set setup; locked once a set is played.
+- [ ] Placing a player on a spot that isn't one of their positions asks for confirmation (drag & drop and tap-to-select; Cancel moves nothing) and shows "*" at the top right; a listed secondary position doesn't.
+- [ ] Rotate moves players and formation together; the rotation number follows the setter spot (also incomplete courts).
+- [ ] v4 data (store v6) and v1–v5 files open; per-player roles become the matching formation (setter position kept); export / import round trip restores exactly.
+- [ ] Point tags offer only plausible players (rules doc checks #35); the rules doc's check list is updated with PASS for everything the app now models.
+- [ ] Phone 375 px EN + DE: role tags on empty spots and the formation controls fit.
+- [ ] Lint, typecheck, tests in CI; `src/domain` 100%.

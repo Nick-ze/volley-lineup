@@ -2,7 +2,7 @@ import { applyLineupEdit, isLineupLocked, resetLiveData } from './lineupLock';
 import type { SetLineup } from './types';
 
 const base: SetLineup = {
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   setNumber: 1,
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
@@ -33,6 +33,22 @@ describe('lineup lock', () => {
     );
     expect(applyLineupEdit(played, { ...played, liberoId: null })).toBe(played);
     expect(applyLineupEdit(played, { ...played, weServeFirst: false })).toBe(played);
+  });
+
+  it('refuses formation changes (system, order or setter spot) when locked (v6)', () => {
+    const f = played.formation;
+    expect(applyLineupEdit(played, { ...played, formation: { ...f, system: '6-2' } })).toBe(played);
+    expect(applyLineupEdit(played, { ...played, formation: { ...f, order: 'middle' } })).toBe(
+      played,
+    );
+    expect(applyLineupEdit(played, { ...played, formation: { ...f, setterAt: 4 } })).toBe(played);
+    // the same formation in a new object is no change
+    const same = { ...played, formation: { ...f } };
+    expect(applyLineupEdit(played, same)).toBe(same);
+    // unlocked, a formation change goes through
+    const fresh = { ...played, events: [] };
+    const changed = { ...fresh, formation: { ...f, setterAt: 4 as const } };
+    expect(applyLineupEdit(fresh, changed)).toBe(changed);
   });
 
   it('still allows changing whom the libero replaces, and never drops the events', () => {

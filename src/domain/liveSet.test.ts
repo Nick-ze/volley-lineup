@@ -30,7 +30,7 @@ const players: Player[] = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]
   .concat(player(7, ['L']));
 
 const baseSet = (over: Partial<SetLineup> = {}): SetLineup => ({
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   setNumber: 1,
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
