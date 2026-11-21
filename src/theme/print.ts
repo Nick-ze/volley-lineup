@@ -16,4 +16,15 @@ export const printLayout = {
   pageMargin: '12mm',
   fontFamily: "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   baseFontSize: '11pt',
+  titleFontSize: '18pt',
+  headingFontSize: '12pt',
+  /** Court cell height; small enough that 5 sets + a 12-player roster fit on one A4 page. */
+  cellHeight: '44px',
+  jerseyFontSize: '15pt',
+  nameFontSize: '8pt',
+  smallFontSize: '7pt',
+  infoFontSize: '9pt',
+  setGap: '8px 14px',
+  setPadding: '5px',
+  sectionGap: '10px',
 } as const;

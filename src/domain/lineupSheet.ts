@@ -26,6 +26,8 @@ export interface LineupSheetLabels {
   unknownPlayer: string;
   libero: string;
   noLibero: string;
+  /** e.g. "Libero replaces #7, #12" (`numbers` is already formatted). */
+  liberoReplaces: (numbers: string) => string;
   serveFirst: string;
   weServe: string;
   weReceive: string;
@@ -101,6 +103,14 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
     ? playerCell(byId.get(set.liberoId), set.liberoId, labels)
     : `<span class="empty">${escapeHtml(labels.noLibero)}</span>`;
   const serve = set.weServeFirst ? labels.weServe : labels.weReceive;
+  const replaced = set.liberoReplaces
+    .map((id) => byId.get(id))
+    .filter((p): p is Player => p !== undefined)
+    .map((p) => `#${p.number}`);
+  const replaces =
+    set.liberoId && replaced.length > 0
+      ? `<div class="replaces">${escapeHtml(labels.liberoReplaces(replaced.join(', ')))}</div>`
+      : '';
 
   return (
     `<section class="set" data-set="${set.setNumber}">` +
@@ -109,6 +119,7 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
     `<table class="court">${rows}</table>` +
     `<div class="info">` +
     `<div class="libero"><span class="label">${escapeHtml(labels.libero)}</span> ${libero}</div>` +
+    replaces +
     `<div class="serve"><span class="label">${escapeHtml(labels.serveFirst)}</span> ` +
     `${escapeHtml(serve)}</div>` +
     `</div></section>`
@@ -138,29 +149,31 @@ const CSS = `
 html, body { margin: 0; padding: 0; background: ${c.background}; color: ${c.text}; }
 body { font-family: ${l.fontFamily}; font-size: ${l.baseFontSize}; line-height: 1.3;
   -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-header { border-bottom: 2px solid ${c.border}; padding-bottom: 6px; margin-bottom: 10px; }
-h1 { font-size: 18pt; margin: 0 0 4px; }
-h2 { font-size: 12pt; margin: 0 0 4px; }
+header { border-bottom: 2px solid ${c.border}; padding-bottom: 6px; margin-bottom: ${l.sectionGap}; }
+h1 { font-size: ${l.titleFontSize}; margin: 0 0 4px; }
+h2 { font-size: ${l.headingFontSize}; margin: 0 0 4px; }
 dl.meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; }
 dl.meta div { display: flex; gap: 4px; }
 dt { color: ${c.textMuted}; } dd { margin: 0; font-weight: 600; }
-.sets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
-.set { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border}; padding: 6px; }
+.sets { display: grid; grid-template-columns: 1fr 1fr; gap: ${l.setGap}; }
+.set { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border}; padding: ${l.setPadding}; }
 .net { background: ${c.fill}; border: 1px solid ${c.border}; text-align: center;
-  font-size: 8pt; letter-spacing: 2px; text-transform: uppercase; }
+  font-size: ${l.smallFontSize}; letter-spacing: 2px; text-transform: uppercase; }
 table.court { width: 100%; border-collapse: collapse; table-layout: fixed; }
-td.cell { border: 1px solid ${c.grid}; height: 52px; vertical-align: top; padding: 3px 4px; }
+td.cell { border: 1px solid ${c.grid}; height: ${l.cellHeight}; vertical-align: top; padding: 3px 4px; }
 td.serving { border: 2px solid ${c.border}; }
-.pos { display: block; font-size: 7pt; color: ${c.textMuted}; }
+.pos { display: block; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
 .srv { font-weight: 700; color: ${c.text}; }
-.num { display: block; font-size: 16pt; font-weight: 700; line-height: 1.1; }
-.name { display: block; font-size: 8pt; overflow-wrap: anywhere; }
-.info .num, .info .name { display: inline; font-size: 10pt; margin-right: 4px; }
-.info { margin-top: 4px; font-size: 9pt; display: grid; gap: 2px; }
+.num { display: block; font-size: ${l.jerseyFontSize}; font-weight: 700; line-height: 1.1; }
+.name { display: block; font-size: ${l.nameFontSize}; overflow-wrap: anywhere; }
+.info .num, .info .name { display: inline; font-size: ${l.infoFontSize}; margin-right: 4px; }
+.info { margin-top: 4px; font-size: ${l.infoFontSize}; display: grid; gap: 2px; }
 .label { color: ${c.textMuted}; }
 .empty { color: ${c.textMuted}; }
-section.roster-section { margin-top: 12px; break-inside: avoid; page-break-inside: avoid; }
-table.roster { width: 100%; border-collapse: collapse; font-size: 9pt; }
+section.roster-section { margin-top: ${l.sectionGap}; }
+table.roster thead { display: table-header-group; }
+table.roster tr { break-inside: avoid; page-break-inside: avoid; }
+table.roster { width: 100%; border-collapse: collapse; font-size: ${l.infoFontSize}; }
 table.roster th, table.roster td { border: 1px solid ${c.grid}; padding: 2px 6px; text-align: left; }
 table.roster th { background: ${c.fill}; }
 table.roster td.n { width: 3em; font-weight: 700; text-align: right; }

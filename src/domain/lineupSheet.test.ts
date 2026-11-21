@@ -23,6 +23,7 @@ const labels: LineupSheetLabels = {
   unknownPlayer: 'Unknown player',
   libero: 'Libero:',
   noLibero: 'none',
+  liberoReplaces: (numbers) => `Libero replaces ${numbers}`,
   serveFirst: 'First serve:',
   weServe: 'We serve',
   weReceive: 'We receive',
@@ -166,6 +167,37 @@ describe('buildLineupSheetHtml', () => {
     const set2 = sectionOf(html, 2);
     expect(set2).toContain('First serve:</span> We receive');
     expect(set2).not.toContain('(serves)');
+  });
+
+  it('lists whom the libero replaces, by jersey number', () => {
+    const withSwaps: SetLineup = { ...full(1, true), liberoReplaces: ['c', 'ghost', 'f'] };
+    const out = buildLineupSheetHtml({
+      match: { ...match, sets: [withSwaps] },
+      team,
+      players,
+      labels,
+    });
+    expect(sectionOf(out, 1)).toContain('<div class="replaces">Libero replaces #3, #6</div>');
+    // Not shown without a libero, without replacements, or when no replaced player is known.
+    expect(html).not.toContain('class="replaces"');
+    for (const set of [
+      { ...withSwaps, liberoId: null },
+      { ...withSwaps, liberoReplaces: ['ghost'] },
+    ]) {
+      const other = buildLineupSheetHtml({
+        match: { ...match, sets: [set] },
+        team,
+        players,
+        labels,
+      });
+      expect(other).not.toContain('class="replaces"');
+    }
+  });
+
+  it('keeps each set on one page but lets a long roster break across pages', () => {
+    expect(html).toMatch(/\.set \{ break-inside: avoid;/);
+    expect(html).toMatch(/section\.roster-section \{ margin-top: [^;]+; \}/);
+    expect(html).toContain('height: 44px;');
   });
 
   it('marks empty slots, missing libero and unknown players', () => {

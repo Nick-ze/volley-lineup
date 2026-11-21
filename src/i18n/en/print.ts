@@ -19,6 +19,7 @@ export const print = {
     unknownPlayer: 'Unknown player',
     libero: 'Libero:',
     noLibero: 'none',
+    liberoReplaces: (numbers: string) => `Libero replaces ${numbers}`,
     serveFirst: 'First serve:',
     weServe: 'We serve',
     weReceive: 'We receive',
