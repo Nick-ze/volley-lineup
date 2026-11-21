@@ -68,6 +68,7 @@ export default function RootLayout() {
               <Stack.Screen name="match/[matchId]/index" options={{ title: t.nav.match }} />
               <Stack.Screen name="match/[matchId]/rotation" options={{ title: t.nav.rotation }} />
               <Stack.Screen name="match/[matchId]/starters" options={{ title: t.nav.starters }} />
+              <Stack.Screen name="match/[matchId]/live" options={{ title: t.nav.live }} />
               <Stack.Screen name="settings" options={{ title: t.nav.settings }} />
             </Stack>
           ) : (

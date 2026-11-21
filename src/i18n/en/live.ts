@@ -1,0 +1,65 @@
+/** Strings for live match mode + substitution tracking (v2 features 3 and 4). */
+export const live = {
+  title: (set: number) => `Live · Set ${set}`,
+  open: 'Live',
+  openLabel: 'Open live match mode for this set',
+  matchNotFound: 'This match could not be found.',
+  noSet: 'This set has no lineup yet. Build it on the match screen first.',
+  incomplete: 'Put six players on court before starting live mode.',
+  setLabel: (n: number) => `Set ${n}`,
+  us: 'Us',
+  them: (opponent: string) => opponent,
+  scoreLabel: (set: number, us: number, them: number, opponent: string) =>
+    `Set ${set}, score: us ${us}, ${opponent} ${them}`,
+  serving: 'Serving',
+  weServe: (number: number | null) => (number === null ? 'We serve' : `We serve · #${number}`),
+  theyServe: (opponent: string) => `${opponent} serves`,
+  rotation: (n: number) => `Rotation ${n}`,
+  pointUs: 'Point us',
+  pointUsLabel: 'We won the rally',
+  pointThem: 'Point them',
+  pointThemLabel: (opponent: string) => `${opponent} won the rally`,
+  undo: 'Undo',
+  undoNothing: 'Nothing to undo',
+  undoPoint: (us: boolean) => (us ? 'Undo last point for us' : 'Undo last point for them'),
+  undoSub: (out: string, inn: string) => `Undo substitution ${out} for ${inn}`,
+  substitution: 'Substitution',
+  substitutionLabel: 'Make a substitution',
+  cancelSub: 'Cancel',
+  cancelSubLabel: 'Cancel the substitution',
+  subsUsed: (n: number, max: number) => `Subs used ${n}/${max}`,
+  pickOut: 'Tap the player on court who goes out.',
+  pickIn: (out: string) => `Now tap the bench player who comes in for ${out}.`,
+  benchTitle: 'Bench',
+  benchEmpty: 'No players left on the bench.',
+  courtPlayerLabel: (desc: string, position: number, isServer: boolean) =>
+    `Position ${position}: ${desc}${isServer ? ', serving' : ''}`,
+  courtPlayerHint: 'Tap to substitute this player',
+  benchPlayerHint: (out: string, warning: string | null) =>
+    warning ? `Comes in for ${out}. Warning: ${warning}` : `Comes in for ${out}`,
+  previewWarning: {
+    SUB_LIMIT: 'over the 6-sub limit',
+    REENTRY_RULE: 'breaks the re-entry rule',
+    INVALID_SUB: 'cannot be applied',
+  },
+  emptySpot: (position: number) => `Position ${position}: empty`,
+  playerRef: (number: number, name: string) => `#${number} ${name}`,
+  unknownPlayer: '?',
+  setPoint: (us: boolean, opponent: string) =>
+    us ? 'Set point for us!' : `Set point for ${opponent}`,
+  setWon: (us: boolean, opponent: string) =>
+    us ? 'We won the set. End it whenever you like.' : `${opponent} won the set.`,
+  warningsTitle: 'Substitution warnings',
+  warnSubLimit: (out: string, inn: string, max: number) =>
+    `${inn} for ${out}: more than ${max} substitutions in this set.`,
+  warnReentry: (out: string, inn: string) =>
+    `${inn} for ${out}: a substitute may only be replaced by the player they came in for, and each pair may swap back only once.`,
+  warnInvalid: (out: string, inn: string) => `${inn} for ${out} could not be applied (skipped).`,
+  libero: (ref: string | null) => (ref ? `Libero ${ref} (not counted as a sub)` : 'No libero'),
+  reset: 'Reset live data',
+  resetHint: 'Clears the score and substitutions of this set so its lineup can be edited again',
+  resetConfirm:
+    'Clear the score and all substitutions of this set? The lineup can then be edited again.',
+  resetConfirmButton: 'Reset',
+  lineupLocked: 'This set has been played — reset live data to edit.',
+} as const;

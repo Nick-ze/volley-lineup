@@ -53,6 +53,8 @@ export interface DragProviderProps {
   onDrop(item: DragItem, target: DropTarget): void;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** No drags start while true (e.g. the set's lineup is locked by live data). */
+  disabled?: boolean;
 }
 
 /**
@@ -61,7 +63,7 @@ export interface DragProviderProps {
  * starts, and the drop awaits that measurement before hit-testing with the pure `hitTest`.
  * Dropping a chip back where it came from does nothing.
  */
-export function DragProvider({ onDrop, children, style }: DragProviderProps) {
+export function DragProvider({ onDrop, children, style, disabled = false }: DragProviderProps) {
   const rootRef = useRef<MeasurableView>(null);
   const zones = useZoneMeasurements();
   const origin = useRef({ x: 0, y: 0 });
@@ -90,6 +92,7 @@ export function DragProvider({ onDrop, children, style }: DragProviderProps) {
 
   const begin = useCallback(
     (item: DragItem, px: number, py: number) => {
+      if (disabled) return;
       activeRef.current = item;
       setActive(item);
       placeOverlay(px, py); // last known origin: correct unless the page scrolled
@@ -104,7 +107,7 @@ export function DragProvider({ onDrop, children, style }: DragProviderProps) {
         });
       }
     },
-    [zones, placeOverlay],
+    [zones, placeOverlay, disabled],
   );
 
   const move = useCallback(

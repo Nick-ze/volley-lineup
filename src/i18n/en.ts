@@ -4,6 +4,7 @@
  * Keep keys nested per screen/feature so a German file can mirror the shape later.
  */
 import { lineup } from './en/lineup';
+import { live } from './en/live';
 import { print } from './en/print';
 import { roster } from './en/roster';
 import { rotation } from './en/rotation';
@@ -39,6 +40,7 @@ export const en = {
     lineup: 'Lineup',
     rotation: 'Rotation',
     starters: 'Starters',
+    live: 'Live',
     settings: 'Settings',
   },
   positions: {
@@ -68,6 +70,7 @@ export const en = {
   rotation,
   transfer,
   print,
+  live,
 } as const;
 
 export type Strings = typeof en;
