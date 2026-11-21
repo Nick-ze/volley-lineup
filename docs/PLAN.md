@@ -187,3 +187,46 @@ Layout: on phones, the court is on top and the bench is a scrollable list below.
 - [x] Importing a broken or foreign JSON file shows an error and changes nothing.
 - [ ] Lint, typecheck and tests pass in CI; the web build is live on GitHub Pages. — _CI green ✅; Pages deploy workflow ready but GitHub Pages must be enabled by the repo owner (private repo, see DECISIONS #49)._
 - [x] The app looks right on a small phone (375 px wide) and on desktop.
+
+---
+
+# v2 plan
+
+v1 shipped as `v1.0.0`. v2 adds the "Later" ideas from §3, except cloud sync (needs a backend and accounts; out of scope, see DECISIONS).
+
+## 11. v2 features
+
+1. **Libero swaps (rotation view)** — per set, choose which starters the libero replaces (default suggestion: the primary middle blockers). In the rotation viewer, whenever one of those players is in the back row (positions 1, 5, 6) the libero is shown in their spot (marked "L for #n"), except when that player is serving at position 1 (the libero may not serve). Toggle in the viewer to show the base lineup without swaps.
+2. **5-1 / 6-2 templates (lineup builder)** — "Fill from template" picks a system (5-1 or 6-2) and fills the six slots from the roster by primary position, keeping the standard layout (setter opposite opposite / two setters opposite; outsides opposite; middles opposite). Uses only active players; never places a player twice; shows which slots couldn't be filled.
+3. **Live match mode** — per set: big "Point us" / "Point them" buttons, running score, current rotation (side-out rule: when we win a rally on the opponent's serve we rotate clockwise; when we win on our serve we don't), who is serving, undo last action. Set ends are not enforced (manager decides), but the score shows "set point" at 24+ with a 2-point lead (15 in set 5).
+4. **Substitution tracking** — in live mode, substitute a player on court for a bench player (6 substitutions per set; the second sub of a pair must bring back the original starter in the same position — show a warning, not a block, if violated). Libero replacements don't count as substitutions. Shows "subs used: n/6".
+5. **Printable lineup sheet** — a print view of a match: all sets' starting six in court layout, libero, who serves first, roster with numbers. Web: browser print (`window.print`) with a print stylesheet; phone: `expo-print` → PDF via the share sheet.
+6. **German translation** — `src/i18n/de.ts` with the same shape as `en.ts` (TypeScript enforces completeness); language switch in Settings (persisted, default English).
+
+## 12. v2 data model changes
+
+```ts
+interface SetLineup {
+  // ...v1 fields...
+  liberoReplaces: string[]; // starters the libero replaces in the back row
+  events: SetEvent[]; // live log; score, rotation and line-up are derived from it
+}
+type Side = 'us' | 'them';
+type SetEvent =
+  { type: 'point'; winner: Side } | { type: 'sub'; outPlayerId: string; inPlayerId: string };
+// ExportFile.schemaVersion: 2 (v1 files are upgraded on import)
+// Store: version 2 (v1 data migrated), plus `language: 'en' | 'de'` (not exported)
+```
+
+Derived live state is computed by a pure function (`src/domain/liveSet.ts`): `replaySet(set, players) → { score, rotationSlots, servingSide, server, subsUsed, onCourt, warnings }`. Undo = drop the last event.
+
+## 13. v2 acceptance checklist
+
+- [ ] Choosing whom the libero replaces shows the libero in the right back-row spots in all 6 rotations, never at the serving position 1 (verified by tests).
+- [ ] 5-1 and 6-2 templates fill a valid lineup from a 12-player roster, and leave slots empty (with a message) when positions are missing.
+- [ ] Live mode: scoring a full set with side-outs produces the correct score, rotation and server after every rally (verified by tests); undo works.
+- [ ] Substitutions: 6 per set max, counter correct, the re-entry rule warning appears; libero swaps don't count.
+- [ ] Print view shows every set + libero + serve info; prints on web and produces a PDF on the phone.
+- [ ] The whole app can be switched to German and back; the choice survives a restart.
+- [ ] v1 data on a device and v1 export files open in v2 without loss.
+- [ ] Lint, typecheck and tests pass in CI; `src/domain` 100% coverage.

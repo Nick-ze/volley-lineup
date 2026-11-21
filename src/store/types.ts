@@ -8,8 +8,12 @@ export interface AppData {
   matches: Match[];
 }
 
+/** UI language (v2). English is the default; strings live in src/i18n. */
+export type Language = 'en' | 'de';
+
 export interface AppState extends AppData {
   currentProfileId: string | null;
+  language: Language;
   /** True once persisted state has been loaded from storage. Not persisted. */
   hydrated: boolean;
 }
@@ -44,6 +48,7 @@ export interface AppActions {
   // whole-data operations (used by import / settings)
   replaceAll(data: AppData): void;
   resetAll(): void;
+  setLanguage(language: Language): void;
   setHydrated(value: boolean): void;
 }
 

@@ -7,11 +7,22 @@
  */
 import { z } from 'zod';
 
-import type { ExportFile, ManagerProfile, Match, Player, Position, SetLineup, Team } from './types';
+import type {
+  ExportFile,
+  ManagerProfile,
+  Match,
+  Player,
+  Position,
+  SetEvent,
+  SetLineup,
+  Team,
+} from './types';
 import { ALL_POSITIONS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 1 as const;
+export const EXPORT_SCHEMA_VERSION = 2 as const;
+/** Older file versions that `parseImport` still accepts (upgraded on the fly). */
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2];
 
 /**
  * The four persisted collections. Derived from `ExportFile` (the domain layer can't import the
@@ -63,6 +74,13 @@ const setLineupSchema = z.object({
   }),
   liberoId: playerRef,
   weServeFirst: z.boolean(),
+  liberoReplaces: z.array(id),
+  events: z.array(
+    z.discriminatedUnion('type', [
+      z.object({ type: z.literal('point'), winner: z.enum(['us', 'them']) }),
+      z.object({ type: z.literal('sub'), outPlayerId: id, inPlayerId: id }),
+    ]),
+  ),
 });
 
 const matchSchema = z.object({
@@ -95,6 +113,7 @@ export type SchemaMatchesTypes = [
   Assert<Same<z.infer<typeof teamSchema>, Team>>,
   Assert<Same<z.infer<typeof playerSchema>, Player>>,
   Assert<Same<z.infer<typeof setLineupSchema>, SetLineup>>,
+  Assert<Same<z.infer<typeof setLineupSchema>['events'][number], SetEvent>>,
   Assert<Same<z.infer<typeof matchSchema>, Match>>,
   Assert<Same<z.infer<typeof exportFileSchema>, ExportFile>>,
 ];
@@ -222,11 +241,35 @@ export function isConsistent(data: TransferData): boolean {
       const starters = Object.values(set.slots).filter((x): x is string => x !== null);
       if (hasDuplicates(starters)) return false; // a player in two slots
       if (set.liberoId !== null && starters.includes(set.liberoId)) return false;
-      return [...starters, set.liberoId].every(
+      const subPlayers = set.events.flatMap((e) =>
+        e.type === 'sub' ? [e.outPlayerId, e.inPlayerId] : [],
+      );
+      return [...starters, set.liberoId, ...set.liberoReplaces, ...subPlayers].every(
         (playerId) => playerId === null || teamOfPlayer.get(playerId) === m.teamId,
       );
     });
   });
+}
+
+/**
+ * v1 → v2: sets gain `liberoReplaces: []` and `events: []`. Anything malformed is passed through
+ * untouched so the zod check reports it as INVALID_SHAPE.
+ */
+function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
+  if (raw.schemaVersion !== 1) return raw;
+  const matches = Array.isArray(raw.matches)
+    ? raw.matches.map((m: unknown) =>
+        isRecord(m) && Array.isArray(m.sets)
+          ? {
+              ...m,
+              sets: m.sets.map((set: unknown) =>
+                isRecord(set) ? { liberoReplaces: [], events: [], ...set } : set,
+              ),
+            }
+          : m,
+      )
+    : raw.matches;
+  return { ...raw, schemaVersion: EXPORT_SCHEMA_VERSION, matches };
 }
 
 /**
@@ -241,10 +284,13 @@ export function parseImport(jsonText: string): ParseImportResult {
     return { ok: false, error: 'INVALID_JSON' };
   }
   if (!isRecord(raw) || raw.app !== EXPORT_APP_ID) return { ok: false, error: 'NOT_VOLLEY_LINEUP' };
-  if (raw.schemaVersion !== EXPORT_SCHEMA_VERSION) {
+  if (
+    typeof raw.schemaVersion !== 'number' ||
+    !SUPPORTED_IMPORT_VERSIONS.includes(raw.schemaVersion)
+  ) {
     return { ok: false, error: 'UNSUPPORTED_VERSION' };
   }
-  const parsed = exportFileSchema.safeParse(raw);
+  const parsed = exportFileSchema.safeParse(upgradeToCurrent(raw));
   if (!parsed.success) return { ok: false, error: 'INVALID_SHAPE' };
   // The store keeps sets ordered by set number; do the same for imported files.
   const file: ExportFile = {

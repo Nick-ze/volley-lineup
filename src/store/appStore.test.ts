@@ -187,7 +187,53 @@ describe('whole data', () => {
 
 describe('migrations', () => {
   it('passes current data through and rejects newer versions', () => {
-    expect(migrateStore({ a: 1 }, 1)).toEqual({ a: 1 });
+    expect(migrateStore({ a: 1 }, STORE_VERSION)).toEqual({ a: 1 });
     expect(() => migrateStore({}, STORE_VERSION + 1)).toThrow();
+  });
+
+  it('upgrades v1 data: sets gain liberoReplaces/events, state gains language', () => {
+    const v1 = {
+      profiles: [],
+      currentProfileId: null,
+      matches: [
+        {
+          id: 'm1',
+          sets: [{ setNumber: 1, slots: {}, liberoId: null, weServeFirst: true }, 'junk'],
+        },
+        'junk',
+        { id: 'm2' },
+      ],
+    };
+    expect(migrateStore(v1, 1)).toEqual({
+      language: 'en',
+      profiles: [],
+      currentProfileId: null,
+      matches: [
+        {
+          id: 'm1',
+          sets: [
+            {
+              setNumber: 1,
+              slots: {},
+              liberoId: null,
+              weServeFirst: true,
+              liberoReplaces: [],
+              events: [],
+            },
+            'junk',
+          ],
+        },
+        'junk',
+        { id: 'm2' },
+      ],
+    });
+    expect(migrateStore({ matches: 'x' }, 1)).toEqual({ language: 'en', matches: 'x' });
+    expect(migrateStore(null, 1)).toBeNull();
+  });
+
+  it('remembers the chosen language', () => {
+    store().setLanguage('de');
+    expect(store().language).toBe('de');
+    store().setLanguage('en');
   });
 });
