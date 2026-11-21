@@ -17,3 +17,5 @@ export const LIBERO_BOX_MIN_WIDTH = 104;
 export const BENCH_MIN_HEIGHT = 240;
 /** Opacity of the original chip while its lifted copy is being dragged. */
 export const DRAG_GHOST_OPACITY = 0.35;
+/** A press on a role tag that moved further than this (px) was a drag, not a tap. */
+export const ROLE_PRESS_MAX_MOVE = 10;
