@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-21, after releasing **v6.0.0**.
+Last updated: 2026-11-21, after releasing **v6.1.0**.
 
 ---
 
@@ -21,9 +21,10 @@ Last updated: 2026-11-21, after releasing **v6.0.0**.
 | v4.0.0  | Roles on court (tag + picker with confirmation, "*" for unlisted roles), rotate before the set, rotation named after the setter, libero by role + on/off, data model v5                                                                    | `v4.0.0` |
 | v5.0.0  | Formations: roles belong to the court spots (5-1 / 6-2, setter → outside / middle), roles on empty spots, confirmation for off-position placements and formation changes, volleyball rules doc, plausible point-tag players, data model v6 | `v5.0.0` |
 | v6.0.0  | Players & performance: profile / player photos, player detail screen with season + per-match stats, confidential descriptions (biometric / PIN unlock), performance view per set / match, error types on "our error", data model v7        | `v6.0.0` |
+| v6.1.0  | Performance inside live mode: header button Performance / Live (overview of every player for the current set or all sets, player detail)                                                                                                   | `v6.1.0` |
 
-- `main` is green (CI), **907 tests**, `src/domain` at 100% coverage.
-- Current versions: app **6.0.0** (`app.json` + `package.json`, must match), store **8**, export `schemaVersion` **7** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
+- `main` is green (CI), **909 tests**, `src/domain` at 100% coverage.
+- Current versions: app **6.1.0** (`app.json` + `package.json`, must match), store **8**, export `schemaVersion` **7** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
 - Last decision number in `docs/DECISIONS.md`: **#167**. Continue at #168.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
