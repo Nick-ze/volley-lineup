@@ -264,3 +264,28 @@ Newest at the bottom. Format: **Decision** — why.
 153. **Routes**: player detail `/team/[teamId]/players/[playerId]` (back → roster); performance `/match/[matchId]/performance?set=N|all&player=ID` (back → match). A match in the player detail's list opens that match's performance view for the player (All sets).
 154. **New dependencies** (Expo SDK 58 versions via `EXPO_OFFLINE=1 npx expo install`): `expo-image-picker` (camera and gallery, with the permission texts in `app.json`), `expo-image-manipulator` (resize and compress to 256 px JPEG on the device), `expo-local-authentication` (biometrics or device PIN to unlock descriptions, with the Face ID text in `app.json`). They are installed in the foundation so parallel workers don't both edit `package.json`.
 155. **Version 6.0.0** (versionCode 60000): major, because the store and export formats change.
+
+### Player detail and descriptions (PR #46)
+
+156. **Player detail screen**: a roster row tap opens it, and Edit opens the existing form. The header title is the player's name. Season stats are shown as compact tiles, with the match list newest first (same order as the Matches tab). Tapping a match opens its performance view for that player. Errors by type read "2 × reception error". Deleting a player always lands on the roster; if the player disappears while the detail screen is open, it replaces itself with the roster.
+157. **Unlocking descriptions**: on a phone with a device lock (biometrics or at least a PIN, `getEnrolledLevelAsync() !== NONE`), the system prompt with PIN fallback is used. Without one, if the check fails, and always on web, an in-app "These notes are confidential. Show them?" confirmation is used. A cancelled or failed prompt stays locked, and so does one that succeeds after the app has left the foreground.
+158. **Auto-lock**: one app-wide `AppState` listener. `background` always locks, and so does a hidden tab on web. `inactive` locks too, except while our own unlock prompt is open (iOS Face ID makes the app inactive). The unlock state and the "Include descriptions" tick live in one in-memory store (never persisted), so locking or restarting clears both. An unsaved description draft is discarded on lock (confidentiality first). Unlocking is also offered in Settings → Export, next to the checkbox. The import preview shows only the number of descriptions in a file.
+
+### Performance and error types (PR #45)
+
+159. **Error-type chips**: after "Our error", the plausible types appear in a labelled group above the player chips. A chosen type collapses to its own chip, and tapping it again clears it. Our error → player is still one tap. **The tagged player always fits the type** (`errorTagging.ts` `chooseLastErrorType`): a serve error names our server, or replaces an implausible player with the server; any other implausible player is dropped. The undo label reads "· our error (serve) #7 Smith".
+160. **Performance view**: the match screen has a 6th link, "Performance" (phones: two rows of three links). It opens the selected set if that set was played, otherwise All sets. Each card shows the photo or number, rallies, won–lost (±), K · A · B · E · Net, and the rating as a symbol plus a word (▲ Positive / ● Even / ▼ Negative / – No rallies; never colour only). Rates are whole percentages, each with a one-line explanation; "–" without a divisor. Plural error names live in `performance.ts`. Opening a player pushes a history entry, so the hardware or browser back returns to the overview. Switching to a set the player didn't play shows the overview.
+
+### Photos (PR #47)
+
+161. **Picking a photo** (`src/lib/pickPhoto*.ts`, `src/domain/photoCrop.ts`): the picture is cropped to its centre square, scaled to at most 256 px (never up) and saved as a JPEG at 0.7 as a base64 data URI (about 5–15 KB). Phones ask for camera access first and offer the system's square crop. On web, "Take photo" is offered only on touch screens (a file input with `capture`); desktop opens the file chooser directly. Cancel, a refused permission and a failure each show a message and never crash. The camera / gallery choice is shown inline in the form, not in a modal (on iOS a system picker can't open while a modal is closing).
+162. **Saving a photo**: the picked picture stays in the form until Save. Save and Create profile are disabled while a picture is being prepared ("Preparing photo…"). On save, `setPhoto` updates memory first and the profile or player is pointed at the new id on the next line, without awaiting the storage write. That leaves no window in which the orphan prune could delete the new photo (amends the "await first" wording of #148). A changed photo gets a new id; Remove saves without a `photoId`.
+163. **Where photos show**:
+
+- profile: picker rows, teams header, Profile tab card, form
+- roster rows: the photo with a small number badge; inactive players' photos are dimmed
+- player form and player detail
+- lineup bench and live substitution bench: the photo, with "#7 Name" below
+- court chips keep the number or name and never show a photo (clearer at 375 px)
+
+"Delete all data" mentions photos. The profile list button reads "Edit profile X" (DE "Bearbeiten: Profil X"), because it also edits the photo.

@@ -141,11 +141,21 @@ New in **v5 — Formations**:
 
 Data and files from v4 open automatically (the formation is worked out from where your setter stands); files exported by v5 (schema version 6) can't be opened by older versions.
 
+New in **v6 — Players & performance**:
+
+- **Photos** — give each profile and player a picture: take one with the camera or pick one from the gallery, change it or remove it. Photos are shrunk to a small 256 px JPEG and stay on the device. They show on the profile, in the roster, on the player page and on the bench; court chips keep the number or name.
+- **Player page** — tap a player in the roster for their season: sets started and played, rallies on court ("x of y"), subs, serves and points on serve, kills / aces / blocks, errors by type and plus/minus, plus one line per match.
+- **Confidential descriptions** — private notes per player, hidden until you unlock them with your fingerprint / face / device PIN (a confirmation on the web). They lock again when you press Lock, leave the app or restart it. They never show in lists or the print sheet, and go into an export file only if you tick **Include descriptions**.
+- **Performance** — a new link on the match screen shows every player for a set or the whole match: rallies on court, won–lost, kills / aces / blocks vs errors and a simple rating (▲ ● ▼). Tap a player for their error rate and where the errors happened ("3 reception errors, 5 attack errors").
+- **Error types** — "Our error" can now say what kind: Serve · Reception · Attack · Block · Set · Net / foul · Other. Still optional, one tap to skip.
+
+Data and files from v5 open automatically; files exported by v6 (schema version 7, with photos) can't be opened by older versions.
+
 ## Export / import
 
 Open the **Settings** tab (bottom bar).
 
-- **Export everything** writes all profiles, teams, players, matches (with their live data and point details) and saved lineups to `volley-lineup-YYYY-MM-DD.json`. **Export <team>** writes just that team, its profile, players and matches. On the web the file is downloaded; on a phone the share sheet opens (save to Files, AirDrop, mail, …).
+- **Export everything** writes all profiles, teams, players, matches (with their live data and point details), saved lineups and photos to `volley-lineup-YYYY-MM-DD.json`. Player descriptions are included only when **Include descriptions** is ticked (possible only while descriptions are unlocked). **Export <team>** writes just that team, its profile, players and matches. On the web the file is downloaded; on a phone the share sheet opens (save to Files, AirDrop, mail, …).
 - **Import from file** opens a file picker, validates the file and shows a preview ("1 profile, 2 teams, 24 players, 5 matches"). Then choose:
   - **Replace** — your current data is replaced by the file.
   - **Merge** — items are matched by id; imported items win, nothing is deleted. If merging would make the data inconsistent (e.g. two players with the same number in a team) the merge is refused and you can use Replace instead.
