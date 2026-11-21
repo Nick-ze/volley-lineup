@@ -22,7 +22,9 @@ export function LiberoRoleChips({ editor, disabled }: { editor: LineupDraft; dis
         {LIBERO_ROLE_GROUPS.map((role) => {
           const state = liberoRoleState(set, players, role);
           const checked = state === 'on';
-          const off = disabled || state === 'empty';
+          const empty = state === 'empty';
+          // When the libero is off, the parent section already dims everything.
+          const off = disabled || empty;
           return (
             <Pressable
               key={role}
@@ -36,7 +38,7 @@ export function LiberoRoleChips({ editor, disabled }: { editor: LineupDraft; dis
               style={({ pressed }) => [
                 styles.option,
                 checked && styles.checked,
-                off && styles.disabled,
+                empty && styles.disabled,
                 pressed && styles.pressed,
               ]}
               testID={`libero-role-${role}`}

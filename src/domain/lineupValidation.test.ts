@@ -103,6 +103,28 @@ describe('validateLineup', () => {
     expect(result.warnings).toEqual([{ code: 'UNUSUAL_LAYOUT', positions: [3, 5] }]);
   });
 
+  it('UNUSUAL_LAYOUT judges roles, not primary positions (v4)', () => {
+    // Swapping the roles of #2 (now OPP) and #4 (now OH): setter at 1, opposite at 2.
+    const swapped = { ...good, roles: { oh2: 'OPP', opp4: 'OH' } } satisfies SetLineup;
+    expect(validateLineup(swapped, players).warnings).toEqual([
+      { code: 'UNUSUAL_LAYOUT', positions: [1, 2] },
+    ]);
+    // Primary positions in an unusual layout, but the roles make it a classic 5-1.
+    const moved = {
+      ...good,
+      slots: { ...good.slots, 2: 'opp4', 4: 'oh2' },
+      roles: { opp4: 'OH', oh2: 'OPP' },
+    } satisfies SetLineup;
+    expect(validateLineup(moved, players).warnings).toEqual([]);
+    // A middle playing OH leaves one middle: no middle check.
+    const oneMiddle = {
+      ...good,
+      slots: { ...good.slots, 6: 'oh5', 5: 'mb6' },
+      roles: { mb6: 'OH' },
+    } satisfies SetLineup;
+    expect(validateLineup(oneMiddle, players).warnings).toEqual([]);
+  });
+
   it('no layout warning without exactly one S + one OPP / exactly two MBs', () => {
     const twoSetters = [...players, mk('s11', ['S'])];
     const result = validateLineup(lineup({ 1: 's1', 2: 's11', 3: 'opp4', 4: 'mb3' }), twoSetters);

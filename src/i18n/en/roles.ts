@@ -1,6 +1,8 @@
 /** Roles on court (v4.0): role tags, the role picker, setter rotation, libero on/off. Shared by the v4 workers. */
 export const roles = {
   title: 'Roles',
+  /** A player as "#7 Anna Smith". */
+  playerRef: (number: number, name: string) => `#${number} ${name}`.trim(),
   /** Added to a court spot's label: the role in words. */
   spotRole: (role: string, offPosition: boolean) =>
     offPosition ? `plays ${role}, not one of their positions` : `plays ${role}`,
@@ -15,7 +17,7 @@ export const roles = {
     optionLabel: (code: string, role: string, offPosition: boolean) =>
       `${code} · ${role}${offPosition ? ', not one of their positions' : ''}`,
     offMark: ' *',
-    cancelLabel: 'Close the role choice',
+    cancelLabel: 'Cancel: close the role choice',
   },
   confirm: {
     title: 'Are you sure?',

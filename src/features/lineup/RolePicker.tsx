@@ -24,7 +24,7 @@ export function RolePicker({ player, current, onPick, onClose }: RolePickerProps
   const t = useT();
   const s = t.roles;
   const [pending, setPending] = useState<Position | null>(null);
-  const name = `#${player.number} ${player.firstName} ${player.lastName}`.trim();
+  const name = s.playerRef(player.number, `${player.firstName} ${player.lastName}`.trim());
 
   const choose = (role: Position) => {
     if (role === current) onClose();

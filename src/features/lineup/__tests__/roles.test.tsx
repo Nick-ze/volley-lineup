@@ -59,7 +59,7 @@ describe('lineup builder — roles', () => {
     expect(await tag('findByTestId', 'role-tag-1')).toHaveTextContent('S');
     expect(tag('getByTestId', 'role-tag-3')).toHaveTextContent('MB');
     expect(tag('getByTestId', 'role-tag-4')).toHaveTextContent('OPP');
-    expect(tag('queryByTestId', 'role-tag-4-off')).toBeNull();
+    expect(tag('queryByTestId', 'role-off-4')).toBeNull();
     expect(screen.getByTestId('slot-player-1').props.accessibilityLabel).toBe(
       'Position 1, 1 Sina Test, plays Setter',
     );
@@ -71,7 +71,7 @@ describe('lineup builder — roles', () => {
     expect(screen.queryByTestId('role-confirm')).toBeNull();
     expect(set1().roles).toEqual({ p2: 'OPP' });
     expect(tag('getByTestId', 'role-tag-2')).toHaveTextContent('OPP');
-    expect(tag('queryByTestId', 'role-tag-2-off')).toBeNull();
+    expect(tag('queryByTestId', 'role-off-2')).toBeNull();
   });
 
   it('asks before an unlisted role: cancel keeps, confirm stores and marks it', async () => {
@@ -88,7 +88,7 @@ describe('lineup builder — roles', () => {
     await pickRole(4, 'S');
     await fireEvent.press(screen.getByRole('button', { name: 'Confirm: play as Setter' }));
     expect(set1().roles).toEqual({ p4: 'S' });
-    expect(tag('getByTestId', 'role-tag-4-off')).toBeTruthy();
+    expect(tag('getByTestId', 'role-off-4')).toBeTruthy();
     expect(screen.getByTestId('slot-player-4').props.accessibilityLabel).toMatch(
       /plays Setter, not one of their positions/,
     );
@@ -97,7 +97,29 @@ describe('lineup builder — roles', () => {
     await pickRole(4, 'OPP');
     expect(screen.queryByTestId('role-confirm')).toBeNull();
     expect(set1().roles).toEqual({});
-    expect(tag('queryByTestId', 'role-tag-4-off')).toBeNull();
+    expect(tag('queryByTestId', 'role-off-4')).toBeNull();
+  });
+
+  it('while a player is selected, the role tag places / swaps like the spot', async () => {
+    await open();
+    await fireEvent.press(await screen.findByTestId('slot-player-1'));
+    await fireEvent.press(screen.getByTestId('slot-role-4'));
+    expect(screen.queryByTestId('role-picker')).toBeNull();
+    expect(set1().slots[1]).toBe('p4');
+    expect(set1().slots[4]).toBe('p1');
+  });
+
+  it('ignores a press on the role tag that moved (a drag)', async () => {
+    await open();
+    const roleTag = await screen.findByTestId('slot-role-2');
+    await fireEvent(roleTag, 'pressIn', { nativeEvent: { pageX: 10, pageY: 10 } });
+    await fireEvent(roleTag, 'press', { nativeEvent: { pageX: 60, pageY: 40 } });
+    expect(screen.queryByTestId('role-picker')).toBeNull();
+    await fireEvent(roleTag, 'pressIn', { nativeEvent: { pageX: 10, pageY: 10 } });
+    await fireEvent(roleTag, 'press', { nativeEvent: { pageX: 12, pageY: 11 } });
+    expect(screen.getByTestId('role-picker')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel: close the role choice' }));
+    expect(screen.queryByTestId('role-picker')).toBeNull();
   });
 
   it('rotates the starting six both ways, roles following the players', async () => {
@@ -174,8 +196,8 @@ describe('lineup builder — templates set roles', () => {
     expect(screen.queryByTestId('role-confirm')).toBeNull();
     expect(set1().slots[5]).toBe('p4');
     expect(set1().roles).toEqual({ p4: 'OH' });
-    expect(tag('getByTestId', 'role-tag-5')).toHaveTextContent('OH*');
-    expect(tag('getByTestId', 'role-tag-5-off')).toBeTruthy();
+    expect(tag('getByTestId', 'role-tag-5')).toHaveTextContent('OH');
+    expect(tag('getByTestId', 'role-off-5')).toBeTruthy();
   });
 });
 
@@ -196,7 +218,7 @@ describe('preset editor — roles', () => {
     await fireEvent.press(screen.getByTestId('role-confirm-ok'));
     const stored = () => useAppStore.getState().presets.find((p) => p.id === preset.id)!;
     expect(stored().roles).toEqual({ p3: 'OH' });
-    expect(tag('getByTestId', 'role-tag-3-off')).toBeTruthy();
+    expect(tag('getByTestId', 'role-off-3')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Rotate clockwise' }));
     expect(stored().slots[2]).toBe('p3');
   });
