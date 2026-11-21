@@ -2,12 +2,29 @@
  * Printable lineup sheet (v2 feature 5): builds a self-contained HTML document (inline CSS,
  * light print theme, A4 portrait) for a match — header, every stored set's starting six in court
  * layout (net on top, front row 4-3-2, back row 5-6-1), libero, who serves first, and the roster.
+ * Optionally (v3, `withResults`) a played match gets a results section above the sets.
  *
  * Pure: no React, no i18n import. Translated labels come in through `labels`, and every piece of
  * user text (names, team, opponent, season, labels) is HTML-escaped.
  */
 import { printColors as c, printLayout as l } from '../theme/print';
+import { getMatchState, type MatchState } from './matchState';
 import type { CourtPosition, Match, Player, SetLineup, Team } from './types';
+
+/** Labels of the optional "with results" section (v3). */
+export interface LineupSheetResultLabels {
+  heading: string;
+  /** Final result of a decided match, e.g. "Won" / "Lost"; "In progress" otherwise. */
+  won: string;
+  lost: string;
+  inProgress: string;
+  setsWon: string;
+  /** e.g. "Set 1 25:21"; `open` is true for a set that is still being played. */
+  setScore: (setNumber: number, us: number, them: number, open: boolean) => string;
+  duration: string;
+  /** e.g. "1 h 32 min" from whole hours and the remaining minutes. */
+  durationValue: (hours: number, minutes: number) => string;
+}
 
 export interface LineupSheetLabels {
   /** Document title, e.g. "Lineup · Team vs Opponent". */
@@ -40,6 +57,7 @@ export interface LineupSheetLabels {
   status: string;
   inactive: string;
   noPlayers: string;
+  results: LineupSheetResultLabels;
 }
 
 export interface LineupSheetInput {
@@ -50,6 +68,22 @@ export interface LineupSheetInput {
   labels: LineupSheetLabels;
   /** `lang` attribute of the document (default `en`). */
   lang?: string;
+  /**
+   * Adds the results section (final result, sets won, every played set's score, duration).
+   * Ignored for a match that hasn't started, so it prints exactly as without it.
+   */
+  withResults?: boolean;
+}
+
+/** True once a rally of the match has been played, i.e. there are results to print. */
+export function hasResults(match: Pick<Match, 'sets'>): boolean {
+  return getMatchState(match).status !== 'notStarted';
+}
+
+/** Whole hours and remaining minutes of a duration, rounded to the nearest minute. */
+export function durationParts(ms: number): { hours: number; minutes: number } {
+  const total = Math.round(ms / 60_000);
+  return { hours: Math.floor(total / 60), minutes: total % 60 };
 }
 
 /** Court cells in reading order: front row under the net, then the back row. */
@@ -126,6 +160,39 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
   );
 }
 
+function renderResults(state: MatchState, labels: LineupSheetResultLabels): string {
+  const status =
+    state.status === 'won' ? labels.won : state.status === 'lost' ? labels.lost : labels.inProgress;
+  const sets = state.sets
+    .filter((set) => set.status !== 'notStarted')
+    .map((set) => {
+      const text = labels.setScore(
+        set.setNumber,
+        set.score.us,
+        set.score.them,
+        set.status === 'inProgress',
+      );
+      return `<li data-set-result="${set.setNumber}">${escapeHtml(text)}</li>`;
+    })
+    .join('');
+  const line = (cls: string, label: string, value: string) =>
+    `<div class="${cls}"><span class="label">${escapeHtml(label)}</span> ${escapeHtml(value)}</div>`;
+  let duration = '';
+  if (state.durationMs !== null) {
+    const { hours, minutes } = durationParts(state.durationMs);
+    duration = line('duration', labels.duration, labels.durationValue(hours, minutes));
+  }
+  return (
+    `<section class="results" data-status="${state.status}">` +
+    `<h2>${escapeHtml(labels.heading)}</h2>` +
+    `<div class="final">${escapeHtml(status)}</div>` +
+    line('sets-won', labels.setsWon, `${state.setsWon.us}:${state.setsWon.them}`) +
+    `<ul class="set-scores">${sets}</ul>` +
+    duration +
+    `</section>`
+  );
+}
+
 function renderRoster(players: Player[], labels: LineupSheetLabels): string {
   if (players.length === 0) return `<p class="empty">${escapeHtml(labels.noPlayers)}</p>`;
   const body = players
@@ -177,6 +244,10 @@ table.roster { width: 100%; border-collapse: collapse; font-size: ${l.infoFontSi
 table.roster th, table.roster td { border: 1px solid ${c.grid}; padding: 2px 6px; text-align: left; }
 table.roster th { background: ${c.fill}; }
 table.roster td.n { width: 3em; font-weight: 700; text-align: right; }
+section.results { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border};
+  padding: ${l.setPadding}; margin-bottom: ${l.sectionGap}; font-size: ${l.infoFontSize}; }
+.final { font-size: ${l.headingFontSize}; font-weight: 700; margin-bottom: 2px; }
+ul.set-scores { display: flex; flex-wrap: wrap; gap: 2px 18px; list-style: none; margin: 2px 0; padding: 0; }
 `;
 
 /** Builds the full printable HTML document for a match. */
@@ -198,6 +269,11 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
     .map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd></div>`)
     .join('');
 
+  const resultsHtml =
+    input.withResults && hasResults(match)
+      ? renderResults(getMatchState(match), labels.results)
+      : '';
+
   const setsHtml =
     sets.length > 0
       ? `<div class="sets">${sets.map((s) => renderSet(s, byId, labels)).join('')}</div>`
@@ -208,7 +284,7 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${escapeHtml(labels.documentTitle)}</title><style>${CSS}</style></head><body>` +
     `<header><h1>${escapeHtml(team.name)}</h1><dl class="meta">${metaHtml}</dl></header>` +
-    `<main>${setsHtml}<section class="roster-section"><h2>${escapeHtml(labels.roster)}</h2>` +
+    `<main>${resultsHtml}${setsHtml}<section class="roster-section"><h2>${escapeHtml(labels.roster)}</h2>` +
     `${renderRoster(roster, labels)}</section></main></body></html>`
   );
 }

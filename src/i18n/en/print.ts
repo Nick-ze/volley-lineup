@@ -4,6 +4,16 @@ export const print = {
   buttonLabel: 'Print the lineup sheet of this match or save it as a PDF',
   failed: 'Printing failed. Please try again.',
   dialogTitle: 'Share lineup sheet',
+  choice: {
+    title: 'What do you want to print?',
+    body: 'This match has results. You can add them to the sheet.',
+    lineupsOnly: 'Lineups only',
+    lineupsOnlyLabel: 'Print the lineups only',
+    withResults: 'With results',
+    withResultsLabel: 'Print the lineups with the match result and set scores',
+    cancel: 'Cancel',
+    cancelLabel: 'Cancel printing',
+  },
   sheet: {
     documentTitle: (team: string, opponent: string) => `Lineup · ${team} vs ${opponent}`,
     opponent: 'Opponent',
@@ -32,5 +42,17 @@ export const print = {
     status: 'Status',
     inactive: 'Injured / inactive',
     noPlayers: 'No players yet.',
+    results: {
+      heading: 'Result',
+      won: 'Won',
+      lost: 'Lost',
+      inProgress: 'In progress',
+      setsWon: 'Sets won:',
+      setScore: (n: number, us: number, them: number, open: boolean) =>
+        `Set ${n} ${us}:${them}${open ? ' (in progress)' : ''}`,
+      duration: 'Duration:',
+      durationValue: (hours: number, minutes: number) =>
+        hours > 0 ? `${hours} h ${minutes} min` : `${minutes} min`,
+    },
   },
 };

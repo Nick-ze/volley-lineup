@@ -6,6 +6,16 @@ export const print: Strings['print'] = {
   buttonLabel: 'Aufstellungsbogen dieses Spiels drucken oder als PDF speichern',
   failed: 'Drucken fehlgeschlagen. Bitte versuche es noch einmal.',
   dialogTitle: 'Aufstellungsbogen teilen',
+  choice: {
+    title: 'Was möchtest du drucken?',
+    body: 'Dieses Spiel hat Ergebnisse. Du kannst sie auf den Bogen setzen.',
+    lineupsOnly: 'Nur Aufstellungen',
+    lineupsOnlyLabel: 'Nur die Aufstellungen drucken',
+    withResults: 'Mit Ergebnissen',
+    withResultsLabel: 'Die Aufstellungen mit Spielergebnis und Satzständen drucken',
+    cancel: 'Abbrechen',
+    cancelLabel: 'Drucken abbrechen',
+  },
   sheet: {
     documentTitle: (team: string, opponent: string) => `Aufstellung · ${team} gegen ${opponent}`,
     opponent: 'Gegner',
@@ -34,5 +44,17 @@ export const print: Strings['print'] = {
     status: 'Status',
     inactive: 'Verletzt / inaktiv',
     noPlayers: 'Noch keine Spieler.',
+    results: {
+      heading: 'Ergebnis',
+      won: 'Gewonnen',
+      lost: 'Verloren',
+      inProgress: 'Läuft noch',
+      setsWon: 'Gewonnene Sätze:',
+      setScore: (n: number, us: number, them: number, open: boolean) =>
+        `Satz ${n} ${us}:${them}${open ? ' (läuft noch)' : ''}`,
+      duration: 'Dauer:',
+      durationValue: (hours: number, minutes: number) =>
+        hours > 0 ? `${hours} Std. ${minutes} Min.` : `${minutes} Min.`,
+    },
   },
 };
