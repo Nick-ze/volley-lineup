@@ -36,6 +36,14 @@ describe('parentRoute', () => {
     });
   });
 
+  it('goes back from live mode to the match, keeping the set', () => {
+    expect(parentRoute('match/[matchId]/live', { matchId: 'm1', set: '3' }, lookup)).toEqual({
+      pathname: '/match/[matchId]',
+      params: { matchId: 'm1', set: '3' },
+    });
+    expect(parentRoute('match/[matchId]/live', {}, lookup)).toBe('/teams');
+  });
+
   it('falls back to /teams when params or the match are missing', () => {
     expect(parentRoute('team/[teamId]/player', {}, lookup)).toBe('/teams');
     expect(parentRoute('team/[teamId]/match-new', { teamId: '' }, lookup)).toBe('/teams');
