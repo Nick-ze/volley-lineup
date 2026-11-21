@@ -16,11 +16,12 @@ describe('team nav bar', () => {
   it('parses ?tab= (unknown → roster)', () => {
     expect(parseTeamTab('presets')).toBe('presets');
     expect(parseTeamTab(['starters'])).toBe('starters');
+    expect(parseTeamTab('stats')).toBe('stats');
     expect(parseTeamTab('nope')).toBe('roster');
     expect(parseTeamTab(undefined)).toBe('roster');
   });
 
-  it('switches between Roster, Matches, Presets and Starters via the URL', async () => {
+  it('switches between Roster, Matches, Presets, Starters and Stats via the URL', async () => {
     await renderRouter('./app', { initialUrl: '/team/team1?tab=bogus' });
     const tab = (name: string) => screen.getByRole('tab', { name });
     expect(await screen.findByTestId('team-nav')).toBeTruthy();
@@ -41,13 +42,19 @@ describe('team nav bar', () => {
     expect(screen).toHaveSearchParams({ teamId: 'team1', tab: 'starters' });
     expect(screen.getByText(t.presets.starters.empty)).toBeTruthy();
 
+    await fireEvent.press(tab(nav.stats));
+    expect(screen).toHaveSearchParams({ teamId: 'team1', tab: 'stats' });
+    expect(tab(nav.stats)).toBeSelected();
+    expect(screen.getByText(t.stats.empty)).toBeTruthy();
+
     await fireEvent.press(tab(nav.roster));
     expect(screen.getByText(t.roster.team.playerCount(12))).toBeTruthy();
   });
 
   it('every tab is at least 44 px high and has a hint', async () => {
     await renderRouter('./app', { initialUrl: '/team/team1' });
-    for (const name of [nav.roster, nav.matches, nav.presets, nav.starters]) {
+    expect(await screen.findAllByRole('tab')).toHaveLength(5);
+    for (const name of [nav.roster, nav.matches, nav.presets, nav.starters, nav.stats]) {
       const item = await screen.findByRole('tab', { name });
       expect(item.props.accessibilityHint).toBeTruthy();
     }
@@ -60,7 +67,8 @@ describe('team nav bar', () => {
     useAppStore.getState().setLanguage('de');
     try {
       await renderRouter('./app', { initialUrl: '/team/team1?tab=presets' });
-      for (const name of [de.presets.nav.roster, de.presets.nav.matches, de.presets.nav.starters]) {
+      const names = [de.presets.nav.roster, de.presets.nav.matches, de.presets.nav.starters];
+      for (const name of [...names, de.presets.nav.stats]) {
         expect(await screen.findByRole('tab', { name })).toBeTruthy();
       }
       expect(screen.getByRole('tab', { name: de.presets.nav.presets })).toBeSelected();

@@ -8,10 +8,12 @@ export const presets: Strings['presets'] = {
     matches: 'Spiele',
     presets: 'Vorlagen',
     starters: 'Startsechs',
+    stats: 'Statistik',
     rosterLabel: 'Kader: Spieler des Teams',
     matchesLabel: 'Spiele des Teams',
     presetsLabel: 'Vorlagen: gespeicherte Aufstellungen',
     startersLabel: 'Startsechs: die übliche Startaufstellung des Teams',
+    statsLabel: 'Statistik: Saisonstatistik des Teams',
   },
   list: {
     count: (n: number) => (n === 1 ? '1 Vorlage' : `${n} Vorlagen`),
