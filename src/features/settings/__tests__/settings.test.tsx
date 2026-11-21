@@ -248,6 +248,20 @@ describe('delete all and version', () => {
     expect(screen.queryByLabelText('Switch profile')).toBeNull();
   });
 
+  it('says that saved lineups (presets and team starters) are deleted too', async () => {
+    seed();
+    await renderSettings();
+    expect(
+      screen.getByText(
+        'Removes every profile, team, player, match and saved lineup (presets and team starters) from this device.',
+      ),
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Delete all data'));
+    expect(screen.getByTestId('delete-confirm')).toHaveTextContent(
+      /matches and saved lineups \(presets and team starters\) will be deleted/,
+    );
+  });
+
   it('asks for confirmation before deleting all data', async () => {
     seed();
     await renderSettings();
