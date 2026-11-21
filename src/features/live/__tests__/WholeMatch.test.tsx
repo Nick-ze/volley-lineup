@@ -36,6 +36,8 @@ const players: Player[] = [
 const slots = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' } as const;
 
 const starters: LineupPreset = {
+  roles: {},
+  liberoActive: true,
   id: 'st',
   teamId: 'team1',
   name: '',
@@ -52,6 +54,8 @@ const points = (winner: Side, n: number, at?: (i: number) => string): PointEvent
   );
 
 const set = (setNumber: SetNumber, us: number, them: number, weServeFirst = true): SetLineup => ({
+  roles: {},
+  liberoActive: true,
   setNumber,
   slots: { ...slots },
   liberoId: 'p7',

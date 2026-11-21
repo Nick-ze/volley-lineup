@@ -14,7 +14,13 @@
  * Rule breaches are warnings, never blocks: the event is still applied. Events that can't be
  * applied at all (player not on court, already on court, the libero, unknown) are skipped.
  */
-import { applyLiberoSwaps, findLiberoSwap, type LiberoSwap } from './liberoSwap';
+import {
+  activeLiberoReplaces,
+  applyLiberoSwaps,
+  findLiberoSwap,
+  type LiberoSwap,
+} from './liberoSwap';
+import { setterRotation, startingRoles } from './roles';
 import {
   ROTATION_COUNT,
   rotateClockwise,
@@ -26,6 +32,7 @@ import {
   COURT_POSITIONS,
   type Player,
   type PointEvent,
+  type RoleOverrides,
   type SetEvent,
   type SetLineup,
   type Side,
@@ -66,6 +73,10 @@ export interface LiveState {
   slots: Slots;
   /** 1 = the starting rotation; +1 per side-out, wrapping 6 → 1. */
   rotation: RotationNumber;
+  /** v5: roles of the players on court now (substitutes inherit the role of who they replaced). */
+  roles: RoleOverrides;
+  /** v5: the rotation named after the setter's position (null without a setter on court). */
+  setterRotation: RotationNumber | null;
   servingSide: Side;
   /** Our server (position 1) when we serve, otherwise null. */
   serverId: string | null;
@@ -130,6 +141,10 @@ export interface RallyStep {
   servingSide: Side;
   /** The real players on court during the rally (without the libero swap). */
   slots: Slots;
+  /** v5: roles of the players on court during the rally (substitutes inherit). */
+  roles: RoleOverrides;
+  /** v5: the rotation named after the setter's position, or null without a setter (roles.ts). */
+  setterRotation: RotationNumber | null;
 }
 
 /** A substitution in the log; `applied` is false when it was skipped (`INVALID_SUB`). */
@@ -172,6 +187,16 @@ function replay(
   /** "a|b" (sorted) → substitutions made within that pair. */
   const pairUses = new Map<string, number>();
   const steps: ReplayStep[] = [];
+  /** v5: player id → role, for everyone who has been on court; subs inherit. */
+  const roles: RoleOverrides = startingRoles(set, players);
+  const onCourtRoles = (): RoleOverrides => {
+    const now: RoleOverrides = {};
+    for (const p of COURT_POSITIONS) {
+      const id = slots[p];
+      if (id !== null && roles[id] !== undefined) now[id] = roles[id];
+    }
+    return now;
+  };
 
   set.events.forEach((event, eventIndex) => {
     if (event.type === 'point') {
@@ -182,6 +207,8 @@ function replay(
         rotation: rotationNumber(rotations),
         servingSide,
         slots,
+        roles: onCourtRoles(),
+        setterRotation: setterRotation(slots, roles),
       });
       score[event.winner] += 1;
       if (event.winner === 'us' && servingSide === 'them') {
@@ -219,6 +246,9 @@ function replay(
       warnings.push({ code: 'REENTRY_RULE', ...base });
     }
 
+    const outRole = roles[outPlayerId];
+    if (outRole === undefined) delete roles[inPlayerId];
+    else roles[inPlayerId] = outRole;
     const position = COURT_POSITIONS.find((p) => slots[p] === outPlayerId);
     slots = { ...slots, [position as number]: inPlayerId };
   });
@@ -227,6 +257,8 @@ function replay(
     score,
     slots,
     rotation: rotationNumber(rotations),
+    roles: onCourtRoles(),
+    setterRotation: setterRotation(slots, roles),
     servingSide,
     serverId: servingSide === 'us' ? slots[serverPosition] : null,
     subsUsed,
@@ -289,8 +321,9 @@ export interface LiveCourtView {
  */
 export function liveCourtView(set: SetLineup, state: LiveState): LiveCourtView {
   const options = { serving: state.servingSide === 'us' };
+  const replaces = activeLiberoReplaces(set);
   return {
-    slots: applyLiberoSwaps(state.slots, set.liberoId, set.liberoReplaces, options),
-    liberoSwap: findLiberoSwap(state.slots, set.liberoId, set.liberoReplaces, options),
+    slots: applyLiberoSwaps(state.slots, set.liberoId, replaces, options),
+    liberoSwap: findLiberoSwap(state.slots, set.liberoId, replaces, options),
   };
 }

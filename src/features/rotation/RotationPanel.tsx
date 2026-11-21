@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { findLiberoSwap } from '@/domain/liberoSwap';
+import { activeLiberoReplaces, findLiberoSwap } from '@/domain/liberoSwap';
 import {
   getRotation,
   nextRotation,
@@ -33,7 +33,7 @@ export function RotationPanel({ set, playersById }: RotationPanelProps) {
   const [showSwaps, setShowSwaps] = useState(true);
   const base = useMemo(() => getRotation(set.slots, rotation), [set.slots, rotation]);
   // The rotation viewer treats position 1 as serving, so the libero never stands there.
-  const swap = showSwaps ? findLiberoSwap(base, set.liberoId, set.liberoReplaces) : null;
+  const swap = showSwaps ? findLiberoSwap(base, set.liberoId, activeLiberoReplaces(set)) : null;
   const liberoId = set.liberoId;
   const slots = swap && liberoId ? { ...base, [swap.position]: liberoId } : base;
   const isEmpty = Object.values(set.slots).every((id) => id === null);

@@ -2,7 +2,8 @@
  * Lineup lock: once a set has live data (`events`), its starting six, libero and first serve are
  * fixed, because the live score, rotation and substitutions are replayed on top of them.
  * Resetting the live data (`resetLiveData`) unlocks the lineup again.
- * `liberoReplaces` stays editable: it only changes how the libero is shown, not the replay.
+ * `liberoReplaces` and `liberoActive` (v5) stay editable: they only change how the libero is
+ * shown, not the replay. Roles (v5) are locked like the starting six.
  */
 import { COURT_POSITIONS, type SetLineup } from './types';
 
@@ -11,9 +12,14 @@ export function isLineupLocked(set: SetLineup): boolean {
   return set.events.length > 0;
 }
 
-/** True when `next` changes the starting six, the libero or who serves first. */
+/** True when `next` changes the starting six, their roles, the libero or who serves first. */
 function changesLockedFields(prev: SetLineup, next: SetLineup): boolean {
+  const prevRoles = Object.keys(prev.roles);
+  const rolesChanged =
+    prevRoles.length !== Object.keys(next.roles).length ||
+    prevRoles.some((id) => prev.roles[id] !== next.roles[id]);
   return (
+    rolesChanged ||
     prev.liberoId !== next.liberoId ||
     prev.weServeFirst !== next.weServeFirst ||
     COURT_POSITIONS.some((p) => prev.slots[p] !== next.slots[p])

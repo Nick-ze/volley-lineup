@@ -9,6 +9,7 @@ import { match } from './de/match';
 import { presets } from './de/presets';
 import { print } from './de/print';
 import { profile } from './de/profile';
+import { roles } from './de/roles';
 import { roster } from './de/roster';
 import { stats } from './de/stats';
 import { tags } from './de/tags';
@@ -87,4 +88,5 @@ export const de: Strings = {
   match,
   stats,
   tags,
+  roles,
 };

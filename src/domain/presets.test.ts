@@ -28,6 +28,8 @@ const player = (id: string, number: number, active = true): Player => ({
 const players = ['a', 'b', 'c', 'd', 'e', 'f', 'l'].map((id, i) => player(id, i + 1));
 
 const preset = (extra: Partial<LineupPreset> = {}): LineupPreset => ({
+  roles: {},
+  liberoActive: true,
   id: 'ps1',
   teamId: 't1',
   name: 'Five one',
@@ -50,7 +52,13 @@ describe('presetFromSet / presetToDraft', () => {
       events: [{ type: 'point', winner: 'us' }],
     };
     const lineup = presetFromSet(set);
-    expect(lineup).toEqual({ slots: set.slots, liberoId: 'l', liberoReplaces: ['c'] });
+    expect(lineup).toEqual({
+      slots: set.slots,
+      liberoId: 'l',
+      liberoReplaces: ['c'],
+      roles: {},
+      liberoActive: true,
+    });
     expect(lineup.slots).not.toBe(set.slots);
     expect(presetToDraft(lineup)).toEqual({
       ...emptySetLineup(1),

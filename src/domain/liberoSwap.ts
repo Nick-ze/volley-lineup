@@ -47,6 +47,16 @@ export function findLiberoSwap(
   return null;
 }
 
+/**
+ * Whom the libero replaces right now: `liberoReplaces`, or nobody when the libero is switched
+ * off (v5 `liberoActive: false` — the libero stays out). Every swap goes through this.
+ */
+export function activeLiberoReplaces(
+  set: Pick<SetLineup, 'liberoActive' | 'liberoReplaces'>,
+): readonly string[] {
+  return set.liberoActive ? set.liberoReplaces : [];
+}
+
 /** The slots with the libero in place of the replaced back-row starter (unchanged if none). */
 export function applyLiberoSwaps(
   slots: Slots,

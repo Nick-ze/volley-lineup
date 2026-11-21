@@ -12,7 +12,10 @@ import { NAME_MAX_LENGTH } from './roster';
 import { COURT_POSITIONS, type LineupPreset, type Player, type SetLineup } from './types';
 
 /** The lineup part of a preset (what the builder edits and what is applied to a set). */
-export type PresetLineup = Pick<LineupPreset, 'slots' | 'liberoId' | 'liberoReplaces'>;
+export type PresetLineup = Pick<
+  LineupPreset,
+  'slots' | 'liberoId' | 'liberoReplaces' | 'roles' | 'liberoActive'
+>;
 
 /** Preset names have the same limit as other names (40 characters). */
 export const PRESET_NAME_MAX_LENGTH = NAME_MAX_LENGTH;
@@ -23,6 +26,8 @@ export function presetFromSet(set: SetLineup): PresetLineup {
     slots: { ...set.slots },
     liberoId: set.liberoId,
     liberoReplaces: [...set.liberoReplaces],
+    roles: { ...set.roles },
+    liberoActive: set.liberoActive,
   };
 }
 
@@ -33,6 +38,8 @@ export function presetToDraft(preset: PresetLineup): SetLineup {
     slots: { ...preset.slots },
     liberoId: preset.liberoId,
     liberoReplaces: [...preset.liberoReplaces],
+    roles: { ...preset.roles },
+    liberoActive: preset.liberoActive,
   };
 }
 
@@ -78,7 +85,12 @@ export function applyPresetToSet(
   const liberoReplaces = preset.liberoReplaces.filter(
     (id, i) => onCourt.has(id) && preset.liberoReplaces.indexOf(id) === i,
   );
-  return { set: { ...set, slots, liberoId, liberoReplaces }, skipped };
+  const roles: SetLineup['roles'] = {};
+  for (const [id, role] of Object.entries(preset.roles)) if (onCourt.has(id)) roles[id] = role;
+  return {
+    set: { ...set, slots, liberoId, liberoReplaces, roles, liberoActive: preset.liberoActive },
+    skipped,
+  };
 }
 
 /** True when all six court positions of the preset are filled. */

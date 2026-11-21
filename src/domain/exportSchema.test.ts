@@ -37,6 +37,8 @@ function fixture(): TransferData {
     home: true,
     sets: [
       {
+        roles: {},
+        liberoActive: true,
         setNumber: 1,
         slots: { 1: 'p1', 2: 'p2', 3: null, 4: null, 5: null, 6: null },
         liberoId: 'p3',
@@ -81,6 +83,8 @@ function fixture(): TransferData {
     ],
     presets: [
       {
+        roles: {},
+        liberoActive: true,
         id: 'ps1',
         teamId: 't1',
         name: '',
@@ -91,6 +95,8 @@ function fixture(): TransferData {
         createdAt: '2026-01-05T00:00:00.000Z',
       },
       {
+        roles: {},
+        liberoActive: true,
         id: 'ps2',
         teamId: 't1',
         name: 'Strong serve',
@@ -101,6 +107,8 @@ function fixture(): TransferData {
         createdAt: '2026-01-06T00:00:00.000Z',
       },
       {
+        roles: {},
+        liberoActive: true,
         id: 'ps3',
         teamId: 't2',
         name: 'Damen A',
@@ -128,7 +136,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 4,
+      schemaVersion: 5,
       exportedAt: NOW.toISOString(),
       ...data,
     });
@@ -226,7 +234,7 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([5, 0, '1', '2', '3', '4', undefined])('schemaVersion %p', (version) => {
+  it.each([6, 0, '1', '2', '3', '4', '5', undefined])('schemaVersion %p', (version) => {
     expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
       ok: false,
       error: 'UNSUPPORTED_VERSION',
@@ -246,7 +254,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(4);
+    expect(result.file.schemaVersion).toBe(5);
     expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
   });
 
@@ -257,7 +265,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v2);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(4);
+    expect(result.file.schemaVersion).toBe(5);
     expect(result.file.presets).toEqual([]);
     expect(result.summary.presets).toBe(0);
     expect(result.file.matches).toEqual(fixture().matches);
@@ -277,7 +285,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v3);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file).toEqual({ ...v3, schemaVersion: 4 });
+    expect(result.file).toEqual({ ...v3, schemaVersion: 5 });
   });
 
   it('a v4 file without presets is rejected as INVALID_SHAPE', () => {
@@ -607,5 +615,67 @@ describe('v4 point tags and timestamps', () => {
     const raw = rawExport();
     (raw.matches as { sets: { events: unknown[] }[] }[])[0].sets[0].events = [event];
     expect(parseObject(raw)).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
+});
+
+describe('v5 roles and libero switch', () => {
+  it('upgrades a v4 file: sets and presets play their primary positions, libero on', () => {
+    const v4 = rawExport();
+    v4.schemaVersion = 4;
+    for (const m of v4.matches as { sets: Record<string, unknown>[] }[]) {
+      for (const set of m.sets) {
+        delete set.roles;
+        delete set.liberoActive;
+      }
+    }
+    for (const preset of v4.presets as Record<string, unknown>[]) {
+      delete preset.roles;
+      delete preset.liberoActive;
+    }
+    const result = parseObject(v4);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file).toEqual(JSON.parse(exportText()));
+  });
+
+  it.each([
+    ['matches not an array', (raw: Record<string, unknown>) => (raw.matches = {})],
+    ['a match without sets', (raw: Record<string, unknown>) => (raw.matches = [{ id: 'm' }])],
+    ['presets not an array', (raw: Record<string, unknown>) => (raw.presets = 'x')],
+  ])('a malformed v4 file is rejected as INVALID_SHAPE: %s', (_label, mutate) => {
+    const v4 = rawExport();
+    v4.schemaVersion = 4;
+    mutate(v4);
+    expect(parseObject(v4)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it('round-trips role overrides and a switched-off libero', () => {
+    const data = fixture();
+    data.matches[0].sets[0] = {
+      ...data.matches[0].sets[0],
+      roles: { p1: 'OH' },
+      liberoActive: false,
+    };
+    data.presets[0] = { ...data.presets[0], roles: { p2: 'DS' }, liberoActive: false };
+    const result = parseImport(exportText(data));
+    expect(result.ok && replaceData(result.file)).toEqual(data);
+  });
+
+  it.each([
+    ['a role for a bench player', { p4: 'OH' }],
+    ['a role for the libero', { p3: 'OH' }],
+  ])('rejects %s as INCONSISTENT_REFERENCES', (_label, roles) => {
+    const raw = rawExport();
+    (raw.matches as { sets: Record<string, unknown>[] }[])[0].sets[0].roles = roles;
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
+
+  it('rejects an unknown role or a missing libero switch as INVALID_SHAPE', () => {
+    const raw = rawExport();
+    (raw.matches as { sets: Record<string, unknown>[] }[])[0].sets[0].roles = { p1: 'X' };
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+    const noSwitch = rawExport();
+    delete (noSwitch.presets as Record<string, unknown>[])[0].liberoActive;
+    expect(parseObject(noSwitch)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
   });
 });

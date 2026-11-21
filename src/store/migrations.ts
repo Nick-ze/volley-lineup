@@ -8,8 +8,10 @@
  * v3 → v4: point events may carry `kind`, `playerId` and `at` (all optional) — no data change;
  * existing events stay valid as they are.
  * v4 → v5: the state gains `chipLabel: 'number'` (player chips show numbers, as before).
+ * v5 → v6: every set and preset gains `roles: {}` (everyone plays their primary position) and
+ * `liberoActive: true`.
  */
-export const STORE_VERSION = 5;
+export const STORE_VERSION = 6;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -30,6 +32,17 @@ function v1ToV2(state: Rec): Rec {
   return { language: 'en', ...state, matches };
 }
 
+function v5ToV6(state: Rec): Rec {
+  const lineupDefaults = (x: unknown) => (isRec(x) ? { roles: {}, liberoActive: true, ...x } : x);
+  const matches = Array.isArray(state.matches)
+    ? state.matches.map((m: unknown) =>
+        isRec(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(lineupDefaults) } : m,
+      )
+    : state.matches;
+  const presets = Array.isArray(state.presets) ? state.presets.map(lineupDefaults) : state.presets;
+  return { ...state, matches, presets };
+}
+
 export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion > STORE_VERSION) {
     throw new Error(
@@ -40,5 +53,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion < 2 && isRec(state)) state = v1ToV2(state);
   if (fromVersion < 3 && isRec(state)) state = { presets: [], ...state };
   if (fromVersion < 5 && isRec(state)) state = { chipLabel: 'number', ...state };
+  if (fromVersion < 6 && isRec(state)) state = v5ToV6(state);
   return state;
 }

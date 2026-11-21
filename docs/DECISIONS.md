@@ -186,3 +186,15 @@ Newest at the bottom. Format: **Decision** — why.
 
 112. **"Show names instead of numbers"** (Settings → Player chips): a device setting like the language — `chipLabel: 'number' | 'name'` in the store (version 5; the v4 → v5 migration adds `'number'`, so nothing changes until it's switched on), kept on "Delete all data", not exported (export `schemaVersion` stays 4). With names on, every player chip (court, bench, libero, rotation viewer, live court) shows the last name (first name if there is none) in the circle — up to two lines at ≥ 11 px, kept inside the circle; long names may break mid-word or end in "…" on the smallest chips — and "#n" in the small label below; screen-reader labels and other texts ("We serve · #1", "L for #15") are unchanged.
 113. **Version 3.1.0** (versionCode 30100).
+
+## v4 — Roles on court
+
+### Foundation (orchestrator)
+
+114. **Roles are per-set overrides keyed by player id** (`SetLineup.roles`, `LineupPreset.roles`): a starter without an entry plays their primary position, so existing lineups need no data. Keying by player (not by court spot) makes roles follow players through swaps, drags and rotations for free; every edit prunes overrides of players who left the court (`pruneLiberoReplaces` now prunes both). Roles are locked in a played set like the starting six (`lineupLock`); the libero switch stays editable like `liberoReplaces` (#68).
+115. **Off position = none of the player's positions** (primary or secondary, from the roster) — the owner's rule: a secondary position needs no confirmation and gets no "*". Choosing the primary position again removes the override.
+116. **Substitutes inherit the role** of the player they replace (tracked by the live replay; `RallyStep.roles`, `LiveState.roles`).
+117. **Rotation number = the setter's court position** (`setterRotation`): role S on court; with two setters the back-row one (lowest position first); null without a setter, and callers then fall back to counting rotations from the start (`LiveState.rotation`, unchanged).
+118. **Libero on/off** (`liberoActive`, default on): off = no swaps anywhere; every swap reads `activeLiberoReplaces(set)`. "Libero replaces by role" sets `liberoReplaces` to the starters currently in those roles (`startersWithRoles`); substitutes for them aren't swapped (as #67).
+119. **Data model v5**: export `schemaVersion` 5 (v1–v4 files upgraded with `roles: {}`, `liberoActive: true`; import rejects roles for anyone but the set's / preset's starters as `INCONSISTENT_REFERENCES`); store version 6 with the same defaults. `RoleTag` (`src/components`) draws the role and the "*" the same way on every court.
+120. **Version 4.0.0** (versionCode 40000): major, because the store and export formats change again.
