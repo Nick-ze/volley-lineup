@@ -26,6 +26,14 @@ New in **v2**:
 
 Data from v1 (on the phone or in a v1 export file) opens in v2 automatically.
 
+New in **v2.1 / v2.2**:
+
+- **Navigation** — a bottom bar with Teams · Profile · Settings. The Profile tab edits your profile and has **Log out** (back to the profile list).
+- **Lineup on phones** — the bench sits right under the court, so you can fill the lineup without scrolling.
+- **Team nav bar** — inside a team: Roster · Matches · Presets · Starters.
+- **Starters** — save the team's usual starting six + libero once; every new match starts with them in set 1.
+- **Presets** — save named lineups (e.g. "Strong serve") and apply them to any set with "Apply preset…".
+
 ## Live web app
 
 **https://nick-ze.github.io/volley-lineup/**

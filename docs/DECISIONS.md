@@ -126,3 +126,14 @@ Newest at the bottom. Format: **Decision** — why.
 77. **Profile tab**: shows the current profile (avatar, name, team/player counts), edits name and colour inline, **Log out**, and Delete profile (with confirmation). It replaces the profile section in Settings and the "Switch profile" / header "Settings" buttons on Teams (amends #42).
 78. **Log out** clears the selected profile and returns to the profile picker with no history behind it; it is also the way to switch profile (there are no passwords — data stays on the device, see §2 of the plan). The tabs layout marks the startup redirect as handled, so the picker never jumps back into a profile after logging out (amends #28).
 79. **Version 2.1.0**: phone lineup layout (#75) + tab bar / profile / log out (#76–78).
+
+## v2.2 — Team nav bar, presets and starters (PR #21)
+
+80. **Team nav bar** (Roster · Matches · Presets · Starters) is a component inside the team screen, not a nested navigator; the tab is kept in `?tab=` (unknown → roster). It replaces the old Roster | Matches switch.
+81. **Data model v3**: `LineupPreset { id, teamId, name, kind: 'starters' | 'preset', slots, liberoId, liberoReplaces, createdAt }` in a `presets` collection; at most one `starters` preset per team. Store version 3 (v2→v3 migration adds `presets: []`), export `schemaVersion` 3; v1 and v2 files are upgraded on import.
+82. **Team starters** have their own editor route (`/team/[teamId]/starters`), an empty name with a fixed label, and are saved on the first edit. Starters with nothing filled count as "no starters". **New matches** pre-fill set 1 from complete starters; injured starters are left out (their spots stay empty), and the Starters tab says how many would be left out.
+83. **Presets**: created with a name first (default "Preset n"), edited with the lineup builder (preset mode hides the serve toggle and copy-previous), auto-saved; copy → "X (copy)". Names are required, ≤ 40 characters and unique per team ignoring case — also checked on import.
+84. **Applying** a preset or the starters to a match set copies court, libero and "libero replaces" exactly, keeps the set's serve choice and events, skips inactive or removed players (with a message), never places anyone twice, and is disabled for played sets (#68). Reasons for disabled buttons are given as accessibility hints, not as permanent text.
+85. **Merging an import**: a file's team starters replace that team's existing starters (even under a different id); a second preset with an existing name is a `MERGE_CONFLICT` (like jersey numbers). The merge hint says so. Presets never block deleting a player; deleting a player removes them from all presets.
+86. The match lineup logic moved from `useLineupEditor` into a generic `useLineupDraft` used by both the match screen and the preset editor (no behaviour change for match sets).
+87. **Version 2.2.0** (versionCode 20200).
