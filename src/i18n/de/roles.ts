@@ -7,22 +7,18 @@ export const roles: Strings['roles'] = {
   spotRole: (role: string, offPosition: boolean) =>
     offPosition ? `spielt ${role}, nicht als Position eingetragen` : `spielt ${role}`,
   tagLabel: (code: string, role: string, name: string, offPosition: boolean) =>
-    `${code}, ${role}${offPosition ? ', nicht als Position eingetragen' : ''}. Rolle von ${name} ändern`,
-  tagHint: 'Öffnet die Rollenauswahl',
-  picker: {
-    title: (name: string) => `Rolle von ${name}`,
-    hint: 'Alle können jede Rolle spielen. Mit * markierte Rollen sind nicht als Position eingetragen.',
-    optionText: (code: string, role: string) => `${code} · ${role}`,
-    optionLabel: (code: string, role: string, offPosition: boolean) =>
-      `${code} · ${role}${offPosition ? ', nicht als Position eingetragen' : ''}`,
-    offMark: ' *',
-    cancelLabel: 'Abbrechen: Rollenauswahl schließen',
-  },
+    `${code}, ${role}${offPosition ? ', nicht als Position eingetragen' : ''}. ${name} auswählen`,
+  tagHint: 'Wählt den Spieler aus, wie ein Tippen auf den Chip',
   confirm: {
     title: 'Bist du sicher?',
-    message: (name: string, role: string) =>
-      `${name} ist nicht als ${role} eingetragen. Als ${role} spielen lassen?`,
+    notListed: (player: string, role: string) => `${player} ist nicht als ${role} eingetragen.`,
+    questionOne: 'Trotzdem auf diese Position stellen?',
+    questionMany: 'Trotzdem auf diese Positionen stellen?',
+    questionFormation: 'Formation trotzdem ändern?',
+    confirmFormationLabel: 'Bestätigen: Formation trotzdem ändern',
     confirm: 'Bestätigen',
-    confirmLabel: (role: string) => `Bestätigen: als ${role} spielen`,
+    confirmLabel: 'Bestätigen: trotzdem auf die Position stellen',
+    cancel: 'Abbrechen',
+    cancelLabel: 'Abbrechen: nichts ändert sich',
   },
 };

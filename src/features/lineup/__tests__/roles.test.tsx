@@ -82,6 +82,8 @@ describe('lineup builder — roles', () => {
     await fireEvent.press(await screen.findByTestId('slot-player-1'));
     await fireEvent.press(screen.getByTestId('slot-role-4'));
     expect(screen.queryByTestId('role-picker')).toBeNull();
+    // Setter ↔ opposite: both end up off position → confirm (v6).
+    await fireEvent.press(screen.getByTestId('placement-confirm-button'));
     expect(set1().slots[1]).toBe('p4');
     expect(set1().slots[4]).toBe('p1');
   });
@@ -96,8 +98,9 @@ describe('lineup builder — roles', () => {
     await fireEvent(tag4, 'pressIn', { nativeEvent: { pageX: 10, pageY: 10 } });
     await fireEvent(tag4, 'press', { nativeEvent: { pageX: 12, pageY: 11 } });
     expect(set1().slots).toEqual({ 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' });
-    // #4 is selected now: tapping #1 swaps them.
+    // #4 is selected now: tapping #1 swaps them (after confirming the off-position roles).
     await fireEvent.press(screen.getByTestId('slot-player-1'));
+    await fireEvent.press(screen.getByTestId('placement-confirm-button'));
     expect(set1().slots[1]).toBe('p4');
     expect(set1().slots[4]).toBe('p1');
     expect(screen.queryByTestId('role-picker')).toBeNull();
@@ -128,11 +131,14 @@ describe('lineup builder — roles', () => {
     expect(screen.getByTestId('slot-role-1')).toBeDisabled();
   });
 
-  it('disables rotating on an empty court', async () => {
+  it('rotates the formation on an empty court too (v6: the spots have roles)', async () => {
     seed(lineup({ slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null } }));
     await open();
-    expect(await screen.findByRole('button', { name: 'Rotate clockwise' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Rotate counter-clockwise' })).toBeDisabled();
+    expect(await screen.findByTestId('setter-rotation')).toHaveTextContent('Setter on\u00a01');
+    await fireEvent.press(screen.getByRole('button', { name: 'Rotate counter-clockwise' }));
+    expect(set1().formation.setterAt).toBe(2);
+    expect(tag('getByTestId', 'role-tag-2')).toHaveTextContent('S');
+    expect(screen.getByTestId('setter-rotation')).toHaveTextContent('Setter on\u00a02');
   });
 });
 

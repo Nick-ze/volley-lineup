@@ -10,7 +10,11 @@ import {
   type DropTarget,
 } from '@/domain/lineupEditing';
 import { validateLineup } from '@/domain/lineupValidation';
+import { newOffPositionPlacements, type OffPositionPlacement } from '@/domain/placementCheck';
 import type { Player, SetLineup } from '@/domain/types';
+
+/** A change waiting for confirmation: a player move, or a new formation (system / order). */
+export type PendingKind = 'move' | 'formation';
 
 export interface LineupDraftOptions {
   /** The lineup being edited (a match set, or a preset's draft set). */
@@ -39,6 +43,16 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     [selectionKey],
   );
 
+  // A move or formation change that puts someone on a role that is none of their positions
+  // waits for "Are you sure?".
+  const [pendingMove, setPendingMove] = useState<{
+    key: string | number;
+    next: SetLineup;
+    placements: OffPositionPlacement[];
+    kind: PendingKind;
+  } | null>(null);
+  const pending = pendingMove?.key === selectionKey ? pendingMove : null;
+
   const bench = useMemo(() => benchPlayers(set, players), [set, players]);
   const validation = useMemo(() => validateLineup(set, players), [set, players]);
 
@@ -64,32 +78,56 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     [save, set],
   );
 
+  /**
+   * Drag & drop, tap-to-select and formation changes: applies `next`, or asks first when it puts
+   * a player on a role that is none of their positions (#134). True when applied right away.
+   */
+  const propose = useCallback(
+    (next: SetLineup, kind: PendingKind = 'move'): boolean => {
+      const placements = newOffPositionPlacements(set, next, players);
+      if (placements.length === 0) {
+        update(next);
+        return true;
+      }
+      setPendingMove({ key: selectionKey, next, placements, kind });
+      return false;
+    },
+    [set, players, update, selectionKey],
+  );
+  const confirmPending = useCallback(() => {
+    if (pending) update(pending.next);
+    setPendingMove(null);
+    // A confirmed tap-to-select move ends the selection (Cancel keeps it).
+    if (pending?.kind === 'move') setSelectedId(null);
+  }, [pending, update, setSelectedId]);
+  const cancelPending = useCallback(() => setPendingMove(null), []);
+
   const drop = useCallback(
     (playerId: string, target: DropTarget) => {
       setSelectedId(null);
-      update(movePlayer(set, playerId, target));
+      propose(movePlayer(set, playerId, target));
     },
-    [set, update, setSelectedId],
+    [set, propose, setSelectedId],
   );
 
   const pressPlayer = useCallback(
     (playerId: string) => {
       if (locked) return;
       const r = tapPlayer(set, selectedId, playerId);
-      setSelectedId(r.selectedId);
-      update(r.set);
+      // While the move waits for "Are you sure?", the player stays selected (Cancel keeps it).
+      if (propose(r.set)) setSelectedId(r.selectedId);
     },
-    [set, selectedId, update, setSelectedId, locked],
+    [set, selectedId, propose, setSelectedId, locked],
   );
 
   const pressTarget = useCallback(
     (target: DropTarget) => {
       if (locked) return;
       const r = tapTarget(set, selectedId, target);
-      setSelectedId(r.selectedId);
-      update(r.set);
+      // While the move waits for "Are you sure?", the player stays selected (Cancel keeps it).
+      if (propose(r.set)) setSelectedId(r.selectedId);
     },
-    [set, selectedId, update, setSelectedId, locked],
+    [set, selectedId, propose, setSelectedId, locked],
   );
 
   const playerById = useCallback(
@@ -110,6 +148,13 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     pressPlayer,
     pressTarget,
     playerById,
+    /** The move waiting for confirmation (off position), or null. */
+    pending: pending?.placements ?? null,
+    /** What the pending change is: a player move or a formation change. */
+    pendingKind: pending?.kind ?? null,
+    propose,
+    confirmPending,
+    cancelPending,
   };
 }
 

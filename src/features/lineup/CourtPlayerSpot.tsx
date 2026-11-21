@@ -17,7 +17,7 @@ export interface CourtPlayerSpotProps {
   player: Player;
   position: CourtPosition;
   compact: boolean;
-  /** Opens the role picker for this player. */
+  /** A tap on the role tag with nobody selected (acts like tapping the chip). */
   onRolePress: (player: Player) => void;
 }
 
@@ -28,7 +28,7 @@ const point = (e?: GestureResponderEvent) => ({
 });
 
 /**
- * A filled court spot: the role tag on top (its own ≥ 44 px button that opens the role picker)
+ * A filled court spot: the role tag on top (its own ≥ 44 px button that acts like the chip)
  * and the draggable / tap-to-select chip below it, so neither covers the other. An off-position
  * role gets "*" at the top right of the spot (rendered into the court slot, the spot's box).
  */
