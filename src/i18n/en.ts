@@ -1,14 +1,16 @@
 /**
  * All user-facing strings. Shared strings live here; each feature keeps its strings in
  * `./en/<feature>.ts` (so parallel work doesn't conflict) and they are merged below.
- * Keep keys nested per screen/feature so a German file can mirror the shape later.
+ * German mirrors this shape in `./de.ts` + `./de/<feature>.ts`; components read strings via `useT()`.
  */
+import { language } from './en/language';
 import { lineup } from './en/lineup';
 import { live } from './en/live';
 import { print } from './en/print';
 import { roster } from './en/roster';
 import { rotation } from './en/rotation';
 import { transfer } from './en/transfer';
+import type { Widen } from './types';
 
 export const en = {
   app: {
@@ -71,7 +73,14 @@ export const en = {
   transfer,
   print,
   live,
+  language,
 } as const;
 
-export type Strings = typeof en;
+/** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */
+export type Strings = Widen<typeof en>;
+
+/**
+ * Static English strings, for tests and non-UI code. Components use `useT()` from `@/i18n`
+ * instead, which follows the language setting (enforced by ESLint).
+ */
 export const t = en;
