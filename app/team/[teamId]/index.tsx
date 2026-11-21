@@ -7,23 +7,23 @@ import { NotFound } from '@/features/roster/components/NotFound';
 import { RosterTab } from '@/features/roster/components/RosterTab';
 import { SegmentedTabs } from '@/features/roster/components/SegmentedTabs';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useTeam } from '@/store';
 
 type Tab = 'roster' | 'matches';
 
-const TABS = [
-  { key: 'roster', label: t.roster.team.rosterTab },
-  { key: 'matches', label: t.roster.team.matchesTab },
-] as const;
-
 /** `/team/[teamId]?tab=roster|matches` — Roster | Matches. */
 export default function TeamScreen() {
+  const t = useT();
   const router = useRouter();
   const { teamId, tab: tabParam } = useLocalSearchParams<{ teamId: string; tab?: string }>();
   const team = useTeam(teamId);
   const tab: Tab = tabParam === 'matches' ? 'matches' : 'roster';
   useEffect(markStartupHandled, []);
+  const tabs = [
+    { key: 'roster', label: t.roster.team.rosterTab },
+    { key: 'matches', label: t.roster.team.matchesTab },
+  ] as const;
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
@@ -32,7 +32,7 @@ export default function TeamScreen() {
     <Screen>
       <Stack.Screen options={{ title: t.roster.team.title(team.name, team.season) }} />
       <SegmentedTabs<Tab>
-        tabs={TABS}
+        tabs={tabs}
         value={tab}
         onChange={(next) => router.setParams({ tab: next })}
         accessibilityLabel={t.roster.team.tabs}

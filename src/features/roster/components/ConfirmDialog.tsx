@@ -1,7 +1,7 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
 
 export interface ConfirmDialogProps {
@@ -16,10 +16,11 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog({
   visible,
   message,
-  confirmLabel = t.common.delete,
+  confirmLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const t = useT();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
@@ -30,7 +31,12 @@ export function ConfirmDialog({
           <Text style={styles.message}>{message}</Text>
           <View style={styles.actions}>
             <Button label={t.common.cancel} variant="secondary" onPress={onCancel} />
-            <Button label={confirmLabel} variant="danger" onPress={onConfirm} testID="confirm" />
+            <Button
+              label={confirmLabel ?? t.common.delete}
+              variant="danger"
+              onPress={onConfirm}
+              testID="confirm"
+            />
           </View>
         </View>
       </View>

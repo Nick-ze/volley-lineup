@@ -4,11 +4,12 @@ import { Screen } from '@/components';
 import { MatchForm } from '@/features/roster/components/MatchForm';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { useGoBack } from '@/features/roster/hooks/useGoBack';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore, useTeam } from '@/store';
 
 /** `/team/[teamId]/match-new` — create a match, then open it. Modal. */
 export default function NewMatchScreen() {
+  const t = useT();
   const router = useRouter();
   const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const team = useTeam(teamId);

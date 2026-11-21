@@ -4,13 +4,14 @@ import { Button } from '@/components';
 import { suggestLiberoReplaces } from '@/domain/liberoSwap';
 import { setLiberoReplaces, toggleLiberoReplace } from '@/domain/lineupEditing';
 import { COURT_POSITIONS } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 import type { LineupEditor } from './useLineupEditor';
 
 /** "Libero replaces": pick which starters the libero comes in for in the back row. */
 export function LiberoReplaces({ editor }: { editor: LineupEditor }) {
+  const t = useT();
   const { set, players, playerById, update } = editor;
   if (set.liberoId === null) return null;
   const starters = COURT_POSITIONS.map((p) => playerById(set.slots[p])).filter(

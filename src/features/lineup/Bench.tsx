@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import { locatePlayer } from '@/domain/lineupEditing';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { BENCH_MIN_HEIGHT } from './constants';
@@ -15,6 +15,7 @@ import type { LineupEditor } from './useLineupEditor';
  * player here takes them off. `scrollable` gives the bench its own scroll area (wide layout).
  */
 export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable: boolean }) {
+  const t = useT();
   const { bench, set, selectedId, pressPlayer, pressTarget } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'bench' });
   const selectedOffBench = selectedId !== null && locatePlayer(set, selectedId).kind !== 'bench';

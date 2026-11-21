@@ -1,8 +1,8 @@
 import type { LineupSheetLabels } from '@/domain/lineupSheet';
-import { t } from '@/i18n/en';
+import type { Strings } from '@/i18n';
 
-/** The translated labels the (i18n-free) domain sheet builder needs. */
-export function sheetLabels(teamName: string, opponent: string): LineupSheetLabels {
+/** The labels the (i18n-free) domain sheet builder needs, in the current language. */
+export function sheetLabels(t: Strings, teamName: string, opponent: string): LineupSheetLabels {
   const s = t.print.sheet;
   return { ...s, documentTitle: s.documentTitle(teamName, opponent) };
 }

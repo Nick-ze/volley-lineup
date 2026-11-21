@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { SetNumber } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SetPickerProps {
@@ -12,6 +12,7 @@ export interface SetPickerProps {
 
 /** Tabs for the sets that exist in the match. The selected set is yellow. */
 export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
+  const t = useT();
   return (
     <View
       style={styles.row}

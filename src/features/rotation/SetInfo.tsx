@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PlayerChip } from '@/components';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
@@ -17,6 +17,7 @@ export interface SetInfoProps {
 
 /** Libero + "we serve / receive first" — shown next to (wide) or under (phone) the court. */
 export function SetInfo({ libero, liberoId, weServeFirst, compact = false }: SetInfoProps) {
+  const t = useT();
   const serveText = weServeFirst ? t.rotation.weServeFirst : t.rotation.weReceiveFirst;
   return (
     <View style={[styles.wrap, compact && styles.compact]}>

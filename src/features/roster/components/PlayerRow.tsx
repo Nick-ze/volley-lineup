@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, PositionBadge } from '@/components';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { ListRow } from './ListRow';
@@ -15,6 +15,7 @@ export interface PlayerRowProps {
 
 /** One roster line: number, name, position badges and the active / injured toggle. */
 export function PlayerRow({ player, onPress, onToggleActive }: PlayerRowProps) {
+  const t = useT();
   const name = `${player.firstName} ${player.lastName}`;
   const s = t.roster.roster;
   const positions = player.positions.map((p) => t.positions[p]).join(', ');

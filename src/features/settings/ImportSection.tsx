@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT, type Strings } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { Section } from './Section';
 import { StatusMessage, type Status } from './StatusMessage';
 import { useImport, type ImportState } from './useImport';
 
-function statusOf(state: ImportState): Status | null {
+function statusOf(t: Strings, state: ImportState): Status | null {
   if (state.step === 'error') return { tone: 'error', text: t.transfer.import.errors[state.error] };
   if (state.step === 'done') {
     const text =
@@ -20,6 +20,7 @@ function statusOf(state: ImportState): Status | null {
 
 /** Import: pick a file, preview what's in it, then merge, replace or cancel. */
 export function ImportSection() {
+  const t = useT();
   const { state, pick, apply, cancel } = useImport();
 
   return (
@@ -43,7 +44,7 @@ export function ImportSection() {
       ) : (
         <Button label={t.transfer.import.pick} onPress={pick} testID="import-pick" />
       )}
-      <StatusMessage status={statusOf(state)} testID="import-status" />
+      <StatusMessage status={statusOf(t, state)} testID="import-status" />
     </Section>
   );
 }

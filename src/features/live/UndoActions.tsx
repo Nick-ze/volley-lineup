@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { Player, SetEvent } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { spacing } from '@/theme';
 
 import { playerRef } from './format';
@@ -18,7 +18,8 @@ export interface UndoActionsProps {
 
 /** Undo (labelled with what it undoes) and "Reset live data". */
 export function UndoActions({ last, playersById, onUndo, onReset }: UndoActionsProps) {
-  const ref = (id: string) => playerRef(playersById, id);
+  const t = useT();
+  const ref = (id: string) => playerRef(t, playersById, id);
   const undoLabel = !last
     ? t.live.undoNothing
     : last.type === 'point'

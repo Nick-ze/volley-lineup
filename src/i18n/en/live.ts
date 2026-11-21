@@ -22,7 +22,7 @@ export const live = {
   undo: 'Undo',
   undoNothing: 'Nothing to undo',
   undoPoint: (us: boolean) => (us ? 'Undo last point for us' : 'Undo last point for them'),
-  undoSub: (out: string, inn: string) => `Undo substitution ${out} for ${inn}`,
+  undoSub: (out: string, inn: string) => `Undo substitution: ${inn} for ${out}`,
   substitution: 'Substitution',
   substitutionLabel: 'Make a substitution',
   cancelSub: 'Cancel',

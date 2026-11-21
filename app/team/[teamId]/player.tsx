@@ -4,11 +4,12 @@ import { Screen } from '@/components';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { PlayerForm } from '@/features/roster/components/PlayerForm';
 import { useGoBack } from '@/features/roster/hooks/useGoBack';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore, usePlayer, useTeam } from '@/store';
 
 /** `/team/[teamId]/player?playerId=` — add (no id) or edit a player. Modal. */
 export default function PlayerEditorScreen() {
+  const t = useT();
   const { teamId, playerId } = useLocalSearchParams<{ teamId: string; playerId?: string }>();
   const team = useTeam(teamId);
   const player = usePlayer(playerId);

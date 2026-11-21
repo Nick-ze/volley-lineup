@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { fillFromTemplate, TEMPLATE_SYSTEMS, type TemplateSystem } from '@/domain/templates';
-import { t } from '@/i18n/en';
+import {
+  fillFromTemplate,
+  TEMPLATE_SYSTEMS,
+  type MissingSlot,
+  type TemplateSystem,
+} from '@/domain/templates';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import type { LineupEditor } from './useLineupEditor';
@@ -13,9 +18,14 @@ import type { LineupEditor } from './useLineupEditor';
  * which positions could not be filled. Remount (key by set number) to reset the message.
  */
 export function TemplateFill({ editor }: { editor: LineupEditor }) {
+  const t = useT();
   const { set, players, update } = editor;
   const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState<{ text: string; warn: boolean } | null>(null);
+  // The outcome is kept as data so the message follows a language switch.
+  const [filled, setFilled] = useState<{
+    system: TemplateSystem;
+    missingSlots: MissingSlot[];
+  } | null>(null);
   const s = t.lineup.template;
   // A played set's starters must not change under its event log.
   const locked = set.events.length > 0;
@@ -24,15 +34,18 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
     const result = fillFromTemplate(system, players, set.setNumber, set);
     update(result.set);
     setOpen(false);
-    const list = result.missingSlots
-      .map((m) => s.missingItem(m.position, t.positions[m.role]))
-      .join(', ');
-    setMessage(
-      result.missingSlots.length === 0
-        ? { text: s.filled(system), warn: false }
-        : { text: s.missing(system, list), warn: true },
-    );
+    setFilled({ system, missingSlots: result.missingSlots });
   };
+
+  const warn = Boolean(filled && filled.missingSlots.length > 0);
+  const message = filled
+    ? warn
+      ? s.missing(
+          filled.system,
+          filled.missingSlots.map((m) => s.missingItem(m.position, t.positions[m.role])).join(', '),
+        )
+      : s.filled(filled.system)
+    : null;
 
   return (
     <View style={styles.wrap}>
@@ -69,7 +82,7 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
           compact
           disabled={locked}
           onPress={() => {
-            setMessage(null);
+            setFilled(null);
             setOpen(true);
           }}
           testID="template-open"
@@ -82,11 +95,11 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
       ) : null}
       {message ? (
         <Text
-          style={[styles.message, message.warn && styles.warn]}
+          style={[styles.message, warn && styles.warn]}
           accessibilityLiveRegion="polite"
           testID="template-message"
         >
-          {message.text}
+          {message}
         </Text>
       ) : null}
     </View>

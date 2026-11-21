@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { ManagerProfile } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 import { Avatar } from './Avatar';
@@ -15,6 +15,7 @@ export function ProfileHeader({
   profile: ManagerProfile;
   onSwitch: () => void;
 }) {
+  const t = useT();
   return (
     <View style={styles.row}>
       <View style={styles.who}>

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import {
   borderWidth,
   colors,
@@ -18,6 +18,7 @@ export interface ColorPickerProps {
 
 /** Radio group of the profile avatar colours. */
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
+  const t = useT();
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{t.roster.profiles.color}</Text>

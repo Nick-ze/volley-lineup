@@ -10,7 +10,7 @@ import { SetTabs } from '@/features/lineup/SetTabs';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
 import { PrintButton } from '@/features/print/PrintButton';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, maxContentWidth, spacing, touchTarget, typography } from '@/theme';
 
 /**
@@ -18,6 +18,7 @@ import { colors, maxContentWidth, spacing, touchTarget, typography } from '@/the
  * Switching tabs only changes the URL; a set is stored once it is first edited.
  */
 export default function MatchScreen() {
+  const t = useT();
   const params = useLocalSearchParams<{ matchId: string; set?: string }>();
   const router = useRouter();
   const matchId = String(params.matchId);

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { COURT_POSITIONS, type Player, type SetLineup, type SetNumber } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT, type Strings } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { STARTERS_CARD_WIDTH } from './layout';
@@ -15,7 +15,11 @@ export interface SetStartersCardProps {
 }
 
 /** Screen-reader label: the card is one button, so it must say what it shows. */
-export function startersCardLabel(set: SetLineup, playersById: Map<string, Player>): string {
+export function startersCardLabel(
+  t: Strings,
+  set: SetLineup,
+  playersById: Map<string, Player>,
+): string {
   const describe = (id: string | null) => {
     if (id === null) return t.rotation.emptySummary;
     const p = playersById.get(id);
@@ -33,10 +37,11 @@ export function startersCardLabel(set: SetLineup, playersById: Map<string, Playe
 
 /** Compact starting six + libero + serve info for one set. Tapping opens its rotations. */
 export function SetStartersCard({ set, playersById, onOpen }: SetStartersCardProps) {
+  const t = useT();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={startersCardLabel(set, playersById)}
+      accessibilityLabel={startersCardLabel(t, set, playersById)}
       accessibilityHint={t.rotation.openRotationHint}
       onPress={() => onOpen(set.setNumber)}
       testID={`starters-card-${set.setNumber}`}

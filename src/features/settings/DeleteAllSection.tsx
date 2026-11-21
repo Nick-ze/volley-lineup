@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 import { colors, radius, spacing, typography } from '@/theme';
 
@@ -13,6 +13,7 @@ import { StatusMessage } from './StatusMessage';
  * Delete all data, with an in-app confirmation (`Alert.alert` does nothing on web).
  */
 export function DeleteAllSection() {
+  const t = useT();
   const resetAll = useAppStore((s) => s.resetAll);
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);

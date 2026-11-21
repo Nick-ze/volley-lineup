@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { clearLineup, copyLineup, setServeFirst } from '@/domain/lineupEditing';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
 import { colors, spacing, typography } from '@/theme';
 
@@ -22,6 +22,7 @@ import { ValidationPanel } from './ValidationPanel';
  * Phone: court on top, bench below. Wide: court left, bench right.
  */
 export function LineupBuilder({ editor }: { editor: LineupEditor }) {
+  const t = useT();
   const wide = useIsWide();
   const { set, previous, selectedId, playerById, update, drop, validation, locked } = editor;
   const onDrop = useCallback(

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button, PlayerChip } from '@/components';
 import { MAX_SUBS_PER_SET, type LiveWarningCode } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerDescription } from './format';
@@ -36,6 +36,7 @@ export function SubPanel({
   onPickIn,
   warningsFor,
 }: SubPanelProps) {
+  const t = useT();
   const over = subsUsed > MAX_SUBS_PER_SET;
   return (
     <View style={styles.box} testID="sub-panel">
@@ -81,7 +82,7 @@ export function SubPanel({
                 player={p}
                 size={BENCH_CHIP_SIZE}
                 onPress={outRef ? () => onPickIn(p.id) : undefined}
-                accessibilityLabel={playerDescription(p)}
+                accessibilityLabel={playerDescription(t, p)}
                 accessibilityHint={outRef ? t.live.benchPlayerHint(outRef, warning) : undefined}
                 testID={`live-bench-${p.number}`}
               />

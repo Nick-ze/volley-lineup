@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { Team } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
 
 import { useConfirm } from '../hooks/useConfirm';
@@ -22,6 +22,7 @@ export function TeamList({
   profileId: string;
   onOpen: (team: Team) => void;
 }) {
+  const t = useT();
   const teams = useTeamsForProfile(profileId);
   const { addTeam, updateTeam, deleteTeam } = useAppStore.getState();
   const [editing, setEditing] = useState<Editing>(null);
