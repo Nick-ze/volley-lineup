@@ -3,19 +3,12 @@ name: Android APK
 # Builds an installable Android APK.
 # - Push a tag like v1.2.3 → release "v1.2.3" with asset volley-lineup-1.2.3.apk.
 #   The tag must match "version" in app.json and package.json.
-# - Pull requests touching the build config → build only (workflow artifact), no release.
+# - Manual run (Actions → Android APK → Run workflow) → build only (workflow artifact), no release.
 # The APK is signed with the Expo template's fixed debug key: fine for sideloading and for
 # updating over earlier versions, not for the Play Store.
 on:
   push:
     tags: ['v*']
-  pull_request:
-    paths:
-      - .github/workflows/android-apk.yml
-      - app.json
-      - app.config.js
-      - package.json
-      - package-lock.json
   workflow_dispatch:
 
 permissions:
@@ -26,6 +19,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Removes the old rolling "android-latest" release (replaced by versioned releases).
+  remove-android-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release delete android-latest --cleanup-tag --yes || echo "android-latest already gone"
+
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -75,7 +77,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete android-latest --cleanup-tag --yes 2>/dev/null || true
           gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.file }}" \
             --title "Volley Lineup $GITHUB_REF_NAME" \
             --notes "Android APK for Volley Lineup $GITHUB_REF_NAME. Download **${{ steps.apk.outputs.file }}** under Assets and open it on your Android phone. See the README section \"Install on Android (APK)\"." \
