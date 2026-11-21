@@ -18,7 +18,10 @@ export function playerDescription(t: Strings, p: Player): string {
   );
 }
 
-/** "kill #7 Smith" for a tagged rally, or null when the rally has no tag. */
+/**
+ * "kill #7 Smith" (v6: "our error (serve) #7 Smith") for a tagged rally, or null when the rally
+ * has no tag.
+ */
 export function tagDetail(
   t: Strings,
   playersById: Map<string, Player>,
@@ -26,5 +29,10 @@ export function tagDetail(
 ): string | null {
   if (event.kind === undefined) return null;
   const player = event.playerId === undefined ? null : playerRef(t, playersById, event.playerId);
-  return t.tags.detail(t.tags.kindNames[event.kind], player);
+  const kind = t.tags.kindNames[event.kind];
+  const named =
+    event.errorType === undefined
+      ? kind
+      : t.tags.kindWithErrorType(kind, t.tags.errorTypeDetail[event.errorType]);
+  return t.tags.detail(named, player);
 }
