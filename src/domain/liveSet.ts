@@ -22,7 +22,15 @@ import {
   type RotationNumber,
   type Slots,
 } from './rotation';
-import { COURT_POSITIONS, type Player, type SetEvent, type SetLineup, type Side } from './types';
+import {
+  COURT_POSITIONS,
+  type Player,
+  type PointEvent,
+  type SetEvent,
+  type SetLineup,
+  type Side,
+  type SubEvent,
+} from './types';
 
 /** Substitutions allowed per set. */
 export const MAX_SUBS_PER_SET = 6;
@@ -111,8 +119,46 @@ function invalidReason(
   return null;
 }
 
+/** A rally as it was played: the state just before it (used by the statistics). */
+export interface RallyStep {
+  type: 'point';
+  eventIndex: number;
+  event: PointEvent;
+  /** Our rotation the rally was played in (before the side-out it may cause). */
+  rotation: RotationNumber;
+  /** Who served the rally. */
+  servingSide: Side;
+  /** The real players on court during the rally (without the libero swap). */
+  slots: Slots;
+}
+
+/** A substitution in the log; `applied` is false when it was skipped (`INVALID_SUB`). */
+export interface SubStep {
+  type: 'sub';
+  eventIndex: number;
+  event: SubEvent;
+  applied: boolean;
+}
+
+export type ReplayStep = RallyStep | SubStep;
+
+const rotationNumber = (rotations: number): RotationNumber =>
+  ((rotations % ROTATION_COUNT) + 1) as RotationNumber;
+
 /** Replays a set's event log and returns the live state after the last event. */
 export function replaySet(set: SetLineup, players: readonly Player[]): LiveState {
+  return replay(set, players).state;
+}
+
+/** Replays a set's event log and returns every event with the state it was applied in. */
+export function replaySteps(set: SetLineup, players: readonly Player[]): ReplayStep[] {
+  return replay(set, players).steps;
+}
+
+function replay(
+  set: SetLineup,
+  players: readonly Player[],
+): { state: LiveState; steps: ReplayStep[] } {
   const knownIds = new Set(players.map((p) => p.id));
   const target = targetPoints(set.setNumber);
   const score: Score = { us: 0, them: 0 };
@@ -125,9 +171,18 @@ export function replaySet(set: SetLineup, players: readonly Player[]): LiveState
   const partner = new Map<string, string>();
   /** "a|b" (sorted) → substitutions made within that pair. */
   const pairUses = new Map<string, number>();
+  const steps: ReplayStep[] = [];
 
   set.events.forEach((event, eventIndex) => {
     if (event.type === 'point') {
+      steps.push({
+        type: 'point',
+        eventIndex,
+        event,
+        rotation: rotationNumber(rotations),
+        servingSide,
+        slots,
+      });
       score[event.winner] += 1;
       if (event.winner === 'us' && servingSide === 'them') {
         slots = rotateClockwise(slots);
@@ -140,6 +195,7 @@ export function replaySet(set: SetLineup, players: readonly Player[]): LiveState
     const { outPlayerId, inPlayerId } = event;
     const base = { eventIndex, outPlayerId, inPlayerId };
     const reason = invalidReason(set, knownIds, slots, outPlayerId, inPlayerId);
+    steps.push({ type: 'sub', eventIndex, event, applied: reason === null });
     if (reason) {
       warnings.push({ code: 'INVALID_SUB', ...base, reason });
       return;
@@ -167,10 +223,10 @@ export function replaySet(set: SetLineup, players: readonly Player[]): LiveState
     slots = { ...slots, [position as number]: inPlayerId };
   });
 
-  return {
+  const state: LiveState = {
     score,
     slots,
-    rotation: ((rotations % ROTATION_COUNT) + 1) as RotationNumber,
+    rotation: rotationNumber(rotations),
     servingSide,
     serverId: servingSide === 'us' ? slots[serverPosition] : null,
     subsUsed,
@@ -178,6 +234,7 @@ export function replaySet(set: SetLineup, players: readonly Player[]): LiveState
     setWinner: setWinnerOf(score, target),
     warnings,
   };
+  return { state, steps };
 }
 
 function withEvent(set: SetLineup, event: SetEvent): SetLineup {

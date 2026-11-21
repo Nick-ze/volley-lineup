@@ -18,6 +18,7 @@ const ICONS: Record<TeamTab, { active: IconName; inactive: IconName }> = {
   matches: { active: 'calendar', inactive: 'calendar-outline' },
   presets: { active: 'bookmarks', inactive: 'bookmarks-outline' },
   starters: { active: 'star', inactive: 'star-outline' },
+  stats: { active: 'stats-chart', inactive: 'stats-chart-outline' },
 };
 
 const labels = (t: Strings, tab: TeamTab) => {
@@ -31,6 +32,8 @@ const labels = (t: Strings, tab: TeamTab) => {
       return { label: s.presets, a11y: s.presetsLabel };
     case 'starters':
       return { label: s.starters, a11y: s.startersLabel };
+    case 'stats':
+      return { label: s.stats, a11y: s.statsLabel };
   }
 };
 
@@ -40,8 +43,8 @@ export interface TeamNavBarProps {
 }
 
 /**
- * Bottom nav bar inside the team screen: Roster · Matches · Presets · Starters. Styled like the
- * app's main tab bar (which is not shown on the team screen, so there is only one bar).
+ * Bottom nav bar inside the team screen: Roster · Matches · Presets · Starters · Stats. Styled
+ * like the app's main tab bar (which is not shown on the team screen, so there is only one bar).
  */
 export function TeamNavBar({ value, onChange }: TeamNavBarProps) {
   const t = useT();
@@ -100,5 +103,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   pressed: { opacity: 0.8 },
-  label: { ...typography.label, fontSize: fontSize.xs },
+  // Five items share 375 px: the label may shrink a little rather than be cut off.
+  label: { ...typography.label, fontSize: fontSize.xs, paddingHorizontal: spacing.xxs },
 });

@@ -7,6 +7,7 @@ import { StartersTab } from '@/features/presets/StartersTab';
 import { MatchesTab } from '@/features/roster/components/MatchesTab';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { RosterTab } from '@/features/roster/components/RosterTab';
+import { StatsTab } from '@/features/stats/StatsTab';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { parseTeamTab } from '@/features/team/tabs';
 import { TeamNavBar } from '@/features/team/TeamNavBar';
@@ -14,8 +15,8 @@ import { useT } from '@/i18n';
 import { useTeam } from '@/store';
 
 /**
- * `/team/[teamId]?tab=roster|matches|presets|starters` — the team with a bottom nav bar
- * (Roster · Matches · Presets · Starters). Unknown tabs show the roster.
+ * `/team/[teamId]?tab=roster|matches|presets|starters|stats` — the team with a bottom nav bar
+ * (Roster · Matches · Presets · Starters · Stats). Unknown tabs show the roster.
  */
 export default function TeamScreen() {
   const t = useT();
@@ -57,6 +58,7 @@ export default function TeamScreen() {
       {tab === 'starters' ? (
         <StartersTab teamId={id} onEdit={() => router.push(`/team/${id}/starters`)} />
       ) : null}
+      {tab === 'stats' ? <StatsTab teamId={id} /> : null}
     </Screen>
   );
 }
