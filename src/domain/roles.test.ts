@@ -221,6 +221,20 @@ describe('setFormation', () => {
     expect(setFormation(set, { system: '6-2' }).slots).toEqual(set.slots);
   });
 
+  it('6-2 → 5-1 keeps the back-row setter (the one the rotation is named after)', () => {
+    // 6-2 with setter spots 4 (front) and 1 (back): the 5-1 setter goes to 1, not 4
+    const front = lineup({ formation: formation('6-2', 'outside', 4) });
+    expect(setFormation(front, { system: '5-1' }).formation).toEqual(
+      formation('5-1', 'outside', 1),
+    );
+    // already the back-row one: unchanged
+    const back = lineup({ formation: formation('6-2', 'middle', 6) });
+    expect(setFormation(back, { system: '5-1' }).formation).toEqual(formation('5-1', 'middle', 6));
+    // 5-1 → 6-2 keeps the spot
+    const five = lineup({ formation: formation('5-1', 'outside', 2) });
+    expect(setFormation(five, { system: '6-2' }).formation).toEqual(formation('6-2', 'outside', 2));
+  });
+
   it('returns the same set when nothing changes or the set is played', () => {
     const set = lineup();
     expect(setFormation(set, {})).toBe(set);

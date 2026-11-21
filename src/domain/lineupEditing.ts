@@ -115,10 +115,15 @@ export function setServeFirst(set: SetLineup, weServeFirst: boolean): SetLineup 
   return set.weServeFirst === weServeFirst ? set : { ...set, weServeFirst };
 }
 
-/** Empties the court and libero, keeping set number and serve choice. */
+/** Empties the court and libero, keeping set number, serve choice, formation and libero switch. */
 export function clearLineup(set: SetLineup): SetLineup {
   if (set.liberoId === null && COURT_POSITIONS.every((p) => set.slots[p] === null)) return set;
-  return { ...emptySetLineup(set.setNumber), weServeFirst: set.weServeFirst };
+  return {
+    ...emptySetLineup(set.setNumber),
+    weServeFirst: set.weServeFirst,
+    formation: set.formation,
+    liberoActive: set.liberoActive,
+  };
 }
 
 /**

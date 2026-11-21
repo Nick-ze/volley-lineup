@@ -45,8 +45,7 @@ export const stats: Strings['stats'] = {
     sideOutLabel: 'Side-out-Quote: gewonnene Ballwechsel bei Annahme',
     breakPoints: 'BP',
     breakPointsLabel: 'Breakpunkte: gewonnene Ballwechsel bei eigenem Aufschlag',
-    numbering:
-      'R4 = Zuspieler auf Position 4 (bei zwei Zuspielern der in der Hinterreihe). Ohne Zuspieler auf dem Feld werden die Rotationen ab Satzbeginn gezählt (R1 = Startaufstellung).',
+    numbering: 'R4 = Zuspieler auf Position 4 (bei zwei Zuspielern der in der Hinterreihe).',
   },
   players: {
     heading: 'Spieler',

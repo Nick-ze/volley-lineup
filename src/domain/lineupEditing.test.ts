@@ -172,9 +172,20 @@ describe('serve, clear, copy', () => {
     expect(setServeFirst(base(), false).weServeFirst).toBe(false);
   });
 
-  it('clears the lineup but keeps set number and serve', () => {
+  it('clears the lineup but keeps set number, serve, formation and libero switch', () => {
     const s = { ...base(), setNumber: 3 as const, weServeFirst: false };
     expect(clearLineup(s)).toEqual({ ...emptySetLineup(3), weServeFirst: false });
+    const sixTwo = {
+      ...s,
+      formation: { system: '6-2' as const, order: 'middle' as const, setterAt: 5 as const },
+      liberoActive: false,
+    };
+    expect(clearLineup(sixTwo)).toEqual({
+      ...emptySetLineup(3),
+      weServeFirst: false,
+      formation: { system: '6-2', order: 'middle', setterAt: 5 },
+      liberoActive: false,
+    });
   });
 
   it('copies slots and libero to another set number', () => {

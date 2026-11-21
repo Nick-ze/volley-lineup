@@ -91,7 +91,7 @@ const slotsSchema = z.object({
   6: playerRef,
 });
 
-/** v5: player id → role. */
+/** v6: the formation of a set / preset (roles.ts). */
 const formationSchema = z.object({
   system: z.enum(FORMATION_SYSTEMS as [FormationSystem, ...FormationSystem[]]),
   order: z.enum(FORMATION_ORDERS as [FormationOrder, ...FormationOrder[]]),
