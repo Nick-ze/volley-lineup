@@ -16,7 +16,8 @@ export default function LiveScreen() {
   useCorrectSetParam(set, setNumber, selectSet);
   return (
     <Screen>
-      <LiveMatch matchId={matchId} setNumber={setNumber} onSelectSet={selectSet} />
+      {/* Keyed by set: switching sets drops a half-finished substitution. */}
+      <LiveMatch key={setNumber} matchId={matchId} setNumber={setNumber} onSelectSet={selectSet} />
     </Screen>
   );
 }

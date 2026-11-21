@@ -17,3 +17,5 @@ export const COURT_COLUMN_MAX_WIDTH = 520;
 export const CONTROLS_COLUMN_WIDTH = 420;
 /** Size of the "serving" dot next to a team name. */
 export const SERVE_DOT_SIZE = 14;
+/** Max width of a bench chip + its warning caption. */
+export const BENCH_ITEM_MAX_WIDTH = 96;

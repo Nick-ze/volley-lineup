@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, PlayerChip } from '@/components';
-import { MAX_SUBS_PER_SET } from '@/domain/liveSet';
+import { MAX_SUBS_PER_SET, type LiveWarningCode } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
 import { t } from '@/i18n/en';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerDescription } from './format';
-import { BENCH_CHIP_SIZE } from './layout';
+import { BENCH_CHIP_SIZE, BENCH_ITEM_MAX_WIDTH } from './layout';
 
 export interface SubPanelProps {
   subsUsed: number;
@@ -20,6 +20,8 @@ export interface SubPanelProps {
   onStart: () => void;
   onCancel: () => void;
   onPickIn: (playerId: string) => void;
+  /** Warnings bringing this bench player in would trigger (only once a player is going out). */
+  warningsFor: (playerId: string) => LiveWarningCode[];
 }
 
 /** "Subs used n/6", the substitution button and prompts, and the bench to pick from. */
@@ -32,6 +34,7 @@ export function SubPanel({
   onStart,
   onCancel,
   onPickIn,
+  warningsFor,
 }: SubPanelProps) {
   const over = subsUsed > MAX_SUBS_PER_SET;
   return (
@@ -69,17 +72,32 @@ export function SubPanel({
         {t.live.benchTitle}
       </Text>
       <View style={styles.grid}>
-        {bench.map((p) => (
-          <PlayerChip
-            key={p.id}
-            player={p}
-            size={BENCH_CHIP_SIZE}
-            onPress={outRef ? () => onPickIn(p.id) : undefined}
-            accessibilityLabel={playerDescription(p)}
-            accessibilityHint={outRef ? t.live.benchPlayerHint(outRef) : undefined}
-            testID={`live-bench-${p.number}`}
-          />
-        ))}
+        {bench.map((p) => {
+          const code = outRef ? warningsFor(p.id)[0] : undefined;
+          const warning = code ? t.live.previewWarning[code] : null;
+          return (
+            <View key={p.id} style={styles.benchItem}>
+              <PlayerChip
+                player={p}
+                size={BENCH_CHIP_SIZE}
+                onPress={outRef ? () => onPickIn(p.id) : undefined}
+                accessibilityLabel={playerDescription(p)}
+                accessibilityHint={outRef ? t.live.benchPlayerHint(outRef, warning) : undefined}
+                testID={`live-bench-${p.number}`}
+              />
+              {warning ? (
+                <Text
+                  style={styles.chipWarning}
+                  importantForAccessibility="no"
+                  accessibilityElementsHidden
+                  testID={`live-bench-warning-${p.number}`}
+                >
+                  {warning}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })}
         {bench.length === 0 ? <Text style={styles.muted}>{t.live.benchEmpty}</Text> : null}
       </View>
       <Text style={styles.muted}>{t.live.libero(liberoRef)}</Text>
@@ -108,4 +126,6 @@ const styles = StyleSheet.create({
   title: { ...typography.label, color: colors.textMuted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   muted: { ...typography.body, color: colors.textMuted },
+  benchItem: { alignItems: 'center', maxWidth: BENCH_ITEM_MAX_WIDTH, gap: spacing.xxs },
+  chipWarning: { ...typography.caption, color: colors.error, textAlign: 'center' },
 });

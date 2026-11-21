@@ -1,6 +1,14 @@
 import { useCallback, useMemo } from 'react';
 
-import { addPoint, addSub, replaySet, undo, type LiveState } from '@/domain/liveSet';
+import {
+  addPoint,
+  addSub,
+  previewSub,
+  replaySet,
+  undo,
+  type LiveState,
+  type LiveWarningCode,
+} from '@/domain/liveSet';
 import {
   COURT_POSITIONS,
   type Match,
@@ -22,6 +30,8 @@ export interface LiveSet {
   point: (winner: Side) => void;
   substitute: (outPlayerId: string, inPlayerId: string) => void;
   undoLast: () => void;
+  /** Warnings the substitution would trigger if made now (a warning, never a block). */
+  preview: (outPlayerId: string, inPlayerId: string) => LiveWarningCode[];
 }
 
 /** The set being played live, its replayed state, and actions that append to its event log. */
@@ -60,5 +70,6 @@ export function useLiveSet(matchId: string | undefined, setNumber: number | unde
     point: (winner) => save((s) => addPoint(s, winner)),
     substitute: (out, inn) => save((s) => addSub(s, out, inn)),
     undoLast: () => save(undo),
+    preview: (out, inn) => (set ? previewSub(set, players, out, inn) : []),
   };
 }

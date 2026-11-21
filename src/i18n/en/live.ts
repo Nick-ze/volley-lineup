@@ -35,7 +35,13 @@ export const live = {
   courtPlayerLabel: (desc: string, position: number, isServer: boolean) =>
     `Position ${position}: ${desc}${isServer ? ', serving' : ''}`,
   courtPlayerHint: 'Tap to substitute this player',
-  benchPlayerHint: (out: string) => `Comes in for ${out}`,
+  benchPlayerHint: (out: string, warning: string | null) =>
+    warning ? `Comes in for ${out}. Warning: ${warning}` : `Comes in for ${out}`,
+  previewWarning: {
+    SUB_LIMIT: 'over the 6-sub limit',
+    REENTRY_RULE: 'breaks the re-entry rule',
+    INVALID_SUB: 'cannot be applied',
+  },
   emptySpot: (position: number) => `Position ${position}: empty`,
   playerRef: (number: number, name: string) => `#${number} ${name}`,
   unknownPlayer: '?',
@@ -47,7 +53,7 @@ export const live = {
   warnSubLimit: (out: string, inn: string, max: number) =>
     `${inn} for ${out}: more than ${max} substitutions in this set.`,
   warnReentry: (out: string, inn: string) =>
-    `${inn} for ${out}: a player may only come back for the player who replaced them.`,
+    `${inn} for ${out}: a substitute may only be replaced by the player they came in for, and each pair may swap back only once.`,
   warnInvalid: (out: string, inn: string) => `${inn} for ${out} could not be applied (skipped).`,
   libero: (ref: string | null) => (ref ? `Libero ${ref} (not counted as a sub)` : 'No libero'),
 } as const;

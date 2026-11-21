@@ -123,6 +123,7 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
         onStart={() => setSubMode(true)}
         onCancel={reset}
         onPickIn={pickIn}
+        warningsFor={(inId) => (outId ? live.preview(outId, inId) : [])}
       />
     </View>
   );

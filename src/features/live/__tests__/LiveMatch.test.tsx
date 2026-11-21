@@ -117,12 +117,21 @@ describe('live match mode', () => {
 
     // #8 may only be replaced by #3: bringing #9 in breaks the re-entry rule (a warning).
     await press('live-court-3');
+    // The would-be warning shows on the bench before the tap; #3 coming back is fine.
+    const hidden = { includeHiddenElements: true };
+    expect(screen.getByTestId('live-bench-warning-9', hidden)).toHaveTextContent(
+      'breaks the re-entry rule',
+    );
+    expect(screen.queryByTestId('live-bench-warning-3', hidden)).toBeNull();
+    expect(screen.getByTestId('live-bench-9').props.accessibilityHint).toBe(
+      'Comes in for #8 Sub. Warning: breaks the re-entry rule',
+    );
     await press('live-bench-9');
     expect(numberAt(3)).toBe(9);
     expect(screen.getByText('Subs used 2/6')).toBeTruthy();
     expect(
       screen.getByText(
-        '#9 Spare for #8 Sub: a player may only come back for the player who replaced them.',
+        '#9 Spare for #8 Sub: a substitute may only be replaced by the player they came in for, and each pair may swap back only once.',
       ),
     ).toBeTruthy();
 
@@ -138,6 +147,23 @@ describe('live match mode', () => {
     await press('sub-cancel');
     expect(screen.queryByTestId('sub-prompt')).toBeNull();
     expect(storedEvents()).toHaveLength(1);
+  });
+
+  it('switching sets drops a half-finished substitution', async () => {
+    seed([set1, { ...set1, setNumber: 2 }]);
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+    await screen.findByText('Rivals serves');
+    await press('live-court-2');
+    expect(screen.getByTestId('sub-prompt')).toBeTruthy();
+    await press('set-tab-2');
+    expect(
+      await screen.findByText('Live · Set 2', {}, { timeout: 100 }).catch(() => true),
+    ).toBeTruthy();
+    expect(screen.queryByTestId('sub-prompt')).toBeNull();
+    await press('set-tab-1');
+    expect(screen.queryByTestId('sub-prompt')).toBeNull();
+    await press('live-bench-8'); // not pickable: nothing is going out
+    expect(useAppStore.getState().matches[0]?.sets[0]?.events).toEqual([]);
   });
 
   it('shows set point and set won', async () => {
