@@ -100,15 +100,18 @@ export function isOffPosition(player: Pick<Player, 'positions'>, role: Position 
 }
 
 /**
- * Changes the formation's system and/or order, keeping the setter's spot. Unchanged for a
- * locked (played) set or when nothing changes.
+ * Changes the formation's system and/or order, keeping the setter's spot. Going from a 6-2 to a
+ * 5-1 keeps the back-row setter (the one the rotation is named after), so the setter doesn't jump
+ * to the front row. Unchanged for a locked (played) set or when nothing changes.
  */
 export function setFormation(
   set: SetLineup,
   change: Partial<Pick<Formation, 'system' | 'order'>>,
 ): SetLineup {
   if (isLineupLocked(set)) return set;
-  const formation = { ...set.formation, ...change };
+  const toFiveOne = set.formation.system === '6-2' && change.system === '5-1';
+  const setterAt = toFiveOne ? formationRotation(set.formation) : set.formation.setterAt;
+  const formation = { ...set.formation, ...change, setterAt };
   const same = formation.system === set.formation.system && formation.order === set.formation.order;
   return same ? set : { ...set, formation };
 }

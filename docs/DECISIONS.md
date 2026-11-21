@@ -246,3 +246,7 @@ Newest at the bottom. Format: **Decision** — why.
 143. **Every court shows the formation's roles on all spots**, also empty ones: rotation viewer (the formation turns with each step: `formationSteps.ts`), starters overview, team starters, print sheet. The viewer always names rotations by the setter spot (`formationRotation`), so incomplete courts are named too; the old "Rotation n of 6" fallback and `rotationNames.ts` were removed. An empty spot's screen-reader text names its role.
 144. **Point tags offer only plausible players** (rules doc check #35): block = front-row players (2–4) on court during that rally, never the libero; ace = our server of that rally; kill = anyone on court except the libero (back-row attacks are legal); our error = anyone on court. A player already tagged with a kind stays listed so the tag can be cleared.
 145. **`docs/VOLLEYBALL_RULES.md` §6** lists checks 1–62 with PASS / NOT MODELLED and no FAIL on v5.0; formation checks are #53–62.
+
+### QA fixes (orchestrator)
+
+146. **"Clear" keeps the formation and the libero switch** (only players leave); **6-2 → 5-1 keeps the back-row setter spot** (the one the rotation is named after), so the setter never jumps to the front row. Migrated v4 data keeps the setter spot; other old per-player roles that don't fit the pattern now show "_" (e.g. two adjacent outsides become OH + MB_) — the coach fixes them by moving players. The stats legend no longer mentions the "count from the start" fallback (a formation always has a setter spot).

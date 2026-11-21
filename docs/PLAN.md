@@ -411,11 +411,11 @@ interface LineupPreset {
 
 ## 24. v5 acceptance checklist
 
-- [ ] Every court shows the formation's roles on all six spots, also when empty; the pairs are always opposite (5-1 / 6-2, both orders) — tests with literal layouts.
-- [ ] Changing system / order in the builder (matches, presets, team starters) and in the live next-set setup; locked once a set is played.
-- [ ] Placing a player on a spot that isn't one of their positions asks for confirmation (drag & drop and tap-to-select; Cancel moves nothing) and shows "*" at the top right; a listed secondary position doesn't.
-- [ ] Rotate moves players and formation together; the rotation number follows the setter spot (also incomplete courts).
-- [ ] v4 data (store v6) and v1–v5 files open; per-player roles become the matching formation (setter position kept); export / import round trip restores exactly.
-- [ ] Point tags offer only plausible players (rules doc checks #35); the rules doc's check list is updated with PASS for everything the app now models.
-- [ ] Phone 375 px EN + DE: role tags on empty spots and the formation controls fit.
-- [ ] Lint, typecheck, tests in CI; `src/domain` 100%.
+- [x] Every court shows the formation's roles on all six spots, also when empty; the pairs are always opposite (5-1 / 6-2, both orders) — tests with literal layouts.
+- [x] Changing system / order in the builder (matches, presets, team starters) and in the live next-set setup; locked once a set is played.
+- [x] Placing a player on a spot that isn't one of their positions asks for confirmation (drag & drop and tap-to-select; Cancel moves nothing) and shows "*" at the top right; a listed secondary position doesn't.
+- [x] Rotate moves players and formation together; the rotation number follows the setter spot (also incomplete courts).
+- [x] v4 data (store v6) and v1–v5 files open; per-player roles become the matching formation (setter position kept); export / import round trip restores exactly. — _web (localStorage) migration from store v6 verified in a browser; Android AsyncStorage covered by unit tests only._
+- [x] Point tags offer only plausible players (rules doc checks #35); the rules doc's check list is updated with PASS for everything the app now models.
+- [x] Phone 375 px EN + DE: role tags on empty spots and the formation controls fit. — _verified in a browser (Playwright); not yet on a real phone._
+- [x] Lint, typecheck, tests in CI; `src/domain` 100%.
