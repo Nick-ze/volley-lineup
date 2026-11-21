@@ -36,6 +36,7 @@ export function parentRoute(
     case 'match/[matchId]/rotation':
     case 'match/[matchId]/starters':
     case 'match/[matchId]/live':
+    case 'match/[matchId]/stats':
       if (!matchId) return '/teams';
       return str(params?.set)
         ? { pathname: '/match/[matchId]', params: { matchId, set: str(params?.set) as string } }

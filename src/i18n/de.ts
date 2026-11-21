@@ -49,6 +49,7 @@ export const de: Strings = {
     preset: 'Vorlage',
     teamStarters: 'Startsechs',
     live: 'Live',
+    matchStats: 'Spielstatistik',
     settings: 'Einstellungen',
   },
   positions: {

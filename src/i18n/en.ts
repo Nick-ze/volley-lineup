@@ -50,6 +50,7 @@ export const en = {
     preset: 'Preset',
     teamStarters: 'Team starters',
     live: 'Live',
+    matchStats: 'Match stats',
     settings: 'Settings',
   },
   positions: {
