@@ -2,8 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components';
-import type { SetEvent, SetNumber, Side } from '@/domain/types';
+import type { SetNumber, Side } from '@/domain/types';
 import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
 import { t } from '@/i18n/en';
@@ -17,6 +16,7 @@ import { LiveCourt } from './LiveCourt';
 import { PointButtons } from './PointButtons';
 import { Scoreboard } from './Scoreboard';
 import { SubPanel } from './SubPanel';
+import { UndoActions } from './UndoActions';
 import { useLiveSet } from './useLiveSet';
 
 export interface LiveMatchProps {
@@ -31,7 +31,7 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
   const wide = useIsWide();
   const [subMode, setSubMode] = useState(false);
   const [outId, setOutId] = useState<string | null>(null);
-  const { match, set, state, playersById } = live;
+  const { match, set, state, court, playersById } = live;
 
   if (!match) return <Message text={t.live.matchNotFound} />;
   const picker =
@@ -42,7 +42,7 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
         onSelect={onSelectSet}
       />
     ) : null;
-  if (!set || !state) return <Message text={t.live.noSet} />;
+  if (!set || !state || !court) return <Message text={t.live.noSet} />;
   if (!live.complete) {
     return (
       <>
@@ -69,12 +69,6 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
     if (outId) live.substitute(outId, inId);
     reset();
   };
-  const last: SetEvent | undefined = set.events[set.events.length - 1];
-  const undoLabel = !last
-    ? t.live.undoNothing
-    : last.type === 'point'
-      ? t.live.undoPoint(last.winner === 'us')
-      : t.live.undoSub(ref(last.outPlayerId), ref(last.inPlayerId));
   const serveText =
     state.servingSide === 'us'
       ? t.live.weServe(state.serverId ? (playersById.get(state.serverId)?.number ?? null) : null)
@@ -92,23 +86,24 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
       />
       <LiveBanners state={state} opponent={match.opponent} playersById={playersById} />
       <PointButtons opponent={match.opponent} onPoint={point} />
-      <Button
-        label={t.live.undo}
-        accessibilityLabel={undoLabel}
-        variant="secondary"
-        disabled={!last}
-        onPress={() => {
+      <UndoActions
+        last={set.events[set.events.length - 1]}
+        playersById={playersById}
+        onUndo={() => {
           reset();
           live.undoLast();
         }}
-        testID="undo"
+        onReset={() => {
+          reset();
+          live.resetLive();
+        }}
       />
     </View>
   );
   const courtAndSubs = (
     <View style={styles.column}>
       <LiveCourt
-        slots={state.slots}
+        view={court}
         playersById={playersById}
         serverId={state.serverId}
         selectedId={outId}

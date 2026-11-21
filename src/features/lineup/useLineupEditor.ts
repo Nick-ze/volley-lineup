@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { withSuggestedLiberoReplaces } from '@/domain/liberoSwap';
+import { applyLineupEdit, isLineupLocked } from '@/domain/lineupLock';
 import {
   benchPlayers,
   lineupForSet,
@@ -40,9 +41,13 @@ export function useLineupEditor(matchId: string, setNumber: SetNumber) {
   const validation = useMemo(() => validateLineup(set, players), [set, players]);
 
   // Assigning a libero pre-selects the middles they replace (docs/DECISIONS.md).
+  // A played set keeps its starting six, libero and first serve (see lineupLock.ts).
+  const locked = isLineupLocked(set);
   const update = useCallback(
     (next: SetLineup) => {
-      if (next !== set) saveLineup(matchId, withSuggestedLiberoReplaces(set, next, players));
+      if (next === set) return;
+      const kept = applyLineupEdit(set, withSuggestedLiberoReplaces(set, next, players));
+      if (kept !== set) saveLineup(matchId, kept);
     },
     [matchId, saveLineup, set, players],
   );
@@ -57,20 +62,22 @@ export function useLineupEditor(matchId: string, setNumber: SetNumber) {
 
   const pressPlayer = useCallback(
     (playerId: string) => {
+      if (locked) return;
       const r = tapPlayer(set, selectedId, playerId);
       setSelectedId(r.selectedId);
       update(r.set);
     },
-    [set, selectedId, update, setSelectedId],
+    [set, selectedId, update, setSelectedId, locked],
   );
 
   const pressTarget = useCallback(
     (target: DropTarget) => {
+      if (locked) return;
       const r = tapTarget(set, selectedId, target);
       setSelectedId(r.selectedId);
       update(r.set);
     },
-    [set, selectedId, update, setSelectedId],
+    [set, selectedId, update, setSelectedId, locked],
   );
 
   const playerById = useCallback(
@@ -85,6 +92,7 @@ export function useLineupEditor(matchId: string, setNumber: SetNumber) {
     previous,
     bench,
     validation,
+    locked,
     selectedId,
     update,
     drop,

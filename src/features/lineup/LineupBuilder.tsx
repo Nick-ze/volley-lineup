@@ -23,7 +23,7 @@ import { ValidationPanel } from './ValidationPanel';
  */
 export function LineupBuilder({ editor }: { editor: LineupEditor }) {
   const wide = useIsWide();
-  const { set, previous, selectedId, playerById, update, drop, validation } = editor;
+  const { set, previous, selectedId, playerById, update, drop, validation, locked } = editor;
   const onDrop = useCallback(
     (item: DragItem, target: Parameters<typeof drop>[1]) => drop(item.player.id, target),
     [drop],
@@ -31,8 +31,13 @@ export function LineupBuilder({ editor }: { editor: LineupEditor }) {
   const selected = playerById(selectedId);
 
   return (
-    <DragProvider onDrop={onDrop} style={[styles.layout, wide && styles.wide]}>
+    <DragProvider onDrop={onDrop} disabled={locked} style={[styles.layout, wide && styles.wide]}>
       <View style={[styles.column, wide && styles.courtColumn]}>
+        {locked ? (
+          <Text style={styles.locked} accessibilityRole="alert" testID="lineup-locked">
+            {t.live.lineupLocked}
+          </Text>
+        ) : null}
         <LineupCourt editor={editor} />
         <View style={styles.underCourt}>
           <LiberoSlot editor={editor} />
@@ -52,7 +57,7 @@ export function LineupBuilder({ editor }: { editor: LineupEditor }) {
             accessibilityHint={t.lineup.copyPreviousHint}
             variant="secondary"
             compact
-            disabled={previous === null}
+            disabled={previous === null || locked}
             onPress={() => {
               if (previous) update(copyLineup(previous, set.setNumber, set.weServeFirst));
             }}
@@ -64,6 +69,7 @@ export function LineupBuilder({ editor }: { editor: LineupEditor }) {
             accessibilityLabel={t.lineup.clearLabel}
             variant="danger"
             compact
+            disabled={locked}
             onPress={() => update(clearLineup(set))}
             testID="clear-lineup"
           />
@@ -73,7 +79,9 @@ export function LineupBuilder({ editor }: { editor: LineupEditor }) {
         <Text style={styles.hint} accessibilityLiveRegion="polite">
           {selected
             ? t.lineup.selected(`${selected.number} ${selected.firstName} ${selected.lastName}`)
-            : t.lineup.instructions}
+            : locked
+              ? t.live.lineupLocked
+              : t.lineup.instructions}
         </Text>
         <Bench editor={editor} scrollable={wide} />
         <ValidationPanel result={validation} />
@@ -93,4 +101,5 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', gap: spacing.sm },
   grow: { flex: 1 },
   hint: { ...typography.body, color: colors.textMuted },
+  locked: { ...typography.body, color: colors.highlight },
 });

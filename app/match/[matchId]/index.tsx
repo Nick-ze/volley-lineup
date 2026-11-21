@@ -11,7 +11,7 @@ import { useLineupEditor } from '@/features/lineup/useLineupEditor';
 import { PrintButton } from '@/features/print/PrintButton';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { t } from '@/i18n/en';
-import { colors, maxContentWidth, spacing, typography } from '@/theme';
+import { colors, maxContentWidth, spacing, touchTarget, typography } from '@/theme';
 
 /**
  * Match screen: set tabs 1–5 + lineup builder for `?set=N`, links to rotation and starters.
@@ -105,7 +105,8 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  links: { flexDirection: 'row', gap: spacing.sm },
-  link: { flex: 1 },
+  links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  // Four links: one row on wide screens, two rows of two on phones.
+  link: { flexGrow: 1, flexBasis: 0, minWidth: touchTarget * 3 },
   notFound: { ...typography.body, color: colors.textMuted, padding: spacing.lg },
 });

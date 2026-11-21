@@ -56,4 +56,10 @@ export const live = {
     `${inn} for ${out}: a substitute may only be replaced by the player they came in for, and each pair may swap back only once.`,
   warnInvalid: (out: string, inn: string) => `${inn} for ${out} could not be applied (skipped).`,
   libero: (ref: string | null) => (ref ? `Libero ${ref} (not counted as a sub)` : 'No libero'),
+  reset: 'Reset live data',
+  resetHint: 'Clears the score and substitutions of this set so its lineup can be edited again',
+  resetConfirm:
+    'Clear the score and all substitutions of this set? The lineup can then be edited again.',
+  resetConfirmButton: 'Reset',
+  lineupLocked: 'This set has been played — reset live data to edit.',
 } as const;

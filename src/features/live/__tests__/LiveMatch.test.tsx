@@ -156,14 +156,55 @@ describe('live match mode', () => {
     await press('live-court-2');
     expect(screen.getByTestId('sub-prompt')).toBeTruthy();
     await press('set-tab-2');
-    expect(
-      await screen.findByText('Live · Set 2', {}, { timeout: 100 }).catch(() => true),
-    ).toBeTruthy();
+    expect(screen.getByTestId('scoreboard').props.accessibilityLabel).toMatch(/^Set 2,/);
     expect(screen.queryByTestId('sub-prompt')).toBeNull();
     await press('set-tab-1');
     expect(screen.queryByTestId('sub-prompt')).toBeNull();
     await press('live-bench-8'); // not pickable: nothing is going out
     expect(useAppStore.getState().matches[0]?.sets[0]?.events).toEqual([]);
+  });
+
+  it('shows the libero in for a back-row middle; tapping them subs the real player', async () => {
+    seed([{ ...set1, liberoReplaces: ['p3', 'p6'] }]);
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+    await screen.findByText('Rivals serves');
+    // p6 is at position 6 (back row): the libero #7 stands in, tagged "L for #6".
+    expect(numberAt(6)).toBe(7);
+    expect(
+      screen.getByTestId('live-libero-tag-6', { includeHiddenElements: true }),
+    ).toHaveTextContent('L for #6');
+    expect(numberAt(3)).toBe(3); // p3 is in the front row: no swap
+    await press('live-court-6');
+    expect(screen.getByText('Now tap the bench player who comes in for #6 Block.')).toBeTruthy();
+    await press('live-bench-9');
+    expect(storedEvents()).toEqual([{ type: 'sub', outPlayerId: 'p6', inPlayerId: 'p9' }]);
+    // A substitute of a chosen starter is not swapped for the libero.
+    expect(numberAt(6)).toBe(9);
+    expect(screen.queryByTestId('live-libero-tag-6', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('a played set locks the lineup builder; resetting live data unlocks it', async () => {
+    seed([{ ...set1, events: [{ type: 'point', winner: 'us' }] }]);
+    await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
+    expect(await screen.findByTestId('lineup-locked')).toHaveTextContent(
+      'This set has been played — reset live data to edit.',
+    );
+    expect(screen.getByTestId('clear-lineup')).toBeDisabled();
+    await press('slot-player-1'); // tap-to-select does nothing
+    await press('slot-player-2');
+    await press('serve-us');
+    expect(useAppStore.getState().matches[0]?.sets[0]).toMatchObject({
+      slots: set1.slots,
+      weServeFirst: false,
+    });
+
+    await press('open-live');
+    expect(await screen.findByText('We serve · #2')).toBeTruthy();
+    await press('reset-live');
+    await press('confirm');
+    expect(score()).toBe('0:0');
+    expect(storedEvents()).toEqual([]);
+    expect(screen.getByTestId('reset-live')).toBeDisabled();
   });
 
   it('shows set point and set won', async () => {
