@@ -3,15 +3,16 @@
  * light print theme, A4 portrait) for a match — header, every stored set's starting six in court
  * layout (net on top, front row 4-3-2, back row 5-6-1), libero, who serves first, and the roster.
  * Optionally (v3, `withResults`) a played match gets a results section above the sets.
- * v4: every filled spot shows the role its player plays (e.g. "S", "OPP"; "*" when it is none of
- * the player's positions, explained in a note under the sets), and a switched-off libero says so.
+ * v4: every spot shows its role (e.g. "S", "OPP"; v6: from the set's formation, also on an empty
+ * spot; "*" when it is none of the player's positions, explained in a note under the sets), and a
+ * switched-off libero says so.
  *
  * Pure: no React, no i18n import. Translated labels come in through `labels`, and every piece of
  * user text (names, team, opponent, season, labels) is HTML-escaped.
  */
 import { printColors as c, printLayout as l } from '../theme/print';
 import { getMatchState, type MatchState } from './matchState';
-import { isOffPosition, roleOf } from './roles';
+import { isOffPosition, roleOf, spotRole } from './roles';
 import type { CourtPosition, Match, Player, SetLineup, Team } from './types';
 
 /** Labels of the optional "with results" section (v3). */
@@ -125,11 +126,10 @@ function playerCell(player: Player | undefined, id: string | null, labels: Lineu
   );
 }
 
-/** The role code of a known player on court (e.g. "S"), with "*" when off position. */
-function roleTag(set: SetLineup, player: Player | undefined): string {
-  const role = player ? roleOf(set, player.id) : null;
-  if (!player || role === null) return '';
-  const off = isOffPosition(player, role) ? '<span class="off">*</span>' : '';
+/** The role code of a spot (e.g. "S"), with "*" when the known player on it is off position. */
+function roleTag(set: SetLineup, position: CourtPosition, player: Player | undefined): string {
+  const role = spotRole(set.formation, position);
+  const off = player && isOffPosition(player, role) ? '<span class="off">*</span>' : '';
   return `<span class="role">${escapeHtml(role)}${off}</span>`;
 }
 
@@ -150,7 +150,7 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
       const tag = serving ? ` <span class="srv">${escapeHtml(labels.server)}</span>` : '';
       return (
         `<td class="cell${serving ? ' serving' : ''}" data-position="${pos}">` +
-        `<span class="pos">${roleTag(set, player)}` +
+        `<span class="pos">${roleTag(set, pos, player)}` +
         `${escapeHtml(labels.positionShort(pos))}${tag}</span>` +
         `${playerCell(player, id, labels)}</td>`
       );
