@@ -39,6 +39,19 @@ describe('header back after a deep link (no history)', () => {
     expect(screen).toHavePathname(`/team/${ids.team}`);
   });
 
+  it('a deep link to a team has a back button to the Teams tab', async () => {
+    await renderRouter('./app', { initialUrl: `/team/${ids.team}` });
+    await fireEvent.press(await screen.findByTestId('header-back'));
+    expect(screen).toHavePathname('/teams');
+    expect(screen.getByLabelText(t.profile.tabs.profileLabel)).toBeTruthy();
+  });
+
+  it('tab screens have no back button', async () => {
+    await renderRouter('./app', { initialUrl: '/profile' });
+    expect(await screen.findByTestId('profile-screen')).toBeTruthy();
+    expect(screen.queryByTestId('header-back')).toBeNull();
+  });
+
   it('shows a not-found page for unknown URLs', async () => {
     await renderRouter('./app', { initialUrl: '/does/not/exist' });
     expect(await screen.findByText(t.common.pageNotFound)).toBeTruthy();
