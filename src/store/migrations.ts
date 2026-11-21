@@ -7,8 +7,9 @@
  * v2 → v3: the state gains `presets: []` (saved lineups and team starters).
  * v3 → v4: point events may carry `kind`, `playerId` and `at` (all optional) — no data change;
  * existing events stay valid as they are.
+ * v4 → v5: the state gains `chipLabel: 'number'` (player chips show numbers, as before).
  */
-export const STORE_VERSION = 4;
+export const STORE_VERSION = 5;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -38,5 +39,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   let state = persisted;
   if (fromVersion < 2 && isRec(state)) state = v1ToV2(state);
   if (fromVersion < 3 && isRec(state)) state = { presets: [], ...state };
+  if (fromVersion < 5 && isRec(state)) state = { chipLabel: 'number', ...state };
   return state;
 }

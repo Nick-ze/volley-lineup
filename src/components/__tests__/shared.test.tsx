@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import type { Player } from '@/domain/types';
+import { useAppStore } from '@/store';
 
 import { Button } from '../Button';
 import { Court } from '../Court';
@@ -47,6 +48,30 @@ describe('PlayerChip', () => {
     await render(<PlayerChip player={player} onPress={onPress} selected />);
     await fireEvent.press(screen.getByRole('button'));
     expect(onPress).toHaveBeenCalled();
+  });
+  it('shows the name big and the number below when names are chosen', async () => {
+    useAppStore.getState().setChipLabel('name');
+    try {
+      await render(<PlayerChip player={player} testID="chip" />);
+      expect(screen.getByTestId('chip-name').props.children).toBe('Ace');
+      expect(screen.getByText('#7')).toBeTruthy();
+      expect(screen.queryByText('7')).toBeNull();
+      // the spoken label is the same in both modes
+      expect(screen.getByLabelText('Number 7, Ana Ace, Setter')).toBeTruthy();
+    } finally {
+      useAppStore.getState().setChipLabel('number');
+    }
+  });
+
+  it('falls back to the first name when there is no last name', async () => {
+    useAppStore.getState().setChipLabel('name');
+    try {
+      await render(<PlayerChip player={{ ...player, lastName: '' }} showName={false} />);
+      expect(screen.getByText('Ana')).toBeTruthy();
+      expect(screen.queryByText('#7')).toBeNull();
+    } finally {
+      useAppStore.getState().setChipLabel('number');
+    }
   });
 });
 

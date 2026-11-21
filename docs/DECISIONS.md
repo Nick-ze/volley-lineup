@@ -181,3 +181,8 @@ Newest at the bottom. Format: **Decision** — why.
 ### QA fixes (orchestrator)
 
 111. **Header titles stay on one line** (`HeaderTitle`, set for every screen in `app/_layout.tsx`): long titles such as "vs <long opponent>" end in "…" instead of scrolling the page sideways; the title limits itself to the window width minus room for the back button. German link "Startaufstellung" → "Aufstellungen" (fits the 3 + 2 link row); the Print and Starters links' accessibility labels start with their visible text. "Delete all data" clears the export / import messages shown above it.
+
+## v3.1
+
+112. **"Show names instead of numbers"** (Settings → Player chips): a device setting like the language — `chipLabel: 'number' | 'name'` in the store (version 5; the v4 → v5 migration adds `'number'`, so nothing changes until it's switched on), kept on "Delete all data", not exported (export `schemaVersion` stays 4). With names on, every player chip (court, bench, libero, rotation viewer, live court) shows the last name (first name if there is none) in the circle — up to two lines at ≥ 11 px, kept inside the circle; long names may break mid-word or end in "…" on the smallest chips — and "#n" in the small label below; screen-reader labels and other texts ("We serve · #1", "L for #15") are unchanged.
+113. **Version 3.1.0** (versionCode 30100).

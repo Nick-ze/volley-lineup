@@ -7,12 +7,13 @@ import { useT } from '@/i18n';
 import { colors, typography } from '@/theme';
 
 import { DeleteAllSection } from './DeleteAllSection';
+import { DisplaySection } from './DisplaySection';
 import { ExportSection } from './ExportSection';
 import { ImportSection } from './ImportSection';
 import { LanguageSection } from './LanguageSection';
 import { Section } from './Section';
 
-/** Settings tab: language, export, import, delete all data, app version. */
+/** Settings tab: language, player chips, export, import, delete all data, app version. */
 export function SettingsScreen() {
   const t = useT();
   const version = Constants.expoConfig?.version ?? t.transfer.about.unknownVersion;
@@ -21,6 +22,7 @@ export function SettingsScreen() {
   return (
     <Screen testID="settings-screen">
       <LanguageSection />
+      <DisplaySection />
       <ExportSection key={`export-${generation}`} />
       <ImportSection key={`import-${generation}`} />
       <DeleteAllSection onDeleted={() => setGeneration((g) => g + 1)} />

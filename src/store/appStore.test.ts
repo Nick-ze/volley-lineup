@@ -316,6 +316,7 @@ describe('migrations', () => {
       ],
     };
     expect(migrateStore(v1, 1)).toEqual({
+      chipLabel: 'number',
       presets: [],
       language: 'en',
       profiles: [],
@@ -340,6 +341,7 @@ describe('migrations', () => {
       ],
     });
     expect(migrateStore({ matches: 'x' }, 1)).toEqual({
+      chipLabel: 'number',
       presets: [],
       language: 'en',
       matches: 'x',
@@ -349,11 +351,17 @@ describe('migrations', () => {
 
   it('upgrades v2 data: the state gains an empty preset list', () => {
     const v2 = { profiles: [], matches: [], language: 'de' };
-    expect(migrateStore(v2, 2)).toEqual({ presets: [], profiles: [], matches: [], language: 'de' });
+    expect(migrateStore(v2, 2)).toEqual({
+      chipLabel: 'number',
+      presets: [],
+      profiles: [],
+      matches: [],
+      language: 'de',
+    });
     expect(migrateStore(null, 2)).toBeNull();
   });
 
-  it('opens v3 data (v2.x app) unchanged: untagged points stay valid', () => {
+  it('opens v3 data (v2.x app) without loss: untagged points stay valid', () => {
     const v3 = {
       profiles: [],
       presets: [],
@@ -372,8 +380,23 @@ describe('migrations', () => {
         },
       ],
     };
-    expect(migrateStore(v3, 3)).toEqual(v3);
-    expect(STORE_VERSION).toBe(4);
+    // v3 → v4 changes nothing; v4 → v5 only adds the chip setting.
+    expect(migrateStore(v3, 3)).toEqual({ ...v3, chipLabel: 'number' });
+  });
+
+  it('upgrades v4 data (v3.0 app): player chips keep showing numbers', () => {
+    const v4 = { profiles: [], presets: [], matches: [], language: 'de' };
+    expect(migrateStore(v4, 4)).toEqual({ ...v4, chipLabel: 'number' });
+    expect(migrateStore(null, 4)).toBeNull();
+    expect(STORE_VERSION).toBe(5);
+  });
+
+  it('remembers whether chips show names or numbers, also after delete all', () => {
+    expect(store().chipLabel).toBe('number');
+    store().setChipLabel('name');
+    store().resetAll();
+    expect(store().chipLabel).toBe('name');
+    store().setChipLabel('number');
   });
 
   it('remembers the chosen language', () => {

@@ -70,6 +70,7 @@ export const de: Strings = {
   player: {
     chipLabel: (number: number, name: string, position: string) =>
       `Nummer ${number}, ${name}, ${position}`,
+    numberTag: (number: number) => `#${number}`,
   },
   placeholder: {
     comingSoon: 'Diese Ansicht kommt bald.',

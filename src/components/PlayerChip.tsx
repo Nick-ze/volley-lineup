@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { useAppStore } from '@/store';
+import { colors, fontSize, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { PositionBadge } from './PositionBadge';
 
@@ -40,7 +41,10 @@ export function PlayerChip({
   testID,
 }: PlayerChipProps) {
   const t = useT();
+  // Settings → "Show names instead of numbers": the circle shows the name, the pill the number.
+  const namesFirst = useAppStore((s) => s.chipLabel) === 'name';
   const d = Math.max(size, touchTarget);
+  const shortName = player.lastName || player.firstName;
   const primary = player.positions[0];
   const label =
     accessibilityLabel ??
@@ -61,12 +65,29 @@ export function PlayerChip({
           lifted && styles.lifted,
         ]}
       >
-        <Text style={[styles.number, { fontSize: Math.round(d * 0.36) }]}>{player.number}</Text>
+        {namesFirst ? (
+          <Text
+            style={[
+              styles.nameInCircle,
+              // Never below the caption size; narrower than the circle so text stays inside it.
+              {
+                fontSize: Math.max(fontSize.xs, Math.round(d * 0.2)),
+                maxWidth: Math.round(d * 0.8),
+              },
+            ]}
+            numberOfLines={2}
+            testID={testID ? `${testID}-name` : undefined}
+          >
+            {shortName}
+          </Text>
+        ) : (
+          <Text style={[styles.number, { fontSize: Math.round(d * 0.36) }]}>{player.number}</Text>
+        )}
         {primary ? <PositionBadge position={primary} /> : null}
       </View>
       {showName ? (
         <Text style={styles.name} numberOfLines={1}>
-          {player.lastName || player.firstName}
+          {namesFirst ? t.player.numberTag(player.number) : shortName}
         </Text>
       ) : null}
     </View>
@@ -116,6 +137,12 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   number: { ...typography.jersey, color: colors.text, lineHeight: undefined },
+  nameInCircle: {
+    ...typography.label,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: undefined,
+  },
   // Dark pill behind the name so it stays AA-readable on the orange court (white on orange ≈ 2.9:1).
   name: {
     ...typography.caption,

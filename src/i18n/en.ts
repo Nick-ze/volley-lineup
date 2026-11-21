@@ -71,6 +71,7 @@ export const en = {
   player: {
     chipLabel: (number: number, name: string, position: string) =>
       `Number ${number}, ${name}, ${position}`,
+    numberTag: (number: number) => `#${number}`,
   },
   placeholder: {
     comingSoon: 'This screen is coming soon.',
