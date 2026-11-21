@@ -5,6 +5,7 @@ import {
   MAX_SUBS_PER_SET,
   previewSub,
   replaySet,
+  replaySteps,
   setPointOf,
   setWinnerOf,
   targetPoints,
@@ -418,5 +419,34 @@ describe('addPoint timestamps (v4)', () => {
     expect(addPoint(base, 'them', '2026-11-21T10:00:00.000Z').events).toEqual([
       { type: 'point', winner: 'them', at: '2026-11-21T10:00:00.000Z' },
     ]);
+  });
+});
+
+describe('replaySteps — every event with the state it was played in', () => {
+  it('gives each rally its rotation, serving side and court before any side-out', () => {
+    const set = withEvents([pt('them'), pt('us'), sub('p2', 'p8'), sub('p9', 'p10'), pt('us')], {
+      weServeFirst: false,
+    });
+    const steps = replaySteps(set, players);
+    expect(steps.map((s) => [s.type, s.eventIndex])).toEqual([
+      ['point', 0],
+      ['point', 1],
+      ['sub', 2],
+      ['sub', 3],
+      ['point', 4],
+    ]);
+    const rallies = steps.flatMap((s) => (s.type === 'point' ? [s] : []));
+    expect(rallies.map((r) => [r.rotation, r.servingSide, r.slots[1]])).toEqual([
+      [1, 'them', 'p1'],
+      [1, 'them', 'p1'],
+      [2, 'us', 'p8'],
+    ]);
+    expect(steps.flatMap((s) => (s.type === 'sub' ? [s.applied] : []))).toEqual([true, false]);
+  });
+
+  it('leaves the live state unchanged', () => {
+    const set = withEvents([pt('us'), pt('them'), pt('us')]);
+    expect(replaySteps(set, players)).toHaveLength(3);
+    expect(replaySet(set, players).score).toEqual({ us: 2, them: 1 });
   });
 });
