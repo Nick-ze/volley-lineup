@@ -23,20 +23,48 @@ Deployed by `.github/workflows/deploy-pages.yml` on every push to `main`. One-ti
 
 ## Install on Android (APK)
 
-An installable APK is built automatically by `.github/workflows/android-apk.yml` on every push to `main` and published as the GitHub release **android-latest**.
+The app works fully offline. All data is stored on your phone.
 
-1. On your Android phone, open **https://github.com/Nick-ze/volley-lineup/releases/tag/android-latest** (sign in to GitHub first while the repository is private — only people with access to the repo can download it).
-2. Under **Assets**, tap **`volley-lineup.apk`** to download it.
-3. Open the downloaded file. If Android asks, allow your browser / file manager to **install unknown apps** (Settings → Apps → Special app access → Install unknown apps).
-4. Tap **Install**, then open **Volley Lineup**.
+### Download
 
-To update, download the newest APK from the same link and install it over the old one — your data stays on the phone. (Use Settings → Export first if you want a backup.)
+1. On your Android phone, open this repository on GitHub.
+2. Tap **Releases** (on the right on desktop, further down the page on mobile).
+3. Open the newest release (e.g. `v1.0.0`).
+4. Under **Assets**, tap `volley-lineup-<version>.apk` to download it.
 
-Notes:
+> The repository is private, so you need to be signed in to GitHub with access to it.
 
-- The APK is signed with a debug key, which is fine for installing directly but not for the Play Store. If Play Protect warns about an unknown developer, choose **Install anyway**.
-- You can also build one yourself: Actions → **Android APK** → **Run workflow**, then download the `volley-lineup-apk` artifact from the run.
-- iPhone: there is no installable file; use Expo Go (below) or the web app.
+### Install
+
+1. Open the downloaded file (from the download notification or the **Files** app → **Downloads**).
+2. If Android asks, tap **Settings** and turn on **Allow from this source** for your browser or Files app, then go back.
+3. Tap **Install**.
+4. Tap **Open**. Volley Lineup is now on your home screen.
+
+### Update to a new version
+
+1. Download the newer APK from **Releases** the same way.
+2. Open it and tap **Update**. Your teams and players stay saved.
+
+> Before updating, it's a good idea to back up your data: **Settings → Export**.
+
+### Troubleshooting
+
+- **"App not installed"**: an older version signed with a different key is installed. Export your data, uninstall the old app, install the new one, then import your data.
+- **Play Protect warning**: this appears because the app isn't from the Play Store. Tap **More details → Install anyway**.
+- **Can't find the file**: check **Files → Downloads**, or download it again from Releases.
+
+### Publishing a new version (maintainers)
+
+1. Bump `version` in both `app.json` and `package.json` (e.g. `1.0.1`) and merge to `main`.
+2. Tag that commit and push the tag:
+   ```bash
+   git tag v1.0.1
+   ```
+   ```bash
+   git push origin v1.0.1
+   ```
+3. The **Android APK** workflow builds `volley-lineup-1.0.1.apk` (about 30 minutes) and publishes the release `v1.0.1`. The Android `versionCode` is derived from the version, so the new APK installs as an update.
 
 ## Run it on your phone (Expo Go)
 

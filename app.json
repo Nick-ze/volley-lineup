@@ -15,8 +15,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "package": "com.volleylineup.app",
-      "versionCode": 1
+      "package": "com.volleylineup.app"
     },
     "web": {
       "output": "single",
