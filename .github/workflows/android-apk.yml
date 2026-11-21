@@ -3,13 +3,19 @@ name: Android APK
 # Builds an installable Android APK.
 # - Push a tag like v1.2.3 → release "v1.2.3" with asset volley-lineup-1.2.3.apk.
 #   The tag must match "version" in app.json and package.json.
-# - Manual run (Actions → Android APK → Run workflow) → build only (workflow artifact), no release.
+# - Manual run (Actions → Android APK → Run workflow) → build only (workflow artifact), or, with
+#   "release" ticked, also publish release v<version> and create its tag on the selected commit.
 # The APK is signed with the Expo template's fixed debug key: fine for sideloading and for
 # updating over earlier versions, not for the Play Store.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish GitHub release v<version from app.json> (creates the tag on the selected commit)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -73,11 +79,14 @@ jobs:
           name: volley-lineup-apk
           path: ${{ steps.apk.outputs.file }}
       - name: Publish GitHub release
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' || inputs.release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.file }}" \
-            --title "Volley Lineup $GITHUB_REF_NAME" \
-            --notes "Android APK for Volley Lineup $GITHUB_REF_NAME. Download **${{ steps.apk.outputs.file }}** under Assets and open it on your Android phone. See the README section \"Install on Android (APK)\"." \
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "::error::Release $TAG already exists"; exit 1; fi
+          gh release create "$TAG" "${{ steps.apk.outputs.file }}" \
+            --target "$GITHUB_SHA" \
+            --title "Volley Lineup $TAG" \
+            --notes "Android APK for Volley Lineup $TAG. Download **${{ steps.apk.outputs.file }}** under Assets and open it on your Android phone. See the README section \"Install on Android (APK)\"." \
             --latest
