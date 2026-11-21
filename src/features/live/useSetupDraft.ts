@@ -9,10 +9,17 @@ import {
   type SetupSources,
 } from '@/domain/matchFlow';
 import { applyPresetToSet, filledCount, type PresetLineup } from '@/domain/presets';
-import { changeFormation, type FormationChange } from '@/domain/formationChange';
+import { changeFormation } from '@/domain/formationChange';
+import { newOffPositionPlacements, type OffPositionPlacement } from '@/domain/placementCheck';
 import { rotateStarters, type RotateDirection } from '@/domain/roles';
 import type { Formation, Match, Player, SetLineup, SetNumber } from '@/domain/types';
 import { useAppStore } from '@/store';
+
+/** A formation change waiting for confirmation: the changed lineup and who would play off position. */
+export interface PendingFormation {
+  set: SetLineup;
+  offPosition: OffPositionPlacement[];
+}
 
 export interface SetupDraft {
   /** The lineup being set up (not stored until Start / Edit lineup). */
@@ -33,7 +40,7 @@ export interface SetupDraft {
    * `confirmFormation` / `cancelFormation`.
    */
   changeFormation: (change: Partial<Pick<Formation, 'system' | 'order'>>) => void;
-  pendingFormation: FormationChange | null;
+  pendingFormation: PendingFormation | null;
   confirmFormation: () => void;
   cancelFormation: () => void;
   /** Forget local lineup changes (after saving); a serve choice made here is kept. */
@@ -59,7 +66,7 @@ export function useSetupDraft(
   const [lineup, setLineup] = useState<SetLineup | null>(null);
   const [serve, setServe] = useState<boolean | null>(null);
   const [skipped, setSkipped] = useState<string[]>([]);
-  const [pending, setPending] = useState<FormationChange | null>(null);
+  const [pending, setPending] = useState<PendingFormation | null>(null);
   const base = lineup ?? stored ?? emptySetLineup(setNumber);
   // Reached from the previous set: the rotating default, unless toggled here.
   const weServeFirst =
@@ -80,9 +87,11 @@ export function useSetupDraft(
     setServe,
     rotate: (direction) => setLineup(rotateStarters(draft, direction)),
     changeFormation: (change) => {
-      const result = changeFormation(draft, change, players);
-      if (result.offPosition.length > 0) setPending(result);
-      else if (result.set !== draft) setLineup(result.set);
+      const set = changeFormation(draft, change, players);
+      if (set === draft) return;
+      const offPosition = newOffPositionPlacements(draft, set, players);
+      if (offPosition.length > 0) setPending({ set, offPosition });
+      else setLineup(set);
     },
     pendingFormation: pending,
     confirmFormation: () => {

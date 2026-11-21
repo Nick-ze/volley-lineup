@@ -1,16 +1,16 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import type { FormationChange } from '@/domain/formationChange';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
+import type { PendingFormation } from './useSetupDraft';
 
 export interface FormationConfirmProps {
   /** The formation change waiting for confirmation, or null (dialog hidden). */
-  change: FormationChange | null;
+  change: PendingFormation | null;
   playersById: Map<string, Player>;
   onConfirm: () => void;
   onCancel: () => void;

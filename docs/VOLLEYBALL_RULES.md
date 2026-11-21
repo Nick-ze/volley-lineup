@@ -2,7 +2,7 @@
 
 What the rules of indoor volleyball say about everything this app models (lineups, rotations, roles, libero, substitutions, scoring), plus the coaching conventions the app follows. Use it to check the app and as a reference for future work. §6 lists testable invariants and whether the code meets them today.
 
-Last checked: 2026-11-21, against the code on `main` as it will be with both v5 PRs merged (formation roles on every court incl. the lineup builder, formation controls with confirmation, point-tag player checks).
+Last checked: 2026-11-21, against the code on `main` after the v5 lineup builder (#40) plus this branch (formation roles on every court incl. the lineup builder, formation controls with confirmation, point-tag player checks).
 
 ## Sources and how to read the citations
 
@@ -318,9 +318,9 @@ Since v5 (data model v6) a set has a **formation** (`types.ts` `Formation`: syst
 57. **5-1: three front-row attackers when the setter is in the back row (rotations 1, 6, 5), two when in front (4, 3, 2).** PASS (by construction). Follows from 53–56: with S at 1, 5 or 6 the front row holds one OH, one MB and the OPP.
 58. **6-2: one setter is always in the back row, so the rotations are named 1, 6, 5 twice.** PASS. `roles.ts` `formationRotation` (back-row setter spot), `formationSteps.ts` `formationLabels`; `src/features/rotation/RotationStepper.tsx` tells the two apart ("first / second time").
 59. **The formation turns with the players** (rotating before the set, and rotation by rotation in the viewer), so everyone keeps their role. PASS. `roles.ts` `rotateStarters` (moves `setterAt` like a player), `formationSteps.ts` `rotateFormation`, `stepSpotRoles`.
-60. **Every spot has its role, also when empty**, on every court. PASS. Rotation viewer, starters overview and team starters (`src/features/rotation/RotationCourt.tsx` `spotRoles`, `formationSteps.ts` `stepSpotRoles`), print sheet (`lineupSheet.ts` `roleTag`), live court (always six players; `LiveState.roles`) and, with both v5 PRs merged, the lineup builder court (`src/features/lineup/`).
+60. **Every spot has its role, also when empty**, on every court. PASS. Rotation viewer, starters overview and team starters (`src/features/rotation/RotationCourt.tsx` `spotRoles`, `formationSteps.ts` `stepSpotRoles`), print sheet (`lineupSheet.ts` `roleTag`), live court (always six players; `LiveState.roles`) and the lineup builder court (`src/features/lineup/LineupCourt.tsx`).
 61. **The formation is locked once a set is played**, like the starting six. PASS. `roles.ts` `setFormation`, `rotateStarters` (`isLineupLocked`).
-62. **A player on a spot whose role is none of their positions is "off position"**: legal, but confirmed and marked with `*`. PASS. `roles.ts` `isOffPosition`; the `*` via `OffPositionMark` on every court and `<span class="off">` in the print sheet. A formation change in the live next-set setup that puts starters onto such roles asks first and Cancel keeps the old formation (`formationChange.ts` `changeFormation`, `src/features/live/FormationConfirm.tsx`); placing a player in the lineup builder asks the same way (with both v5 PRs merged).
+62. **A player on a spot whose role is none of their positions is "off position"**: legal, but confirmed and marked with `*`. PASS. `roles.ts` `isOffPosition`; the `*` via `OffPositionMark` on every court and `<span class="off">` in the print sheet. A formation change in the live next-set setup that puts starters onto such roles asks first and Cancel keeps the old formation (`formationChange.ts` `changeFormation`, `placementCheck.ts` `newOffPositionPlacements`, `src/features/live/FormationConfirm.tsx`); placing a player or changing the formation in the lineup builder asks the same way (`placementCheck.ts` `newOffPositionPlacements`, `src/features/lineup/PlacementConfirm.tsx`).
 
 ### Summary of non-PASS checks
 
