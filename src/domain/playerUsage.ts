@@ -5,15 +5,20 @@
  * history or leave the set unplayable). Unplayed sets just lose the player.
  */
 import { removePlayer } from './lineupEditing';
-import { COURT_POSITIONS, type Match, type SetLineup } from './types';
+import { COURT_POSITIONS, type Match, type SetEvent, type SetLineup } from './types';
 
-/** True when the player is a starter, the libero or part of a substitution in this set. */
+/**
+ * True when the player is a starter, the libero, part of a substitution, or named in a point tag
+ * (v4) in this set.
+ */
 export function isPlayerInSet(set: SetLineup, playerId: string): boolean {
   return (
     COURT_POSITIONS.some((p) => set.slots[p] === playerId) ||
     set.liberoId === playerId ||
-    set.events.some(
-      (e) => e.type === 'sub' && (e.outPlayerId === playerId || e.inPlayerId === playerId),
+    set.events.some((e) =>
+      e.type === 'sub'
+        ? e.outPlayerId === playerId || e.inPlayerId === playerId
+        : e.playerId === playerId,
     )
   );
 }
@@ -26,21 +31,27 @@ export function isPlayerInPlayedSet(matches: readonly Match[], playerId: string)
 }
 
 /**
- * Removes every reference to a player from a set: court, libero, `liberoReplaces` and any
- * substitution events with that player (defensive — the UI blocks deleting players of played
- * sets). Returns the same object when the player isn't referenced.
+ * Removes every reference to a player from a set: court, libero, `liberoReplaces`, any
+ * substitution events with that player, and the player of point tags (the tag's kind is kept).
+ * Defensive — the UI blocks deleting players of played sets. Returns the same object when the
+ * player isn't referenced.
  */
 export function removePlayerEverywhere(set: SetLineup, playerId: string): SetLineup {
   const cleaned = removePlayer(set, playerId);
   const liberoReplaces = cleaned.liberoReplaces.filter((id) => id !== playerId);
-  const events = cleaned.events.filter(
-    (e) => e.type !== 'sub' || (e.outPlayerId !== playerId && e.inPlayerId !== playerId),
-  );
-  if (
-    cleaned === set &&
-    liberoReplaces.length === set.liberoReplaces.length &&
-    events.length === set.events.length
-  ) {
+  let touched = false;
+  const events = cleaned.events.flatMap((e): SetEvent[] => {
+    if (e.type === 'sub') {
+      if (e.outPlayerId !== playerId && e.inPlayerId !== playerId) return [e];
+      touched = true;
+      return [];
+    }
+    if (e.playerId !== playerId) return [e];
+    touched = true;
+    const { playerId: _removed, ...rest } = e;
+    return [rest];
+  });
+  if (cleaned === set && liberoReplaces.length === set.liberoReplaces.length && !touched) {
     return set;
   }
   return { ...cleaned, liberoReplaces, events };

@@ -353,6 +353,29 @@ describe('migrations', () => {
     expect(migrateStore(null, 2)).toBeNull();
   });
 
+  it('opens v3 data (v2.x app) unchanged: untagged points stay valid', () => {
+    const v3 = {
+      profiles: [],
+      presets: [],
+      language: 'en',
+      matches: [
+        {
+          id: 'm',
+          sets: [
+            {
+              events: [
+                { type: 'point', winner: 'us' },
+                { type: 'sub', outPlayerId: 'a', inPlayerId: 'b' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(migrateStore(v3, 3)).toEqual(v3);
+    expect(STORE_VERSION).toBe(4);
+  });
+
   it('remembers the chosen language', () => {
     store().setLanguage('de');
     expect(store().language).toBe('de');

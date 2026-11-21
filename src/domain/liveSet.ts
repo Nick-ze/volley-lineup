@@ -184,9 +184,12 @@ function withEvent(set: SetLineup, event: SetEvent): SetLineup {
   return { ...set, events: [...set.events, event] };
 }
 
-/** A new set with a rally won by `winner` appended. */
-export function addPoint(set: SetLineup, winner: Side): SetLineup {
-  return withEvent(set, { type: 'point', winner });
+/** A new set with a rally won by `winner` appended (v4: `at` = ISO time it was recorded). */
+export function addPoint(set: SetLineup, winner: Side, at?: string): SetLineup {
+  return withEvent(
+    set,
+    at === undefined ? { type: 'point', winner } : { type: 'point', winner, at },
+  );
 }
 
 /** A new set with a substitution appended (`outPlayerId` leaves, `inPlayerId` takes their spot). */

@@ -257,3 +257,61 @@ interface LineupPreset {
 // ExportFile: + presets: LineupPreset[], schemaVersion: 3 (v1/v2 files upgraded on import)
 // Store: version 3 (v2 → v3 adds presets: [])
 ```
+
+---
+
+# v3 plan — Match day & stats
+
+v2.2 shipped as `v2.2.0`. v3 makes live mode follow a whole match, adds statistics derived from the event log, and optional point tagging.
+
+## 15. v3 features
+
+1. **Whole-match live mode**
+   - Live mode follows the match, not one set: the set score (e.g. 2:1) is shown next to the rally score.
+   - A set is won at 25 (15 in set 5) with a 2-point lead. Then live mode shows "Set won by us / them" with **Start set N+1** and **Undo last point** (no more rallies in a won set).
+   - Starting the next set opens its lineup. If that set is empty, the manager picks: team starters / a preset / a copy of the previous set. The serve choice for the new set is asked there, then live mode continues with it.
+   - The match ends when a side has won 3 sets (best of 5). Live mode then shows a **match summary**: final result, the score of every set, and the duration when timestamps exist.
+   - Undo works across a set end: undoing the winning point re-opens the set.
+   - The match list and the match header show the result: "3:1 won", "1:3 lost", "in progress" (or nothing when not started).
+2. **Statistics** (from data already recorded; no extra input)
+   - Per set and per match: points won / lost in each of the 6 rotations, side-out % per rotation (rallies won when receiving ÷ rallies received), break points per rotation (points won on our serve).
+   - Per player, for a match and for the team's season: sets started, sets played, times subbed in / out, serve turns, points won on their serve; plus the tag totals from item 3 (kills, aces, blocks, errors).
+   - A **Stats** tab in the team nav bar (Roster · Matches · Presets · Starters · Stats) with a season overview (W/L record, set ratio) and per-player tables; a **Stats** button on the match screen for that match.
+   - All calculation is pure domain code (`src/domain/stats.ts`) replayed from the event log, 100% tested.
+3. **Optional point tagging**
+   - After "Point us": optional chips kill / ace / block / opponent error, with a player picker for kill / ace / block. After "Point them": our error (optional player) / their kill / their ace.
+   - Never required; one tap (or simply the next rally) skips it. Tags feed per-player stats.
+4. **Polish**: "Delete all data" mentions saved lineups; `docs/WORKER_BRIEF.md` is current; the print sheet has an optional "with results" section (set scores) for played matches; everything in English and German.
+
+## 16. v3 data model changes
+
+```ts
+/** v4: optional tag of a rally (what decided it). */
+type PointKind =
+  | 'kill' | 'ace' | 'block' | 'opponentError'   // winner: 'us'
+  | 'ourError' | 'opponentKill' | 'opponentAce'; // winner: 'them'
+type SetEvent =
+  | {
+      type: 'point';
+      winner: Side;
+      kind?: PointKind;  // must belong to the winner
+      playerId?: string; // only with kill / ace / block / ourError; a player of the team
+      at?: string;       // ISO time the rally was recorded (match duration)
+    }
+  | { type: 'sub'; outPlayerId: string; inPlayerId: string };
+// ExportFile.schemaVersion: 4 (v1–v3 files upgraded on import; old events stay valid)
+// Store: version 4 (v3 → v4 needs no data change; old events stay valid)
+```
+
+Set and match results are derived by pure functions (`src/domain/matchState.ts`): `setScore`, `setWinner`, `getMatchState(match) → { sets, setsWon, winner, status, currentSetNumber, durationMs }`. Nothing about the result is stored.
+
+## 17. v3 acceptance checklist
+
+- [ ] A full 5-set match can be played in live mode from set 1 to the match summary without leaving live mode, and the set / match results are correct (tests: 3:0, 3:2 with a 15-point tiebreak, deuce sets).
+- [ ] Undo works across a set end (it re-opens the set).
+- [ ] Rotation stats (points won / lost, side-out %, break points per rotation) are correct for a scripted match (tests with literal expected numbers).
+- [ ] Player stats are correct for a scripted match with substitutions and libero swaps (tests).
+- [ ] Point tagging is optional, and its per-player totals are correct.
+- [ ] v3.0.0 opens v2.x data (store v3) and v1–v3 export files without loss; export / import round trip with tags restores exactly.
+- [ ] Phone layout (390×844): live controls and the set / match score fit without scrolling; the stats tables are readable at 375 px. EN + DE.
+- [ ] Lint, typecheck and tests pass in CI; `src/domain` 100%.

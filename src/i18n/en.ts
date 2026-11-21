@@ -6,10 +6,13 @@
 import { language } from './en/language';
 import { lineup } from './en/lineup';
 import { live } from './en/live';
+import { match } from './en/match';
 import { presets } from './en/presets';
 import { print } from './en/print';
 import { profile } from './en/profile';
 import { roster } from './en/roster';
+import { stats } from './en/stats';
+import { tags } from './en/tags';
 import { rotation } from './en/rotation';
 import { transfer } from './en/transfer';
 import type { Widen } from './types';
@@ -47,6 +50,7 @@ export const en = {
     preset: 'Preset',
     teamStarters: 'Team starters',
     live: 'Live',
+    matchStats: 'Match stats',
     settings: 'Settings',
   },
   positions: {
@@ -80,6 +84,9 @@ export const en = {
   language,
   profile,
   presets,
+  match,
+  stats,
+  tags,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */

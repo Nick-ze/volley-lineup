@@ -41,6 +41,10 @@ describe('parentRoute', () => {
       params: { matchId: 'm1', set: '3' },
     });
     expect(parentRoute('match/[matchId]/live', {}, lookup)).toBe('/teams');
+    expect(parentRoute('match/[matchId]/stats', { matchId: 'm1' }, lookup)).toEqual({
+      pathname: '/match/[matchId]',
+      params: { matchId: 'm1' },
+    });
   });
 
   it('goes back from a preset or the team starters to that tab of the team', () => {
