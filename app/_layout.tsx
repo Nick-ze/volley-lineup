@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { HeaderBack } from '@/components/HeaderBack';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { parentRoute } from '@/lib/parentRoute';
 import { useAppStore } from '@/store';
 import { colors } from '@/theme';
@@ -27,6 +27,7 @@ const teamIdOfMatch = (matchId: string) =>
   useAppStore.getState().matches.find((m) => m.id === matchId)?.teamId;
 
 export default function RootLayout() {
+  const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
 
   return (

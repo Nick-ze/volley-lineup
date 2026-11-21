@@ -4,7 +4,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import { PlayerChip } from '@/components';
 import type { PlayerLocation } from '@/domain/lineupEditing';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { dragActivation } from '@/lib/dragActivation';
 
 import { CHIP_SIZE, DRAG_GHOST_OPACITY } from '../constants';
@@ -30,6 +30,7 @@ export function DraggablePlayer({
   accessibilityLabel,
   testID,
 }: DraggablePlayerProps) {
+  const t = useT();
   const drag = useDrag();
   const pan = usePanGesture({
     minDistance: dragActivation.minDistance,

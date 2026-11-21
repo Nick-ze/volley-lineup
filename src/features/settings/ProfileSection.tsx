@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';
 import { colors, radius, spacing, typography } from '@/theme';
 
@@ -10,6 +10,7 @@ import { Section } from './Section';
 
 /** Shows the current profile and goes back to the profile picker. */
 export function ProfileSection() {
+  const t = useT();
   const router = useRouter();
   const profile = useAppStore(selectCurrentProfile);
   const selectProfile = useAppStore((s) => s.selectProfile);

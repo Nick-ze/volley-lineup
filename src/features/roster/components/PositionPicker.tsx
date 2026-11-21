@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { makePrimaryPosition, togglePosition } from '@/domain/roster';
 import { ALL_POSITIONS, type Position } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 import { ChoiceChip } from './ChoiceChip';
@@ -16,6 +16,7 @@ export interface PositionPickerProps {
 
 /** Multi-select of positions; the first selected is primary and can be changed. */
 export function PositionPicker({ value, onChange, error }: PositionPickerProps) {
+  const t = useT();
   const s = t.roster.player;
   return (
     <View style={styles.wrap}>

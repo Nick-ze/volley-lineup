@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 
 import type { SetNumber } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 import { Message } from './Message';
 import { resolveSet, setNumbersOf } from './params';
@@ -18,6 +18,7 @@ export interface RotationViewerProps {
 
 /** Rotation viewer body: set tabs + the rotation panel of the selected set. */
 export function RotationViewer({ matchId, setParam, onSelectSet }: RotationViewerProps) {
+  const t = useT();
   const { match, sets, playersById } = useMatchLineups(matchId);
   const set = resolveSet(setParam, sets);
   useCorrectSetParam(setParam, set?.setNumber, onSelectSet);

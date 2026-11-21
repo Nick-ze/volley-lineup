@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore, useMatchesForTeam } from '@/store';
 
 import { useConfirm } from '../hooks/useConfirm';
@@ -17,6 +17,7 @@ export interface MatchesTabProps {
 
 /** The team's matches, newest first. */
 export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps) {
+  const t = useT();
   const matches = useMatchesForTeam(teamId);
   const deleteMatch = useAppStore((s) => s.deleteMatch);
   const { ask, dialogProps } = useConfirm();

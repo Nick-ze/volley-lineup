@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { PositionBadge } from './PositionBadge';
@@ -36,6 +36,7 @@ export function PlayerChip({
   accessibilityHint,
   testID,
 }: PlayerChipProps) {
+  const t = useT();
   const d = Math.max(size, touchTarget);
   const primary = player.positions[0];
   const label =

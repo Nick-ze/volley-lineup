@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { Screen } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, typography } from '@/theme';
 
 import { DeleteAllSection } from './DeleteAllSection';
@@ -14,6 +14,7 @@ import { Section } from './Section';
 
 /** Settings: switch profile, export, import, delete all data, app version. */
 export function SettingsScreen() {
+  const t = useT();
   const version = Constants.expoConfig?.version ?? t.transfer.about.unknownVersion;
   return (
     <Screen testID="settings-screen">

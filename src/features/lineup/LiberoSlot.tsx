@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
@@ -10,6 +10,7 @@ import type { LineupEditor } from './useLineupEditor';
 
 /** The libero spot next to the court: a drop zone holding at most one player. */
 export function LiberoSlot({ editor }: { editor: LineupEditor }) {
+  const t = useT();
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'libero' });
   const libero = playerById(set.liberoId);

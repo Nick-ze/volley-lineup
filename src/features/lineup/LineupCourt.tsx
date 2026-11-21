@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { Court } from '@/components';
 import type { CourtPosition } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, typography } from '@/theme';
 
 import { EMPTY_SLOT_SIZE } from './constants';
@@ -16,6 +16,7 @@ const playerName = (p: { firstName: string; lastName: string }) =>
 
 /** The court with six drop slots. Slots with validation errors get a red outline. */
 export function LineupCourt({ editor }: { editor: LineupEditor }) {
+  const t = useT();
   const drag = useDrag();
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
   // Empty slots already look empty, so INCOMPLETE is only listed in the panel, not outlined.

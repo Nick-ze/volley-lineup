@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** Two-option switch: we serve first / opponent serves first. */
@@ -11,6 +11,7 @@ export function ServeToggle({
   weServeFirst: boolean;
   onChange(value: boolean): void;
 }) {
+  const t = useT();
   const option = (value: boolean, label: string, testID: string) => {
     const active = weServeFirst === value;
     return (

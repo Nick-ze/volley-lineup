@@ -8,7 +8,7 @@ import {
   type TeamFormField,
   type TeamFormValue,
 } from '@/domain/roster';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
 import { formStyles as styles } from './styles';
@@ -23,6 +23,7 @@ export interface TeamFormProps {
 
 /** Create / edit a team (name + optional season). */
 export function TeamForm({ initial, submitLabel, onSubmit, onCancel }: TeamFormProps) {
+  const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
   const [season, setSeason] = useState(initial?.season ?? '');
   const [errors, setErrors] = useState<FormErrors<TeamFormField>>({});
@@ -39,7 +40,7 @@ export function TeamForm({ initial, submitLabel, onSubmit, onCancel }: TeamFormP
         label={t.roster.teams.name}
         value={name}
         onChangeText={setName}
-        error={errorText(errors.name)}
+        error={errorText(t, errors.name)}
         autoFocus
       />
       <TextField
@@ -47,7 +48,7 @@ export function TeamForm({ initial, submitLabel, onSubmit, onCancel }: TeamFormP
         value={season}
         onChangeText={setSeason}
         placeholder={t.roster.teams.seasonPlaceholder}
-        error={errorText(errors.season)}
+        error={errorText(t, errors.season)}
         onSubmitEditing={submit}
       />
       <View style={styles.actions}>

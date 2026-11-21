@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { ROTATION_COUNT, ROTATION_NUMBERS, type RotationNumber } from '@/domain/rotation';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 import { COURT_MAX_WIDTH } from './layout';
@@ -16,6 +16,7 @@ export interface RotationStepperProps {
 
 /** Prev / "Rotation n of 6" / Next, plus a 1–6 row to jump straight to a rotation. */
 export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: RotationStepperProps) {
+  const t = useT();
   return (
     <View style={styles.wrap}>
       <View style={styles.nav}>

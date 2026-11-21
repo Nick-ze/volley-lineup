@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SET_NUMBERS, type SetNumber } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SetTabsProps {
@@ -13,6 +13,7 @@ export interface SetTabsProps {
 
 /** Tabs for sets 1–5. The selected set is yellow. */
 export function SetTabs({ selected, existing, onSelect }: SetTabsProps) {
+  const t = useT();
   return (
     <View style={styles.row} accessibilityRole="tablist" accessibilityLabel={t.lineup.setTabs}>
       {SET_NUMBERS.map((n) => {

@@ -6,11 +6,12 @@ import { HeaderButton } from '@/features/roster/components/HeaderButton';
 import { ProfileHeader } from '@/features/roster/components/ProfileHeader';
 import { TeamList } from '@/features/roster/components/TeamList';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';
 
 /** `/teams` — the selected profile's teams. */
 export default function TeamsScreen() {
+  const t = useT();
   const router = useRouter();
   const profile = useAppStore(selectCurrentProfile);
   useEffect(markStartupHandled, []);

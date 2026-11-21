@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore, usePlayersForTeam } from '@/store';
 
 import { PlayerRow } from './PlayerRow';
@@ -15,6 +15,7 @@ export interface RosterTabProps {
 
 /** Players sorted by jersey number, with quick active / injured toggle. */
 export function RosterTab({ teamId, onAddPlayer, onEditPlayer }: RosterTabProps) {
+  const t = useT();
   const players = usePlayersForTeam(teamId);
   const updatePlayer = useAppStore((s) => s.updatePlayer);
 

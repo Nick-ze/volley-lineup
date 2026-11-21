@@ -9,7 +9,7 @@ import {
   type RotationNumber,
 } from '@/domain/rotation';
 import type { Player, SetLineup } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
 import { colors, spacing, typography } from '@/theme';
 
@@ -27,6 +27,7 @@ export interface RotationPanelProps {
 
 /** Court + stepper for one set. Remount (key by set number) to start again at rotation 1. */
 export function RotationPanel({ set, playersById }: RotationPanelProps) {
+  const t = useT();
   const isWide = useIsWide();
   const [rotation, setRotation] = useState<RotationNumber>(1);
   const [showSwaps, setShowSwaps] = useState(true);

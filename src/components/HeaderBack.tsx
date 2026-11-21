@@ -1,7 +1,7 @@
 import { useRouter, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, spacing, touchTarget, typography } from '@/theme';
 
 /**
@@ -9,6 +9,7 @@ import { colors, spacing, touchTarget, typography } from '@/theme';
  * (no history) it navigates to the screen's logical parent instead.
  */
 export function HeaderBack({ fallback }: { fallback: Href }) {
+  const t = useT();
   const router = useRouter();
   const onPress = () => {
     if (router.canGoBack()) router.back();

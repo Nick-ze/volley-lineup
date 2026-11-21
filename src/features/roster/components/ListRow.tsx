@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 import { listStyles as styles } from './styles';
 
@@ -26,6 +26,7 @@ export function ListRow({
   accessibilityLabel,
   testID,
 }: ListRowProps) {
+  const t = useT();
   return (
     <View style={styles.row}>
       <Pressable

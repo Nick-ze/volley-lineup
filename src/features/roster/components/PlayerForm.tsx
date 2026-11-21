@@ -2,7 +2,7 @@ import { View } from 'react-native';
 
 import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
 import { useConfirm } from '../hooks/useConfirm';
@@ -22,6 +22,7 @@ export interface PlayerFormProps {
 
 /** Add / edit a player with inline validation. */
 export function PlayerForm({ teamId, player, onDone, onDelete }: PlayerFormProps) {
+  const t = useT();
   const { form, set, errors, save } = usePlayerForm(teamId, player);
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.player;
@@ -32,20 +33,20 @@ export function PlayerForm({ teamId, player, onDone, onDelete }: PlayerFormProps
         label={s.firstName}
         value={form.firstName}
         onChangeText={(v) => set('firstName', v)}
-        error={errorText(errors.firstName)}
+        error={errorText(t, errors.firstName)}
         autoFocus={!player}
       />
       <TextField
         label={s.lastName}
         value={form.lastName}
         onChangeText={(v) => set('lastName', v)}
-        error={errorText(errors.lastName)}
+        error={errorText(t, errors.lastName)}
       />
       <TextField
         label={s.number}
         value={form.number}
         onChangeText={(v) => set('number', v)}
-        error={errorText(errors.number)}
+        error={errorText(t, errors.number)}
         keyboardType="number-pad"
         inputMode="numeric"
         maxLength={3}
@@ -53,7 +54,7 @@ export function PlayerForm({ teamId, player, onDone, onDelete }: PlayerFormProps
       <PositionPicker
         value={form.positions}
         onChange={(v) => set('positions', v)}
-        error={errorText(errors.positions)}
+        error={errorText(t, errors.positions)}
       />
       <ToggleRow label={s.activeLabel} value={form.active} onChange={(v) => set('active', v)} />
       <View style={formStyles.actions}>

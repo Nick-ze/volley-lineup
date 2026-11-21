@@ -2,9 +2,10 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Screen } from '@/components';
 import { StartersOverview } from '@/features/rotation';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 export default function StartersScreen() {
+  const t = useT();
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const router = useRouter();
   return (

@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import type { SetNumber } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
 import { spacing } from '@/theme';
 
@@ -16,6 +16,7 @@ export interface StartersOverviewProps {
 
 /** Every set's starting six side by side: a wrapping grid on wide screens, a swipeable row on phones. */
 export function StartersOverview({ matchId, onOpenSet }: StartersOverviewProps) {
+  const t = useT();
   const isWide = useIsWide();
   const { match, sets, playersById } = useMatchLineups(matchId);
   if (!match) return <Message text={t.rotation.matchNotFound} />;

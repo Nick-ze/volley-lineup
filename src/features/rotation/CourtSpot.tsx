@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PlayerChip } from '@/components';
 import type { CourtPosition, Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
@@ -28,6 +28,7 @@ export function CourtSpot({
   compact = false,
   liberoFor,
 }: CourtSpotProps) {
+  const t = useT();
   const row = isFrontRow ? t.rotation.frontRow : t.rotation.backRow;
   const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
   const testID = `spot-${position}`;

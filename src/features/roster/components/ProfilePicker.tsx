@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { ManagerProfile } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 
 import { useConfirm } from '../hooks/useConfirm';
@@ -17,6 +17,7 @@ type Editing = { mode: 'create' } | { mode: 'edit'; profile: ManagerProfile } | 
 
 /** Lists, creates, renames and deletes manager profiles. */
 export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => void }) {
+  const t = useT();
   const profiles = useAppStore((s) => s.profiles);
   const { addProfile, updateProfile, deleteProfile } = useAppStore.getState();
   const [editing, setEditing] = useState<Editing>(

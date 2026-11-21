@@ -1,16 +1,21 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ValidationIssue, ValidationResult } from '@/domain/lineupValidation';
-import { t } from '@/i18n/en';
+import { useT, type Strings } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
-function issueText<C extends string>(issue: ValidationIssue<C>, messages: Record<C, string>) {
+function issueText<C extends string>(
+  t: Strings,
+  issue: ValidationIssue<C>,
+  messages: Record<C, string>,
+) {
   const where = issue.positions?.length ? ` (${t.lineup.issuePositions(issue.positions)})` : '';
   return `${messages[issue.code]}${where}`;
 }
 
 /** Errors (red) and warnings (yellow) for the current set. Warnings never block. */
 export function ValidationPanel({ result }: { result: ValidationResult }) {
+  const t = useT();
   const { errors, warnings } = result;
   return (
     <View style={styles.box} testID="validation-panel" accessibilityLiveRegion="polite">
@@ -23,13 +28,13 @@ export function ValidationPanel({ result }: { result: ValidationResult }) {
       {errors.map((e, i) => (
         <Text key={`e${i}`} style={styles.error} testID={`validation-error-${e.code}`}>
           {t.lineup.errorPrefix}
-          {issueText(e, t.lineup.errors)}
+          {issueText(t, e, t.lineup.errors)}
         </Text>
       ))}
       {warnings.map((w, i) => (
         <Text key={`w${i}`} style={styles.warning} testID={`validation-warning-${w.code}`}>
           {t.lineup.warningPrefix}
-          {issueText(w, t.lineup.warnings)}
+          {issueText(t, w, t.lineup.warnings)}
         </Text>
       ))}
     </View>

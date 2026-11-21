@@ -9,7 +9,7 @@ import {
   type MatchFormField,
   type MatchFormInput,
 } from '@/domain/roster';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
 import { ChoiceChip } from './ChoiceChip';
@@ -23,6 +23,7 @@ export interface MatchFormProps {
 
 /** Opponent, date (YYYY-MM-DD, defaults to today) and home / away. */
 export function MatchForm({ onSubmit, onCancel }: MatchFormProps) {
+  const t = useT();
   const [opponent, setOpponent] = useState('');
   const [date, setDate] = useState(() => toIsoDate(new Date()));
   const [home, setHome] = useState(true);
@@ -41,14 +42,14 @@ export function MatchForm({ onSubmit, onCancel }: MatchFormProps) {
         label={s.opponent}
         value={opponent}
         onChangeText={setOpponent}
-        error={errorText(errors.opponent)}
+        error={errorText(t, errors.opponent)}
         autoFocus
       />
       <TextField
         label={s.date}
         value={date}
         onChangeText={setDate}
-        error={errorText(errors.date)}
+        error={errorText(t, errors.date)}
         maxLength={10}
       />
       <Text style={formStyles.sectionLabel}>{s.venue}</Text>

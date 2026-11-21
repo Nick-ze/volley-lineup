@@ -8,7 +8,7 @@ import {
   type ProfileFormField,
   type ProfileFormInput,
 } from '@/domain/roster';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { profileColors } from '@/theme';
 
 import { errorText } from '../errorText';
@@ -25,6 +25,7 @@ export interface ProfileFormProps {
 
 /** Create / rename a manager profile (name + avatar colour). */
 export function ProfileForm({ initial, submitLabel, onSubmit, onCancel }: ProfileFormProps) {
+  const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
   const [color, setColor] = useState(initial?.color ?? profileColors[0]);
   const [errors, setErrors] = useState<FormErrors<ProfileFormField>>({});
@@ -41,7 +42,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onCancel }: Profil
         label={t.roster.profiles.name}
         value={name}
         onChangeText={setName}
-        error={errorText(errors.name)}
+        error={errorText(t, errors.name)}
         onSubmitEditing={submit}
         autoFocus
       />

@@ -2,7 +2,7 @@ import type { ComponentRef, ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type { CourtPosition } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 /** Front row is drawn nearest the net (top), back row below. Left→right as seen from behind our baseline. */
@@ -36,6 +36,7 @@ export function Court({
   style,
   testID,
 }: CourtProps) {
+  const t = useT();
   const row = (positions: readonly CourtPosition[], isFrontRow: boolean) => (
     <View style={styles.row}>
       {positions.map((position) => {

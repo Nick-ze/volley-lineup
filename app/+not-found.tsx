@@ -2,11 +2,12 @@ import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button, Screen } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, typography } from '@/theme';
 
 /** Shown for unknown URLs (e.g. a mistyped deep link). */
 export default function NotFoundScreen() {
+  const t = useT();
   const router = useRouter();
   return (
     <Screen>
