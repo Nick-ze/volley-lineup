@@ -17,7 +17,15 @@ export function PrintChoiceDialog({ onChoose, onCancel }: PrintChoiceDialogProps
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <View style={styles.card} accessibilityViewIsModal testID="print-choice">
+        <View
+          style={styles.card}
+          role="dialog"
+          aria-modal
+          accessibilityViewIsModal
+          accessibilityLabel={s.title}
+          aria-label={s.title}
+          testID="print-choice"
+        >
           <Text style={styles.title} accessibilityRole="header">
             {s.title}
           </Text>

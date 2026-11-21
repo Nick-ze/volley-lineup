@@ -10,11 +10,12 @@ export const print: Strings['print'] = {
     title: 'Was möchtest du drucken?',
     body: 'Dieses Spiel hat Ergebnisse. Du kannst sie auf den Bogen setzen.',
     lineupsOnly: 'Nur Aufstellungen',
-    lineupsOnlyLabel: 'Nur die Aufstellungen drucken',
+    lineupsOnlyLabel: 'Nur Aufstellungen drucken',
     withResults: 'Mit Ergebnissen',
-    withResultsLabel: 'Die Aufstellungen mit Spielergebnis und Satzständen drucken',
+    withResultsLabel:
+      'Mit Ergebnissen: die Aufstellungen mit Spielergebnis und Satzständen drucken',
     cancel: 'Abbrechen',
-    cancelLabel: 'Drucken abbrechen',
+    cancelLabel: 'Abbrechen: nicht drucken',
   },
   sheet: {
     documentTitle: (team: string, opponent: string) => `Aufstellung · ${team} gegen ${opponent}`,

@@ -122,10 +122,11 @@ describe('print lineup sheet', () => {
     await renderRouter('./app', { initialUrl: '/match/m1' });
     await fireEvent.press(await screen.findByTestId('print-sheet'));
     expect(await screen.findByText('What do you want to print?')).toBeTruthy();
+    expect(screen.getByLabelText('What do you want to print?').props.testID).toBe('print-choice');
     expect(mockPrint).not.toHaveBeenCalled();
 
     await fireEvent.press(
-      screen.getByLabelText('Print the lineups with the match result and set scores'),
+      screen.getByLabelText('With results: print the lineups with the match result and set scores'),
     );
     await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
     const [html] = mockPrint.mock.calls[0] as [string];
@@ -140,12 +141,14 @@ describe('print lineup sheet', () => {
     playSome();
     await renderRouter('./app', { initialUrl: '/match/m1' });
     await fireEvent.press(await screen.findByTestId('print-sheet'));
-    await fireEvent.press(await screen.findByLabelText('Cancel printing'));
+    await fireEvent.press(await screen.findByLabelText('Cancel: don’t print'));
     expect(screen.queryByTestId('print-choice')).toBeNull();
     expect(mockPrint).not.toHaveBeenCalled();
 
     await fireEvent.press(screen.getByTestId('print-sheet'));
-    await fireEvent.press(await screen.findByLabelText('Print the lineups only'));
+    await fireEvent.press(
+      await screen.findByLabelText('Lineups only: print the lineups without results'),
+    );
     await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
     const [html] = mockPrint.mock.calls[0] as [string];
     expect(html).not.toContain('class="results"');
@@ -158,7 +161,18 @@ describe('print lineup sheet', () => {
       playSome();
       await renderRouter('./app', { initialUrl: '/match/m1' });
       await fireEvent.press(await screen.findByTestId('print-sheet'));
-      await fireEvent.press(await screen.findByText('Mit Ergebnissen'));
+      await screen.findByTestId('print-choice');
+      // Label in name (WCAG 2.5.3): every accessibility label starts with the visible text.
+      for (const [id, text] of [
+        ['print-with-results', 'Mit Ergebnissen'],
+        ['print-lineups-only', 'Nur Aufstellungen'],
+        ['print-cancel', 'Abbrechen'],
+      ]) {
+        expect(screen.getByTestId(id)).toHaveTextContent(text);
+        expect(screen.getByTestId(id).props.accessibilityLabel.startsWith(text)).toBe(true);
+      }
+      expect(screen.getByLabelText('Was möchtest du drucken?').props.testID).toBe('print-choice');
+      await fireEvent.press(screen.getByText('Mit Ergebnissen'));
       await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
       const [html] = mockPrint.mock.calls[0] as [string];
       expect(html).toContain('<h2>Ergebnis</h2>');

@@ -178,7 +178,8 @@ function renderResults(state: MatchState, labels: LineupSheetResultLabels): stri
   const line = (cls: string, label: string, value: string) =>
     `<div class="${cls}"><span class="label">${escapeHtml(label)}</span> ${escapeHtml(value)}</div>`;
   let duration = '';
-  if (state.durationMs !== null) {
+  // Under a minute there is nothing useful to show (no "0 min").
+  if (state.durationMs !== null && state.durationMs >= 60_000) {
     const { hours, minutes } = durationParts(state.durationMs);
     duration = line('duration', labels.duration, labels.durationValue(hours, minutes));
   }

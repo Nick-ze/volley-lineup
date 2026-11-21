@@ -330,6 +330,20 @@ describe('results section (v3)', () => {
     for (const n of [1, 2, 3, 4]) expect(out).toContain(`data-set="${n}"`);
   });
 
+  it('hides a duration under one minute and shows one of exactly a minute', () => {
+    const quick = (last: string): Match => ({
+      ...match,
+      sets: [played(1, 3, 1, { first: '2026-11-21T18:00:00.000Z', last })],
+    });
+    const html = (m: Match) =>
+      resultsOf(buildLineupSheetHtml({ match: m, team, players, labels, withResults: true }));
+    expect(html(quick('2026-11-21T18:00:59.999Z'))).not.toContain('Duration');
+    expect(html(quick('2026-11-21T18:00:59.999Z'))).not.toContain('0 min');
+    expect(html(quick('2026-11-21T18:01:00.000Z'))).toContain(
+      '<span class="label">Duration:</span> 1 min',
+    );
+  });
+
   it('prints a lost match as lost', () => {
     const lost: Match = {
       ...match,

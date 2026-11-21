@@ -20,11 +20,11 @@ Repository: `Nick-ze/volley-lineup` (GitHub). Base branch: `main`. Current state
   - `pointTags` — which `PointKind` belongs to which winner, which kinds name a player (`pointKindsFor`, `kindTakesPlayer`, `isValidPointTag`, `tagLastPoint`).
   - `presets` — saved lineups and team starters (apply, validate names, pre-fill new matches).
   - `exportSchema` (zod + file upgrades + merge), `lineupSheet` (print HTML; every user text HTML-escaped, #57).
-  - `stats` — all statistics, including tag totals (#92); being built by the v3 stats task.
+- **Being built in v3 (not on `main` yet)**: `src/domain/stats.ts` — all statistics, including the tag totals (#92) — and the team `stats` tab / `/match/[matchId]/stats` screen (the route exists as a placeholder).
 - **Store** (`src/store`) — one `useAppStore` (Zustand v5 + AsyncStorage persist): profiles, teams, players, matches, presets, `currentProfileId`, `language`, `hydrated`. Actions in `src/store/types.ts` (`add/update/delete` for each collection, `setLineup`, `addPreset/updatePreset/deletePreset/setStarters`, `replaceAll`, `resetAll`, `setLanguage`). Hooks in `src/store/hooks.ts` (`useTeamsForProfile`, `usePlayersForTeam`, `useMatchesForTeam`, `usePresetsForTeam`, `useStarters`, `useTeam`, `useMatch`, `usePlayer`, `usePreset`). **Never return a freshly built array/object from a `useAppStore` selector without `useShallow`** (infinite render loop) — use the hooks.
 - **Components** (`src/components`) — `Button` (primary / secondary / ghost / danger, `compact`), `Court`, `PlayerChip`, `PositionBadge`, `Screen`, `HeaderBack`, `ToggleRow`, `Placeholder`. In-app dialogs use RN `Modal` (see `src/features/roster/components/ConfirmDialog.tsx`); never `Alert.alert` (does nothing on web).
 - **Theme** (`src/theme`) — `colors`, `positionColors`, `profileColors`, `spacing`, `radius`, `touchTarget` (44), `wideBreakpoint`, `dialogMaxWidth`, `maxContentWidth`, `typography`, `fontSize`; `print.ts` is the light print theme. Text on orange/yellow is `colors.onPrimary`.
-- **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language). Also `src/lib/id.ts` `createId()`, `src/lib/useIsWide.ts`.
+- **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language). Also `src/lib/id.ts` `createId()`, `src/lib/useIsWide.ts`, `src/lib/measureInWindow.ts` (drag and drop hit areas) and `src/lib/parentRoute.ts` (where "Back" goes when there is no history).
 
 ## Strings (i18n)
 
@@ -34,7 +34,7 @@ Repository: `Nick-ze/volley-lineup` (GitHub). Base branch: `main`. Current state
 
 ## Routes
 
-`/` profile picker · `(tabs)`: `/teams`, `/profile`, `/settings` · `/team/[teamId]?tab=roster|matches|presets|starters` (v3 adds `|stats`) · `/team/[teamId]/player` (modal) · `/team/[teamId]/match-new` (modal) · `/team/[teamId]/preset/[presetId]` · `/team/[teamId]/starters` · `/match/[matchId]?set=N` (lineup builder) · `/match/[matchId]/rotation|starters|live|stats` · `+not-found`. Every route is registered in `app/_layout.tsx`; set titles with `<Stack.Screen options={...} />` inside your screen rather than editing `_layout.tsx`.
+`/` profile picker · `(tabs)`: `/teams`, `/profile`, `/settings` · `/team/[teamId]?tab=roster|matches|presets|starters` (v3 adds `|stats`) · `/team/[teamId]/player` (modal) · `/team/[teamId]/match-new` (modal) · `/team/[teamId]/preset/[presetId]` · `/team/[teamId]/starters` · `/match/[matchId]?set=N` (lineup builder) · `/match/[matchId]/rotation|starters|live|stats` · `+not-found`. Every route is registered in `app/_layout.tsx`; new routes are added there by the orchestrator (in the foundation PR), not by workers. Set a screen's title and header buttons with `<Stack.Screen options={...} />` inside the screen itself.
 
 ## Testing notes
 
