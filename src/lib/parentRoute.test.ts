@@ -43,6 +43,20 @@ describe('parentRoute', () => {
     expect(parentRoute('match/[matchId]/live', {}, lookup)).toBe('/teams');
   });
 
+  it('goes back from a preset or the team starters to that tab of the team', () => {
+    const preset = { teamId: 't1', presetId: 'ps1' };
+    expect(parentRoute('team/[teamId]/preset/[presetId]', preset, lookup)).toEqual({
+      pathname: '/team/[teamId]',
+      params: { teamId: 't1', tab: 'presets' },
+    });
+    expect(parentRoute('team/[teamId]/starters', { teamId: 't1' }, lookup)).toEqual({
+      pathname: '/team/[teamId]',
+      params: { teamId: 't1', tab: 'starters' },
+    });
+    expect(parentRoute('team/[teamId]/preset/[presetId]', {}, lookup)).toBe('/teams');
+    expect(parentRoute('team/[teamId]/starters', undefined, lookup)).toBe('/teams');
+  });
+
   it('falls back to /teams when params or the match are missing', () => {
     expect(parentRoute('team/[teamId]/player', {}, lookup)).toBe('/teams');
     expect(parentRoute('team/[teamId]/match-new', { teamId: '' }, lookup)).toBe('/teams');

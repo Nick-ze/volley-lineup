@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Screen } from '@/components';
+import { firstSetForNewMatch } from '@/domain/presets';
 import { MatchForm } from '@/features/roster/components/MatchForm';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { useGoBack } from '@/features/roster/hooks/useGoBack';
 import { useT } from '@/i18n';
-import { useAppStore, useTeam } from '@/store';
+import { selectPlayersForTeam, useAppStore, useTeam } from '@/store';
 
 /** `/team/[teamId]/match-new` — create a match, then open it. Modal. */
 export default function NewMatchScreen() {
@@ -23,7 +24,11 @@ export default function NewMatchScreen() {
       <MatchForm
         onCancel={goBack}
         onSubmit={(value) => {
-          const match = useAppStore.getState().addMatch({ teamId: team.id, ...value });
+          const store = useAppStore.getState();
+          // Set 1 starts with the team's starters when they are complete.
+          const players = selectPlayersForTeam(store, team.id);
+          const first = firstSetForNewMatch(store.presets, team.id, players);
+          const match = store.addMatch({ teamId: team.id, ...value, sets: [first] });
           router.replace(`/match/${match.id}`);
         }}
       />

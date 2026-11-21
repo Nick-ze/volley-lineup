@@ -72,6 +72,11 @@ export default function RootLayout() {
                 name="team/[teamId]/match-new"
                 options={{ title: t.nav.newMatch, presentation: 'modal' }}
               />
+              <Stack.Screen
+                name="team/[teamId]/preset/[presetId]"
+                options={{ title: t.nav.preset }}
+              />
+              <Stack.Screen name="team/[teamId]/starters" options={{ title: t.nav.teamStarters }} />
               <Stack.Screen name="match/[matchId]/index" options={{ title: t.nav.match }} />
               <Stack.Screen name="match/[matchId]/rotation" options={{ title: t.nav.rotation }} />
               <Stack.Screen name="match/[matchId]/starters" options={{ title: t.nav.starters }} />

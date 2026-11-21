@@ -21,6 +21,12 @@ export function parentRoute(
       return teamId ? { pathname: '/team/[teamId]', params: { teamId } } : '/teams';
     case 'team/[teamId]/match-new':
       return teamId ? { pathname: '/team/[teamId]', params: { teamId, tab: 'matches' } } : '/teams';
+    case 'team/[teamId]/preset/[presetId]':
+      return teamId ? { pathname: '/team/[teamId]', params: { teamId, tab: 'presets' } } : '/teams';
+    case 'team/[teamId]/starters':
+      return teamId
+        ? { pathname: '/team/[teamId]', params: { teamId, tab: 'starters' } }
+        : '/teams';
     case 'match/[matchId]/index': {
       const matchTeam = matchId ? teamIdOfMatch(matchId) : undefined;
       return matchTeam

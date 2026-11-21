@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
+import { PresetApply } from '@/features/lineup/PresetApply';
 import { SetTabs } from '@/features/lineup/SetTabs';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
 import { PrintButton } from '@/features/print/PrintButton';
@@ -89,7 +90,11 @@ export default function MatchScreen() {
               testID="open-live"
             />
           </View>
-          <LineupBuilder editor={editor} />
+          <LineupBuilder
+            editor={editor}
+            previous={editor.previous}
+            actions={<PresetApply key={setNumber} editor={editor} teamId={match.teamId} />}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
