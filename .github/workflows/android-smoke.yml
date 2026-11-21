@@ -14,6 +14,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Fast check (no app build): can an emulator boot on this runner at all?
+  emulator-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: KVM and CPU info
+        run: |
+          ls -l /dev/kvm || echo "NO /dev/kvm"
+          grep -cE 'vmx|svm' /proc/cpuinfo || echo "no vmx/svm flags"
+          nproc; free -m
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm || true
+      - name: Try to start an emulator directly and show its output
+        run: |
+          SDK=$ANDROID_HOME
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null
+          echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n t -k "system-images;android-30;default;x86_64" --force
+          $SDK/emulator/emulator -accel-check || true
+          ($SDK/emulator/emulator -avd t -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim > emu.log 2>&1 &)
+          for i in $(seq 1 90); do
+            if [ "$($SDK/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then echo "BOOTED after $((i*5))s"; break; fi
+            sleep 5
+          done
+          echo "--- emulator log (tail) ---"; tail -40 emu.log
+
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 75
