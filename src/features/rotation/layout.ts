@@ -13,6 +13,11 @@ export const COMPACT_COURT_MAX_WIDTH = 340;
 /** Min height of one slot on a compact court. */
 export const COMPACT_SLOT_MIN_HEIGHT = 84;
 
+/** Height of the row above a chip that holds the role tag (kept even when empty so chips line up). */
+export const ROLE_ROW_HEIGHT = 18;
+/** Height of the row below a chip that holds the "Server" / "L for #n" tag. */
+export const BADGE_ROW_HEIGHT = 18;
+
 /** Width of the libero / serve-info column beside the court on wide screens. */
 export const SIDE_PANEL_WIDTH = 200;
 /** Width of one set card in the starters overview. */

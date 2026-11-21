@@ -1,22 +1,36 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { ROTATION_COUNT, ROTATION_NUMBERS, type RotationNumber } from '@/domain/rotation';
+import type { RotationNumber } from '@/domain/rotation';
+import { stepsByLabel } from '@/domain/rotationNames';
 import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 import { COURT_MAX_WIDTH } from './layout';
 
 export interface RotationStepperProps {
-  rotation: RotationNumber;
+  /** The step shown (1 = the starting six, +1 per clockwise rotation). */
+  step: RotationNumber;
+  /** The rotation number of every step (index 0 = step 1): the setter's position, or the step. */
+  labels: readonly RotationNumber[];
+  /** True when the labels follow the setter ("Rotation 4 (setter at position 4)"). */
+  bySetter: boolean;
   onPrevious: () => void;
   onNext: () => void;
-  onSelect: (n: RotationNumber) => void;
+  onSelect: (step: RotationNumber) => void;
 }
 
-/** Prev / "Rotation n of 6" / Next, plus a 1–6 row to jump straight to a rotation. */
-export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: RotationStepperProps) {
+/** Prev / "Rotation n" / Next, plus a 1–6 row to jump straight to a rotation by its number. */
+export function RotationStepper({
+  step,
+  labels,
+  bySetter,
+  onPrevious,
+  onNext,
+  onSelect,
+}: RotationStepperProps) {
   const t = useT();
+  const label = labels[step - 1];
   return (
     <View style={styles.wrap}>
       <View style={styles.nav}>
@@ -28,8 +42,15 @@ export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: Rota
           onPress={onPrevious}
           testID="rotation-prev"
         />
-        <Text style={styles.title} accessibilityRole="header" accessibilityLiveRegion="polite">
-          {t.rotation.rotationOf(rotation, ROTATION_COUNT)}
+        <Text
+          style={styles.title}
+          accessibilityRole="header"
+          accessibilityLiveRegion="polite"
+          testID="rotation-title"
+        >
+          {bySetter
+            ? t.rotation.setterRotation(label)
+            : t.rotation.rotationOf(label, labels.length)}
         </Text>
         <Button
           label={t.rotation.next}
@@ -41,15 +62,15 @@ export function RotationStepper({ rotation, onPrevious, onNext, onSelect }: Rota
         />
       </View>
       <View style={styles.steps} accessibilityLabel={t.rotation.stepperLabel}>
-        {ROTATION_NUMBERS.map((n) => (
+        {stepsByLabel(labels).map((s) => (
           <Button
-            key={n}
-            label={String(n)}
-            accessibilityLabel={t.rotation.goToRotation(n)}
-            variant={n === rotation ? 'primary' : 'secondary'}
+            key={s}
+            label={String(labels[s - 1])}
+            accessibilityLabel={t.rotation.goToRotation(labels[s - 1])}
+            variant={s === step ? 'primary' : 'secondary'}
             compact
-            onPress={() => onSelect(n)}
-            testID={`rotation-step-${n}`}
+            onPress={() => onSelect(s)}
+            testID={`rotation-step-${s}`}
             style={styles.step}
           />
         ))}

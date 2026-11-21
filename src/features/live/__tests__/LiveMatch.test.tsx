@@ -77,13 +77,18 @@ describe('live match mode', () => {
     await press('point-us'); // side-out: rotate, #2 serves
     expect(score()).toBe('1:0');
     expect(screen.getByText('We serve · #2')).toBeTruthy();
-    expect(screen.getByText('Rotation 2')).toBeTruthy();
+    // v4: the rotation is named after the setter (#1 started at 1, now at 6).
+    expect(screen.getByText('Rotation 6')).toBeTruthy();
     expect([1, 2, 3, 4, 5, 6].map(numberAt)).toEqual([2, 3, 4, 5, 6, 1]);
-    expect(screen.getByLabelText(/^Position 1: Number 2, O Outside, Outside Hitter, serving$/));
+    expect(
+      screen.getByLabelText(
+        /^Position 1: Number 2, O Outside, Outside Hitter, role Outside Hitter, serving$/,
+      ),
+    );
 
     await press('point-us'); // our serve: no rotation
     expect(score()).toBe('2:0');
-    expect(screen.getByText('Rotation 2')).toBeTruthy();
+    expect(screen.getByText('Rotation 6')).toBeTruthy();
 
     await press('point-them'); // serve goes to them
     expect(score()).toBe('2:1');
