@@ -11,13 +11,13 @@ import {
 import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
-import type { LineupEditor } from './useLineupEditor';
+import type { LineupDraft } from './useLineupDraft';
 
 /**
  * "Fill from template": pick 5-1 or 6-2 and fill the starting six from the roster, then say
  * which positions could not be filled. Remount (key by set number) to reset the message.
  */
-export function TemplateFill({ editor }: { editor: LineupEditor }) {
+export function TemplateFill({ editor }: { editor: LineupDraft }) {
   const t = useT();
   const { set, players, update } = editor;
   const [open, setOpen] = useState(false);

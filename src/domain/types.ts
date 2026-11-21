@@ -1,5 +1,6 @@
 /**
- * Data model — docs/PLAN.md §6 (v2: SetLineup.liberoReplaces + SetLineup.events, schemaVersion 2).
+ * Data model — docs/PLAN.md §6 (v2: SetLineup.liberoReplaces + SetLineup.events, schemaVersion 2;
+ * v3: LineupPreset — saved team lineups and the team's starters, schemaVersion 3).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -57,14 +58,31 @@ export type Side = 'us' | 'them';
 export type SetEvent =
   { type: 'point'; winner: Side } | { type: 'sub'; outPlayerId: string; inPlayerId: string };
 
+/** v3: 'starters' = the team's usual starting lineup (at most one per team); 'preset' = a named one. */
+export type PresetKind = 'starters' | 'preset';
+
+/** v3: a lineup saved for a team, applied to a match set on demand (never played itself). */
+export interface LineupPreset {
+  id: string;
+  teamId: string;
+  /** e.g. "5-1 strong serve"; empty for the starters (the UI shows a fixed label). */
+  name: string;
+  kind: PresetKind;
+  slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>;
+  liberoId: string | null;
+  liberoReplaces: string[];
+  createdAt: string;
+}
+
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 2;
+  schemaVersion: 3;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
   players: Player[];
   matches: Match[];
+  presets: LineupPreset[];
 }
 
 /* ---- Derived helper types (not part of the persisted shape) ---- */

@@ -1,9 +1,15 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import type { Match, Player, Team } from '@/domain/types';
+import type { LineupPreset, Match, Player, Team } from '@/domain/types';
 
 import { useAppStore } from './appStore';
-import { selectMatchesForTeam, selectPlayersForTeam, selectTeamsForProfile } from './selectors';
+import {
+  selectMatchesForTeam,
+  selectPlayersForTeam,
+  selectPresetsForTeam,
+  selectStarters,
+  selectTeamsForProfile,
+} from './selectors';
 
 /*
  * Zustand v5: selectors that build new arrays must be wrapped in useShallow,
@@ -27,3 +33,14 @@ export const useMatch = (id: string | null | undefined): Match | undefined =>
 
 export const usePlayer = (id: string | null | undefined): Player | undefined =>
   useAppStore((s) => s.players.find((p) => p.id === id));
+
+/** The team's named presets (not the starters), sorted by name. */
+export const usePresetsForTeam = (teamId: string | null | undefined): LineupPreset[] =>
+  useAppStore(useShallow((s) => (teamId ? selectPresetsForTeam(s, teamId) : [])));
+
+/** The team's starters preset, if set. */
+export const useStarters = (teamId: string | null | undefined): LineupPreset | undefined =>
+  useAppStore((s) => (teamId ? selectStarters(s, teamId) : undefined));
+
+export const usePreset = (id: string | null | undefined): LineupPreset | undefined =>
+  useAppStore((s) => s.presets.find((p) => p.id === id));

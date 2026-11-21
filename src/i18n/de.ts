@@ -5,6 +5,7 @@
 import { language } from './de/language';
 import { lineup } from './de/lineup';
 import { live } from './de/live';
+import { presets } from './de/presets';
 import { print } from './de/print';
 import { profile } from './de/profile';
 import { roster } from './de/roster';
@@ -42,6 +43,8 @@ export const de: Strings = {
     lineup: 'Aufstellung',
     rotation: 'Rotation',
     starters: 'Startaufstellung',
+    preset: 'Vorlage',
+    teamStarters: 'Startsechs',
     live: 'Live',
     settings: 'Einstellungen',
   },
@@ -75,4 +78,5 @@ export const de: Strings = {
   live,
   language,
   profile,
+  presets,
 };

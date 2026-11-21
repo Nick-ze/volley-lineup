@@ -6,14 +6,14 @@ import { colors, radius, spacing, typography } from '@/theme';
 import { COMPACT_CHIP_SIZE, EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { useDropZone } from './drag/useDropZone';
-import type { LineupEditor } from './useLineupEditor';
+import type { LineupDraft } from './useLineupDraft';
 
 /** The libero spot next to the court: a drop zone holding at most one player. */
 export function LiberoSlot({
   editor,
   compact = false,
 }: {
-  editor: LineupEditor;
+  editor: LineupDraft;
   compact?: boolean;
 }) {
   const t = useT();
