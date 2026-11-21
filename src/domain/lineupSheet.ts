@@ -257,28 +257,34 @@ dt { color: ${c.textMuted}; } dd { margin: 0; font-weight: 600; }
 table.court { width: 100%; border-collapse: collapse; table-layout: fixed; }
 td.cell { border: 1px solid ${c.grid}; height: ${l.cellHeight}; vertical-align: top; padding: 3px 4px; }
 td.serving { border: 2px solid ${c.border}; }
-.pos { display: block; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
+.pos { display: block; font-size: ${l.smallFontSize}; line-height: 1.15; color: ${c.textMuted}; }
 .role { float: right; font-weight: 700; color: ${c.text}; }
 .off { font-weight: 800; }
 p.off-note { float: right; margin: 0; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
 .srv { font-weight: 700; color: ${c.text}; }
-.num { display: block; font-size: ${l.jerseyFontSize}; font-weight: 700; line-height: 1.1; }
-.name { display: block; font-size: ${l.nameFontSize}; overflow-wrap: anywhere; }
+.num { display: block; font-size: ${l.jerseyFontSize}; font-weight: 700; line-height: 1; }
+/* One line per name in a court cell (the roster lists full names), so the sheet keeps its height. */
+.name { display: block; font-size: ${l.nameFontSize}; line-height: 1.2; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
 .info .num, .info .name { display: inline; font-size: ${l.infoFontSize}; margin-right: 4px; }
-.info { margin-top: 4px; font-size: ${l.infoFontSize}; display: grid; gap: 2px; }
+.info { margin-top: 3px; font-size: ${l.infoFontSize}; line-height: 1.2; display: grid; gap: 1px; }
+.info > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .label { color: ${c.textMuted}; }
 .empty { color: ${c.textMuted}; }
 section.roster-section { margin-top: ${l.sectionGap}; }
 table.roster thead { display: table-header-group; }
 table.roster tr { break-inside: avoid; page-break-inside: avoid; }
-table.roster { width: 100%; border-collapse: collapse; font-size: ${l.infoFontSize}; }
+table.roster { width: 100%; border-collapse: collapse; font-size: ${l.infoFontSize}; line-height: 1.15; }
 table.roster th, table.roster td { border: 1px solid ${c.grid}; padding: 1px 6px; text-align: left; }
 table.roster th { background: ${c.fill}; }
 table.roster td.n { width: 3em; font-weight: 700; text-align: right; }
+/* Compact: everything on one line (wraps only if needed), so a 5-set sheet stays on one page. */
 section.results { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border};
-  padding: ${l.setPadding}; margin-bottom: ${l.sectionGap}; font-size: ${l.infoFontSize}; }
-.final { font-size: ${l.headingFontSize}; font-weight: 700; margin-bottom: 2px; }
-ul.set-scores { display: flex; flex-wrap: wrap; gap: 2px 18px; list-style: none; margin: 2px 0; padding: 0; }
+  padding: 2px ${l.setPadding}; margin-bottom: ${l.setGap.split(' ')[0]}; font-size: ${l.infoFontSize};
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; line-height: 1.25; }
+section.results h2 { margin: 0; }
+.final { font-size: ${l.headingFontSize}; font-weight: 700; }
+ul.set-scores { display: flex; flex-wrap: wrap; gap: 0 10px; list-style: none; margin: 0; padding: 0; }
 `;
 
 /** Builds the full printable HTML document for a match. */

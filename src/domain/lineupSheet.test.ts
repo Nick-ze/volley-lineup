@@ -307,6 +307,14 @@ describe('buildLineupSheetHtml', () => {
     expect(html).toContain('height: 44px;');
   });
 
+  it('keeps names in court cells and info lines to one line, the results compact (A4 fit)', () => {
+    // Long names must not grow the cells (checked with a real A4 PDF in the browser).
+    expect(html).toMatch(/\.name \{[^}]*white-space: nowrap;[^}]*text-overflow: ellipsis; \}/);
+    expect(html).toMatch(/\.info > div \{ white-space: nowrap;[^}]*text-overflow: ellipsis; \}/);
+    // The results block lays its parts out in a row (one line, wrapping only if needed).
+    expect(html).toMatch(/section\.results \{[^}]*display: flex; flex-wrap: wrap;/);
+  });
+
   it('marks empty slots, missing libero and unknown players', () => {
     const partial: SetLineup = {
       ...emptySetLineup(1),
