@@ -33,9 +33,9 @@ export const set1: SetLineup = {
   events: [],
 };
 
-/** Set 2 starts one rotation further on (the setter spot turned along to 6), opponent serves. */
+/** Set 2 starts one rotation further on, opponent serves. */
 export const set2: SetLineup = {
-  formation: { system: '5-1', order: 'outside', setterAt: 6 },
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   setNumber: 2,
   slots: { 1: 'p2', 2: 'p3', 3: 'p4', 4: 'p5', 5: 'p6', 6: 'p1' },

@@ -11,19 +11,16 @@ describe('team starters tab — role tags (v4)', () => {
   beforeEach(() => seedTeam());
 
   it('shows each starter’s role on the court, "*" when it is none of their positions', async () => {
-    // #2 (outside) stands on the opposite spot 4 (v6: the spot decides): off position.
-    const lineup = fullLineup();
-    useAppStore
-      .getState()
-      .setStarters('team1', { ...lineup, slots: { ...lineup.slots, 2: 'p4', 4: 'p2' } });
+    // #2 (outside) plays opposite: off position.
+    useAppStore.getState().setStarters('team1', { ...fullLineup(), roles: { p2: 'OPP' } });
     await renderRouter('./app', { initialUrl: '/team/team1?tab=starters' });
     const court = await screen.findByTestId('starters-court');
     expect(screen.getByTestId('role-tag-1', hidden)).toHaveTextContent('S');
-    expect(screen.getByTestId('role-tag-4', hidden)).toHaveTextContent('OPP');
-    expect(screen.getByTestId('role-tag-4-off', hidden)).toBeTruthy();
+    expect(screen.getByTestId('role-tag-2', hidden)).toHaveTextContent('OPP');
+    expect(screen.getByTestId('role-tag-2-off', hidden)).toBeTruthy();
     expect(screen.queryByTestId('role-tag-1-off', hidden)).toBeNull();
     expect(court.props.accessibilityLabel).toMatch(
-      /position 4 #2 Olga Test, plays Opposite, not one of their positions/,
+      /position 2 #2 Olga Test, plays Opposite, not one of their positions/,
     );
   });
 });

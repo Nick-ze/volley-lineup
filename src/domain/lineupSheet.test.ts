@@ -224,23 +224,18 @@ describe('buildLineupSheetHtml', () => {
   });
 
   it('marks an off-position role with "*" and explains it once under the sets', () => {
-    // v6: roles come from the spots. d (OPP) on the MB spot 6 is off position; c (MB, OPP) on
-    // the OPP spot 4 plays a secondary position; f (MB) on the MB spot 3 its primary one.
-    const moved: SetLineup = {
-      ...full(1, true),
-      slots: { 1: 'a', 2: 'b', 3: 'f', 4: 'c', 5: 'e', 6: 'd' },
-    };
+    const roles = { b: 'S', c: 'OPP', d: 'OPP' } as const; // b off; c secondary; d primary
     const out = buildLineupSheetHtml({
-      match: { ...match, sets: [moved, full(2, false)] },
+      match: { ...match, sets: [{ ...full(1, true), roles }, full(2, false)] },
       team,
       players,
       labels,
     });
     const set1 = sectionOf(out, 1);
-    expect(cellOf(set1, 6)).toContain('<span class="role">MB<span class="off">*</span></span>');
+    expect(cellOf(set1, 2)).toContain('<span class="role">S<span class="off">*</span></span>');
+    expect(cellOf(set1, 3)).toContain('<span class="role">OPP</span>');
     expect(cellOf(set1, 4)).toContain('<span class="role">OPP</span>');
-    expect(cellOf(set1, 3)).toContain('<span class="role">MB</span>');
-    expect(cellOf(sectionOf(out, 2), 6)).toContain('<span class="role">MB</span>');
+    expect(cellOf(sectionOf(out, 2), 2)).toContain('<span class="role">OH</span>');
     expect(out.match(/class="off"/g)).toHaveLength(1);
     expect(out.match(/class="off-note"/g)).toHaveLength(1);
     expect(out).toContain(
@@ -248,7 +243,7 @@ describe('buildLineupSheetHtml', () => {
     );
   });
 
-  it('shows no role on an empty / unknown spot; a player without positions is off position', () => {
+  it('shows no role for a player without positions or an empty / unknown spot', () => {
     const noPos = players.map((p) => (p.id === 'b' ? { ...p, positions: [] } : p));
     const partial: SetLineup = {
       ...full(1, true),
@@ -261,10 +256,8 @@ describe('buildLineupSheetHtml', () => {
       labels,
     });
     const set = sectionOf(out, 1);
-    for (const pos of [3, 4]) expect(cellOf(set, pos)).not.toContain('class="role"');
+    for (const pos of [2, 3, 4]) expect(cellOf(set, pos)).not.toContain('class="role"');
     expect(cellOf(set, 1)).toContain('<span class="role">S</span>');
-    // v6: the spot's role (OH at 2) is none of b's (empty) positions.
-    expect(cellOf(set, 2)).toContain('<span class="role">OH<span class="off">*</span></span>');
   });
 
   it('says "Libero off" instead of whom the libero replaces when switched off', () => {
@@ -296,14 +289,7 @@ describe('buildLineupSheetHtml', () => {
     const out = buildLineupSheetHtml({
       match: {
         ...match,
-        // b (OH) on the setter spot: off position, so the note is printed.
-        sets: [
-          {
-            ...full(1, true),
-            slots: { ...full(1, true).slots, 1: 'b', 2: 'a' },
-            liberoActive: false,
-          },
-        ],
+        sets: [{ ...full(1, true), roles: { b: 'S' }, liberoActive: false }],
       },
       team,
       players,

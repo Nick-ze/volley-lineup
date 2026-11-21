@@ -254,9 +254,9 @@ function replay(
     }
 
     liberoReplaces = liberoReplaces.map((id) => (id === outPlayerId ? inPlayerId : id));
-    // v6: every known player on court has a role (each known starter plays the role of their
-    // spot, substitutes inherit), so the substitute always takes one over.
-    roles[inPlayerId] = roles[outPlayerId];
+    const outRole = roles[outPlayerId];
+    if (outRole === undefined) delete roles[inPlayerId];
+    else roles[inPlayerId] = outRole;
     const position = COURT_POSITIONS.find((p) => slots[p] === outPlayerId);
     slots = { ...slots, [position as number]: inPlayerId };
   });

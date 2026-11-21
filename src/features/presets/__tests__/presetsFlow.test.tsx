@@ -68,7 +68,7 @@ describe('presets tab', () => {
       teamId: 'team1',
       name: 'Alpha',
       ...fullLineup(),
-      formation: { system: '6-2', order: 'middle', setterAt: 3 },
+      roles: { p2: 'DS' },
       liberoActive: false,
     });
     store().setStarters('team1', fullLineup()); // starters are not listed here
@@ -89,8 +89,8 @@ describe('presets tab', () => {
     expect(names).toEqual(['Beta', 'Beta (copy)', 'Preset 1']);
     const copy = store().presets.find((p) => p.name === 'Beta (copy)');
     expect(copy?.slots).toEqual(fullLineup().slots);
-    // v6: the copy keeps the formation and the libero switch
-    expect(copy?.formation).toEqual({ system: '6-2', order: 'middle', setterAt: 3 });
+    // v4: the copy keeps roles and the libero switch
+    expect(copy?.roles).toEqual({ p2: 'DS' });
     expect(copy?.liberoActive).toBe(false);
 
     await press(s.list.deleteLabel('Beta'));

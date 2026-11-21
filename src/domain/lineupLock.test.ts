@@ -35,22 +35,6 @@ describe('lineup lock', () => {
     expect(applyLineupEdit(played, { ...played, weServeFirst: false })).toBe(played);
   });
 
-  it('refuses formation changes (system, order or setter spot) when locked (v6)', () => {
-    const f = played.formation;
-    expect(applyLineupEdit(played, { ...played, formation: { ...f, system: '6-2' } })).toBe(played);
-    expect(applyLineupEdit(played, { ...played, formation: { ...f, order: 'middle' } })).toBe(
-      played,
-    );
-    expect(applyLineupEdit(played, { ...played, formation: { ...f, setterAt: 4 } })).toBe(played);
-    // the same formation in a new object is no change
-    const same = { ...played, formation: { ...f } };
-    expect(applyLineupEdit(played, same)).toBe(same);
-    // unlocked, a formation change goes through
-    const fresh = { ...played, events: [] };
-    const changed = { ...fresh, formation: { ...f, setterAt: 4 as const } };
-    expect(applyLineupEdit(fresh, changed)).toBe(changed);
-  });
-
   it('still allows changing whom the libero replaces, and never drops the events', () => {
     const next = { ...played, liberoReplaces: ['p6'] };
     expect(applyLineupEdit(played, next)).toBe(next);

@@ -25,12 +25,9 @@ const players: Player[] = [
   player(8, 'Sub', ['OH']),
 ];
 
-/**
- * The setter #1 starts at position 4 (the formation's setter spot): S 4 · OH 5 · MB 6 · OPP 1 ·
- * OH 2 · MB 3. Wing #5 (OH, OPP) at 2 plays OH, Oppo #4 at 1 plays OPP.
- */
+/** The setter #1 starts at position 4; Wing #5 plays opposite (a secondary position). */
 const set1: SetLineup = {
-  formation: { system: '5-1', order: 'outside', setterAt: 4 },
+  roles: { p5: 'OPP' },
   liberoActive: true,
   setNumber: 1,
   slots: { 1: 'p4', 2: 'p5', 3: 'p6', 4: 'p1', 5: 'p2', 6: 'p3' },
@@ -74,9 +71,8 @@ describe('live mode — roles and the setter rotation (v4)', () => {
     expect(await screen.findByText('Rivals serves')).toBeTruthy();
     expect(rotationText()).toHaveTextContent('Rotation 4');
     expect(roleAt(4)).toHaveTextContent('S');
-    expect(roleAt(2)).toHaveTextContent('OH');
-    expect(roleAt(1)).toHaveTextContent('OPP');
-    expect(screen.queryByTestId('live-role-2-off', hidden)).toBeNull(); // a listed position
+    expect(roleAt(2)).toHaveTextContent('OPP');
+    expect(screen.queryByTestId('live-role-2-off', hidden)).toBeNull(); // secondary position
     // The libero stands in for middle #3 at 6 and shows "L".
     expect(roleAt(6)).toHaveTextContent('L');
     expect(screen.getByLabelText(/^Position 4: .*Setter, plays Setter$/)).toBeTruthy();
@@ -127,7 +123,7 @@ describe('live mode — roles and the setter rotation (v4)', () => {
 
     await press('setup-start');
     expect(stored(2)?.slots).toEqual({ 1: 'p3', 2: 'p4', 3: 'p5', 4: 'p6', 5: 'p1', 6: 'p2' });
-    expect(stored(2)?.formation).toEqual({ system: '5-1', order: 'outside', setterAt: 5 });
+    expect(stored(2)?.roles).toEqual({ p5: 'OPP' });
     expect(rotationText()).toHaveTextContent('Rotation 5');
   });
 });

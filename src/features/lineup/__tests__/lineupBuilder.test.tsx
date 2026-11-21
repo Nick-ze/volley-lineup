@@ -172,8 +172,6 @@ describe('lineup builder validation panel', () => {
           {
             ...m.sets[0],
             slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p5', 5: 'p6', 6: 'p7' },
-            // v6: the setter (p5) stands on the formation's setter spot.
-            formation: { system: '5-1', order: 'outside', setterAt: 4 },
           },
         ],
       })),
