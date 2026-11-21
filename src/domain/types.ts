@@ -1,5 +1,5 @@
 /**
- * Data model — copied verbatim from docs/PLAN.md §6.
+ * Data model — docs/PLAN.md §6 (v2: SetLineup.liberoReplaces + SetLineup.events, schemaVersion 2).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -41,14 +41,25 @@ export interface Match {
 
 export interface SetLineup {
   setNumber: 1 | 2 | 3 | 4 | 5;
-  slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>; // court position -> playerId
+  slots: Record<1 | 2 | 3 | 4 | 5 | 6, string | null>; // court position -> playerId (starting six)
   liberoId: string | null;
   weServeFirst: boolean;
+  /** v2: starters the libero replaces whenever they are in the back row (usually the middles). */
+  liberoReplaces: string[];
+  /** v2: what happened in the set, in order (live match mode). Empty = not played yet. */
+  events: SetEvent[];
 }
+
+/** v2: which team won a rally. */
+export type Side = 'us' | 'them';
+
+/** v2: one entry in a set's event log. The score, rotation and line-up are derived from it. */
+export type SetEvent =
+  { type: 'point'; winner: Side } | { type: 'sub'; outPlayerId: string; inPlayerId: string };
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 1;
+  schemaVersion: 2;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];

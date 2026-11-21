@@ -16,6 +16,7 @@ export const emptyData = (): AppData => ({ profiles: [], teams: [], players: [],
 const initialState = (): AppState => ({
   ...emptyData(),
   currentProfileId: null,
+  language: 'en',
   hydrated: false,
 });
 
@@ -123,6 +124,7 @@ export const useAppStore = create<AppStore>()(
         })),
       resetAll: () => set({ ...emptyData(), currentProfileId: null }),
       setHydrated: (value) => set({ hydrated: value }),
+      setLanguage: (language) => set({ language }),
     }),
     {
       name: STORAGE_KEY,
@@ -135,6 +137,7 @@ export const useAppStore = create<AppStore>()(
         players: s.players,
         matches: s.matches,
         currentProfileId: s.currentProfileId,
+        language: s.language,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);

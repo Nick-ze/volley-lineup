@@ -90,7 +90,8 @@ export function clearLineup(set: SetLineup): SetLineup {
 }
 
 /**
- * Copies the six starters and the libero of `from` into a lineup for `toSetNumber`.
+ * Copies the six starters, the libero and whom the libero replaces of `from` into a lineup for
+ * `toSetNumber`. The copy has not been played yet, so its event log starts empty.
  * The serve choice is not part of the lineup: pass the target set's current value to keep it
  * (defaults to the source's value).
  */
@@ -104,6 +105,8 @@ export function copyLineup(
     slots: { ...from.slots },
     liberoId: from.liberoId,
     weServeFirst,
+    liberoReplaces: [...from.liberoReplaces],
+    events: [],
   };
 }
 

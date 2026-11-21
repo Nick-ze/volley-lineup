@@ -41,6 +41,8 @@ function fixture(): TransferData {
         slots: { 1: 'p1', 2: 'p2', 3: null, 4: null, 5: null, 6: null },
         liberoId: 'p3',
         weServeFirst: false,
+        liberoReplaces: [],
+        events: [],
       },
       emptySetLineup(2),
     ],
@@ -94,7 +96,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 1,
+      schemaVersion: 2,
       exportedAt: NOW.toISOString(),
       ...data,
     });
@@ -190,11 +192,90 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([2, 0, '1', undefined])('schemaVersion %p', (version) => {
+  it.each([3, 0, '1', '2', undefined])('schemaVersion %p', (version) => {
     expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
       ok: false,
       error: 'UNSUPPORTED_VERSION',
     });
+  });
+
+  it('upgrades a v1 file (sets without liberoReplaces/events) to the current version', () => {
+    const v1 = rawExport();
+    v1.schemaVersion = 1;
+    for (const m of v1.matches as { sets: Record<string, unknown>[] }[]) {
+      for (const set of m.sets) {
+        delete set.liberoReplaces;
+        delete set.events;
+      }
+    }
+    const result = parseObject(v1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(2);
+    expect(result.file).toEqual(JSON.parse(exportText()));
+  });
+
+  it.each([
+    ['matches not an array', (raw: Record<string, unknown>) => (raw.matches = {})],
+    ['a match that is not an object', (raw: Record<string, unknown>) => (raw.matches = [5])],
+    [
+      'a match without sets array',
+      (raw: Record<string, unknown>) => (raw.matches = [{ id: 'm1', sets: {} }]),
+    ],
+    [
+      'a set that is not an object',
+      (raw: Record<string, unknown>) => ((raw.matches as { sets: unknown[] }[])[0].sets = ['nope']),
+    ],
+  ])('a malformed v1 file is rejected as INVALID_SHAPE: %s', (_label, mutate) => {
+    const v1 = rawExport();
+    v1.schemaVersion = 1;
+    mutate(v1);
+    expect(parseObject(v1)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it.each([
+    ['liberoReplaces points to another team', { liberoReplaces: ['x1'] }],
+    [
+      'a substitution brings in a player of another team',
+      {
+        events: [{ type: 'sub', outPlayerId: 'p1', inPlayerId: 'x1' }],
+      },
+    ],
+  ])('rejects inconsistent v2 lineup data: %s', (_label, patch) => {
+    const raw = rawExport();
+    raw.players = [
+      ...(raw.players as unknown[]),
+      {
+        id: 'x1',
+        teamId: 't2',
+        firstName: 'X',
+        lastName: 'Y',
+        number: 99,
+        positions: ['OH'],
+        active: true,
+      },
+    ];
+    const m = (raw.matches as { teamId: string; sets: Record<string, unknown>[] }[]).find(
+      (x) => x.teamId === 't1',
+    )!;
+    Object.assign(m.sets[0], patch);
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
+
+  it('accepts valid v2 lineup data (libero replacement, points and a substitution)', () => {
+    const raw = rawExport();
+    const m = (raw.matches as { teamId: string; sets: Record<string, unknown>[] }[]).find(
+      (x) => x.teamId === 't1',
+    )!;
+    Object.assign(m.sets[0], {
+      liberoReplaces: ['p2'],
+      events: [
+        { type: 'point', winner: 'us' },
+        { type: 'point', winner: 'them' },
+        { type: 'sub', outPlayerId: 'p1', inPlayerId: 'p2' },
+      ],
+    });
+    expect(parseObject(raw).ok).toBe(true);
   });
 
   const shapeCases: [string, (raw: Record<string, unknown>) => void][] = [
