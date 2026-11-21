@@ -43,6 +43,22 @@ export const tags = {
     other: 'other error',
     unspecified: 'unspecified error',
   },
+  /** v6: error type as named in the undo label ("our error (serve) #7 Smith"). */
+  errorTypeDetail: {
+    serve: 'serve',
+    reception: 'reception',
+    attack: 'attack',
+    block: 'block',
+    set: 'set',
+    netFault: 'net / foul',
+    other: 'other',
+  },
+  /** v6: "our error (serve)". */
+  kindWithErrorType: (kind: string, type: string) => `${kind} (${type})`,
+  errorTypesLabel: 'Optional: what kind of error?',
+  /** v6: label of an error-type chip; starts with its visible text. */
+  chooseErrorType: (type: string) => `${type}: error type of our error`,
+  clearErrorType: (type: string) => `${type}: remove the error type`,
   rowLabel: (us: boolean) =>
     us ? 'Optional: how did we win the point?' : 'Optional: how did we lose the point?',
   chooseKind: (kind: string) => `Tag the last point as ${kind}`,

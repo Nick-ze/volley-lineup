@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
+import { playedSetNumbers } from '@/domain/stats';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { MatchResultLine } from '@/features/live/MatchResultLine';
 import { PresetApply } from '@/features/lineup/PresetApply';
@@ -103,6 +104,24 @@ export default function MatchScreen() {
               }
               testID="open-stats"
             />
+            <Button
+              label={t.performance.open}
+              accessibilityLabel={t.performance.openLabel}
+              variant="secondary"
+              compact
+              style={link}
+              onPress={() =>
+                router.push({
+                  pathname: '/match/[matchId]/performance',
+                  // The selected set when it has been played, otherwise the whole match.
+                  params: {
+                    matchId,
+                    set: playedSetNumbers(match).includes(setNumber) ? String(setNumber) : 'all',
+                  },
+                })
+              }
+              testID="open-performance"
+            />
           </View>
           <LineupBuilder
             editor={editor}
@@ -128,7 +147,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  // Five links: one row on wide screens, a row of three and a row of two on phones.
+  // Six links: one row on wide screens, two rows of three on phones.
   link: { flexGrow: 1, minWidth: touchTarget },
   linkWide: { flexBasis: 0 },
   linkPhone: { flexBasis: '30%', paddingHorizontal: spacing.sm },

@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 
+import { chooseLastErrorType } from '@/domain/errorTagging';
 import { lastRally } from '@/domain/lastRally';
 import { tagLastPoint } from '@/domain/pointTags';
 
@@ -52,6 +53,7 @@ export function usePointTagging(live: LiveSet): PointTagging {
         rally={rally}
         playersById={playersById}
         onTag={(kind, playerId) => live.saveSet(tagLastPoint(set, kind, playerId))}
+        onErrorType={(type) => live.saveSet(chooseLastErrorType(set, type, rally))}
         onClose={() => setOpen(false)}
       />
     ) : null;

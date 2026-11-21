@@ -41,6 +41,19 @@ export const tags: Strings['tags'] = {
     other: 'sonstiger Fehler',
     unspecified: 'Fehler ohne Angabe',
   },
+  errorTypeDetail: {
+    serve: 'Aufschlag',
+    reception: 'Annahme',
+    attack: 'Angriff',
+    block: 'Block',
+    set: 'Zuspiel',
+    netFault: 'Netz / Regel',
+    other: 'Sonstiges',
+  },
+  kindWithErrorType: (kind: string, type: string) => `${kind} (${type})`,
+  errorTypesLabel: 'Optional: Was für ein Fehler?',
+  chooseErrorType: (type: string) => `${type}: Fehlerart des Eigenfehlers`,
+  clearErrorType: (type: string) => `${type}: Fehlerart entfernen`,
   rowLabel: (us: boolean) =>
     us
       ? 'Optional: Wie haben wir den Punkt gewonnen?'
