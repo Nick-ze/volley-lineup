@@ -233,3 +233,16 @@ Newest at the bottom. Format: **Decision** — why.
 136. **Templates** fill players into the set's formation by spot role (6-2 hitter spots also accept an opposite); choosing 5-1 / 6-2 sets the system and keeps order and setter spot. The lineup check no longer raises "unusual layout" (the formation can't be unusual); "no setter" means no listed setter on the setter spot(s).
 137. **`docs/VOLLEYBALL_RULES.md`** is the rules reference for the app: rules with sources (FIVB 2025–2028, DVV) and a numbered list of checks with PASS / FAIL / NOT MODELLED; keep it updated when the app changes. Note: the sandbox couldn't open the FIVB PDF itself, so rule sub-numbers follow the usual numbering (caveat in the file).
 138. **Version 5.0.0** (versionCode 50000).
+
+### Lineup builder (PR #40)
+
+139. **Formation controls** in one compact row above the court: system 5-1 / 6-2 and order "S → Outside" / "S → Middle" (long form in the accessibility label and a caption with the role order). Every spot shows its role, empty spots too; locked in played sets.
+140. **"Are you sure?" covers every way a player can end up on an unlisted role**: drag & drop, tap-to-select (bench → court and swaps; one dialog for both players) and formation changes (system / order, in the builder and the live next-set setup). It only asks about players whose role actually changes to an unlisted one, so rotating never asks; Cancel changes nothing and keeps a tap-to-select selection. Template fills, presets and copies never ask (the "*" still shows).
+141. **Rotating works on an empty court** (builder and live setup): it turns the formation, so the setter's starting spot can be chosen before placing anyone; "Setter on n" sits between the rotate buttons.
+142. **The libero follows the middles on a formation change** only when it replaced exactly the old middles (`changeFormation`); any other choice, including nobody, is kept. Pure modules `placementCheck.ts` (who ends up off position) and `formationChange.ts`.
+
+### Other courts and rules (PR #41)
+
+143. **Every court shows the formation's roles on all spots**, also empty ones: rotation viewer (the formation turns with each step: `formationSteps.ts`), starters overview, team starters, print sheet. The viewer always names rotations by the setter spot (`formationRotation`), so incomplete courts are named too; the old "Rotation n of 6" fallback and `rotationNames.ts` were removed. An empty spot's screen-reader text names its role.
+144. **Point tags offer only plausible players** (rules doc check #35): block = front-row players (2–4) on court during that rally, never the libero; ace = our server of that rally; kill = anyone on court except the libero (back-row attacks are legal); our error = anyone on court. A player already tagged with a kind stays listed so the tag can be cleared.
+145. **`docs/VOLLEYBALL_RULES.md` §6** lists checks 1–62 with PASS / NOT MODELLED and no FAIL on v5.0; formation checks are #53–62.

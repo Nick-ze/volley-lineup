@@ -126,12 +126,20 @@ Data from v2 (on the phone or in v1–v3 export files) opens in v3 automatically
 
 New in **v4 — Roles on court**:
 
-- **Roles** — every starter plays a role shown at the top of their spot (S, OH, MB, OPP, DS); tap it to change. Anyone can play any role: a role that isn't one of the player's positions asks "Are you sure?" and gets a "*" in the top-right corner. Roles move with the players and substitutes take over the role.
+- **Roles** — every spot shows its role (S, OH, MB, OPP, DS) at the top; anyone can play any role: a role that isn't one of the player's positions asks "Are you sure?" and gets a "*" in the top-right corner. Substitutes take over the role (since v5 the roles come from the set's formation).
 - **Rotate before the set** — ↺ / ↻ moves the whole starting six, so the setter can start at any position.
 - **Rotation = setter position** — setter on 4 = "Rotation 4" in the rotation viewer, live mode and the per-rotation stats.
 - **Libero** — choose which roles the libero replaces (middles, outsides, …) and switch the libero off when they should stay out.
 
 Data and export files from earlier versions open in v4 automatically; files exported by v4 (schema version 5) can't be opened by older versions.
+
+New in **v5 — Formations**:
+
+- **Fixed formations** — every set (and preset / team starters) has a 5-1 or 6-2 formation, with the setter followed by an outside or a middle. The six court spots always show their roles — two middles, two outsides, setter and opposite (or two setters) opposite each other — even with nobody on court, so impossible layouts (e.g. two outsides next to each other) can't happen.
+- **Players go onto spots** — a player on a spot that isn't one of their positions asks "Are you sure?" and gets a "*"; rotating turns the formation with the players.
+- **Volleyball rules reference** — `docs/VOLLEYBALL_RULES.md` collects the rules that matter for the app (FIVB / DVV) and checks the app against them; point tags now only offer players who can actually block / serve an ace.
+
+Data and files from v4 open automatically (the formation is worked out from where your setter stands); files exported by v5 (schema version 6) can't be opened by older versions.
 
 ## Export / import
 
