@@ -52,4 +52,5 @@ export const listStyles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   pressed: { opacity: 0.8 },
+  chevron: { ...typography.heading, color: colors.textMuted, paddingHorizontal: spacing.xs },
 });

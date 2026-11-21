@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { t } from '@/i18n/en';
+
 import { listStyles as styles } from './styles';
 
 export interface ListRowProps {
@@ -46,6 +48,9 @@ export function ListRow({
             subtitle
           )}
         </View>
+        <Text style={styles.chevron} importantForAccessibility="no" accessibilityElementsHidden>
+          {t.roster.rowChevron}
+        </Text>
       </Pressable>
       {actions}
     </View>

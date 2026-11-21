@@ -1,0 +1,69 @@
+name: Android smoke test (emulator)
+
+# Manual only (Actions → Android smoke test → Run workflow): emulators on hosted runners are
+# slow and occasionally fail to boot, so this must not gate pull requests.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: android-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      # avdmanager and the emulator must agree on where AVDs live.
+      ANDROID_USER_HOME: /home/runner/.android
+      ANDROID_AVD_HOME: /home/runner/.android/avd
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Create AVD and boot emulator in the background (boots while the app builds)
+        run: |
+          mkdir -p "$ANDROID_AVD_HOME"
+          SDK=$ANDROID_HOME
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null || true
+          echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k "system-images;android-30;default;x86_64" --force
+          $SDK/emulator/emulator -list-avds
+          nohup $SDK/emulator/emulator -avd smoke -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 > emu.log 2>&1 &
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npx expo prebuild -p android --no-install
+        env:
+          CI: 1
+      - name: Build release APK for the emulator (x86_64)
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+      - name: Wait for emulator boot
+        run: |
+          ADB=$ANDROID_HOME/platform-tools/adb
+          for i in $(seq 1 300); do
+            if [ "$($ADB shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then echo "booted after $((i*5))s"; BOOTED=1; break; fi
+            sleep 5
+          done
+          $ADB shell settings put global window_animation_scale 0 || true
+          $ADB shell settings put global transition_animation_scale 0 || true
+          $ADB shell settings put global animator_duration_scale 0 || true
+          tail -20 emu.log
+          if [ "${BOOTED:-0}" != 1 ]; then echo "::error::Emulator did not boot"; exit 1; fi
+      - name: Run smoke script
+        run: PATH=$ANDROID_HOME/platform-tools:$PATH OUT=e2e-out ./scripts/android-smoke.sh android/app/build/outputs/apk/release/app-release.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-smoke
+          path: e2e-out

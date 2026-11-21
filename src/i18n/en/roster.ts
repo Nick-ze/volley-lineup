@@ -17,8 +17,11 @@ export const roster = {
     deletePlayer: (name: string) => `Delete player "${name}"? They are removed from all lineups.`,
     deleteMatch: (name: string) => `Delete the match against "${name}"?`,
   },
+  /** Decorative "opens" marker at the end of list rows. */
+  rowChevron: '›',
   profiles: {
     heading: 'Who is managing?',
+    hint: 'Tap a profile to open its teams.',
     empty: 'No profiles yet. Create one to get started.',
     new: 'New profile',
     name: 'Profile name',
