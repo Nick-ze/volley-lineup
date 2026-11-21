@@ -21,7 +21,7 @@ describe('rotation viewer — libero swaps', () => {
 
   it('shows the libero in the middles’ back-row spots, never at the serving position 1', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    await screen.findByText('Rotation 1 of 6');
+    await screen.findByText('Rotation 1 (setter on 1)');
 
     // Rotation 1: middle #6 is at position 6 → libero #7 is in for them.
     numberAt(6, '7');
@@ -49,7 +49,7 @@ describe('rotation viewer — libero swaps', () => {
 
   it('the toggle shows the base lineup without swaps', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    await screen.findByText('Rotation 1 of 6');
+    await screen.findByText('Rotation 1 (setter on 1)');
     const toggle = screen.getByRole('switch', { name: 'Show libero swaps' });
     expect(toggle).toBeChecked();
 
@@ -64,7 +64,7 @@ describe('rotation viewer — libero swaps', () => {
   it('asks to choose whom the libero replaces when nobody is chosen', async () => {
     seedStore();
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    await screen.findByText('Rotation 1 of 6');
+    await screen.findByText('Rotation 1 (setter on 1)');
     expect(screen.getByText(/Choose whom the libero replaces/)).toBeTruthy();
     expect(screen.queryByRole('switch')).toBeNull();
     numberAt(6, '6');

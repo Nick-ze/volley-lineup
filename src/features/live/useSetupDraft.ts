@@ -9,6 +9,7 @@ import {
   type SetupSources,
 } from '@/domain/matchFlow';
 import { applyPresetToSet, filledCount, type PresetLineup } from '@/domain/presets';
+import { rotateStarters, type RotateDirection } from '@/domain/roles';
 import type { Match, Player, SetLineup, SetNumber } from '@/domain/types';
 import { useAppStore } from '@/store';
 
@@ -23,6 +24,8 @@ export interface SetupDraft {
   hasPlayers: boolean;
   fill: (lineup: PresetLineup) => void;
   setServe: (weServeFirst: boolean) => void;
+  /** Moves the whole starting six one position (v4: so the setter can start anywhere). */
+  rotate: (direction: RotateDirection) => void;
   /** Forget local lineup changes (after saving); a serve choice made here is kept. */
   clear: () => void;
 }
@@ -64,6 +67,7 @@ export function useSetupDraft(
       setSkipped(result.skipped);
     },
     setServe,
+    rotate: (direction) => setLineup(rotateStarters(draft, direction)),
     clear: () => {
       setLineup(null);
       setSkipped([]);

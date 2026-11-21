@@ -93,6 +93,11 @@ export const live: Strings['live'] = {
     edit: 'Aufstellung bearbeiten',
     editLabel: 'Diesen Satz im Aufstellungs-Editor bearbeiten',
     startHint: 'Stelle zuerst sechs Spieler aufs Feld',
+    rotateCw: 'Rotieren ↻',
+    rotateCwLabel: 'Rotieren ↻: alle Starter eine Position im Uhrzeigersinn weiter',
+    rotateCcw: 'Rotieren ↺',
+    rotateCcwLabel: 'Rotieren ↺: alle Starter eine Position gegen den Uhrzeigersinn weiter',
+    setterAt: (n: number) => `Zuspieler auf ${n}`,
   },
   summary: {
     title: 'Spiel beendet',

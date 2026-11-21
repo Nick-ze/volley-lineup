@@ -6,6 +6,10 @@ export const rotation = {
   noSets: 'This match has no sets yet.',
   emptySet: 'No players in this set yet. Build the lineup on the match screen first.',
   rotationOf: (n: number, total: number) => `Rotation ${n} of ${total}`,
+  /** v4: the rotation is named after the setter's position. */
+  setterRotation: (n: number) => `Rotation ${n} (setter on ${n})`,
+  /** v4, 6-2: the same rotation number comes up twice; tells the two apart. */
+  repeat: (time: number) => (time === 1 ? 'first time' : 'second time'),
   goToRotation: (n: number) => `Show rotation ${n}`,
   previous: '‹ Previous',
   next: 'Next ›',
@@ -38,6 +42,7 @@ export const rotation = {
   openRotationHint: 'Shows rotations 1 to 6 for this set',
   showLiberoSwaps: 'Show libero swaps',
   noLiberoReplaces: 'Choose whom the libero replaces in the lineup builder to see libero swaps.',
+  liberoOff: 'Libero switched off for this set',
   liberoFor: (number: number | null) => (number === null ? 'L' : `L for #${number}`),
   liberoForLabel: (player: string, replaced: string) => `Libero ${player}, in for ${replaced}`,
 } as const;

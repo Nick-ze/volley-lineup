@@ -8,6 +8,8 @@ export const rotation: Strings['rotation'] = {
   noSets: 'Dieses Spiel hat noch keine Sätze.',
   emptySet: 'In diesem Satz sind noch keine Spieler. Stelle zuerst im Spiel die Aufstellung auf.',
   rotationOf: (n: number, total: number) => `Rotation ${n} von ${total}`,
+  setterRotation: (n: number) => `Rotation ${n} (Zuspieler auf ${n})`,
+  repeat: (time: number) => (time === 1 ? 'erstes Mal' : 'zweites Mal'),
   goToRotation: (n: number) => `Rotation ${n} zeigen`,
   previous: '‹ Vorige',
   next: 'Weiter ›',
@@ -39,6 +41,7 @@ export const rotation: Strings['rotation'] = {
   showLiberoSwaps: 'Libero-Wechsel zeigen',
   noLiberoReplaces:
     'Wähle in der Aufstellung, wen der Libero ersetzt, um die Libero-Wechsel zu sehen.',
+  liberoOff: 'Libero ist in diesem Satz ausgeschaltet',
   liberoFor: (number: number | null) => (number === null ? 'L' : `L für #${number}`),
   liberoForLabel: (player: string, replaced: string) => `Libero ${player}, für ${replaced}`,
   openRotationHint: 'Zeigt die Rotationen 1 bis 6 für diesen Satz',

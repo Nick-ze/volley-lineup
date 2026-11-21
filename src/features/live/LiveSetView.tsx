@@ -102,7 +102,7 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
         setsWon={matchState.setsWon}
         servingSide={state.servingSide}
         serveText={serveText}
-        rotation={state.rotation}
+        rotation={state.setterRotation ?? state.rotation}
       />
       <LiveBanners state={state} opponent={match.opponent} playersById={playersById} />
       {play}
@@ -113,6 +113,7 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
       <LiveCourt
         view={court}
         playersById={playersById}
+        roles={state.roles}
         serverId={state.serverId}
         selectedId={sub.outId}
         onPressPlayer={sub.pickOut}

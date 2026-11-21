@@ -2,9 +2,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
 import type { LiveCourtView } from '@/domain/liveSet';
-import type { Player } from '@/domain/types';
+import { isOffPosition } from '@/domain/roles';
+import type { Player, RoleOverrides } from '@/domain/types';
+import { ChipWithBadge, RoleRow } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 import { playerDescription, playerRef } from './format';
 import { COURT_COLUMN_MAX_WIDTH, LIVE_CHIP_SIZE } from './layout';
@@ -13,6 +15,8 @@ export interface LiveCourtProps {
   /** Court as shown (libero swap applied) and where the libero stands in. */
   view: LiveCourtView;
   playersById: Map<string, Player>;
+  /** Roles of the players on court now (`LiveState.roles`: substitutes inherit the role). */
+  roles: Readonly<RoleOverrides>;
   serverId: string | null;
   /** The court player picked to go out (orange ring). */
   selectedId: string | null;
@@ -22,19 +26,24 @@ export interface LiveCourtProps {
 }
 
 /**
- * Who is on court right now; our server has a yellow ring, the libero is tagged "L for #n".
+ * Who is on court right now with their roles on top; our server has a yellow ring and "Serving"
+ * below, the libero shows "L" and "L for #n".
  * Tapping a player starts a sub; tapping the libero picks the player they stand in for.
  */
 export function LiveCourt({
   view,
   playersById,
+  roles,
   serverId,
   selectedId,
   onPressPlayer,
   readOnly = false,
 }: LiveCourtProps) {
   const t = useT();
-  const slotStyle = ({ isFrontRow }: CourtSlotInfo) => (isFrontRow ? styles.front : styles.back);
+  const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
+    isFrontRow ? styles.front : styles.back,
+    styles.slot,
+  ];
   const { slots, liberoSwap } = view;
   return (
     <Court
@@ -49,45 +58,52 @@ export function LiveCourt({
         const replacedId = liberoSwap?.position === position ? liberoSwap.replacedId : null;
         // The real player at this spot: the libero acts for the starter they replace.
         const realId = replacedId ?? id;
+        const role = id && !replacedId ? (roles[id] ?? null) : null;
+        const off = !!player && isOffPosition(player, role);
         const desc = player
           ? replacedId
             ? t.rotation.liberoForLabel(
                 playerDescription(t, player),
                 playerRef(t, playersById, replacedId),
               )
-            : playerDescription(t, player)
+            : role
+              ? `${playerDescription(t, player)}, ${t.roles.spotRole(t.positions[role], off)}`
+              : playerDescription(t, player)
           : '';
         return (
           <>
             <Text style={styles.pos} importantForAccessibility="no" accessibilityElementsHidden>
               {position}
             </Text>
-            {isServer ? (
-              <Text style={styles.tag} importantForAccessibility="no" accessibilityElementsHidden>
-                {t.live.serving}
-              </Text>
-            ) : null}
-            {replacedId ? (
-              <Text
-                style={[styles.tag, styles.liberoTag]}
-                importantForAccessibility="no"
-                accessibilityElementsHidden
-                testID={`live-libero-tag-${position}`}
-              >
-                {t.rotation.liberoFor(playersById.get(replacedId)?.number ?? null)}
-              </Text>
-            ) : null}
+            <RoleRow
+              role={replacedId ? 'L' : player ? role : null}
+              offPosition={off}
+              testID={`live-role-${position}`}
+            />
             {player && realId ? (
-              <PlayerChip
-                player={player}
-                size={LIVE_CHIP_SIZE}
-                highlighted={isServer}
-                selected={selectedId === realId}
-                onPress={readOnly ? undefined : () => onPressPlayer(realId)}
-                accessibilityLabel={t.live.courtPlayerLabel(desc, position, isServer)}
-                accessibilityHint={readOnly ? undefined : t.live.courtPlayerHint}
-                testID={`live-court-${position}`}
-              />
+              <ChipWithBadge
+                chipSize={LIVE_CHIP_SIZE}
+                text={
+                  replacedId
+                    ? t.rotation.liberoFor(playersById.get(replacedId)?.number ?? null)
+                    : isServer
+                      ? t.live.serving
+                      : null
+                }
+                kind={replacedId ? 'libero' : 'server'}
+                testID={replacedId ? `live-libero-tag-${position}` : undefined}
+              >
+                <PlayerChip
+                  player={player}
+                  size={LIVE_CHIP_SIZE}
+                  highlighted={isServer}
+                  selected={selectedId === realId}
+                  onPress={readOnly ? undefined : () => onPressPlayer(realId)}
+                  accessibilityLabel={t.live.courtPlayerLabel(desc, position, isServer)}
+                  accessibilityHint={readOnly ? undefined : t.live.courtPlayerHint}
+                  testID={`live-court-${position}`}
+                />
+              </ChipWithBadge>
             ) : (
               <View accessible accessibilityLabel={t.live.emptySpot(position)}>
                 <Text style={styles.empty}>{t.live.unknownPlayer}</Text>
@@ -105,6 +121,8 @@ const styles = StyleSheet.create({
   // White text on these fills passes AA (white directly on orange does not).
   front: { backgroundColor: colors.secondary },
   back: { backgroundColor: colors.overlay },
+  // The role row takes the room of the default vertical padding (the court keeps its height).
+  slot: { paddingVertical: spacing.xxs },
   pos: {
     position: 'absolute',
     top: spacing.xs,
@@ -112,19 +130,5 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.text,
   },
-  tag: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.onHighlight,
-    backgroundColor: colors.highlight,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.xs,
-    overflow: 'hidden',
-  },
-  // Same look as the rotation viewer's "L for #n" tag (near-black on white).
-  liberoTag: { color: colors.onPrimary, backgroundColor: colors.text },
   empty: { ...typography.subheading, color: colors.text },
 });

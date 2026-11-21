@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PlayerChip } from '@/components';
-import type { CourtPosition, Player } from '@/domain/types';
+import type { CourtPosition, Player, Position } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
+import { ChipWithBadge, RoleRow } from './SpotTags';
 
 export interface CourtSpotProps {
   position: CourtPosition;
@@ -16,9 +17,13 @@ export interface CourtSpotProps {
   compact?: boolean;
   /** Set when the libero stands here: the starter they replace (undefined if unknown). */
   liberoFor?: { replaced: Player | undefined };
+  /** The role the player here plays (v4), or null when unknown. The libero is always "L". */
+  role?: Position | null;
+  /** The role is none of the player's positions ("*"). */
+  offPosition?: boolean;
 }
 
-/** One spot in the rotation court: position number + the player (or an empty marker). */
+/** One spot in the rotation court: position number, role tag, the player (or an empty marker). */
 export function CourtSpot({
   position,
   isFrontRow,
@@ -27,11 +32,14 @@ export function CourtSpot({
   isServer,
   compact = false,
   liberoFor,
+  role = null,
+  offPosition = false,
 }: CourtSpotProps) {
   const t = useT();
   const row = isFrontRow ? t.rotation.frontRow : t.rotation.backRow;
   const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
   const testID = `spot-${position}`;
+  const shownRole = liberoFor ? 'L' : player ? role : null;
 
   let content;
   if (player) {
@@ -40,15 +48,31 @@ export function CourtSpot({
     const chip = t.player.chipLabel(player.number, name, primary ? t.positions[primary] : '');
     const desc = liberoFor
       ? t.rotation.liberoForLabel(chip, describe(t, liberoFor.replaced))
-      : chip;
+      : role
+        ? `${chip}, ${t.roles.spotRole(t.positions[role], offPosition)}`
+        : chip;
+    const badge = compact
+      ? null
+      : liberoFor
+        ? t.rotation.liberoFor(liberoFor.replaced?.number ?? null)
+        : isServer
+          ? t.rotation.server
+          : null;
     content = (
-      <PlayerChip
-        player={player}
-        size={size}
-        highlighted={isServer}
-        accessibilityLabel={t.rotation.spotLabel(position, row, desc, isServer)}
-        testID={testID}
-      />
+      <ChipWithBadge
+        chipSize={size}
+        text={badge}
+        kind={liberoFor ? 'libero' : 'server'}
+        testID={liberoFor ? `libero-tag-${position}` : undefined}
+      >
+        <PlayerChip
+          player={player}
+          size={size}
+          highlighted={isServer}
+          accessibilityLabel={t.rotation.spotLabel(position, row, desc, isServer)}
+          testID={testID}
+        />
+      </ChipWithBadge>
     );
   } else {
     content = (
@@ -74,21 +98,11 @@ export function CourtSpot({
       <Text style={styles.posNumber} importantForAccessibility="no" accessibilityElementsHidden>
         {position}
       </Text>
-      {isServer && !compact ? (
-        <Text style={styles.serverTag} importantForAccessibility="no" accessibilityElementsHidden>
-          {t.rotation.server}
-        </Text>
-      ) : null}
-      {liberoFor ? (
-        <Text
-          style={styles.liberoTag}
-          importantForAccessibility="no"
-          accessibilityElementsHidden
-          testID={`libero-tag-${position}`}
-        >
-          {t.rotation.liberoFor(liberoFor.replaced?.number ?? null)}
-        </Text>
-      ) : null}
+      <RoleRow
+        role={shownRole}
+        offPosition={!liberoFor && offPosition}
+        testID={`role-tag-${position}`}
+      />
       {content}
     </>
   );
@@ -106,30 +120,6 @@ const styles = StyleSheet.create({
     left: spacing.sm,
     ...typography.label,
     color: colors.text,
-  },
-  serverTag: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.onHighlight,
-    backgroundColor: colors.highlight,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.xs,
-    overflow: 'hidden',
-  },
-  liberoTag: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.onPrimary,
-    backgroundColor: colors.text,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.xs,
-    overflow: 'hidden',
   },
   empty: {
     borderWidth: 2,

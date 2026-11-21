@@ -27,13 +27,19 @@ describe('starters overview', () => {
     expect(within(card2).getByText('We receive first')).toBeTruthy();
 
     // The card is one button, so its label must summarise what it shows.
+    // v4: with each starter's role and the rotation named after the setter.
     expect(card1.props.accessibilityLabel).toBe(
-      'Set 1: open rotation viewer. Starters: position 1 number 1 S Setter, ' +
-        'position 2 number 2 O Outside, position 3 number 3 M Middle, position 4 number 4 O Oppo, ' +
-        'position 5 number 5 W Wing, position 6 number 6 B Block. Libero: number 7 D Dig. ' +
-        'We serve first.',
+      'Set 1: open rotation viewer. Starters: position 1 number 1 S Setter, plays Setter, ' +
+        'position 2 number 2 O Outside, plays Outside Hitter, ' +
+        'position 3 number 3 M Middle, plays Middle Blocker, ' +
+        'position 4 number 4 O Oppo, plays Opposite, ' +
+        'position 5 number 5 W Wing, plays Outside Hitter, ' +
+        'position 6 number 6 B Block, plays Middle Blocker. Libero: number 7 D Dig. ' +
+        'We serve first. Rotation 1 (setter on 1).',
     );
-    expect(card2.props.accessibilityLabel).toMatch(/Libero: No libero\. We receive first\.$/);
+    expect(card2.props.accessibilityLabel).toMatch(
+      /Libero: No libero\. We receive first\. Rotation 6 \(setter on 6\)\.$/,
+    );
     expect(card3.props.accessibilityLabel).toMatch(/position 1 empty/);
 
     // Set 3: empty.
@@ -45,7 +51,8 @@ describe('starters overview', () => {
     await fireEvent.press(
       await screen.findByRole('button', { name: /^Set 2: open rotation viewer/ }),
     );
-    expect(await screen.findByText('Rotation 1 of 6')).toBeTruthy();
+    // Set 2 starts with the setter at 6.
+    expect(await screen.findByText('Rotation 6 (setter on 6)')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Show set 2' })).toBeSelected();
   });
 
