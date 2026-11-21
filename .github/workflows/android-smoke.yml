@@ -14,40 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Fast check (no app build): can an emulator boot on this runner at all?
-  emulator-check:
+  smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 75
+    env:
+      # avdmanager and the emulator must agree on where AVDs live.
+      ANDROID_USER_HOME: /home/runner/.android
+      ANDROID_AVD_HOME: /home/runner/.android/avd
     steps:
-      - name: KVM and CPU info
-        run: |
-          ls -l /dev/kvm || echo "NO /dev/kvm"
-          grep -cE 'vmx|svm' /proc/cpuinfo || echo "no vmx/svm flags"
-          nproc; free -m
+      - uses: actions/checkout@v4
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm || true
-      - name: Try to start an emulator directly and show its output
+      - name: Create AVD and boot emulator in the background
         run: |
+          mkdir -p "$ANDROID_AVD_HOME"
           SDK=$ANDROID_HOME
-          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null
-          echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n t -k "system-images;android-30;default;x86_64" --force
-          $SDK/emulator/emulator -accel-check || true
-          ($SDK/emulator/emulator -avd t -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim > emu.log 2>&1 &)
-          for i in $(seq 1 90); do
-            if [ "$($SDK/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then echo "BOOTED after $((i*5))s"; break; fi
-            sleep 5
-          done
-          echo "--- emulator log (tail) ---"; tail -40 emu.log
-
-  smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 75
-    steps:
-      - uses: actions/checkout@v4
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null || true
+          echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k "system-images;android-30;default;x86_64" --force
+          $SDK/emulator/emulator -list-avds
+          nohup $SDK/emulator/emulator -avd smoke -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 > emu.log 2>&1 &
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -64,25 +52,19 @@ jobs:
       - name: Build release APK for the emulator (x86_64)
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
-      - name: Enable KVM
+      - name: Wait for emulator boot
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm || echo "NO KVM"
-          nproc; free -m
-      - name: Run on emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          target: default
-          cores: 2
-          ram-size: 3072M
-          emulator-boot-timeout: 1500
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
-          disable-animations: true
-          script: OUT=e2e-out ./scripts/android-smoke.sh android/app/build/outputs/apk/release/app-release.apk
+          ADB=$ANDROID_HOME/platform-tools/adb
+          for i in $(seq 1 120); do
+            if [ "$($ADB shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then echo "booted"; break; fi
+            sleep 5
+          done
+          $ADB shell settings put global window_animation_scale 0 || true
+          $ADB shell settings put global transition_animation_scale 0 || true
+          $ADB shell settings put global animator_duration_scale 0 || true
+          tail -20 emu.log
+      - name: Run smoke script
+        run: PATH=$ANDROID_HOME/platform-tools:$PATH OUT=e2e-out ./scripts/android-smoke.sh android/app/build/outputs/apk/release/app-release.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
