@@ -20,6 +20,7 @@ import type {
   Team,
 } from './types';
 import { isValidPointTag } from './pointTags';
+import { COURT_ROLES } from './roles';
 import { validatePresetName } from './presets';
 import { ALL_POSITIONS } from './types';
 
@@ -89,7 +90,7 @@ const slotsSchema = z.object({
 });
 
 /** v5: player id → role. */
-const rolesSchema = z.record(id, positionSchema);
+const rolesSchema = z.record(id, z.enum(COURT_ROLES as [Position, ...Position[]]));
 
 const setLineupSchema = z.object({
   setNumber: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),

@@ -674,6 +674,9 @@ describe('v5 roles and libero switch', () => {
     const raw = rawExport();
     (raw.matches as { sets: Record<string, unknown>[] }[])[0].sets[0].roles = { p1: 'X' };
     expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+    // "L" is not a court role (the libero has its own slot)
+    (raw.matches as { sets: Record<string, unknown>[] }[])[0].sets[0].roles = { p1: 'L' };
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
     const noSwitch = rawExport();
     delete (noSwitch.presets as Record<string, unknown>[])[0].liberoActive;
     expect(parseObject(noSwitch)).toEqual({ ok: false, error: 'INVALID_SHAPE' });

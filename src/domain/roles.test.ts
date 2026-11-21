@@ -173,7 +173,7 @@ describe('libero on/off and whom it replaces by role', () => {
     // rotation 1 with us serving: p6 (MB) at position 6 is swapped only while the libero is on
     const state = replaySet(set, players);
     expect(liveCourtView(set, state).liberoSwap).toEqual({ position: 6, replacedId: 'p6' });
-    expect(liveCourtView(off, state).liberoSwap).toBeNull();
+    expect(liveCourtView(off, replaySet(off, players)).liberoSwap).toBeNull();
   });
 
   it('finds the starters playing given roles (overrides count)', () => {

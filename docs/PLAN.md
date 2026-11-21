@@ -363,11 +363,11 @@ Pure logic in `src/domain/roles.ts` (`roleOf`, `isOffPosition`, `setRole`, `rota
 
 ## 21. v4 acceptance checklist
 
-- [ ] Each starter's role shows at the top of their spot in the lineup builder, rotation viewer, starters overview, live court and print sheet; changing a role works in matches, presets and team starters; roles follow players through swaps, rotations and substitutions (tests).
-- [ ] Choosing a role that is none of the player's positions asks for confirmation (cancel keeps the old role) and shows "*" at the top right; a secondary position doesn't (tests).
-- [ ] Rotate ↻ / ↺ moves the starting six before the set; disabled once played (tests).
-- [ ] The rotation number follows the setter (setter at 4 = rotation 4, 6-2 back-row setter, fallback without setter) in the rotation viewer, live mode and stats (tests with literal numbers).
-- [ ] The libero can be set to replace roles (e.g. middles, outsides) and switched off; a switched-off libero never swaps in (rotation, live, stats) (tests).
-- [ ] v4.0.0 opens v3.x data (store v5) and v1–v4 export files without loss; export / import round trip with roles and the libero switch restores exactly.
-- [ ] Phone layout 375 px: role tags, asterisks and the new controls fit; EN + DE.
-- [ ] Lint, typecheck and tests pass in CI; `src/domain` 100%.
+- [x] Each starter's role shows at the top of their spot in the lineup builder, rotation viewer, starters overview, live court and print sheet; changing a role works in matches, presets and team starters; roles follow players through swaps, rotations and substitutions (tests).
+- [x] Choosing a role that is none of the player's positions asks for confirmation (cancel keeps the old role) and shows "*" at the top right; a secondary position doesn't (tests).
+- [x] Rotate ↻ / ↺ moves the starting six before the set; disabled once played (tests).
+- [x] The rotation number follows the setter (setter at 4 = rotation 4, 6-2 back-row setter, fallback without setter) in the rotation viewer, live mode and stats (tests with literal numbers).
+- [x] The libero can be set to replace roles (e.g. middles, outsides) and switched off; a switched-off libero never swaps in (rotation, live, stats) (tests).
+- [x] v4.0.0 opens v3.x data (store v5) and v1–v4 export files without loss; export / import round trip with roles and the libero switch restores exactly. — _web (localStorage) migration from store v5 verified in a browser; Android AsyncStorage upgrade covered by unit tests only._
+- [x] Phone layout 375 px: role tags, asterisks and the new controls fit; EN + DE. — _verified in a browser (Playwright); not yet on a real phone._
+- [x] Lint, typecheck and tests pass in CI; `src/domain` 100%.

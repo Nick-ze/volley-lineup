@@ -14,7 +14,7 @@ export interface SetupRotateRowProps {
   onRotate: (direction: RotateDirection) => void;
 }
 
-/** "Setter at position n" + Rotate ↻ / ↺ in the next-set setup (v4, before the set starts). */
+/** "Setter on n" + Rotate ↺ / ↻ (same order as the lineup builder) in the next-set setup (v4, before the set starts). */
 export function SetupRotateRow({ setterAt, disabled, onRotate }: SetupRotateRowProps) {
   const t = useT();
   const s = t.live.setup;
@@ -27,16 +27,6 @@ export function SetupRotateRow({ setterAt, disabled, onRotate }: SetupRotateRowP
       ) : null}
       <View style={styles.row}>
         <Button
-          label={s.rotateCw}
-          accessibilityLabel={s.rotateCwLabel}
-          variant="secondary"
-          compact
-          disabled={disabled}
-          style={styles.grow}
-          onPress={() => onRotate('clockwise')}
-          testID="setup-rotate-cw"
-        />
-        <Button
           label={s.rotateCcw}
           accessibilityLabel={s.rotateCcwLabel}
           variant="secondary"
@@ -45,6 +35,16 @@ export function SetupRotateRow({ setterAt, disabled, onRotate }: SetupRotateRowP
           style={styles.grow}
           onPress={() => onRotate('counterclockwise')}
           testID="setup-rotate-ccw"
+        />
+        <Button
+          label={s.rotateCw}
+          accessibilityLabel={s.rotateCwLabel}
+          variant="secondary"
+          compact
+          disabled={disabled}
+          style={styles.grow}
+          onPress={() => onRotate('clockwise')}
+          testID="setup-rotate-cw"
         />
       </View>
     </View>

@@ -184,6 +184,14 @@ describe('removePlayerFromPreset', () => {
     );
   });
 
+  it('drops the player’s role override (a role alone also counts as being in it)', () => {
+    const p = preset({ roles: { c: 'OPP', f: 'DS' } });
+    expect(removePlayerFromPreset(p, 'c').roles).toEqual({ f: 'DS' });
+    // stale data: a role for someone no longer on court is removed too
+    const stale = preset({ roles: { x: 'OH' } });
+    expect(removePlayerFromPreset(stale, 'x').roles).toEqual({});
+  });
+
   it('returns the same object when the player is not in it', () => {
     const p = preset();
     expect(removePlayerFromPreset(p, 'nobody')).toBe(p);

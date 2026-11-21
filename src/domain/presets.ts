@@ -133,11 +133,15 @@ export function firstSetForNewMatch(
   return applyPresetToSet(empty, starters, players).set;
 }
 
-/** Removes a player from a preset (court, libero, libero replaces); same object if not in it. */
+/**
+ * Removes a player from a preset (court, libero, libero replaces, role override); same object
+ * if not in it.
+ */
 export function removePlayerFromPreset(preset: LineupPreset, playerId: string): LineupPreset {
   const inIt =
     preset.liberoId === playerId ||
     preset.liberoReplaces.includes(playerId) ||
+    playerId in preset.roles ||
     COURT_POSITIONS.some((p) => preset.slots[p] === playerId);
   if (!inIt) return preset;
   const slots = { ...preset.slots };
@@ -147,6 +151,7 @@ export function removePlayerFromPreset(preset: LineupPreset, playerId: string): 
     slots,
     liberoId: preset.liberoId === playerId ? null : preset.liberoId,
     liberoReplaces: preset.liberoReplaces.filter((id) => id !== playerId),
+    roles: Object.fromEntries(Object.entries(preset.roles).filter(([id]) => id !== playerId)),
   };
 }
 

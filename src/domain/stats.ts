@@ -25,7 +25,7 @@
  * - **Matches**: only the sets that count for the result (`getMatchState`) — sets stored after
  *   the deciding set are ignored, as for the result.
  */
-import { activeLiberoReplaces, findLiberoSwap } from './liberoSwap';
+import { findLiberoSwap } from './liberoSwap';
 import { replaySteps, type Score } from './liveSet';
 import { getMatchState } from './matchState';
 import { ROTATION_NUMBERS, serverPosition, type RotationNumber } from './rotation';
@@ -158,8 +158,7 @@ export function setStats(set: SetLineup, players: readonly Player[]): Stats {
     line[won ? 'won' : 'lost'] += 1;
     for (const p of COURT_POSITIONS) if (slots[p] !== null) played.add(slots[p] as string);
     const serving = servingSide === 'us';
-    if (findLiberoSwap(slots, set.liberoId, activeLiberoReplaces(set), { serving }))
-      liberoOnCourt = true;
+    if (findLiberoSwap(slots, set.liberoId, step.liberoReplaces, { serving })) liberoOnCourt = true;
 
     const server = serving ? slots[serverPosition] : null;
     if (serving) {

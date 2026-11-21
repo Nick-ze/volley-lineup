@@ -216,3 +216,8 @@ Newest at the bottom. Format: **Decision** — why.
 
 128. **Stats per rotation by the setter** (`setterRotation ?? rotation`, per rally; roles are fixed per set and substitutes inherit them, so a set is either all setter-numbered or all counted from the start). Row labels stay R1–R6; a note under the legend explains "R4 = setter at position 4" and the fallback.
 129. **Print sheet**: each spot's role code right-aligned on its position line ("*" when unlisted, one explanatory note per sheet), "Libero off" instead of "Libero replaces" when switched off. The results block is one compact line and court-cell names stay on one line, so 5 sets + 12 players fit one A4 page with or without results, also with long names (checked EN + DE).
+
+### QA fixes (orchestrator)
+
+130. **The libero replaces a role, so substitutes count** (amends #67 / #118): in live play a substitute for a player the libero replaces takes their place in whom the libero replaces (they inherit the role), and the starter coming back takes it again. Tracked by the replay (`RallyStep.liberoReplaces`, `LiveState.liberoReplaces`); live court, stats and the point-tag player list use it. The owner asked to choose which _position_ the libero substitutes.
+131. **Deleting a player also removes their role overrides from presets / team starters** (exports stay importable); copying a preset keeps roles and the libero switch; "Suggest middles" goes by role (players playing MB); imported role overrides must be court roles (S, OH, MB, OPP, DS — not "L"); rotate buttons are ↺ / ↻ in that order everywhere; the stepper keeps "on 4" together with a no-break space. The libero switch stays editable in played sets (like #68): it changes how past rallies are shown and counted.

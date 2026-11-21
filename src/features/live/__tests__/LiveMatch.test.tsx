@@ -187,9 +187,11 @@ describe('live match mode', () => {
     expect(screen.getByText('Now tap the bench player who comes in for #6 Block.')).toBeTruthy();
     await press('live-bench-9');
     expect(storedEvents()).toEqual([{ type: 'sub', outPlayerId: 'p6', inPlayerId: 'p9' }]);
-    // A substitute of a chosen starter is not swapped for the libero.
-    expect(numberAt(6)).toBe(9);
-    expect(screen.queryByTestId('live-libero-tag-6', { includeHiddenElements: true })).toBeNull();
+    // v4.0 (#130): the substitute takes over the middle's role, so the libero replaces them too.
+    expect(numberAt(6)).toBe(7);
+    expect(
+      screen.getByTestId('live-libero-tag-6', { includeHiddenElements: true }),
+    ).toHaveTextContent('L for #9');
   });
 
   it('a played set locks the lineup builder; resetting live data unlocks it', async () => {
