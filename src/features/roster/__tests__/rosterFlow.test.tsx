@@ -237,9 +237,9 @@ describe('roster flows', () => {
     await fireEvent.press(screen.getByTestId('confirm'));
     expect(store().teams).toHaveLength(0);
 
-    // Switching profile now lives in the Profile tab.
+    // Switching profile = Log out in the Profile tab (back to the picker).
     await fireEvent.press(screen.getByLabelText(t.profile.tabs.profileLabel));
-    await press(t.profile.switch);
+    await press(t.profile.logout);
     expect(screen).toHavePathname('/');
     await press(s.profiles.rename('Coach'));
     await type(s.profiles.name, 'Trainer');
@@ -258,7 +258,7 @@ describe('roster flows', () => {
     await renderRouter('./app', { initialUrl: '/' });
     await waitFor(() => expect(screen).toHavePathname('/teams'));
     await fireEvent.press(screen.getByLabelText(t.profile.tabs.profileLabel));
-    await press(t.profile.switch);
+    await press(t.profile.logout);
     expect(screen).toHavePathname('/');
     expect(screen.getByText(s.profiles.heading)).toBeTruthy();
     // The picker tells the user how to continue, and tapping the profile opens it.

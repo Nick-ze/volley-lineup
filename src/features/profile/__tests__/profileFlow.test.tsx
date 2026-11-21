@@ -46,11 +46,15 @@ describe('bottom tab bar', () => {
       expect(screen.getByLabelText(label)).toBeTruthy();
     }
     // The tab bar replaces the old header "Settings" and "Switch profile" buttons on Teams.
-    expect(screen.queryByRole('button', { name: p.switch })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Switch profile' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull();
 
     await pressTab(p.tabs.profileLabel);
     expect(screen).toHavePathname('/profile');
     expect(await screen.findByTestId('profile-screen')).toBeTruthy();
+    // Log out returns to the picker, so there is no separate "Switch profile" button.
+    expect(screen.getByText(p.logoutHint)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Switch profile' })).toBeNull();
 
     await pressTab(p.tabs.settingsLabel);
     expect(screen).toHavePathname('/settings');
@@ -128,7 +132,7 @@ describe('profile tab', () => {
     await fireEvent.press(await screen.findByLabelText(t.roster.profiles.select('Other')));
     expect(screen).toHavePathname('/teams');
     await pressTab(p.tabs.profileLabel);
-    await fireEvent.press(screen.getByRole('button', { name: p.switch }));
+    await fireEvent.press(screen.getByRole('button', { name: p.logout }));
     expect(screen).toHavePathname('/');
     expect(store().currentProfileId).toBeNull();
     expect(router.canGoBack()).toBe(false);

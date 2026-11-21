@@ -13,7 +13,7 @@ import { colors, typography } from '@/theme';
 import { ProfileCard } from './ProfileCard';
 import { useLeaveProfile } from './useLeaveProfile';
 
-/** `/profile` tab: the current profile, edit it, switch profile, log out, delete it. */
+/** `/profile` tab: the current profile, edit it, log out (back to the picker), delete it. */
 export function ProfileScreen() {
   const t = useT();
   const profile = useAppStore(selectCurrentProfile);
@@ -37,8 +37,7 @@ export function ProfileScreen() {
   return (
     <Screen testID="profile-screen">
       <ProfileCard profile={profile} />
-      <Section title={t.profile.account} hint={t.profile.switchHint}>
-        <Button label={t.profile.switch} variant="secondary" onPress={leave} />
+      <Section title={t.profile.account} hint={t.profile.logoutHint}>
         <Button label={t.profile.logout} onPress={leave} testID="logout" />
         <Text style={styles.note}>{t.profile.logoutNote}</Text>
       </Section>
