@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { SetLineup } from '@/domain/types';
-import { ToggleRow } from '@/features/roster/components/ToggleRow';
+import { ToggleRow } from '@/components';
 import { t } from '@/i18n/en';
 import { colors, radius, spacing, typography } from '@/theme';
 

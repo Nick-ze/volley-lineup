@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
 import { t } from '@/i18n/en';
 
@@ -11,7 +11,6 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { PositionPicker } from './PositionPicker';
 import { formStyles } from './styles';
 import { TextField } from './TextField';
-import { ToggleRow } from './ToggleRow';
 
 export interface PlayerFormProps {
   teamId: string;
