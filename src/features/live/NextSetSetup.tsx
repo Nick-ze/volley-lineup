@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { filledCount } from '@/domain/presets';
-import { setterRotation, startingRoles } from '@/domain/roles';
+import { formationRotation } from '@/domain/roles';
 import { COURT_POSITIONS, type Match, type SetLineup, type SetNumber } from '@/domain/types';
 import { ServeToggle } from '@/features/lineup/ServeToggle';
 import { useT } from '@/i18n';
@@ -10,6 +10,8 @@ import { usePlayersForTeam } from '@/store';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
+import { FormationConfirm } from './FormationConfirm';
+import { SetupFormationRow } from './SetupFormationRow';
 import { SetupRotateRow } from './SetupRotateRow';
 import { SetupSourceButtons } from './SetupSourceButtons';
 import { useSetupDraft } from './useSetupDraft';
@@ -28,7 +30,8 @@ export interface NextSetSetupProps {
 
 /**
  * Setting up a set inside live mode: fill it from the team starters, a preset or the previous
- * set, rotate it so the setter starts where you want, choose who serves first, then Start (enabled once six players are on court).
+ * set, choose the formation (v5) and rotate it so the setter starts where you want, choose who
+ * serves first, then Start (enabled once six players are on court).
  */
 export function NextSetSetup({
   match,
@@ -70,11 +73,14 @@ export function NextSetSetup({
           {s.skipped(setup.skipped.map(ref).join(', '))}
         </Text>
       ) : null}
-      <SetupRotateRow
-        setterAt={setterRotation(draft.slots, startingRoles(draft, players))}
-        disabled={filledCount(draft) === 0}
-        onRotate={setup.rotate}
+      <SetupFormationRow formation={draft.formation} onChange={setup.changeFormation} />
+      <FormationConfirm
+        change={setup.pendingFormation}
+        playersById={playersById}
+        onConfirm={setup.confirmFormation}
+        onCancel={setup.cancelFormation}
       />
+      <SetupRotateRow setterAt={formationRotation(draft.formation)} onRotate={setup.rotate} />
       <Text style={styles.label}>{t.live.serveChoice}</Text>
       <ServeToggle weServeFirst={draft.weServeFirst} onChange={setup.setServe} />
       <Button

@@ -93,6 +93,22 @@ export const live = {
     rotateCcw: 'Rotate ↺',
     rotateCcwLabel: 'Rotate ↺: move every starter one position counterclockwise',
     setterAt: (n: number) => `Setter on ${n}`,
+    /** v5: the formation of the set being set up (system and order around the court). */
+    systemLabel: 'System',
+    systemOption: (system: string) => `${system} system`,
+    orderLabel: 'Order after the setter',
+    orderOutside: 'Setter → outside',
+    orderOutsideLabel: 'Setter → outside: the setter is followed by an outside hitter',
+    orderMiddle: 'Setter → middle',
+    orderMiddleLabel: 'Setter → middle: the setter is followed by a middle blocker',
+    formationOffTitle: 'Are you sure?',
+    /** `list` e.g. "#2 Outside as Middle Blocker, #5 Wing as Middle Blocker". */
+    formationOff: (list: string) =>
+      `With this formation these players play roles that aren’t their positions: ${list}.`,
+    formationOffAs: (player: string, role: string) => `${player} as ${role}`,
+    formationConfirm: 'Change formation',
+    formationConfirmLabel: 'Change formation: the players above play these roles',
+    formationCancelLabel: 'Cancel: keep the formation',
   },
   summary: {
     title: 'Match over',

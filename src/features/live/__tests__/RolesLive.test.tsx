@@ -115,7 +115,8 @@ describe('live mode — roles and the setter rotation (v4)', () => {
     seed([{ ...set1, events: won }]);
     await renderRouter('./app', { initialUrl: '/match/m1/live?set=2' });
     expect(await screen.findByTestId('set-setup')).toBeTruthy();
-    expect(screen.getByTestId('setup-rotate-cw')).toBeDisabled(); // nobody on court yet
+    // v5: an empty draft can be rotated too (it turns the formation and its setter spot).
+    expect(screen.getByTestId('setup-rotate-cw')).toBeEnabled();
 
     await press('setup-copy');
     expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter on 4');

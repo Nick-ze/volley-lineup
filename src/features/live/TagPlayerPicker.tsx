@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import type { LastRally } from '@/domain/lastRally';
+import { plausiblePlayerIds, type LastRally } from '@/domain/lastRally';
 import type { Player, PointKind } from '@/domain/types';
 import { useT } from '@/i18n';
 import { spacing } from '@/theme';
@@ -20,13 +20,15 @@ export interface TagPlayerPickerProps {
 }
 
 /**
- * The chosen kind (tap to clear the tag) and our players on court during the rally, by jersey
- * number. The server is outlined for an ace; tapping the chosen player again removes them.
+ * The chosen kind (tap to clear the tag) and the players of ours who could have done it during
+ * the rally (`plausiblePlayerIds`), by jersey number. The server is outlined for an ace; tapping
+ * the chosen player again removes them.
  */
 export function TagPlayerPicker({ kind, rally, playersById, onTag, close }: TagPlayerPickerProps) {
   const t = useT();
   const name = t.tags.kindNames[kind];
-  const onCourt = rally.playerIds
+  // Only who could plausibly have done it (rules check #35: block = front row, ace = server, …).
+  const onCourt = plausiblePlayerIds(rally, kind)
     .map((id) => playersById.get(id))
     .filter((p): p is Player => p !== undefined)
     .sort((a, b) => a.number - b.number);

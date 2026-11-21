@@ -7,7 +7,6 @@ export const rotation: Strings['rotation'] = {
   matchNotFound: 'Dieses Spiel wurde nicht gefunden.',
   noSets: 'Dieses Spiel hat noch keine Sätze.',
   emptySet: 'In diesem Satz sind noch keine Spieler. Stelle zuerst im Spiel die Aufstellung auf.',
-  rotationOf: (n: number, total: number) => `Rotation ${n} von ${total}`,
   setterRotation: (n: number) => `Rotation ${n} (Zuspieler auf\u00a0${n})`,
   repeat: (time: number) => (time === 1 ? 'erstes Mal' : 'zweites Mal'),
   goToRotation: (n: number) => `Rotation ${n} zeigen`,
@@ -31,7 +30,9 @@ export const rotation: Strings['rotation'] = {
   unknownGlyph: '?',
   spotLabel: (position: number, row: string, player: string, isServer: boolean) =>
     `Position ${position}, ${row}: ${player}${isServer ? ', Aufschläger' : ''}`,
-  emptySpotLabel: (position: number, row: string) => `Position ${position}, ${row}: frei`,
+  /** v6: an empty spot still has its role from the formation (`role` is the role's name). */
+  emptySpotLabel: (position: number, row: string, role: string | null = null) =>
+    `Position ${position}, ${row}: frei${role ? ` (${role})` : ''}`,
   unknownPlayer: 'Unbekannter Spieler',
   cardLabel: (set: number, starters: string, libero: string, serve: string) =>
     `Satz ${set}: Rotationsansicht öffnen. Startspieler: ${starters}. Libero: ${libero}. ${serve}.`,

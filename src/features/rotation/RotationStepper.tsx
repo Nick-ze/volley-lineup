@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { RotationNumber } from '@/domain/rotation';
-import { stepsByLabel } from '@/domain/rotationNames';
+import { stepsByLabel } from '@/domain/formationSteps';
 import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
@@ -11,10 +11,8 @@ import { COURT_MAX_WIDTH } from './layout';
 export interface RotationStepperProps {
   /** The step shown (1 = the starting six, +1 per clockwise rotation). */
   step: RotationNumber;
-  /** The rotation number of every step (index 0 = step 1): the setter's position, or the step. */
+  /** The rotation number of every step (index 0 = step 1): the setter spot in that step. */
   labels: readonly RotationNumber[];
-  /** True when the labels follow the setter ("Rotation 4 (setter on 4)"). */
-  bySetter: boolean;
   onPrevious: () => void;
   onNext: () => void;
   onSelect: (step: RotationNumber) => void;
@@ -24,7 +22,6 @@ export interface RotationStepperProps {
 export function RotationStepper({
   step,
   labels,
-  bySetter,
   onPrevious,
   onNext,
   onSelect,
@@ -54,9 +51,7 @@ export function RotationStepper({
           accessibilityLiveRegion="polite"
           testID="rotation-title"
         >
-          {bySetter
-            ? `${t.rotation.setterRotation(label)}${repeat(step)}`
-            : t.rotation.rotationOf(label, labels.length)}
+          {`${t.rotation.setterRotation(label)}${repeat(step)}`}
         </Text>
         <Button
           label={t.rotation.next}

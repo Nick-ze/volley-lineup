@@ -2,7 +2,7 @@
 
 What the rules of indoor volleyball say about everything this app models (lineups, rotations, roles, libero, substitutions, scoring), plus the coaching conventions the app follows. Use it to check the app and as a reference for future work. §6 lists testable invariants and whether the code meets them today.
 
-Last checked: 2026-11-21, against the code on `main` after v4.0.0.
+Last checked: 2026-11-21, against the code on `main` after the v5 lineup builder (#40) plus this branch (formation roles on every court incl. the lineup builder, formation controls with confirmation, point-tag player checks).
 
 ## Sources and how to read the citations
 
@@ -79,7 +79,7 @@ A and B agree only on rotation 1 ("S1"). A team that starts with the setter at 1
 
 In a **6-2** the back-row setter usually names the rotation, so only 1, 6 and 5 occur, each twice. In a **4-2** the front-row setter sets, so coaches name rotations after the front-row setter (4, 3, 2) or simply count them.
 
-The app uses **A**, with **C** as the fallback when no setter is on court (DECISIONS #117, #125).
+The app uses **A** (DECISIONS #117, #125). Since v5 the formation fixes the setter spot, so every court, even an empty or incomplete one, is named after that spot (`roles.ts` `formationRotation`). The fallback **C** only remains for a live court without anyone on a setter spot, which a complete six can't have.
 
 ---
 
@@ -165,6 +165,8 @@ Properties of every valid 5-1:
 | 6-2, 4-2 | the two setters not opposite                    | rotations with two or no setters in the back (6-2) or front (4-2) |
 | 5-1      | two setters on court (e.g. a backup S as OH)    | not a 5-1. Fine as a role, but the template no longer applies     |
 
+**In the app (v5):** the roles belong to the spots of a formation (5-1 or 6-2, both orders), so the first four layouts can't occur. A player whose listed positions don't match their spot's role is "off position" (confirmed and marked `*`), which covers the last row: a backup setter on an OH spot plays OH.
+
 ---
 
 ## 3. The libero
@@ -233,7 +235,7 @@ Other formats: many youth, school and tournament competitions play **best of thr
 
 ## 6. Checks for the app
 
-Each invariant is testable. **PASS** = the code satisfies it. **FAIL** = the code contradicts it. **NOT MODELLED** = the app doesn't represent it (a deliberate scope limit unless marked otherwise). File references are to `src/domain/` unless a path is given.
+Each invariant is testable. **PASS** = the code satisfies it. **FAIL** = the code contradicts it. **NOT MODELLED** = the app doesn't represent it (a deliberate scope limit unless marked otherwise). File references are to `src/domain/` unless a path is given. "By construction" means the data model can't express the broken case.
 
 ### Positions and rotation
 
@@ -246,7 +248,7 @@ Each invariant is testable. **PASS** = the code satisfies it. **FAIL** = the cod
 7. **The opponent's rotations aren't needed, but the serve alternates correctly**: the rally winner serves next. PASS. `liveSet.ts` `servingSide = event.winner`.
 8. **The starting line-up is per set** (it may differ between sets). PASS. `types.ts` `Match.sets: SetLineup[]`.
 9. **The starting six are six different players and don't include the libero.** PASS. `lineupValidation.ts` errors `INCOMPLETE`, `DUPLICATE_PLAYER`, `LIBERO_ON_COURT`. Live mode needs all six (`matchFlow.ts` `isSetComplete`).
-10. **Rotation named after the setter's position** (convention A, §1.4): setter at 4 = "rotation 4"; 6-2 back-row setter; counted from the start without a setter. PASS. `roles.ts` `setterRotation`, `rotationNames.ts`, `liveSet.ts` `RallyStep.setterRotation`.
+10. **Rotation named after the setter's position** (convention A, §1.4): setter at 4 = "rotation 4"; 6-2 back-row setter. PASS. Rotation viewer, starters overview and the live next-set setup use the formation's setter spot, so empty and incomplete courts are named too (`roles.ts` `formationRotation`, `formationSteps.ts` `formationLabels`; `src/features/rotation/RotationPanel.tsx`, `SetStartersCard.tsx`, `src/features/live/NextSetSetup.tsx`). Live play names it after the player carrying the S role (`roles.ts` `setterRotation`, `liveSet.ts` `RallyStep.setterRotation`), which is the same spot because players carry their starting spot's role.
 
 - Note: US material often uses convention B (setter at 6 = "rotation 2"). The app labels say "setter on n", so this is unambiguous (DECISIONS #125).
 
@@ -256,16 +258,18 @@ Each invariant is testable. **PASS** = the code satisfies it. **FAIL** = the cod
 
 ### Formations and roles
 
-14. **5-1 template: S opposite OPP, OH opposite OH, MB opposite MB** (variant A: S1 · OH2 · MB3 · OPP4 · OH5 · MB6). PASS. `templates.ts` `TEMPLATE_LAYOUTS['5-1']`.
-15. **6-2 template: the two setters opposite, the OHs opposite, the MBs opposite** (S1 · OH2 · MB3 · S4 · OH5 · MB6). PASS. `templates.ts` `TEMPLATE_LAYOUTS['6-2']`.
-16. **Variant B (setter followed by a middle) is available as a template.** NOT MODELLED. Only variant A exists (`templates.ts`). A manager can build B by hand, and validation accepts it (correctly).
-17. **4-2 (and 6-6 / 6-3) templates.** NOT MODELLED. `TEMPLATE_SYSTEMS` is `['5-1', '6-2']`.
-18. **Warn when the one S and the one OPP aren't opposite.** PASS. `lineupValidation.ts` `layoutWarnings` (a), `UNUSUAL_LAYOUT`. Judged on roles (`roleOf`).
-19. **Warn when the two MBs aren't opposite.** PASS. `lineupValidation.ts` `layoutWarnings` (b).
-20. **Warn when the two OHs aren't opposite.** FAIL. There's no OH check. In a standard 5-1 it follows from 18 and 19, but not without an OPP (6-2, 4-2) or with 3 OHs or 2 OPPs.
-21. **Warn when two setters (6-2 / 4-2) aren't opposite.** FAIL. Check (a) only runs with exactly one S and one OPP (`lineupValidation.ts` `layoutWarnings`), so S at 1 and S at 2 gives no warning.
-22. **Layout problems are warnings, never errors** (they are legal under the rules). PASS. `lineupValidation.ts` (`valid` depends on errors only).
-23. **"No setter" is judged on the roles played.** FAIL (minor). `NO_SETTER` checks whether any starter has `'S'` among their roster positions (`lineupValidation.ts`, `p.positions.includes('S')`), not their role. A player listed as S who plays OH suppresses the warning. A player without S who is given the S role triggers it, even though a setter is on court. Everything else in the validation (and `setterRotation`) uses roles.
+Since v5 (data model v6) a set has a **formation** (`types.ts` `Formation`: system 5-1 / 6-2, order 'outside' / 'middle', `setterAt`) that gives every court spot its role (`roles.ts` `FORMATION_PATTERNS`, `spotRole`). Players play the role of the spot they stand on. Many layout checks therefore hold by construction.
+
+14. **5-1 template: S opposite OPP, OH opposite OH, MB opposite MB** (variant A: S1 · OH2 · MB3 · OPP4 · OH5 · MB6). PASS. `templates.ts` `fillFromTemplate` fills players into the formation's spots by role; the patterns are in `roles.ts` `FORMATION_PATTERNS['5-1']`.
+15. **6-2 template: the two setters opposite, the OHs opposite, the MBs opposite** (S1 · OH2 · MB3 · S4 · OH5 · MB6). PASS. `roles.ts` `FORMATION_PATTERNS['6-2']`, `templates.ts` (`acceptedFor`: a 6-2 hitter spot also takes an OPP).
+16. **Variant B (setter followed by a middle) is available.** PASS. Formation order `'middle'` (`roles.ts` `FORMATION_PATTERNS[…].middle`), chosen in the live next-set setup (`src/features/live/SetupFormationRow.tsx`) and in the lineup builder; templates fill into whichever order the set has.
+17. **4-2 (and 6-6 / 6-3) templates.** NOT MODELLED. `FORMATION_SYSTEMS` / `TEMPLATE_SYSTEMS` are `['5-1', '6-2']` (owner's choice, DECISIONS #132).
+18. **Warn when the one S and the one OPP aren't opposite.** PASS (by construction). The 5-1 patterns always put OPP three spots after S (`roles.ts` `FORMATION_PATTERNS`). A player listed as OPP on another spot is shown as off position (marked `*`, confirmed when placed; `roles.ts` `isOffPosition`, check 62). `UNUSUAL_LAYOUT` is no longer raised (`lineupValidation.ts`).
+19. **Warn when the two MBs aren't opposite.** PASS (by construction). Both patterns put the MB spots 3 apart.
+20. **Warn when the two OHs aren't opposite.** PASS (by construction). Both patterns put the OH spots 3 apart, also in a 6-2 (was FAIL before v5).
+21. **Warn when two setters (6-2) aren't opposite.** PASS (by construction). The 6-2 patterns put the S spots at the setter spot and 3 after it (was FAIL before v5). A third setter in a 6-2 or a second one in a 5-1 plays the role of their spot.
+22. **Layout problems are warnings, never errors** (they are legal under the rules). PASS. `lineupValidation.ts` (`valid` depends on errors only); off-position spots only ask for confirmation and are marked `*`.
+23. **"No setter" is judged on the setter spot.** PASS. `NO_SETTER` is raised when no player listed as S stands on the formation's setter spot(s) (`lineupValidation.ts`, `spotRole(set.formation, p) === 'S'`; was FAIL before v5, when it looked at roster positions of all starters).
 
 ### Libero
 
@@ -280,7 +284,7 @@ Each invariant is testable. **PASS** = the code satisfies it. **FAIL** = the cod
 32. **A second libero** (up to 2 per match, one on court; mandatory with >12 players in FIVB senior play). NOT MODELLED. One `liberoId` per set. A different libero per set is possible, which covers "two liberos used in different sets" but not switching liberos within a set.
 33. **A completed rally between two libero replacements.** NOT MODELLED. Swaps are computed per rally and never "pending". This matters only for strict replay, not for a lineup app.
 34. **A designated libero doesn't play as a regular player in the same match.** NOT MODELLED. The app allows a player to be the libero in set 1 and a starter in set 2 (no cross-set check in `lineupValidation.ts` or `lineupEditing.ts`).
-35. **The libero (and back-row players) can't be credited with a block, and the libero can't be credited with an ace.** FAIL (minor). The ace tag pre-selects the server, who is never the libero (`src/features/live/PointTagRow.tsx`, `lastRally.ts` `serverId`). But the player picker for kill / block / ace lists everyone on court during the rally, including the libero and back-row players (`src/features/live/TagPlayerPicker.tsx`, `lastRally.ts` `playerIds`). So "block by the libero" or "block by a back-row player" (FIVB 14.6.2, 19.3.1.3) can be recorded.
+35. **Point tags only name plausible players**: a block only a front-row player (positions 2, 3, 4) on court during that rally, never the libero (FIVB 14.6.2, 19.3.1.3); an ace only our server of that rally; a kill anyone on court except the libero (FIVB 19.3.1.2); our error anyone on court. PASS. `lastRally.ts` `plausiblePlayerIds` (front row from the rally's court with the libero swap applied), used by `src/features/live/TagPlayerPicker.tsx`; the ace tag pre-selects the server (`PointTagRow.tsx`). A player already tagged with that kind stays listed so an older tag can still be cleared. Note: a back-row player's kill from behind the attack line is legal, so kills aren't limited to the front row.
 36. **Libero serving in one rotation (NCAA / USAV).** NOT MODELLED. Correct for FIVB/DVV.
 
 ### Substitutions
@@ -305,7 +309,20 @@ Each invariant is testable. **PASS** = the code satisfies it. **FAIL** = the cod
 51. **Time-outs (2 per set).** NOT MODELLED.
 52. **Best-of-three match formats (youth, tournaments).** NOT MODELLED. `SETS_TO_WIN` and the 15-point set are fixed to set 5.
 
+### Formation patterns (v5)
+
+53. **5-1, setter followed by an outside: S · OH · MB · OPP · OH · MB** from the setter spot up the position numbers (§2.1 variant A). PASS. `roles.ts` `FORMATION_PATTERNS['5-1'].outside`; all six rotations as literal layouts in `formationSteps.test.ts`.
+54. **5-1, setter followed by a middle: S · MB · OH · OPP · MB · OH** (§2.1 variant B). PASS. `FORMATION_PATTERNS['5-1'].middle`; literal layouts in `formationSteps.test.ts`.
+55. **6-2: S · OH · MB · S · OH · MB, or S · MB · OH · S · MB · OH** (§2.2). PASS. `FORMATION_PATTERNS['6-2']`; literal layouts in `formationSteps.test.ts`, `roles.test.ts`.
+56. **In every rotation the pairs 1–4, 2–5, 3–6 have the same kind of role** (S–OPP or S–S, OH–OH, MB–MB), so exactly one of each pair is in the front row. PASS (by construction). Every pattern repeats after 3 spots; checked for all systems, orders and steps in `formationSteps.test.ts`.
+57. **5-1: three front-row attackers when the setter is in the back row (rotations 1, 6, 5), two when in front (4, 3, 2).** PASS (by construction). Follows from 53–56: with S at 1, 5 or 6 the front row holds one OH, one MB and the OPP.
+58. **6-2: one setter is always in the back row, so the rotations are named 1, 6, 5 twice.** PASS. `roles.ts` `formationRotation` (back-row setter spot), `formationSteps.ts` `formationLabels`; `src/features/rotation/RotationStepper.tsx` tells the two apart ("first / second time").
+59. **The formation turns with the players** (rotating before the set, and rotation by rotation in the viewer), so everyone keeps their role. PASS. `roles.ts` `rotateStarters` (moves `setterAt` like a player), `formationSteps.ts` `rotateFormation`, `stepSpotRoles`.
+60. **Every spot has its role, also when empty**, on every court. PASS. Rotation viewer, starters overview and team starters (`src/features/rotation/RotationCourt.tsx` `spotRoles`, `formationSteps.ts` `stepSpotRoles`), print sheet (`lineupSheet.ts` `roleTag`), live court (always six players; `LiveState.roles`) and the lineup builder court (`src/features/lineup/LineupCourt.tsx`).
+61. **The formation is locked once a set is played**, like the starting six. PASS. `roles.ts` `setFormation`, `rotateStarters` (`isLineupLocked`).
+62. **A player on a spot whose role is none of their positions is "off position"**: legal, but confirmed and marked with `*`. PASS. `roles.ts` `isOffPosition`; the `*` via `OffPositionMark` on every court and `<span class="off">` in the print sheet. A formation change in the live next-set setup that puts starters onto such roles asks first and Cancel keeps the old formation (`formationChange.ts` `changeFormation`, `placementCheck.ts` `newOffPositionPlacements`, `src/features/live/FormationConfirm.tsx`); placing a player or changing the formation in the lineup builder asks the same way (`placementCheck.ts` `newOffPositionPlacements`, `src/features/lineup/PlacementConfirm.tsx`).
+
 ### Summary of non-PASS checks
 
-- **FAIL**: 20 (no OH–OH opposite check), 21 (two setters not opposite gives no warning), 23 (`NO_SETTER` uses roster positions, not roles), 35 (block / ace tags can name the libero; block can name back-row players).
-- **NOT MODELLED**: 11 (4-2 rotation naming), 12 (overlap / positional faults), 16 (5-1 variant B template), 17 (4-2 / 6-6 / 6-3 templates), 32 (second libero), 33 (rally between libero replacements), 34 (libero playing as a regular player in another set), 36 (libero serve, US rules), 40 (exceptional substitution), 41 (configurable sub limit), 50 (changing ends), 51 (time-outs), 52 (best of three).
+- **FAIL**: none. (Fixed in v5: 20 and 21 by the formation, 23 by judging the setter spot, 35 by the point-tag player check.)
+- **NOT MODELLED**: 11 (4-2 rotation naming), 12 (overlap / positional faults), 17 (4-2 / 6-6 / 6-3 templates), 32 (second libero), 33 (rally between libero replacements), 34 (libero playing as a regular player in another set), 36 (libero serve, US rules), 40 (exceptional substitution), 41 (configurable sub limit), 50 (changing ends), 51 (time-outs), 52 (best of three).

@@ -92,15 +92,17 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
     expect(title()).toHaveTextContent('Rotation 6 (setter on\u00a06), second time');
   });
 
-  it('without a setter on court the rotations are counted from the start', async () => {
-    // v6: the setter spot (1) is empty, so nobody sets.
+  it('an empty setter spot still names the rotations after the setter spot (v6)', async () => {
+    // v6 (PLAN §22 item 4): the formation names the rotation, also on an incomplete court.
     seedWith({ ...set1, slots: { ...set1.slots, 1: null } });
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    expect(await screen.findByText('Rotation 1 of 6')).toBeTruthy();
+    expect(await screen.findByText('Rotation 1 (setter on\u00a01)')).toBeTruthy();
+    expect(roleAt(1)).toHaveTextContent('S');
     await next();
-    expect(title()).toHaveTextContent('Rotation 2 of 6');
-    await fireEvent.press(screen.getByRole('button', { name: 'Show rotation 5' }));
-    expect(title()).toHaveTextContent('Rotation 5 of 6');
+    expect(title()).toHaveTextContent('Rotation 6 (setter on\u00a06)');
+    expect(roleAt(6)).toHaveTextContent('S');
+    await fireEvent.press(screen.getByRole('button', { name: 'Show rotation 4' }));
+    expect(title()).toHaveTextContent('Rotation 4 (setter on\u00a04)');
   });
 
   it('shows each role on top of the spot, "*" when it is none of the player’s positions', async () => {

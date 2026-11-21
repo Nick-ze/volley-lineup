@@ -1,4 +1,4 @@
-import { lastRally, plausibleKinds } from './lastRally';
+import { lastRally, plausibleKinds, plausiblePlayerIds } from './lastRally';
 import type { Player, SetLineup } from './types';
 
 const player = (n: number): Player => ({
@@ -43,6 +43,8 @@ describe('lastRally', () => {
       servingSide: 'us',
       playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'],
       serverId: 'p1',
+      frontRowIds: ['p2', 'p3', 'p4'],
+      liberoId: 'p7',
     });
   });
 
@@ -63,6 +65,8 @@ describe('lastRally', () => {
       servingSide: 'them',
       playerIds: ['p7', 'p2', 'p3', 'p4', 'p5', 'p6'],
       serverId: null,
+      frontRowIds: ['p2', 'p3', 'p4'],
+      liberoId: 'p7',
     });
   });
 
@@ -93,5 +97,66 @@ describe('plausibleKinds', () => {
       'opponentAce',
     ]);
     expect(plausibleKinds(rally('them', 'us'))).toEqual(['ourError', 'opponentKill']);
+  });
+});
+
+describe('plausiblePlayerIds (rules check #35)', () => {
+  // They serve, the libero p7 receives in place of p6 at 6; p1 at 1, front row p2 p3 p4.
+  const receiving = lastRally(
+    set({ weServeFirst: false, liberoReplaces: ['p6'], events: [{ type: 'point', winner: 'us' }] }),
+    players,
+  )!;
+  // We serve with p1; the libero p7 is in for p5 at 5.
+  const serving = lastRally(
+    set({ liberoReplaces: ['p5'], events: [{ type: 'point', winner: 'us' }] }),
+    players,
+  )!;
+
+  it('block: only front-row players (2, 3, 4), never the libero', () => {
+    expect(plausiblePlayerIds(receiving, 'block')).toEqual(['p2', 'p3', 'p4']);
+    expect(plausiblePlayerIds({ ...serving, frontRowIds: ['p2', 'p7'] }, 'block')).toEqual(['p2']);
+    const partial = lastRally(
+      set({ slots: { ...base.slots, 3: null }, events: [{ type: 'point', winner: 'us' }] }),
+      players,
+    )!;
+    expect(plausiblePlayerIds(partial, 'block')).toEqual(['p2', 'p4']);
+  });
+
+  it('ace: only our server of the rally (none when they served)', () => {
+    expect(plausiblePlayerIds(serving, 'ace')).toEqual(['p1']);
+    expect(plausiblePlayerIds(receiving, 'ace')).toEqual([]);
+  });
+
+  it('kill: anyone on court except the libero', () => {
+    expect(plausiblePlayerIds(receiving, 'kill')).toEqual(['p1', 'p2', 'p3', 'p4', 'p5']);
+    expect(plausiblePlayerIds(serving, 'kill')).toEqual(['p1', 'p2', 'p3', 'p4', 'p6']);
+  });
+
+  it('our error: anyone on court, the libero included', () => {
+    expect(plausiblePlayerIds(receiving, 'ourError')).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p7']);
+  });
+
+  it('kinds without a player offer nobody', () => {
+    expect(plausiblePlayerIds(receiving, 'opponentError')).toEqual([]);
+    expect(plausiblePlayerIds(receiving, 'opponentKill')).toEqual([]);
+  });
+
+  it('keeps a player already tagged with this kind, even an implausible one', () => {
+    const tagged = {
+      ...receiving,
+      event: { ...receiving.event, kind: 'block' as const, playerId: 'p5' },
+    };
+    expect(plausiblePlayerIds(tagged, 'block')).toEqual(['p2', 'p3', 'p4', 'p5']);
+    const plausible = {
+      ...receiving,
+      event: { ...receiving.event, kind: 'block' as const, playerId: 'p3' },
+    };
+    expect(plausiblePlayerIds(plausible, 'block')).toEqual(['p2', 'p3', 'p4']);
+    // A tag of another kind doesn't count.
+    const other = {
+      ...receiving,
+      event: { ...receiving.event, kind: 'kill' as const, playerId: 'p5' },
+    };
+    expect(plausiblePlayerIds(other, 'block')).toEqual(['p2', 'p3', 'p4']);
   });
 });

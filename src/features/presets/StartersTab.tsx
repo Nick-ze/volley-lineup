@@ -4,8 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components';
 import { emptySetLineup } from '@/domain/lineup';
 import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
-import { isOffPosition, startingRoles } from '@/domain/roles';
-import { COURT_POSITIONS, type Player, type PlayerRoles } from '@/domain/types';
+import { isOffPosition, spotRoles } from '@/domain/roles';
+import { COURT_POSITIONS, type CourtPosition, type Player, type Position } from '@/domain/types';
 import { RotationCourt } from '@/features/rotation';
 import { listStyles } from '@/features/roster/components/styles';
 import { useT, type Strings } from '@/i18n';
@@ -27,16 +27,15 @@ function courtSummary(
   t: Strings,
   slots: Record<number, string | null>,
   byId: Map<string, Player>,
-  roles: Readonly<PlayerRoles>,
+  roles: Readonly<Record<CourtPosition, Position>>,
 ) {
   return COURT_POSITIONS.map((pos) => {
     const id = slots[pos];
     const p = id ? byId.get(id) : undefined;
-    if (!p) return t.rotation.starterSummary(pos, t.rotation.emptySummary);
-    const role = roles[p.id];
-    const desc = role
-      ? `${playerName(p)}, ${t.roles.spotRole(t.positions[role], isOffPosition(p, role))}`
-      : playerName(p);
+    const role = roles[pos];
+    if (!p)
+      return t.rotation.starterSummary(pos, `${t.rotation.emptySummary} (${t.positions[role]})`);
+    const desc = `${playerName(p)}, ${t.roles.spotRole(t.positions[role], isOffPosition(p, role))}`;
     return t.rotation.starterSummary(pos, desc);
   }).join(', ');
 }
@@ -64,11 +63,8 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
   }
 
   const libero = starters.liberoId ? byId.get(starters.liberoId) : undefined;
-  // The role every starter plays: the role of their spot in the starters' formation (v6).
-  const roles = startingRoles(
-    { ...emptySetLineup(1), slots: starters.slots, formation: starters.formation },
-    players,
-  );
+  // The role of every spot in the starters' formation (v6), shown also on empty spots.
+  const roles = spotRoles(starters.formation);
   const complete = isPresetComplete(starters);
   // Injured (inactive) starters are skipped when a new match is pre-filled.
   const leftOut = applyPresetToSet(emptySetLineup(1), starters, players).skipped.length;
@@ -97,7 +93,7 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
         accessibilityLabel={s.courtLabel(courtSummary(t, starters.slots, byId, roles))}
         testID="starters-court"
       >
-        <RotationCourt slots={starters.slots} playersById={byId} roles={roles} compact />
+        <RotationCourt slots={starters.slots} playersById={byId} spotRoles={roles} compact />
         <Text style={styles.libero}>{libero ? s.libero(playerName(libero)) : s.noLibero}</Text>
       </View>
       <Text

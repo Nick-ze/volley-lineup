@@ -5,7 +5,6 @@ export const rotation = {
   matchNotFound: 'This match could not be found.',
   noSets: 'This match has no sets yet.',
   emptySet: 'No players in this set yet. Build the lineup on the match screen first.',
-  rotationOf: (n: number, total: number) => `Rotation ${n} of ${total}`,
   /** v4: the rotation is named after the setter's position. */
   setterRotation: (n: number) => `Rotation ${n} (setter on\u00a0${n})`,
   /** v4, 6-2: the same rotation number comes up twice; tells the two apart. */
@@ -31,7 +30,9 @@ export const rotation = {
   unknownGlyph: '?',
   spotLabel: (position: number, row: string, player: string, isServer: boolean) =>
     `Position ${position}, ${row}: ${player}${isServer ? ', server' : ''}`,
-  emptySpotLabel: (position: number, row: string) => `Position ${position}, ${row}: empty`,
+  /** v6: an empty spot still has its role from the formation (`role` is the role's name). */
+  emptySpotLabel: (position: number, row: string, role: string | null = null) =>
+    `Position ${position}, ${row}: empty${role ? ` (${role})` : ''}`,
   unknownPlayer: 'Unknown player',
   /** Screen-reader summary of a starters card: what the card shows + what tapping does. */
   cardLabel: (set: number, starters: string, libero: string, serve: string) =>

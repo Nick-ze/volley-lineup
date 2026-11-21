@@ -248,7 +248,7 @@ describe('buildLineupSheetHtml', () => {
     );
   });
 
-  it('shows no role on an empty / unknown spot; a player without positions is off position', () => {
+  it('shows the spot role also on an empty / unknown spot (no "*"); a player without positions is off position', () => {
     const noPos = players.map((p) => (p.id === 'b' ? { ...p, positions: [] } : p));
     const partial: SetLineup = {
       ...full(1, true),
@@ -261,7 +261,10 @@ describe('buildLineupSheetHtml', () => {
       labels,
     });
     const set = sectionOf(out, 1);
-    for (const pos of [3, 4]) expect(cellOf(set, pos)).not.toContain('class="role"');
+    // v6 (PLAN §22 item 2): the formation gives every spot a role, also an empty one.
+    expect(cellOf(set, 3)).toContain('<span class="pos"><span class="role">MB</span>P3');
+    expect(cellOf(set, 4)).toContain('<span class="pos"><span class="role">OPP</span>P4');
+    for (const pos of [3, 4]) expect(cellOf(set, pos)).not.toContain('class="off"');
     expect(cellOf(set, 1)).toContain('<span class="role">S</span>');
     // v6: the spot's role (OH at 2) is none of b's (empty) positions.
     expect(cellOf(set, 2)).toContain('<span class="role">OH<span class="off">*</span></span>');
@@ -542,5 +545,23 @@ describe('durationParts', () => {
     expect(durationParts(59 * 60_000)).toEqual({ hours: 0, minutes: 59 });
     expect(durationParts(92 * 60_000 + 10_000)).toEqual({ hours: 1, minutes: 32 });
     expect(durationParts(120 * 60_000)).toEqual({ hours: 2, minutes: 0 });
+  });
+});
+
+describe('formation roles on empty spots (v6)', () => {
+  it('prints the roles of a completely empty set from its formation (6-2, middle order, setter spot 3)', () => {
+    const empty: SetLineup = {
+      ...emptySetLineup(1),
+      formation: { system: '6-2', order: 'middle', setterAt: 3 },
+    };
+    const out = buildLineupSheetHtml({ match: { ...match, sets: [empty] }, team, players, labels });
+    const set = sectionOf(out, 1);
+    // S 3 · MB 4 · OH 5 · S 6 · MB 1 · OH 2
+    const expected: Record<number, string> = { 1: 'MB', 2: 'OH', 3: 'S', 4: 'MB', 5: 'OH', 6: 'S' };
+    for (const pos of [1, 2, 3, 4, 5, 6]) {
+      expect(cellOf(set, pos)).toContain(`<span class="role">${expected[pos]}</span>`);
+      expect(cellOf(set, pos)).toContain('<span class="empty">—</span>');
+    }
+    expect(out).not.toContain('class="off-note"');
   });
 });

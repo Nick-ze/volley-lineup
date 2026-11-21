@@ -102,7 +102,7 @@ describe('rotation viewer', () => {
   it('shows an empty set gracefully', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=3' });
     expect(await screen.findByText(/No players in this set yet/)).toBeTruthy();
-    expect(screen.getByLabelText('Position 1, Back row: empty')).toBeTruthy();
+    expect(screen.getByLabelText('Position 1, Back row: empty (Setter)')).toBeTruthy();
   });
 
   it('falls back to the first set for an unknown set param and corrects the URL', async () => {
