@@ -54,5 +54,29 @@ export const lineup: Strings['lineup'] = {
   errorPrefix: '✕ ',
   warningPrefix: '! ',
   emptySlotGlyph: '+',
+  liberoReplaces: {
+    title: 'Libero ersetzt',
+    hint: 'In der Hinterreihe, außer beim Aufschlag.',
+    noStarters: 'Stelle Spieler aufs Feld, um zu wählen, wen der Libero ersetzt.',
+    groupLabel: 'Spieler, die der Libero ersetzt',
+    optionLabel: (number: number, name: string) => `Libero ersetzt Nummer ${number} ${name}`,
+    optionText: (number: number, name: string) => `#${number} ${name}`,
+    suggest: 'Mittelblocker vorschlagen',
+    suggestLabel: 'Die Mittelblocker auf dem Feld vorschlagen',
+  },
+  template: {
+    open: 'Aus Vorlage füllen',
+    openHint: 'Wähle ein 5-1- oder 6-2-System, um die Startaufstellung aus dem Kader zu füllen',
+    lockedHint:
+      'Dieser Satz wurde schon gespielt, daher kann die Startaufstellung nicht neu gefüllt werden.',
+    choose: 'Startaufstellung nach einem System füllen. Die aktuellen Startspieler werden ersetzt.',
+    systemLabel: (system: string) => `Startaufstellung mit einem ${system}-System füllen`,
+    cancel: 'Abbrechen',
+    cancelLabel: 'Vorlagenauswahl schließen',
+    filled: (system: string) => `Mit einem ${system}-System gefüllt.`,
+    missing: (system: string, list: string) =>
+      `Mit einem ${system}-System gefüllt. Nicht besetzt: ${list}. Füge Spieler mit diesen Positionen hinzu oder stelle jemanden von Hand auf.`,
+    missingItem: (position: number, role: string) => `Position ${position} (${role})`,
+  },
   issuePositions: (positions: number[]) => `Positionen ${positions.join(', ')}`,
 };

@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import type { SetNumber, Side } from '@/domain/types';
 import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
 import { spacing } from '@/theme';
 
@@ -27,6 +27,7 @@ export interface LiveMatchProps {
 
 /** Live match mode for one set: score, serve, current court, undo and substitutions. */
 export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
+  const t = useT();
   const live = useLiveSet(matchId, setNumber);
   const wide = useIsWide();
   const [subMode, setSubMode] = useState(false);
@@ -52,7 +53,7 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
     );
   }
 
-  const ref = (id: string | null) => playerRef(playersById, id);
+  const ref = (id: string | null) => playerRef(t, playersById, id);
   const reset = () => {
     setSubMode(false);
     setOutId(null);

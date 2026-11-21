@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { fillFromTemplate, TEMPLATE_SYSTEMS, type TemplateSystem } from '@/domain/templates';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import type { LineupEditor } from './useLineupEditor';
@@ -13,6 +13,7 @@ import type { LineupEditor } from './useLineupEditor';
  * which positions could not be filled. Remount (key by set number) to reset the message.
  */
 export function TemplateFill({ editor }: { editor: LineupEditor }) {
+  const t = useT();
   const { set, players, update } = editor;
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<{ text: string; warn: boolean } | null>(null);

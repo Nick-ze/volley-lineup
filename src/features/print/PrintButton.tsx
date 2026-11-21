@@ -1,7 +1,7 @@
 import { type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { Button } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 import { usePrintSheet } from './usePrintSheet';
@@ -13,6 +13,7 @@ export interface PrintButtonProps {
 
 /** "Print / PDF": web opens the print dialog, phones get a PDF in the share sheet. */
 export function PrintButton({ matchId, style }: PrintButtonProps) {
+  const t = useT();
   const { print, printing, failed, ready } = usePrintSheet(matchId);
   return (
     <View style={[styles.wrap, style]}>

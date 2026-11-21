@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { Score } from '@/domain/liveSet';
 import type { Side } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { SCORE_FONT_SIZE, SERVE_DOT_SIZE } from './layout';
@@ -26,6 +26,7 @@ export function Scoreboard({
   serveText,
   rotation,
 }: ScoreboardProps) {
+  const t = useT();
   const side = (who: Side, name: string, value: number) => {
     const serving = servingSide === who;
     return (

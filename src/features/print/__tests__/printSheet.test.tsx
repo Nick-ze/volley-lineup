@@ -75,6 +75,26 @@ describe('print lineup sheet', () => {
     expect(screen.queryByTestId('print-error')).toBeNull();
   });
 
+  it('prints in German with lang="de" when the app is in German', async () => {
+    useAppStore.getState().setLanguage('de');
+    try {
+      await renderRouter('./app', { initialUrl: '/match/m1' });
+      await fireEvent.press(await screen.findByTestId('print-sheet'));
+      await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
+      const [html, options] = mockPrint.mock.calls[0] as [string, Record<string, string>];
+      expect(options).toEqual({
+        title: 'Aufstellung · Herren <1> gegen Rivals',
+        dialogTitle: 'Aufstellungsbogen teilen',
+      });
+      expect(html).toContain('<html lang="de">');
+      expect(html).toContain('<dd>Auswärts</dd>');
+      expect(html).toContain('Erster Aufschlag:</span> Gegner');
+      expect(html).not.toContain('We receive');
+    } finally {
+      useAppStore.getState().setLanguage('en');
+    }
+  });
+
   it('shows an error when printing fails', async () => {
     mockPrint.mockRejectedValueOnce(new Error('no printer'));
     await renderRouter('./app', { initialUrl: '/match/m1' });

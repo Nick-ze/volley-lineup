@@ -1,0 +1,38 @@
+import type { Strings } from '../en';
+
+/** Druckbarer Aufstellungsbogen. */
+export const print: Strings['print'] = {
+  button: 'Drucken / PDF',
+  buttonLabel: 'Aufstellungsbogen dieses Spiels drucken oder als PDF speichern',
+  failed: 'Drucken fehlgeschlagen. Bitte versuche es noch einmal.',
+  dialogTitle: 'Aufstellungsbogen teilen',
+  sheet: {
+    documentTitle: (team: string, opponent: string) => `Aufstellung · ${team} gegen ${opponent}`,
+    opponent: 'Gegner',
+    date: 'Datum',
+    venue: 'Spielort',
+    home: 'Heim',
+    away: 'Auswärts',
+    season: 'Saison',
+    setTitle: (n: number) => `Satz ${n}`,
+    net: 'Netz',
+    positionShort: (n: number) => `P${n}`,
+    emptySlot: '—',
+    unknownPlayer: 'Unbekannter Spieler',
+    libero: 'Libero:',
+    noLibero: 'keiner',
+    liberoReplaces: (numbers: string) => `Libero ersetzt ${numbers}`,
+    serveFirst: 'Erster Aufschlag:',
+    weServe: 'Wir',
+    weReceive: 'Gegner',
+    server: '(Aufschlag)',
+    noSets: 'Noch keine Aufstellungen.',
+    roster: 'Kader',
+    number: '#',
+    name: 'Name',
+    positions: 'Positionen',
+    status: 'Status',
+    inactive: 'Verletzt / inaktiv',
+    noPlayers: 'Noch keine Spieler.',
+  },
+};

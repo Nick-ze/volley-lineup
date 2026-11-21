@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 
 export interface ResetLiveDataProps {
   disabled: boolean;
@@ -11,6 +11,7 @@ export interface ResetLiveDataProps {
 
 /** "Reset live data" with the in-app confirm dialog: clears the set's score and subs. */
 export function ResetLiveData({ disabled, onReset }: ResetLiveDataProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <>

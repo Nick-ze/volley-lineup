@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Side } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 
 import { POINT_BUTTON_FONT_SIZE, POINT_BUTTON_MIN_HEIGHT } from './layout';
@@ -13,6 +13,7 @@ export interface PointButtonsProps {
 
 /** The two large rally buttons: orange "Point us", blue "Point them". */
 export function PointButtons({ opponent, onPoint }: PointButtonsProps) {
+  const t = useT();
   const button = (side: Side, label: string, a11y: string) => {
     const us = side === 'us';
     return (

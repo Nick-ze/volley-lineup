@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { SetLineup } from '@/domain/types';
 import { ToggleRow } from '@/components';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 export interface LiberoSwapControlProps {
@@ -13,6 +13,7 @@ export interface LiberoSwapControlProps {
 
 /** "Show libero swaps" on/off; a hint instead when nobody is chosen. Hidden without a libero. */
 export function LiberoSwapControl({ set, showSwaps, onChange }: LiberoSwapControlProps) {
+  const t = useT();
   if (set.liberoId === null) return null;
   return (
     <View style={styles.box}>

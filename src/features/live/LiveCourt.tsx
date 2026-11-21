@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
 import type { LiveCourtView } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerDescription, playerRef } from './format';
@@ -30,6 +30,7 @@ export function LiveCourt({
   selectedId,
   onPressPlayer,
 }: LiveCourtProps) {
+  const t = useT();
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => (isFrontRow ? styles.front : styles.back);
   const { slots, liberoSwap } = view;
   return (
@@ -48,10 +49,10 @@ export function LiveCourt({
         const desc = player
           ? replacedId
             ? t.rotation.liberoForLabel(
-                playerDescription(player),
-                playerRef(playersById, replacedId),
+                playerDescription(t, player),
+                playerRef(t, playersById, replacedId),
               )
-            : playerDescription(player)
+            : playerDescription(t, player)
           : '';
         return (
           <>

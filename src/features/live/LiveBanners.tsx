@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { MAX_SUBS_PER_SET, type LiveState, type LiveWarning } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
-import { t } from '@/i18n/en';
+import { useT, type Strings } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
@@ -13,9 +13,9 @@ export interface LiveBannersProps {
   playersById: Map<string, Player>;
 }
 
-function warningText(w: LiveWarning, playersById: Map<string, Player>): string {
-  const out = playerRef(playersById, w.outPlayerId);
-  const inn = playerRef(playersById, w.inPlayerId);
+function warningText(t: Strings, w: LiveWarning, playersById: Map<string, Player>): string {
+  const out = playerRef(t, playersById, w.outPlayerId);
+  const inn = playerRef(t, playersById, w.inPlayerId);
   switch (w.code) {
     case 'SUB_LIMIT':
       return t.live.warnSubLimit(out, inn, MAX_SUBS_PER_SET);
@@ -28,6 +28,7 @@ function warningText(w: LiveWarning, playersById: Map<string, Player>): string {
 
 /** Set point / set won (yellow) and substitution rule warnings (red outline). */
 export function LiveBanners({ state, opponent, playersById }: LiveBannersProps) {
+  const t = useT();
   const { setPoint, setWinner, warnings } = state;
   const side = setWinner ?? setPoint;
   return (
@@ -46,7 +47,7 @@ export function LiveBanners({ state, opponent, playersById }: LiveBannersProps) 
           <Text style={styles.warningsTitle}>{t.live.warningsTitle}</Text>
           {warnings.map((w) => (
             <Text key={`${w.eventIndex}-${w.code}`} style={styles.warning}>
-              {warningText(w, playersById)}
+              {warningText(t, w, playersById)}
             </Text>
           ))}
         </View>

@@ -36,5 +36,10 @@ export const rotation: Strings['rotation'] = {
   starterSummary: (position: number, player: string) => `Position ${position} ${player}`,
   emptySummary: 'frei',
   playerSummary: (number: number, name: string) => `Nummer ${number} ${name}`,
+  showLiberoSwaps: 'Libero-Wechsel zeigen',
+  noLiberoReplaces:
+    'Wähle in der Aufstellung, wen der Libero ersetzt, um die Libero-Wechsel zu sehen.',
+  liberoFor: (number: number | null) => (number === null ? 'L' : `L für #${number}`),
+  liberoForLabel: (player: string, replaced: string) => `Libero ${player}, für ${replaced}`,
   openRotationHint: 'Zeigt die Rotationen 1 bis 6 für diesen Satz',
 };
