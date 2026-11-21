@@ -17,6 +17,8 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<{ text: string; warn: boolean } | null>(null);
   const s = t.lineup.template;
+  // A played set's starters must not change under its event log.
+  const locked = set.events.length > 0;
 
   const apply = (system: TemplateSystem) => {
     const result = fillFromTemplate(system, players, set.setNumber, set);
@@ -34,7 +36,7 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
 
   return (
     <View style={styles.wrap}>
-      {open ? (
+      {open && !locked ? (
         <View style={styles.box}>
           <Text style={styles.hint}>{s.choose}</Text>
           <View style={styles.row}>
@@ -62,9 +64,10 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
       ) : (
         <Button
           label={s.open}
-          accessibilityHint={s.openHint}
+          accessibilityHint={locked ? s.lockedHint : s.openHint}
           variant="secondary"
           compact
+          disabled={locked}
           onPress={() => {
             setMessage(null);
             setOpen(true);
@@ -72,6 +75,11 @@ export function TemplateFill({ editor }: { editor: LineupEditor }) {
           testID="template-open"
         />
       )}
+      {locked ? (
+        <Text style={styles.hint} testID="template-locked">
+          {s.lockedHint}
+        </Text>
+      ) : null}
       {message ? (
         <Text
           style={[styles.message, message.warn && styles.warn]}

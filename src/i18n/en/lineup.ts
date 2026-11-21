@@ -66,6 +66,7 @@ export const lineup = {
   template: {
     open: 'Fill from template',
     openHint: 'Choose a 5-1 or 6-2 system to fill the starting six from the roster',
+    lockedHint: 'This set has already been played, so its starting six cannot be refilled.',
     choose: 'Fill the starting six with a system. This replaces the current starters.',
     systemLabel: (system: string) => `Fill the starting six with a ${system} system`,
     cancel: 'Cancel',

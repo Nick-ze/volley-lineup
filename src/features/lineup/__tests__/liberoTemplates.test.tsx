@@ -1,6 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
+import { emptySetLineup } from '@/domain/lineup';
 import type { Player, Position } from '@/domain/types';
 import { useAppStore } from '@/store';
 
@@ -81,6 +82,24 @@ describe('lineup builder — fill from template', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Close the template choice' }));
     expect(useAppStore.getState().matches[0].sets).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Fill from template' })).toBeTruthy();
+  });
+
+  it('is disabled for a set that has already been played', async () => {
+    const played = {
+      ...emptySetLineup(1),
+      slots: { 1: 'p1', 2: 'p3', 3: null, 4: null, 5: null, 6: null },
+      events: [{ type: 'point' as const, winner: 'us' as const }],
+    };
+    useAppStore.setState((st) => ({
+      matches: st.matches.map((m) => ({ ...m, sets: [played] })),
+    }));
+    await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
+    const button = await screen.findByRole('button', { name: 'Fill from template' });
+    expect(button).toBeDisabled();
+    expect(screen.getByTestId('template-locked')).toHaveTextContent(/already been played/);
+    await fireEvent.press(button);
+    expect(screen.queryByRole('button', { name: /5-1 system/ })).toBeNull();
+    expect(set1().slots).toEqual(played.slots);
   });
 });
 
