@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { Button } from '@/components';
 import type { PresetLineup } from '@/domain/presets';
@@ -47,6 +48,7 @@ export default function PresetScreen() {
             compact
             onPress={() => setRenaming(true)}
             testID="rename-preset"
+            style={styles.rename}
           />
         }
       />
@@ -67,3 +69,7 @@ export default function PresetScreen() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  rename: { alignSelf: 'flex-start' },
+});

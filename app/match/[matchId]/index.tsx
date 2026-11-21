@@ -93,7 +93,9 @@ export default function MatchScreen() {
           <LineupBuilder
             editor={editor}
             previous={editor.previous}
-            actions={<PresetApply key={setNumber} editor={editor} teamId={match.teamId} />}
+            actions={
+              <PresetApply key={`apply-${setNumber}`} editor={editor} teamId={match.teamId} />
+            }
           />
         </View>
       </ScrollView>

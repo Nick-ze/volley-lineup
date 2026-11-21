@@ -82,7 +82,7 @@ export function LineupBuilder({
     <>
       <LiberoReplaces editor={editor} />
       {actions}
-      <TemplateFill key={set.setNumber} editor={editor} />
+      <TemplateFill key={`template-${set.setNumber}`} editor={editor} />
       <CopyClearButtons editor={editor} previous={isMatch ? previous : undefined} />
     </>
   );

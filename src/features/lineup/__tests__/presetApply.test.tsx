@@ -81,6 +81,10 @@ describe('presets in the match lineup builder', () => {
       true,
     );
     expect(screen.getByText(s.noPresets)).toBeTruthy();
+    // Switching sets remounts the controls once (no duplicate after a set change).
+    await fireEvent.press(screen.getByTestId('set-tab-2'));
+    expect(screen.getAllByTestId('apply-preset')).toHaveLength(1);
+    expect(screen.getAllByTestId('template-open')).toHaveLength(1);
   });
 
   it('is disabled for a played (locked) set', async () => {
