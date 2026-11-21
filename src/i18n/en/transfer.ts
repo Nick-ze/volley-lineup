@@ -56,10 +56,11 @@ export const transfer = {
   },
   danger: {
     title: 'Delete all data',
-    hint: 'Removes every profile, team, player and match from this device.',
+    hint: 'Removes every profile, team, player, match and saved lineup (presets and team starters) from this device.',
     button: 'Delete all data',
     confirmTitle: 'Delete everything?',
-    confirmBody: 'This can’t be undone. Export your data first if you want a backup.',
+    confirmBody:
+      'All profiles, teams, players, matches and saved lineups (presets and team starters) will be deleted. This can’t be undone. Export your data first if you want a backup.',
     confirm: 'Yes, delete everything',
     cancel: 'Keep my data',
     done: 'All data deleted.',
