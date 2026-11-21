@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
+import { NumberAvatar } from '@/features/photos/NumberAvatar';
+import { FORM_PHOTO_SIZE, PhotoField } from '@/features/photos/PhotoField';
 import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
@@ -22,7 +25,7 @@ export interface PlayerFormProps {
   deleteBlocked?: boolean;
 }
 
-/** Add / edit a player with inline validation. */
+/** Add / edit a player (with photo) with inline validation. */
 export function PlayerForm({
   teamId,
   player,
@@ -31,8 +34,10 @@ export function PlayerForm({
   deleteBlocked = false,
 }: PlayerFormProps) {
   const t = useT();
-  const { form, set, errors, save } = usePlayerForm(teamId, player);
+  const { form, set, errors, save, photo, setPhoto } = usePlayerForm(teamId, player);
   const { ask, dialogProps } = useConfirm();
+  // A picked picture is still being prepared: saving now would drop it.
+  const [photoBusy, setPhotoBusy] = useState(false);
   const s = t.roster.player;
 
   return (
@@ -59,6 +64,13 @@ export function PlayerForm({
         inputMode="numeric"
         maxLength={3}
       />
+      <PhotoField
+        photoId={player?.photoId}
+        draft={photo}
+        onChange={setPhoto}
+        onBusyChange={setPhotoBusy}
+        fallback={<NumberAvatar number={form.number} size={FORM_PHOTO_SIZE} />}
+      />
       <PositionPicker
         value={form.positions}
         onChange={(v) => set('positions', v)}
@@ -78,7 +90,7 @@ export function PlayerForm({
           />
         )}
         <Button label={t.common.cancel} variant="secondary" onPress={onDone} />
-        <Button label={t.common.save} onPress={() => save() && onDone()} />
+        <Button label={t.common.save} disabled={photoBusy} onPress={() => save() && onDone()} />
       </View>
       {player && onDelete && deleteBlocked ? (
         <Text style={formStyles.hint}>{s.deleteBlocked}</Text>

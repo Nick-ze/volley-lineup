@@ -38,6 +38,7 @@ export function Bench({
           selected={selectedId === p.id}
           onPress={() => pressPlayer(p.id)}
           size={compact ? COMPACT_CHIP_SIZE : undefined}
+          showPhoto
           testID={`bench-player-${p.number}`}
         />
       ))}

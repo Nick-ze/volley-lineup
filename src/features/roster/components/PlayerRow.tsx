@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, PositionBadge } from '@/components';
+import { Button, Photo, PositionBadge } from '@/components';
 import type { Player } from '@/domain/types';
+import { NumberAvatar } from '@/features/photos/NumberAvatar';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { usePhotoUri } from '@/store';
+import { colors, radius, spacing, typography } from '@/theme';
 
 import { ListRow } from './ListRow';
 
@@ -13,12 +15,13 @@ export interface PlayerRowProps {
   onToggleActive: () => void;
 }
 
-/** One roster line: number, name, position badges and the active / injured toggle. */
+/** One roster line: photo (with a small number) or number, name, position badges and the active / injured toggle. */
 export function PlayerRow({ player, onPress, onToggleActive }: PlayerRowProps) {
   const t = useT();
   const name = `${player.firstName} ${player.lastName}`;
   const s = t.roster.roster;
   const positions = player.positions.map((p) => t.positions[p]).join(', ');
+  const hasPhoto = usePhotoUri(player.photoId) !== null;
   return (
     <ListRow
       title={name}
@@ -26,10 +29,17 @@ export function PlayerRow({ player, onPress, onToggleActive }: PlayerRowProps) {
       accessibilityLabel={s.rowLabel(player.number, name, positions, player.active)}
       testID={`player-${player.number}`}
       leading={
-        <View style={[styles.number, !player.active && styles.numberInactive]}>
-          <Text style={[styles.numberText, !player.active && styles.numberTextInactive]}>
-            {player.number}
-          </Text>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Photo
+            photoId={player.photoId}
+            dimmed={!player.active}
+            fallback={<NumberAvatar number={player.number} inactive={!player.active} />}
+          />
+          {hasPhoto ? (
+            <Text style={styles.numberTag} testID={`player-${player.number}-photo-number`}>
+              {player.number}
+            </Text>
+          ) : null}
         </View>
       }
       subtitle={
@@ -53,20 +63,18 @@ export function PlayerRow({ player, onPress, onToggleActive }: PlayerRowProps) {
 }
 
 const styles = StyleSheet.create({
-  number: {
-    width: touchTarget,
-    height: touchTarget,
-    borderRadius: radius.round,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  numberInactive: { backgroundColor: colors.surfaceRaised },
-  numberText: {
-    ...typography.subheading,
+  // The number stays visible on a photo: a small badge at the bottom right.
+  numberTag: {
+    position: 'absolute',
+    right: -spacing.xs,
+    bottom: -spacing.xs,
+    ...typography.caption,
     fontWeight: typography.jersey.fontWeight,
     color: colors.onPrimary,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
   },
-  numberTextInactive: { color: colors.textMuted },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
 });

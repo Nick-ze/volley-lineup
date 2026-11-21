@@ -16,6 +16,8 @@ export interface DraggablePlayerProps {
   selected: boolean;
   onPress(): void;
   size?: number;
+  /** v6: show the player's photo (bench chips). */
+  showPhoto?: boolean;
   accessibilityLabel?: string;
   testID?: string;
 }
@@ -27,6 +29,7 @@ export function DraggablePlayer({
   selected,
   onPress,
   size = CHIP_SIZE,
+  showPhoto = false,
   accessibilityLabel,
   testID,
 }: DraggablePlayerProps) {
@@ -49,6 +52,7 @@ export function DraggablePlayer({
         <PlayerChip
           player={player}
           size={size}
+          showPhoto={showPhoto}
           selected={selected}
           disabled={drag.disabled}
           onPress={() => {

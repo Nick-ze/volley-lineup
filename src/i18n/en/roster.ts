@@ -28,7 +28,7 @@ export const roster = {
     color: 'Colour',
     colorOption: (n: number) => `Colour ${n}`,
     select: (name: string) => `Open profile ${name}`,
-    rename: (name: string) => `Rename profile ${name}`,
+    rename: (name: string) => `Edit profile ${name}`,
     delete: (name: string) => `Delete profile ${name}`,
     create: 'Create profile',
   },
