@@ -32,6 +32,7 @@ expect() { # $1 = text or label that must be on the current screen
   else echo "FAIL: '$1' not visible"; FAILED=1; fi
 }
 
+adb wait-for-device
 adb logcat -c
 adb install -r "$1"
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null

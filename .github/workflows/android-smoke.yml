@@ -51,18 +51,19 @@ jobs:
           yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null || true
           echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k "system-images;android-30;default;x86_64" --force
           $SDK/emulator/emulator -list-avds
-          nohup $SDK/emulator/emulator -avd smoke -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 > emu.log 2>&1 &
+          nohup $SDK/emulator/emulator -avd smoke -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 -cores 2 > emu.log 2>&1 &
       - name: Wait for emulator boot
         run: |
           ADB=$ANDROID_HOME/platform-tools/adb
-          for i in $(seq 1 120); do
-            if [ "$($ADB shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then echo "booted"; break; fi
+          for i in $(seq 1 300); do
+            if [ "$($ADB shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then echo "booted after $((i*5))s"; BOOTED=1; break; fi
             sleep 5
           done
           $ADB shell settings put global window_animation_scale 0 || true
           $ADB shell settings put global transition_animation_scale 0 || true
           $ADB shell settings put global animator_duration_scale 0 || true
           tail -20 emu.log
+          if [ "${BOOTED:-0}" != 1 ]; then echo "::error::Emulator did not boot"; exit 1; fi
       - name: Run smoke script
         run: PATH=$ANDROID_HOME/platform-tools:$PATH OUT=e2e-out ./scripts/android-smoke.sh android/app/build/outputs/apk/release/app-release.apk
       - uses: actions/upload-artifact@v4
