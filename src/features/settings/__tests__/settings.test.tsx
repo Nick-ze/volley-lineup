@@ -248,6 +248,20 @@ describe('delete all and version', () => {
     expect(screen.queryByLabelText('Switch profile')).toBeNull();
   });
 
+  it('switches the player chips between numbers and names (EN + DE)', async () => {
+    await renderSettings();
+    const toggle = screen.getByRole('switch', { name: 'Show names instead of numbers' });
+    expect(store().chipLabel).toBe('number');
+    await fireEvent.press(toggle);
+    expect(store().chipLabel).toBe('name');
+
+    store().setLanguage('de');
+    const de = await screen.findByRole('switch', { name: 'Namen statt Nummern anzeigen' });
+    await fireEvent.press(de);
+    expect(store().chipLabel).toBe('number');
+    store().setLanguage('en');
+  });
+
   it('says that saved lineups (presets and team starters) are deleted too', async () => {
     seed();
     await renderSettings();

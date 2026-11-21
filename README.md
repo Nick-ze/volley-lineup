@@ -120,6 +120,8 @@ New in **v3 — Match day & stats**:
 - **Stats** — a Stats tab in the team (season record, set ratio, per-rotation points won / lost, side-out % and break points, and per-player sets started / played, subs, serve turns and points on serve) and a Stats button on every match. All numbers come from the rallies you already record.
 - **Point details (optional)** — after a rally, one tap tags it: kill / ace / block / opponent error, or our error / their kill / their ace, with the player. Skip it by simply playing the next rally. Tags add kills, aces, blocks and errors to the player stats.
 
+- **Names instead of numbers** (v3.1) — Settings → Player chips: show the player's name in the circle and the number below it.
+
 Data from v2 (on the phone or in v1–v3 export files) opens in v3 automatically. Files exported by v3 (schema version 4) can't be opened by older versions.
 
 ## Export / import

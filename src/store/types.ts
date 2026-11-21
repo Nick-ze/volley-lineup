@@ -14,9 +14,14 @@ export interface AppData {
 /** UI language (v2). English is the default; strings live in src/i18n. */
 export type Language = 'en' | 'de';
 
+/** What the player chips show big (v3.1): the jersey number (default) or the name. */
+export type ChipLabel = 'number' | 'name';
+
 export interface AppState extends AppData {
   currentProfileId: string | null;
   language: Language;
+  /** v3.1 (store v5): a device setting like the language — not exported. */
+  chipLabel: ChipLabel;
   /** True once persisted state has been loaded from storage. Not persisted. */
   hydrated: boolean;
 }
@@ -61,6 +66,7 @@ export interface AppActions {
   replaceAll(data: AppData): void;
   resetAll(): void;
   setLanguage(language: Language): void;
+  setChipLabel(chipLabel: ChipLabel): void;
   setHydrated(value: boolean): void;
 }
 

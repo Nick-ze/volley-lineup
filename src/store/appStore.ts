@@ -25,6 +25,7 @@ const initialState = (): AppState => ({
   ...emptyData(),
   currentProfileId: null,
   language: 'en',
+  chipLabel: 'number',
   hydrated: false,
 });
 
@@ -160,6 +161,7 @@ export const useAppStore = create<AppStore>()(
       resetAll: () => set({ ...emptyData(), currentProfileId: null }),
       setHydrated: (value) => set({ hydrated: value }),
       setLanguage: (language) => set({ language }),
+      setChipLabel: (chipLabel) => set({ chipLabel }),
     }),
     {
       name: STORAGE_KEY,
@@ -174,6 +176,7 @@ export const useAppStore = create<AppStore>()(
         presets: s.presets,
         currentProfileId: s.currentProfileId,
         language: s.language,
+        chipLabel: s.chipLabel,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);

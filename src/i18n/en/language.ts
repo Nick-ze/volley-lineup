@@ -5,4 +5,9 @@ export const language = {
   english: 'English',
   german: 'Deutsch',
   optionLabel: (name: string) => `Language: ${name}`,
+  display: {
+    title: 'Player chips',
+    hint: 'On the court and the bench, show the player’s name in the circle and the number below it.',
+    namesInsteadOfNumbers: 'Show names instead of numbers',
+  },
 } as const;

@@ -320,3 +320,11 @@ Set and match results are derived by pure functions (`src/domain/matchState.ts`)
 - [x] v3.0.0 opens v2.x data (store v3) and v1–v3 export files without loss; export / import round trip with tags restores exactly. — _web (localStorage) migration verified in a browser; Android AsyncStorage upgrade covered by unit tests only._
 - [x] Phone layout (390×844): live controls and the set / match score fit without scrolling; the stats tables are readable at 375 px. EN + DE. — _verified in a browser at 390×844 / 375 px (Playwright); not yet on a real phone._
 - [x] Lint, typecheck and tests pass in CI; `src/domain` 100%.
+
+---
+
+# v3.1 addition
+
+## 18. Names instead of numbers
+
+- A switch in Settings ("Show names instead of numbers") makes the player chips show the player's name in the circle and the jersey number below it. Persisted on the device (store version 5), default off; not part of export files.
