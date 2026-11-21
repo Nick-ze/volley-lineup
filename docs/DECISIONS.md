@@ -88,3 +88,24 @@ Newest at the bottom. Format: **Decision** — why.
 54. **v2 data model** (orchestrator, before the v2 workers): `SetLineup.liberoReplaces: string[]` and `SetLineup.events: SetEvent[]` (an event log; score/rotation/server/subs are derived by a pure replay function, so undo is "drop the last event"). Export `schemaVersion` 2 — v1 files are upgraded on import (sets get empty `liberoReplaces`/`events`). Store version 2 with a v1→v2 migration; new persisted `language: 'en' | 'de'` (a device setting, not exported, kept on "Delete all data").
 55. **Cloud sync is out of scope for v2** — it needs a backend and real accounts, which v1 deliberately avoided (no server, data stays on the device). Export/import remains the way to move data.
 56. **Copy from previous set** now also copies whom the libero replaces; the copy's event log starts empty.
+
+### Printable lineup sheet (PR #11)
+
+57. **Print theme**: black on white, A4 portrait, separate from the dark app theme (`src/theme/print.ts`). The sheet HTML is built by a pure function (`src/domain/lineupSheet.ts`); every piece of user text is HTML-escaped.
+58. **Web prints from a hidden iframe** (not `window.print()` on the app page), so web and phone use the same HTML; the page title is swapped to the sheet title while the dialog is open. **Phone**: `expo-print` → A4 PDF (34 pt margins) → share sheet; the PDF keeps the file name `expo-print` generates.
+59. **Content**: only stored sets are printed ("No lineups yet" otherwise); court grid per set, libero, "Libero replaces #x, #y", who serves first; roster of all team players with position codes and injured marker. A 5-set match with 12 players fits one A4 page; long rosters break across pages.
+60. **New dependencies**: `expo-print` (PDF on phones); dev `jsdom` + `@types/jsdom` (declared explicitly for the web print test; they were already present transitively via jest-expo).
+
+### Libero swaps + 5-1 / 6-2 templates (PR #13)
+
+61. **Libero swap rule**: the libero stands in for a chosen starter at back-row positions 5 and 6, and at position 1 only when that position is not serving. The rotation viewer treats position 1 as serving. One libero: if two chosen starters are in the back row, the first in `liberoReplaces` is replaced.
+62. **Default "libero replaces"**: the primary middle blockers, pre-selected only when a libero is first assigned and nobody is chosen; later choices (including nobody) are kept; "Suggest middles" re-applies it. `liberoReplaces` only ever lists players on court.
+63. **Template layouts** (rotation 1, setter serving): 5-1 = S1 · OH2 · MB3 · OPP4 · OH5 · MB6; 6-2 = S1 · OH2 · MB3 · S4 · OH5 · MB6 (hitter spots take an OH, else an OPP). Picked by primary position, then fallback role, then secondary position, lowest number first; only active players, never the libero or a primary-L player. Filling keeps libero, serve choice and events, resets `liberoReplaces` to the new middles, and is disabled for played sets.
+64. **"Show libero swaps" toggle** in the rotation viewer: on by default, not persisted. The starters overview shows the base lineup. `ToggleRow` became a shared component (`src/components`).
+
+### Live match + substitutions (PR #12)
+
+65. **Set point = one point from winning**: target − 1 or more and ahead (target 25, 15 in set 5, win by 2, deuce included). PLAN §11.3's "2-point lead" would describe a set already won. Set ends are not enforced; a won set shows "won the set".
+66. **Substitutions**: max 6 per set (`SUB_LIMIT` warning beyond); re-entry rule pairs a substitute with the player they replaced, and only that pair may swap back, once (`REENTRY_RULE`). Warnings never block; bench chips preview the warning before the tap. Impossible subs are skipped (`INVALID_SUB`). The libero is never a sub; tapping the libero on the live court substitutes the real player they stand in for.
+67. **Live state** is replayed from `events` by `replaySet` (fields `slots`, `serverId`, `rotation`, `setPoint`, `setWinner`, … — named slightly differently from the PLAN §12 sketch). Live mode needs all six positions filled. `liberoReplaces` refers to starters: a substitute for a chosen middle isn't swapped for the libero.
+68. **Lineup lock**: once a set has live events, its starting six, libero and first serve can't be edited (the replay depends on them); "whom the libero replaces" stays editable. "Reset live data" in live mode (with confirmation) clears the events and unlocks it. A rally, Undo, Reset or switching sets cancels a half-finished substitution.
