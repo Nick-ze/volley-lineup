@@ -57,13 +57,14 @@ The app works fully offline. All data is stored on your phone.
 ### Publishing a new version (maintainers)
 
 1. Bump `version` in both `app.json` and `package.json` (e.g. `1.0.1`) and merge to `main`.
-2. Tag that commit and push the tag:
+2. Either tag that commit and push the tag:
    ```bash
    git tag v1.0.1
    ```
    ```bash
    git push origin v1.0.1
    ```
+   or, without a local tag: **Actions → Android APK → Run workflow** on `main` with **release** ticked (it creates the tag for you).
 3. The **Android APK** workflow builds `volley-lineup-1.0.1.apk` (about 30 minutes) and publishes the release `v1.0.1`. The Android `versionCode` is derived from the version, so the new APK installs as an update.
 
 ## Run it on your phone (Expo Go)
