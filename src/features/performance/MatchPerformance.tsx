@@ -63,8 +63,13 @@ export function MatchPerformance({
       </View>
     );
   }
-  const switchSet = (n: SetNumber | null) =>
-    onParams({ set: n === null ? 'all' : String(n), player: detail?.player.id });
+  // Keep the open player only if they have a line in the new set (else the overview, with no
+  // stale `player` in the URL — v6 QA).
+  const switchSet = (n: SetNumber | null) => {
+    const keep =
+      detail !== undefined && matchPerformance(match, players, n).players[detail.player.id];
+    onParams({ set: n === null ? 'all' : String(n), player: keep ? detail.player.id : undefined });
+  };
 
   return (
     <View style={styles.wrap} testID="performance">

@@ -464,10 +464,10 @@ Pure logic: `src/domain/photos.ts` (data URI and description rules, referenced p
 
 ## 27. v6 acceptance checklist
 
-- [ ] Manager and player photos can be added (camera / gallery), changed and removed. They show in the profile, roster, player detail and pickers, with a fallback without a photo. They persist and the store stays small (tests for the domain parts; browser check on web).
-- [ ] Player detail screen shows season and per-match stats, including points / sets on court, correct for a scripted season with subs and libero swaps (tests with literal numbers).
-- [ ] Descriptions are hidden until unlocked (biometrics / PIN on phones, confirmation on web). Unlocking shows all descriptions until locked again, the app goes to the background, or it restarts. Nothing confidential shows in lists, print or (per decision) export.
-- [ ] The performance tab shows every player for each set and for all sets. Player per-set detail shows the error rate and errors by type, correct for a scripted match (tests with literal numbers).
-- [ ] The error type on "our error" is optional; old data and v1–v6 export files open without loss; export/import round trip restores exactly.
-- [ ] Phone layout 375 px, EN + DE.
-- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%.
+- [x] Manager and player photos can be added (camera / gallery), changed and removed. They show in the profile, roster, player detail and pickers, with a fallback without a photo. They persist and the store stays small (tests for the domain parts; browser check on web). — _web verified (file input, Playwright, 375 / 1280 px); camera and native permission prompts not tested on a real phone._
+- [x] Player detail screen shows season and per-match stats, including points / sets on court, correct for a scripted season with subs and libero swaps (tests with literal numbers).
+- [x] Descriptions are hidden until unlocked (biometrics / PIN on phones, confirmation on web). Unlocking shows all descriptions until locked again, the app goes to the background, or it restarts. Nothing confidential shows in lists, print or (per decision) export. — _web verified (confirmation dialog, hidden tab, reload); biometrics / device PIN and backgrounding on a phone covered by unit tests only._
+- [x] The performance tab shows every player for each set and for all sets. Player per-set detail shows the error rate and errors by type, correct for a scripted match (tests with literal numbers).
+- [x] The error type on "our error" is optional; old data and v1–v6 export files open without loss; export/import round trip restores exactly. — _v5.0 store (version 7) and v1 / v4 / v5 / v6 files checked in a browser; Android AsyncStorage upgrade covered by unit tests only._
+- [x] Phone layout 375 px, EN + DE. — _verified in a browser (Playwright, 375×812 / 390×844); not yet on a real phone._
+- [x] Lint, typecheck and tests pass in CI; src/domain at 100%.

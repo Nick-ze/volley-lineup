@@ -289,3 +289,9 @@ Newest at the bottom. Format: **Decision** — why.
 - court chips keep the number or name and never show a photo (clearer at 375 px)
 
 "Delete all data" mentions photos. The profile list button reads "Edit profile X" (DE "Bearbeiten: Profil X"), because it also edits the photo.
+
+### QA fixes (orchestrator)
+
+164. **The point-tag player picker is one line that scrolls sideways** (✕ stays visible on the right). With "Our error" open, the types and players used to wrap onto 3–6 rows, which pushed the court's back row and the Substitution button off the 390×844 screen (#75, #126). Now the row is 44 px like the kinds row: the chosen kind first, then the error types, then the players. Checked at 390×844 and 375×812, EN + DE.
+165. **No dangling photo ids**: if a photo's storage write fails (e.g. storage full), `setPhoto` drops the photo again and `prunePhotos` clears every `photoId` whose photo is missing, so the player or profile falls back to the number or avatar. `buildExport` also leaves out such ids, so an export always imports. Not done: a message in the form when this happens (the form has already closed).
+166. **Performance view**: switching to a set the open player didn't play shows the overview and drops `player` from the URL, so switching back doesn't reopen them.

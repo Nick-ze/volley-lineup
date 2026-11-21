@@ -36,5 +36,6 @@ export function applyPhotoDraft(
   const id = createId();
   const saved = setPhoto(id, draft.uri);
   attach(id);
-  return saved;
+  // A failed storage write drops the photo and the reference (photoStore `prunePhotos`).
+  return saved.then(() => undefined);
 }

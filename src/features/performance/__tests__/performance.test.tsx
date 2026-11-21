@@ -210,6 +210,15 @@ describe('performance view', () => {
     expect(order()).toHaveLength(8);
   });
 
+  it("switching to a set the player didn't play shows the overview and forgets the player", async () => {
+    await open('?set=all&player=p8');
+    expect(await screen.findByTestId('perf-detail')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('perf-set-2')); // #8 didn't play set 2
+    expect(screen.queryByTestId('perf-detail')).toBeNull();
+    await fireEvent.press(screen.getByTestId('perf-set-all'));
+    expect(screen.queryByTestId('perf-detail')).toBeNull(); // no stale player=p8
+  });
+
   it('shows "–" for rates without a divisor and the serve error rate of the server', async () => {
     await open('?set=1&player=p1');
     expect(await screen.findByTestId('perf-detail')).toBeTruthy();

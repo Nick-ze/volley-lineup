@@ -33,21 +33,34 @@ interface PhotoState {
 
 export const usePhotoStore = create<PhotoState>()(() => ({ photos: {}, hydrated: false }));
 
-/** Writes / deletes storage keys; failures are ignored (the in-memory state stays right). */
-async function persist(write: Record<string, string>, remove: readonly string[]): Promise<void> {
+/** Writes / deletes storage keys; false when that failed (storage full or unavailable). */
+async function persist(write: Record<string, string>, remove: readonly string[]): Promise<boolean> {
   try {
     const entries = Object.entries(write).map(([id, uri]) => [keyOf(id), uri] as [string, string]);
     if (entries.length > 0) await AsyncStorage.multiSet(entries);
     if (remove.length > 0) await AsyncStorage.multiRemove(remove.map(keyOf));
+    return true;
   } catch {
-    // Storage full or unavailable: keep going with what is in memory.
+    return false;
   }
 }
 
-/** Saves (or replaces) a photo. */
-export async function setPhoto(id: string, dataUri: string): Promise<void> {
+/**
+ * Saves (or replaces) a photo: in memory at once, then in storage. Resolves false when the
+ * storage write failed; the photo is then dropped from memory too, and whoever points at it is
+ * cleared by `prunePhotos` (no dangling `photoId`, v6 QA).
+ */
+export async function setPhoto(id: string, dataUri: string): Promise<boolean> {
   usePhotoStore.setState((s) => ({ photos: { ...s.photos, [id]: dataUri } }));
-  await persist({ [id]: dataUri }, []);
+  const ok = await persist({ [id]: dataUri }, []);
+  if (!ok) {
+    usePhotoStore.setState((s) => {
+      const { [id]: _failed, ...photos } = s.photos;
+      return { photos };
+    });
+    await prunePhotos();
+  }
+  return ok;
 }
 
 /** Deletes a photo. */
@@ -84,11 +97,17 @@ export function usePhotoUri(photoId: string | undefined): string | null {
   return usePhotoStore((s) => (photoId === undefined ? null : (s.photos[photoId] ?? null)));
 }
 
-/** Deletes the photos no profile or player refers to (only once both stores have loaded). */
+/**
+ * Deletes the photos no profile or player refers to, and (v6 QA) clears a `photoId` whose
+ * photo is missing, e.g. after a failed storage write — only once both stores have loaded.
+ */
 export async function prunePhotos(): Promise<void> {
   const app = useAppStore.getState();
   const { photos, hydrated } = usePhotoStore.getState();
   if (!hydrated || !app.hydrated) return;
+  const dangling = (x: { photoId?: string }) => x.photoId !== undefined && !(x.photoId in photos);
+  for (const p of app.profiles.filter(dangling)) app.updateProfile(p.id, { photoId: undefined });
+  for (const p of app.players.filter(dangling)) app.updatePlayer(p.id, { photoId: undefined });
   const keep = referencedPhotoIds(app);
   const orphans = Object.keys(photos).filter((id) => !keep.has(id));
   if (orphans.length === 0) return;

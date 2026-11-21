@@ -100,13 +100,25 @@ it('replace and merge for imports; the snapshot includes the photos', async () =
   expect(snapshot.photos).toHaveLength(2);
 });
 
-it('keeps working when storage fails', async () => {
+it('keeps working when storage fails; a failed save leaves no dangling photo id', async () => {
   const spy = jest.spyOn(AsyncStorage, 'getAllKeys').mockRejectedValueOnce(new Error('broken'));
   await whenPhotosLoaded();
   expect(usePhotoStore.getState().hydrated).toBe(true);
+  const profile = useAppStore.getState().addProfile({ name: 'Coach', color: '#FF6B00' });
   const set = jest.spyOn(AsyncStorage, 'multiSet').mockRejectedValueOnce(new Error('full'));
-  await setPhoto('a', uri('AAAA'));
-  expect(usePhotoStore.getState().photos).toEqual({ a: uri('AAAA') });
+  const saved = setPhoto('a', uri('AAAA'));
+  useAppStore.getState().updateProfile(profile.id, { photoId: 'a' });
+  expect(await saved).toBe(false);
+  expect(usePhotoStore.getState().photos).toEqual({});
+  expect(useAppStore.getState().profiles[0]).not.toHaveProperty('photoId', 'a');
+  expect(await setPhoto('b', uri('BBBB'))).toBe(true);
   spy.mockRestore();
   set.mockRestore();
+});
+
+it('clears photo ids whose photo is missing once both stores have loaded', async () => {
+  const profile = useAppStore.getState().addProfile({ name: 'Coach', color: '#FF6B00' });
+  useAppStore.getState().updateProfile(profile.id, { photoId: 'ghost' });
+  await whenPhotosLoaded();
+  expect(useAppStore.getState().profiles[0]?.photoId).toBeUndefined();
 });

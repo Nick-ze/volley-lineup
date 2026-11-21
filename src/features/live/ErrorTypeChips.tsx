@@ -18,8 +18,8 @@ export interface ErrorTypeChipsProps {
 
 /**
  * The optional error type of "our error" (docs/VOLLEYBALL_RULES.md §7), inside the player
- * picker's row. Without a type: the kind chip and the plausible types as a labelled, full-width
- * group (players below). With a type: the kind chip and only that type's chip (tap to clear it
+ * picker's single scrolling line. Without a type: the kind chip and the plausible types as a
+ * labelled group (players follow). With a type: the kind chip and only that type's chip (tap to clear it
  * and choose again), inline with the players, so the row stays as short as before.
  */
 export function ErrorTypeChips({ rally, kindChip, onErrorType }: ErrorTypeChipsProps) {
@@ -65,6 +65,6 @@ export function ErrorTypeChips({ rally, kindChip, onErrorType }: ErrorTypeChipsP
 }
 
 const styles = StyleSheet.create({
-  // Full width in the wrapping row: the players start on a new line.
-  group: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, width: '100%' },
+  // Inline in the picker's sideways-scrolling line (the players follow).
+  group: { flexDirection: 'row', gap: spacing.sm },
 });
