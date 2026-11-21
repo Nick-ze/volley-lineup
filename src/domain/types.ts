@@ -1,6 +1,7 @@
 /**
  * Data model — docs/PLAN.md §6 (v2: SetLineup.liberoReplaces + SetLineup.events, schemaVersion 2;
- * v3: LineupPreset — saved team lineups and the team's starters, schemaVersion 3).
+ * v3: LineupPreset — saved team lineups and the team's starters, schemaVersion 3;
+ * v4 / app 3.0: optional tags and timestamps on point events, schemaVersion 4 — PLAN §16).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -54,9 +55,33 @@ export interface SetLineup {
 /** v2: which team won a rally. */
 export type Side = 'us' | 'them';
 
+/**
+ * v4: what decided a rally (optional tag). 'kill' | 'ace' | 'block' | 'opponentError' belong to
+ * points we won; 'ourError' | 'opponentKill' | 'opponentAce' to points they won.
+ */
+export type PointKind =
+  'kill' | 'ace' | 'block' | 'opponentError' | 'ourError' | 'opponentKill' | 'opponentAce';
+
+/** A rally. v4 adds the optional tag (`kind` + `playerId`) and the time it was recorded (`at`). */
+export interface PointEvent {
+  type: 'point';
+  winner: Side;
+  /** v4: optional tag; must belong to `winner` (see `src/domain/pointTags.ts`). */
+  kind?: PointKind;
+  /** v4: the player of our team the tag is about (kill / ace / block / ourError only). */
+  playerId?: string;
+  /** v4: ISO time the rally was recorded (used for the match duration). */
+  at?: string;
+}
+
+export interface SubEvent {
+  type: 'sub';
+  outPlayerId: string;
+  inPlayerId: string;
+}
+
 /** v2: one entry in a set's event log. The score, rotation and line-up are derived from it. */
-export type SetEvent =
-  { type: 'point'; winner: Side } | { type: 'sub'; outPlayerId: string; inPlayerId: string };
+export type SetEvent = PointEvent | SubEvent;
 
 /** v3: 'starters' = the team's usual starting lineup (at most one per team); 'preset' = a named one. */
 export type PresetKind = 'starters' | 'preset';
@@ -76,7 +101,7 @@ export interface LineupPreset {
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 3;
+  schemaVersion: 4;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];

@@ -137,3 +137,14 @@ Newest at the bottom. Format: **Decision** — why.
 85. **Merging an import**: a file's team starters replace that team's existing starters (even under a different id); a second preset with an existing name is a `MERGE_CONFLICT` (like jersey numbers). The merge hint says so. Presets never block deleting a player; deleting a player removes them from all presets.
 86. The match lineup logic moved from `useLineupEditor` into a generic `useLineupDraft` used by both the match screen and the preset editor (no behaviour change for match sets).
 87. **Version 2.2.0** (versionCode 20200).
+
+## v3 — Match day & stats
+
+### Foundation (orchestrator)
+
+88. **Data model v4**: point events gain optional `kind` (`PointKind`), `playerId` and `at` (ISO time the rally was recorded). Store version 4 — the v3 → v4 step changes nothing, old events stay valid as they are; export `schemaVersion` 4 — v1, v2 and v3 files are upgraded on import. `SetEvent` is now `PointEvent | SubEvent` (named interfaces, same shape).
+89. **Point tags** (`src/domain/pointTags.ts`): us → kill / ace / block / opponentError; them → ourError / opponentKill / opponentAce. Only kill, ace, block and ourError may name a player; a player without a kind is invalid. Import rejects incoherent tags and tagged players of another team as `INCONSISTENT_REFERENCES`. A player named in a tag of a played set can't be deleted (extends #73); `removePlayerEverywhere` (defensive) keeps the rally and its kind and drops only the player.
+90. **Results are derived, never stored** (`src/domain/matchState.ts`): a set is won at 25 (15 in set 5) with a 2-point lead; the match at 3 sets. The current set is the first set (1–5) nobody has won yet, stored or not. Sets stored after the deciding set (only possible in pre-v3 data) are ignored for the result.
+91. **Match duration** = first to last timestamped rally of the counted sets. Rallies recorded from v3.0 carry `at`; matches played before have no duration (shown as nothing, not "0 min").
+92. **All statistics, including the tag totals, are computed in `src/domain/stats.ts`** (one place, as the plan says); the point-tagging worker builds the tagging UI and uses those totals.
+93. **Version 3.0.0** (Android versionCode 30000). Major version because the store and export formats change (older apps can't open v4 data).

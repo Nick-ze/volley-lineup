@@ -128,7 +128,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 3,
+      schemaVersion: 4,
       exportedAt: NOW.toISOString(),
       ...data,
     });
@@ -226,7 +226,7 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([4, 0, '1', '2', '3', undefined])('schemaVersion %p', (version) => {
+  it.each([5, 0, '1', '2', '3', '4', undefined])('schemaVersion %p', (version) => {
     expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
       ok: false,
       error: 'UNSUPPORTED_VERSION',
@@ -246,24 +246,41 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(3);
+    expect(result.file.schemaVersion).toBe(4);
     expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
   });
 
-  it('upgrades a v2 file (no presets) to v3 with an empty preset list', () => {
+  it('upgrades a v2 file (no presets) to the current version with an empty preset list', () => {
     const v2 = rawExport();
     v2.schemaVersion = 2;
     delete v2.presets;
     const result = parseObject(v2);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(3);
+    expect(result.file.schemaVersion).toBe(4);
     expect(result.file.presets).toEqual([]);
     expect(result.summary.presets).toBe(0);
     expect(result.file.matches).toEqual(fixture().matches);
   });
 
-  it('a v3 file without presets is rejected as INVALID_SHAPE', () => {
+  it('upgrades a v3 file (untagged points) to the current version without loss', () => {
+    const data = fixture();
+    data.matches[0].sets[0].slots = { 1: 'p1', 2: 'p2', 3: null, 4: null, 5: null, 6: null };
+    data.matches[0].sets[0].events = [
+      { type: 'point', winner: 'us' },
+      { type: 'sub', outPlayerId: 'p2', inPlayerId: 'p5' },
+      { type: 'point', winner: 'them' },
+    ];
+    data.players.push(player('p5', 't1', 9));
+    const v3 = JSON.parse(exportText(data));
+    v3.schemaVersion = 3;
+    const result = parseObject(v3);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file).toEqual({ ...v3, schemaVersion: 4 });
+  });
+
+  it('a v4 file without presets is rejected as INVALID_SHAPE', () => {
     const raw = rawExport();
     delete raw.presets;
     expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
@@ -544,4 +561,51 @@ describe('replaceData', () => {
   function file() {
     return buildExport(fixture());
   }
+});
+
+describe('v4 point tags and timestamps', () => {
+  function tagged(): TransferData {
+    const data = fixture();
+    data.matches[0].sets[0].events = [
+      { type: 'point', winner: 'us', kind: 'kill', playerId: 'p1', at: '2026-11-01T18:00:00.000Z' },
+      { type: 'point', winner: 'us', kind: 'opponentError', at: '2026-11-01T18:00:30.000Z' },
+      { type: 'point', winner: 'them', kind: 'ourError', playerId: 'p2' },
+      { type: 'point', winner: 'them', kind: 'opponentAce' },
+      { type: 'point', winner: 'us' },
+    ];
+    return data;
+  }
+
+  it('round-trips tagged and timestamped points exactly', () => {
+    const data = tagged();
+    const result = parseImport(exportText(data));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(replaceData(result.file)).toEqual(data);
+  });
+
+  it.each([
+    ['an unknown kind', { type: 'point', winner: 'us', kind: 'smash' }],
+    ['a timestamp that is not text', { type: 'point', winner: 'us', at: 5 }],
+    ['an empty player id', { type: 'point', winner: 'us', kind: 'kill', playerId: '' }],
+  ])('rejects a point with %s as INVALID_SHAPE', (_label, event) => {
+    const raw = rawExport();
+    (raw.matches as { sets: { events: unknown[] }[] }[])[0].sets[0].events = [event];
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it.each([
+    ['a kind of the other side', { type: 'point', winner: 'us', kind: 'ourError' }],
+    [
+      'a player on a kind without one',
+      { type: 'point', winner: 'them', kind: 'opponentKill', playerId: 'p1' },
+    ],
+    ['a player without a kind', { type: 'point', winner: 'us', playerId: 'p1' }],
+    ['a player of another team', { type: 'point', winner: 'us', kind: 'ace', playerId: 'p4' }],
+    ['an unknown player', { type: 'point', winner: 'us', kind: 'block', playerId: 'nobody' }],
+  ])('rejects %s as INCONSISTENT_REFERENCES', (_label, event) => {
+    const raw = rawExport();
+    (raw.matches as { sets: { events: unknown[] }[] }[])[0].sets[0].events = [event];
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
 });

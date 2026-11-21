@@ -13,18 +13,20 @@ import type {
   ManagerProfile,
   Match,
   Player,
+  PointKind,
   Position,
   SetEvent,
   SetLineup,
   Team,
 } from './types';
+import { isValidPointTag } from './pointTags';
 import { validatePresetName } from './presets';
 import { ALL_POSITIONS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 3 as const;
+export const EXPORT_SCHEMA_VERSION = 4 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4];
 
 /**
  * The five persisted collections. Derived from `ExportFile` (the domain layer can't import the
@@ -41,6 +43,16 @@ const id = z.string().min(1);
 const playerRef = id.nullable();
 
 const positionSchema = z.enum(ALL_POSITIONS as [Position, ...Position[]]);
+
+const POINT_KINDS = [
+  'kill',
+  'ace',
+  'block',
+  'opponentError',
+  'ourError',
+  'opponentKill',
+  'opponentAce',
+] as const satisfies readonly PointKind[];
 
 const profileSchema = z.object({
   id,
@@ -84,7 +96,13 @@ const setLineupSchema = z.object({
   liberoReplaces: z.array(id),
   events: z.array(
     z.discriminatedUnion('type', [
-      z.object({ type: z.literal('point'), winner: z.enum(['us', 'them']) }),
+      z.object({
+        type: z.literal('point'),
+        winner: z.enum(['us', 'them']),
+        kind: z.enum(POINT_KINDS).optional(),
+        playerId: id.optional(),
+        at: z.string().optional(),
+      }),
       z.object({ type: z.literal('sub'), outPlayerId: id, inPlayerId: id }),
     ]),
   ),
@@ -242,6 +260,8 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - set numbers are unique within a match;
  * - every lineup slot / libero refers to a player of the match's own team;
  * - within a set, no player is in two slots and the libero is not also a starter;
+ * - point tags (v4) are coherent (a kind of the winning side, a player only where the kind takes
+ *   one) and a tagged player belongs to the match's team;
  * - presets (v3) follow the same lineup rules for their team, and a team has at most one
  *   'starters' preset; named presets have a valid name (≤ 40 characters, not blank) that is
  *   unique within the team, ignoring case.
@@ -286,10 +306,15 @@ export function isConsistent(data: TransferData): boolean {
   return matches.every((m) => {
     if (hasDuplicates(m.sets.map((s) => s.setNumber))) return false;
     return m.sets.every((set) => {
-      const subPlayers = set.events.flatMap((e) =>
-        e.type === 'sub' ? [e.outPlayerId, e.inPlayerId] : [],
+      if (!set.events.every((e) => e.type === 'sub' || isValidPointTag(e))) return false;
+      const eventPlayers = set.events.flatMap((e) =>
+        e.type === 'sub'
+          ? [e.outPlayerId, e.inPlayerId]
+          : e.playerId === undefined
+            ? []
+            : [e.playerId],
       );
-      return lineupOk(m.teamId, set, subPlayers);
+      return lineupOk(m.teamId, set, eventPlayers);
     });
   });
 }
@@ -314,11 +339,14 @@ function upgradeV1(raw: Record<string, unknown>): Record<string, unknown> {
   return { ...raw, schemaVersion: 2, matches };
 }
 
-/** Upgrades an older file step by step: v1 → v2 (sets), v2 → v3 (`presets: []`). */
+/**
+ * Upgrades an older file step by step: v1 → v2 (sets), v2 → v3 (`presets: []`), v3 → v4 (no data
+ * change: untagged points without timestamps stay valid).
+ */
 function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
-  if (v2.schemaVersion !== 2) return v2;
-  return { presets: [], ...v2, schemaVersion: EXPORT_SCHEMA_VERSION };
+  const v3 = v2.schemaVersion === 2 ? { presets: [], ...v2, schemaVersion: 3 } : v2;
+  return v3.schemaVersion === 3 ? { ...v3, schemaVersion: EXPORT_SCHEMA_VERSION } : v3;
 }
 
 /**

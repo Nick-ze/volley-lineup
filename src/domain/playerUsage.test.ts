@@ -75,3 +75,26 @@ describe('removePlayerEverywhere', () => {
     expect(removePlayerEverywhere(s, 'nobody')).toBe(s);
   });
 });
+
+describe('point tags (v4)', () => {
+  const tagged = set({
+    events: [
+      { type: 'point', winner: 'us', kind: 'kill', playerId: 'x', at: '2026-11-21T10:00:00Z' },
+      { type: 'point', winner: 'them', kind: 'opponentAce' },
+    ],
+  });
+
+  it('a player named only in a tag counts as part of the set', () => {
+    expect(isPlayerInSet(tagged, 'x')).toBe(true);
+    expect(isPlayerInSet(tagged, 'y')).toBe(false);
+    expect(isPlayerInPlayedSet([match([tagged])], 'x')).toBe(true);
+  });
+
+  it('removing a tagged player keeps the rally and its kind', () => {
+    expect(removePlayerEverywhere(tagged, 'x').events).toEqual([
+      { type: 'point', winner: 'us', kind: 'kill', at: '2026-11-21T10:00:00Z' },
+      { type: 'point', winner: 'them', kind: 'opponentAce' },
+    ]);
+    expect(removePlayerEverywhere(tagged, 'y')).toBe(tagged);
+  });
+});

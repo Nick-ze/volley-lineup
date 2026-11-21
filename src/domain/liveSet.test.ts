@@ -11,6 +11,7 @@ import {
   undo,
 } from './liveSet';
 import type { Player, SetEvent, SetLineup, Side } from './types';
+import { emptySetLineup } from './lineup';
 
 const player = (n: number, positions: Player['positions'] = ['OH']): Player => ({
   id: `p${n}`,
@@ -407,5 +408,15 @@ describe('liveCourtView — libero swaps on the live court', () => {
     const view = liveCourtView(set, replaySet(set, players));
     expect(numbers(view.slots)).toBe('1 2 3 4 5 6');
     expect(view.liberoSwap).toBeNull();
+  });
+});
+
+describe('addPoint timestamps (v4)', () => {
+  it('stores the time a rally was recorded only when given', () => {
+    const base = emptySetLineup(1);
+    expect(addPoint(base, 'us').events).toEqual([{ type: 'point', winner: 'us' }]);
+    expect(addPoint(base, 'them', '2026-11-21T10:00:00.000Z').events).toEqual([
+      { type: 'point', winner: 'them', at: '2026-11-21T10:00:00.000Z' },
+    ]);
   });
 });
