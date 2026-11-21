@@ -28,6 +28,8 @@ export interface StatsTableProps {
   head: StatsColumn;
   columns: StatsColumn[];
   rows: StatsRow[];
+  /** Extra explanation under the legend (e.g. how rotations are numbered). */
+  note?: string;
   /** Width of the sticky first column. */
   headWidth?: number;
   testID: string;
@@ -47,6 +49,7 @@ export function StatsTable({
   head,
   columns,
   rows,
+  note,
   headWidth = touchTarget * 1.5,
   testID,
 }: StatsTableProps) {
@@ -122,6 +125,11 @@ export function StatsTable({
       <Text style={styles.legend}>
         {columns.map((c) => s.legend(c.label, c.meaning)).join(' · ')}
       </Text>
+      {note ? (
+        <Text style={styles.legend} testID={`${testID}-note`}>
+          {note}
+        </Text>
+      ) : null}
     </View>
   );
 }

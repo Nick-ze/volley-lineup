@@ -186,10 +186,101 @@ describe('setStats — rotations', () => {
     ]);
   });
 
+  it('without a setter on court counts rotations from the start (fallback)', () => {
+    // Every fixture player is an outside hitter (or libero): no role S on court, so set 1 and
+    // set 2 above are already the fallback counting. A setter role for a bench player (p10, not
+    // a starter, so it is ignored) changes nothing.
+    expect(setStats({ ...set1, roles: { p10: 'S' } }, players).rotations).toEqual([
+      rot(1, [2, 2, 2, 1, 2, 1]),
+      rot(2, [2, 1, 1, 1, 2, 1]),
+      rot(3, [2, 1, 1, 1, 2, 1]),
+      rot(4, [3, 1, 1, 1, 3, 2]),
+      rot(5, [1, 2, 2, 1, 1, 0]),
+      rot(6, [2, 1, 1, 1, 2, 1]),
+    ]);
+  });
+
   it('side-out % is side-outs ÷ received, null when nothing was received', () => {
     expect(sideOutRate({ received: 3, sideOuts: 2 })).toBeCloseTo(0.6667, 4);
     expect(sideOutRate({ received: 4, sideOuts: 0 })).toBe(0);
     expect(sideOutRate({ received: 0, sideOuts: 0 })).toBeNull();
+  });
+});
+
+/*
+ * v4: rotations named after the setter's position. Set 1 again, with a setter. Worked out by
+ * hand: the rows of set 1 counted from the start (R1…R6 above) move to the setter's position in
+ * that rotation. Clockwise rule: each side-out moves every player one position on (2→1, 1→6,
+ * 6→5, 5→4, 4→3, 3→2). A substitute inherits the setter role (p9 for p4 at e10).
+ */
+describe('setStats — rotations named after the setter', () => {
+  it('setter starting at position 4: the first rallies count for R4', () => {
+    // p4 (then p9) is at: start R1 → 4, R2 → 3, R3 → 2, R4 → 1, R5 → 6, R6 → 5.
+    const s = setStats({ ...set1, roles: { p4: 'S' } }, players);
+    expect(s.points).toEqual({ us: 12, them: 8 });
+    expect(s.rotations).toEqual([
+      rot(1, [3, 1, 1, 1, 3, 2]), // from-start R4 (e9, e11, e12, e13; setter p4 → p9 at 1)
+      rot(2, [2, 1, 1, 1, 2, 1]), // from-start R3 (e6, e7, e8)
+      rot(3, [2, 1, 1, 1, 2, 1]), // from-start R2 (e2, e3, e4)
+      rot(4, [2, 2, 2, 1, 2, 1]), // from-start R1 (e0, e1, e21, e22)
+      rot(5, [2, 1, 1, 1, 2, 1]), // from-start R6 (e18, e19, e20)
+      rot(6, [1, 2, 2, 1, 1, 0]), // from-start R5 (e14, e15, e16)
+    ]);
+  });
+
+  it('6-2 (setters p1 and p4): the back-row setter names the rotation', () => {
+    // From start R1: p1 at 1 → R1. R2: p1 at 6 → R6. R3: p1 at 5 → R5. R4: p1 at 4 (front),
+    // p4/p9 at 1 → R1. R5: p9 at 6 → R6. R6: p9 at 5 → R5. R2–R4 are never played.
+    const s = setStats({ ...set1, roles: { p1: 'S', p4: 'S' } }, players);
+    expect(s.rotations).toEqual([
+      rot(1, [5, 3, 3, 2, 5, 3]), // [2,2,2,1,2,1] + [3,1,1,1,3,2]
+      rot(2, [0, 0, 0, 0, 0, 0]),
+      rot(3, [0, 0, 0, 0, 0, 0]),
+      rot(4, [0, 0, 0, 0, 0, 0]),
+      rot(5, [4, 2, 2, 2, 4, 2]), // [2,1,1,1,2,1] + [2,1,1,1,2,1]
+      rot(6, [3, 3, 3, 2, 3, 1]), // [2,1,1,1,2,1] + [1,2,2,1,1,0]
+    ]);
+  });
+
+  it('a setter at position 1 in set 2 (we serve first): R1, then R6, then R5', () => {
+    const s = setStats({ ...set2, roles: { p1: 'S' } }, players);
+    expect(s.rotations).toEqual([
+      rot(1, [2, 1, 1, 1, 2, 1]), // e0, e2, e3
+      rot(2, [0, 0, 0, 0, 0, 0]),
+      rot(3, [0, 0, 0, 0, 0, 0]),
+      rot(4, [0, 0, 0, 0, 0, 0]),
+      rot(5, [1, 0, 0, 0, 1, 1]), // e7 (p1 at 5)
+      rot(6, [1, 2, 2, 1, 1, 0]), // e4, e5, e6 (p1 at 6)
+    ]);
+  });
+
+  it('a setter by roster position (primary S, no override) counts the same', () => {
+    const withSetter = players.map((p) =>
+      p.id === 'p4' ? { ...p, positions: ['S' as const] } : p,
+    );
+    expect(setStats(set1, withSetter).rotations).toEqual(
+      setStats({ ...set1, roles: { p4: 'S' } }, players).rotations,
+    );
+  });
+
+  it('roles change only the rotation rows, not the player numbers', () => {
+    expect(setStats({ ...set1, roles: { p4: 'S' } }, players).players).toEqual(
+      setStats(set1, players).players,
+    );
+  });
+});
+
+describe('setStats — libero switched off (v4)', () => {
+  it('never counts the libero as started or played, and rotations stay the same', () => {
+    const on = setStats(set1, players);
+    const off = setStats({ ...set1, liberoActive: false }, players);
+    expect(on.players.p7).toEqual(line([1, 1, 0, 0, 0, 0, 0, 0, 0, 0]));
+    expect(off.players.p7).toBeUndefined();
+    const { p7: _libero, ...others } = on.players;
+    expect(off.players).toEqual(others);
+    expect(off.rotations).toEqual(on.rotations);
+    // Also in a set where the libero would be in from the first rally (set 2).
+    expect(setStats({ ...set2, liberoActive: false }, players).players.p7).toBeUndefined();
   });
 });
 
