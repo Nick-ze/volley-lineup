@@ -10,9 +10,11 @@ import { colors, spacing, typography } from '@/theme';
 import { Bench } from './Bench';
 import { CopyClearButtons } from './CopyClearButtons';
 import { DragProvider, type DragItem } from './drag/DragContext';
+import { FormationControls } from './FormationControls';
 import { LiberoReplaces } from './LiberoReplaces';
 import { LiberoSlot } from './LiberoSlot';
 import { LineupCourt } from './LineupCourt';
+import { PlacementConfirm } from './PlacementConfirm';
 import { RotateButtons } from './RotateButtons';
 import { ServeToggle } from './ServeToggle';
 import { TemplateFill } from './TemplateFill';
@@ -94,6 +96,7 @@ export function LineupBuilder({
     return (
       <DragProvider onDrop={onDrop} disabled={locked} style={styles.layout}>
         {lockedNotice}
+        <FormationControls editor={editor} />
         <LineupCourt editor={editor} compact />
         <RotateButtons editor={editor} />
         {liberoAndServe}
@@ -101,6 +104,7 @@ export function LineupBuilder({
         {hint}
         {moreControls}
         <ValidationPanel result={validation} />
+        <PlacementConfirm editor={editor} />
       </DragProvider>
     );
   }
@@ -109,6 +113,7 @@ export function LineupBuilder({
     <DragProvider onDrop={onDrop} disabled={locked} style={[styles.layout, styles.wide]}>
       <View style={[styles.column, styles.courtColumn]}>
         {lockedNotice}
+        <FormationControls editor={editor} />
         <LineupCourt editor={editor} />
         <RotateButtons editor={editor} />
         {liberoAndServe}
@@ -119,6 +124,7 @@ export function LineupBuilder({
         <Bench editor={editor} scrollable />
         <ValidationPanel result={validation} />
       </View>
+      <PlacementConfirm editor={editor} />
     </DragProvider>
   );
 }

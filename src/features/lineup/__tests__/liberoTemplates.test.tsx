@@ -61,7 +61,9 @@ describe('lineup builder — fill from template', () => {
     await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
     await fillWith('5-1');
     expect(set1().slots).toEqual({ 1: 'p1', 2: 'p3', 3: 'p6', 4: 'p9', 5: 'p4', 6: 'p7' });
-    expect(screen.getByTestId('template-message')).toHaveTextContent('Filled with a 5-1 system.');
+    expect(screen.getByTestId('template-message')).toHaveTextContent(
+      'Formation set to 5-1, players filled in by role.',
+    );
     expect(screen.getByText('Lineup is complete.')).toBeTruthy();
   });
 

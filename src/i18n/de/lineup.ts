@@ -18,6 +18,8 @@ export const lineup: Strings['lineup'] = {
   liberoSlotLabel: (name: string | null) => (name ? `Libero-Platz, ${name}` : 'Libero-Platz frei'),
   slotLabel: (position: number, name: string | null) =>
     name ? `Position ${position}, ${name}` : `Position ${position} frei`,
+  emptySlotLabel: (position: number, code: string, role: string) =>
+    `${code}, ${role}: Position ${position} frei`,
   playerHint:
     'Tippen zum Auswählen, dann eine Position, den Libero-Platz oder die Bank antippen. Oder ziehen.',
   slotHintSelected: 'Setzt den ausgewählten Spieler hierher',
@@ -46,7 +48,7 @@ export const lineup: Strings['lineup'] = {
     UNKNOWN_PLAYER: 'Auf einer Position steht ein Spieler, der nicht im Kader ist.',
   },
   warnings: {
-    NO_SETTER: 'Kein Zuspieler in der Startaufstellung.',
+    NO_SETTER: 'Auf der Zuspielposition steht kein als Zuspieler eingetragener Spieler.',
     UNUSUAL_LAYOUT: 'Ungewöhnliche Positionsverteilung.',
     INACTIVE_PLAYER: 'Ein inaktiver oder verletzter Spieler ist aufgestellt.',
     LIBERO_NOT_LIBERO: 'Der Libero ist im Kader nicht als Libero eingetragen.',
@@ -69,8 +71,21 @@ export const lineup: Strings['lineup'] = {
     clockwiseLabel: 'Rotieren im Uhrzeigersinn',
     counterclockwise: 'Rotieren ↺',
     counterclockwiseLabel: 'Rotieren gegen den Uhrzeigersinn',
-    hint: 'Verschiebt die ganze Startaufstellung um eine Position, damit das Zuspiel auf jeder Position beginnen kann',
-    emptyHint: 'Stelle zuerst die Startaufstellung aufs Feld, um sie zu rotieren',
+    hint: 'Verschiebt die ganze Startaufstellung samt Formation um eine Position, damit das Zuspiel auf jeder Position beginnen kann',
+    setterOn: (n: number) => `Zuspieler auf\u00a0${n}`,
+    setterOnLabel: (n: number) => `Zuspieler auf ${n}: Rotation ${n}`,
+  },
+  formation: {
+    systemGroupLabel: 'System',
+    systemLabel: (system: string, explanation: string) => `${system}: ${explanation}`,
+    systems: {
+      '5-1': 'ein Zuspieler, der Diagonalspieler gegenüber',
+      '6-2': 'zwei Zuspieler gegenüber, der aus der Hinterreihe zuspielt',
+    },
+    orderGroupLabel: 'Reihenfolge ab dem Zuspieler',
+    orders: { outside: 'S → Außen', middle: 'S → Mitte' },
+    orderLabel: (order: string, pattern: string) => `${order}: ${pattern}`,
+    pattern: (roles: string) => `Ab dem Zuspieler: ${roles}`,
   },
   liberoPlays: 'Libero spielt',
   liberoOut: 'Libero bleibt in diesem Satz draußen: keine Libero-Wechsel.',
@@ -93,13 +108,14 @@ export const lineup: Strings['lineup'] = {
     openHint: 'Wähle ein 5-1- oder 6-2-System, um die Startaufstellung aus dem Kader zu füllen',
     lockedHint:
       'Dieser Satz wurde schon gespielt, daher kann die Startaufstellung nicht neu gefüllt werden.',
-    choose: 'Startaufstellung nach einem System füllen. Die aktuellen Startspieler werden ersetzt.',
+    choose:
+      'Wähle ein System: Es legt die Formation fest (5-1 oder 6-2) und füllt die Startaufstellung nach Rollen aus dem Kader. Die aktuellen Startspieler werden ersetzt.',
     systemLabel: (system: string) => `Startaufstellung mit einem ${system}-System füllen`,
     cancel: 'Abbrechen',
     cancelLabel: 'Vorlagenauswahl schließen',
-    filled: (system: string) => `Mit einem ${system}-System gefüllt.`,
+    filled: (system: string) => `Formation auf ${system} gesetzt, Spieler nach Rollen eingetragen.`,
     missing: (system: string, list: string) =>
-      `Mit einem ${system}-System gefüllt. Nicht besetzt: ${list}. Füge Spieler mit diesen Positionen hinzu oder stelle jemanden von Hand auf.`,
+      `Formation auf ${system} gesetzt, Spieler nach Rollen eingetragen. Nicht besetzt: ${list}. Füge Spieler mit diesen Positionen hinzu oder stelle jemanden von Hand auf.`,
     missingItem: (position: number, role: string) => `Position ${position} (${role})`,
   },
   issuePositions: (positions: number[]) => `Positionen ${positions.join(', ')}`,

@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import { State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
@@ -31,7 +31,8 @@ const player = (n: number): Player => ({
   firstName: `F${n}`,
   lastName: `L${n}`,
   number: n,
-  positions: ['OH'],
+  // Listed for every spot used below (4 OPP, 3 MB in the default formation): no "Are you sure?".
+  positions: ['OH', 'OPP', 'MB'],
   active: true,
 });
 
@@ -89,6 +90,26 @@ describe('lineup builder drag & drop', () => {
     await dragTo('drag-libero-player', 100, 600);
     expect(set1().liberoId).toBeNull();
     expect(within(screen.getByTestId('bench')).getByTestId('bench-player-1')).toBeTruthy();
+  });
+
+  it('dropping an unlisted player on a spot asks first (Cancel: nothing; Confirm: placed + "*")', async () => {
+    useAppStore.setState((st) => ({
+      players: [...st.players, { ...player(4), positions: ['OH'] }],
+    }));
+    await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
+    await screen.findByTestId('bench');
+    await dragTo('drag-bench-player-4', 150, 50); // spot 3 = MB
+    expect(screen.getByTestId('placement-confirm')).toHaveTextContent(
+      /#4 F4 L4 isn’t listed as Middle Blocker/,
+    );
+    await fireEvent.press(screen.getByTestId('placement-cancel'));
+    expect(set1().slots[3]).toBeNull();
+    expect(screen.queryByTestId('placement-confirm')).toBeNull();
+
+    await dragTo('drag-bench-player-4', 150, 50);
+    await fireEvent.press(screen.getByTestId('placement-confirm-button'));
+    expect(set1().slots[3]).toBe('p4');
+    expect(screen.getByTestId('role-off-3', { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('does nothing when dropped outside any zone', async () => {
