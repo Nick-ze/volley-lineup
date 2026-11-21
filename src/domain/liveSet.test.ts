@@ -399,11 +399,24 @@ describe('liveCourtView — libero swaps on the live court', () => {
     expect(view.liberoSwap).toEqual({ position: 1, replacedId: 'p6' });
   });
 
-  it('does not swap for a substitute of a chosen starter', () => {
+  it('swaps for a substitute of a chosen starter (they take over the role, v4.0 #130)', () => {
     const set = withEvents([sub('p6', 'p8')], libero);
-    const view = liveCourtView(set, replaySet(set, players));
-    expect(numbers(view.slots)).toBe('1 2 3 4 5 8');
-    expect(view.liberoSwap).toBeNull();
+    const state = replaySet(set, players);
+    expect(state.liberoReplaces).toEqual(['p3', 'p8']);
+    const view = liveCourtView(set, state);
+    expect(numbers(view.slots)).toBe('1 2 3 4 5 7');
+    expect(view.liberoSwap).toEqual({ position: 6, replacedId: 'p8' });
+    // the starter coming back is replaced again
+    const back = withEvents([sub('p6', 'p8'), sub('p8', 'p6')], libero);
+    expect(replaySet(back, players).liberoReplaces).toEqual(['p3', 'p6']);
+    // an invalid sub changes nothing; a switched-off libero replaces nobody
+    expect(replaySet(withEvents([sub('p8', 'p9')], libero), players).liberoReplaces).toEqual([
+      'p3',
+      'p6',
+    ]);
+    const off = { ...set, liberoActive: false };
+    expect(replaySet(off, players).liberoReplaces).toEqual([]);
+    expect(liveCourtView(off, replaySet(off, players)).liberoSwap).toBeNull();
   });
 
   it('shows the real court when there is no libero', () => {

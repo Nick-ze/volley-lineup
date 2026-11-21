@@ -198,3 +198,26 @@ Newest at the bottom. Format: **Decision** — why.
 118. **Libero on/off** (`liberoActive`, default on): off = no swaps anywhere; every swap reads `activeLiberoReplaces(set)`. "Libero replaces by role" sets `liberoReplaces` to the starters currently in those roles (`startersWithRoles`); substitutes for them aren't swapped (as #67).
 119. **Data model v5**: export `schemaVersion` 5 (v1–v4 files upgraded with `roles: {}`, `liberoActive: true`; import rejects roles for anyone but the set's / preset's starters as `INCONSISTENT_REFERENCES`); store version 6 with the same defaults. `RoleTag` (`src/components`) draws the role and the "*" the same way on every court.
 120. **Version 4.0.0** (versionCode 40000): major, because the store and export formats change again.
+
+### Lineup builder (PR #34)
+
+121. **Role tag above the chip** in its own ≥ 44 px button row (it doesn't overlap the chip); tapping it opens the role picker (S / OH / MB / OPP / DS). A listed position (primary or secondary) applies directly; an unlisted one asks "Play them as …?" (Cancel keeps the old role). While a player is selected for tap-to-select, tapping the tag places / swaps like the spot; a press that moved > 10 px (a drag) is ignored. Disabled in played sets.
+122. **"\*" at the top right of the court spot** (`OffPositionMark`, shared by every court; `RoleTag` shows only the role), as the owner asked — only when the role is none of the player's listed positions.
+123. **Rotate ↺ / ↻** under the builder court (disabled when played or empty). **Libero**: a "Libero plays" switch (shown when a libero is assigned; off greys out the replaces section) and role chips Middles / Outsides / Opposite / Setter / DS — a chip is "on" when the libero replaces all starters in that role, pressing it toggles that group; per-player chips and "Suggest middles" stay.
+124. **Templates set roles** from the template's layout (override only where it differs from the primary, no confirmation, "*" if unlisted); after a fill the libero replaces the starters whose _role_ is MB. The lineup check's "unusual layout" warning judges roles, not primary positions.
+
+### Rotation viewer and live mode (PR #36)
+
+125. **The viewer counts rotations from the start internally and labels them by the setter's position**: stepper "Rotation 4 (setter on 4)" / "Rotation 4 (Zuspieler auf 4)", "Rotation n of 6" without a setter; the 1–6 jump row is sorted by that label; in a 6-2 the labels repeat and are told apart ("second time"). Starters cards show their setter rotation; the live scoreboard shows `setterRotation ?? rotation`.
+126. **Role tags on every court** (rotation viewer, starters overview, team starters, live court — substitutes show the inherited role); the libero standing in shows "L" (never "*"). "Serving" / "L for #n" moved onto the chip's lower edge so the live court keeps its height (Substitution still fits at 390×844). A switched-off libero shows "Libero switched off for this set" instead of the swaps toggle. The next-set setup in live mode has Rotate ↺ / ↻ with "Setter on n".
+127. Screen-reader role wording everywhere: "plays Setter[, not one of their positions]" / German gender-neutral "nicht als Position eingetragen".
+
+### Stats and print (PR #35)
+
+128. **Stats per rotation by the setter** (`setterRotation ?? rotation`, per rally; roles are fixed per set and substitutes inherit them, so a set is either all setter-numbered or all counted from the start). Row labels stay R1–R6; a note under the legend explains "R4 = setter at position 4" and the fallback.
+129. **Print sheet**: each spot's role code right-aligned on its position line ("*" when unlisted, one explanatory note per sheet), "Libero off" instead of "Libero replaces" when switched off. The results block is one compact line and court-cell names stay on one line, so 5 sets + 12 players fit one A4 page with or without results, also with long names (checked EN + DE).
+
+### QA fixes (orchestrator)
+
+130. **The libero replaces a role, so substitutes count** (amends #67 / #118): in live play a substitute for a player the libero replaces takes their place in whom the libero replaces (they inherit the role), and the starter coming back takes it again. Tracked by the replay (`RallyStep.liberoReplaces`, `LiveState.liberoReplaces`); live court, stats and the point-tag player list use it. The owner asked to choose which _position_ the libero substitutes.
+131. **Deleting a player also removes their role overrides from presets / team starters** (exports stay importable); copying a preset keeps roles and the libero switch; "Suggest middles" goes by role (players playing MB); imported role overrides must be court roles (S, OH, MB, OPP, DS — not "L"); rotate buttons are ↺ / ↻ in that order everywhere; the stepper keeps "on 4" together with a no-break space. The libero switch stays editable in played sets (like #68): it changes how past rallies are shown and counted.

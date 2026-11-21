@@ -9,6 +9,7 @@
  * There is only one libero: if two chosen starters are in the back row at the same time, the
  * one listed first in `liberoReplaces` is replaced.
  */
+import { startersWithRoles } from './roles';
 import { BACK_ROW_POSITIONS, serverPosition, type Slots } from './rotation';
 import { COURT_POSITIONS, type CourtPosition, type Player, type SetLineup } from './types';
 
@@ -70,12 +71,9 @@ export function applyLiberoSwaps(
   return { ...slots, [swap.position]: liberoId };
 }
 
-/** Default choice of whom the libero replaces: the starters whose primary position is MB. */
+/** Default choice of whom the libero replaces: the starters playing MB (by role, v4). */
 export function suggestLiberoReplaces(set: SetLineup, players: readonly Player[]): string[] {
-  const byId = new Map(players.map((p) => [p.id, p]));
-  return COURT_POSITIONS.map((p) => set.slots[p]).filter(
-    (id): id is string => id !== null && byId.get(id)?.positions[0] === 'MB',
-  );
+  return startersWithRoles(set, players, ['MB']);
 }
 
 /**

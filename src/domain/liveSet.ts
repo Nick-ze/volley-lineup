@@ -77,6 +77,8 @@ export interface LiveState {
   roles: RoleOverrides;
   /** v5: the rotation named after the setter's position (null without a setter on court). */
   setterRotation: RotationNumber | null;
+  /** v4.0: whom the libero replaces now — a substitute takes over from the player they replaced. */
+  liberoReplaces: string[];
   servingSide: Side;
   /** Our server (position 1) when we serve, otherwise null. */
   serverId: string | null;
@@ -145,6 +147,8 @@ export interface RallyStep {
   roles: RoleOverrides;
   /** v5: the rotation named after the setter's position, or null without a setter (roles.ts). */
   setterRotation: RotationNumber | null;
+  /** v4.0: whom the libero replaces during the rally (substitutes take over; see #130). */
+  liberoReplaces: string[];
 }
 
 /** A substitution in the log; `applied` is false when it was skipped (`INVALID_SUB`). */
@@ -189,6 +193,8 @@ function replay(
   const steps: ReplayStep[] = [];
   /** v5: player id → role, for everyone who has been on court; subs inherit. */
   const roles: RoleOverrides = startingRoles(set, players);
+  /** v4.0: whom the libero replaces; a substitute takes the place of the player they replace. */
+  let liberoReplaces: string[] = [...activeLiberoReplaces(set)];
   const onCourtRoles = (): RoleOverrides => {
     const now: RoleOverrides = {};
     for (const p of COURT_POSITIONS) {
@@ -209,6 +215,7 @@ function replay(
         slots,
         roles: onCourtRoles(),
         setterRotation: setterRotation(slots, roles),
+        liberoReplaces,
       });
       score[event.winner] += 1;
       if (event.winner === 'us' && servingSide === 'them') {
@@ -246,6 +253,7 @@ function replay(
       warnings.push({ code: 'REENTRY_RULE', ...base });
     }
 
+    liberoReplaces = liberoReplaces.map((id) => (id === outPlayerId ? inPlayerId : id));
     const outRole = roles[outPlayerId];
     if (outRole === undefined) delete roles[inPlayerId];
     else roles[inPlayerId] = outRole;
@@ -259,6 +267,7 @@ function replay(
     rotation: rotationNumber(rotations),
     roles: onCourtRoles(),
     setterRotation: setterRotation(slots, roles),
+    liberoReplaces,
     servingSide,
     serverId: servingSide === 'us' ? slots[serverPosition] : null,
     subsUsed,
@@ -316,12 +325,13 @@ export interface LiveCourtView {
 
 /**
  * Applies the libero swap to the live court. The libero may not serve, so position 1 is only
- * excluded while we serve. `liberoReplaces` names starters: a substitute who replaced one of
- * them is not swapped (the swap applies again once the starter is back on court).
+ * excluded while we serve. Whom the libero replaces comes from the replay: a substitute for a
+ * replaced player is replaced too (they take over the role, v4.0 #130); nobody when the libero
+ * is switched off.
  */
 export function liveCourtView(set: SetLineup, state: LiveState): LiveCourtView {
   const options = { serving: state.servingSide === 'us' };
-  const replaces = activeLiberoReplaces(set);
+  const replaces = state.liberoReplaces;
   return {
     slots: applyLiberoSwaps(state.slots, set.liberoId, replaces, options),
     liberoSwap: findLiberoSwap(state.slots, set.liberoId, replaces, options),

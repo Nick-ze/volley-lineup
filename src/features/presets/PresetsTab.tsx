@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { filledCount, nextPresetName, validatePresetName } from '@/domain/presets';
+import {
+  filledCount,
+  nextPresetName,
+  presetFromSet,
+  presetToDraft,
+  validatePresetName,
+} from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
 import { ListRow } from '@/features/roster/components/ListRow';
@@ -33,8 +39,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
     const all = useAppStore.getState().presets;
     const copy = validatePresetName(s.copyName(p.name), all, teamId);
     const name = copy.ok ? copy.value : nextPresetName(s.defaultName, all, teamId);
-    const { slots, liberoId, liberoReplaces } = p;
-    addPreset({ teamId, name, slots: { ...slots }, liberoId, liberoReplaces: [...liberoReplaces] });
+    addPreset({ teamId, name, ...presetFromSet(presetToDraft(p)) });
   };
 
   return (

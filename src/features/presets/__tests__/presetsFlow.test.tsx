@@ -64,7 +64,13 @@ describe('presets tab', () => {
   });
 
   it('lists presets with a summary; rename, copy and delete (with confirmation)', async () => {
-    store().addPreset({ teamId: 'team1', name: 'Alpha', ...fullLineup() });
+    store().addPreset({
+      teamId: 'team1',
+      name: 'Alpha',
+      ...fullLineup(),
+      roles: { p2: 'DS' },
+      liberoActive: false,
+    });
     store().setStarters('team1', fullLineup()); // starters are not listed here
     await renderRouter('./app', { initialUrl: '/team/team1?tab=presets' });
     expect(await screen.findByText(s.list.count(1))).toBeTruthy();
@@ -81,9 +87,11 @@ describe('presets tab', () => {
       .presets.filter((p) => p.kind === 'preset')
       .map((p) => p.name);
     expect(names).toEqual(['Beta', 'Beta (copy)', 'Preset 1']);
-    expect(store().presets.find((p) => p.name === 'Beta (copy)')?.slots).toEqual(
-      fullLineup().slots,
-    );
+    const copy = store().presets.find((p) => p.name === 'Beta (copy)');
+    expect(copy?.slots).toEqual(fullLineup().slots);
+    // v4: the copy keeps roles and the libero switch
+    expect(copy?.roles).toEqual({ p2: 'DS' });
+    expect(copy?.liberoActive).toBe(false);
 
     await press(s.list.deleteLabel('Beta'));
     await press(t.common.cancel);

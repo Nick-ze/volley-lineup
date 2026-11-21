@@ -124,6 +124,15 @@ New in **v3 — Match day & stats**:
 
 Data from v2 (on the phone or in v1–v3 export files) opens in v3 automatically. Files exported by v3 (schema version 4) can't be opened by older versions.
 
+New in **v4 — Roles on court**:
+
+- **Roles** — every starter plays a role shown at the top of their spot (S, OH, MB, OPP, DS); tap it to change. Anyone can play any role: a role that isn't one of the player's positions asks "Are you sure?" and gets a "*" in the top-right corner. Roles move with the players and substitutes take over the role.
+- **Rotate before the set** — ↺ / ↻ moves the whole starting six, so the setter can start at any position.
+- **Rotation = setter position** — setter on 4 = "Rotation 4" in the rotation viewer, live mode and the per-rotation stats.
+- **Libero** — choose which roles the libero replaces (middles, outsides, …) and switch the libero off when they should stay out.
+
+Data and export files from earlier versions open in v4 automatically; files exported by v4 (schema version 5) can't be opened by older versions.
+
 ## Export / import
 
 Open the **Settings** tab (bottom bar).

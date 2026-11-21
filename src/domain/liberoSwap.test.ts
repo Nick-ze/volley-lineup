@@ -130,6 +130,13 @@ describe('suggestLiberoReplaces', () => {
     expect(suggestLiberoReplaces(setWith(start), players)).toEqual(['mb1', 'mb2']);
   });
 
+  it('goes by role (v4): a primary MB playing S is left out, anyone playing MB is in', () => {
+    const set = { ...setWith(start), roles: { mb1: 'S' as const } };
+    expect(suggestLiberoReplaces(set, players)).toEqual(['mb2']);
+    const asMiddle = { ...setWith({ ...start, 1: 'dsmb' }), roles: { dsmb: 'MB' as const } };
+    expect(suggestLiberoReplaces(asMiddle, players)).toContain('dsmb');
+  });
+
   it('ignores secondary MBs, empty slots and unknown players', () => {
     const slots: Slots = { 1: 'dsmb', 2: null, 3: 'ghost', 4: 'mb2', 5: null, 6: null };
     expect(suggestLiberoReplaces(setWith(slots), players)).toEqual(['mb2']);
