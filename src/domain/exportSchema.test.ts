@@ -914,6 +914,17 @@ describe('v7 photos, descriptions and error types', () => {
     expect(data.photos.map((p) => p.id)).toEqual(['ph2', 'ph9']);
   });
 
+  it('leaves out photo ids whose photo is missing, so the file still imports (v6 QA)', () => {
+    const data = v7();
+    data.photos = data.photos.filter((p) => p.id !== 'ph2'); // ph2's storage write failed
+    data.profiles[1] = { ...data.profiles[1], photoId: 'ghost' };
+    const file = buildExport(data, { now: NOW });
+    expect(file.players[0]).not.toHaveProperty('photoId');
+    expect(file.profiles[0].photoId).toBe('ph1');
+    expect(file.profiles[1]).not.toHaveProperty('photoId');
+    expect(parseImport(serializeExport(file)).ok).toBe(true);
+  });
+
   it('merge of a file without descriptions never deletes them', () => {
     const existing = v7();
     const result = mergeData(existing, buildExport(existing));

@@ -94,8 +94,8 @@ describe('player photos', () => {
   it('changes a photo (new id, old one deleted) and removes it (number fallback)', async () => {
     const team = seedTeam();
     const ana = seedPlayer(team.id);
+    usePhotoStore.setState({ photos: { old: URI_A } }); // the photo exists before it's referenced
     store().updatePlayer(ana.id, { photoId: 'old' });
-    usePhotoStore.setState({ photos: { old: URI_A } });
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
     await screen.findByTestId('player-7');
     expect(screen.getByTestId('player-7-photo-number', hidden)).toBeTruthy();

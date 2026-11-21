@@ -67,8 +67,8 @@ describe('profile photos', () => {
 
   it('changes and removes the photo in the Profile tab', async () => {
     const coach = store().addProfile({ name: 'Coach', color: '#FF6B00' });
+    usePhotoStore.setState({ photos: { old: URI_A } }); // the photo exists before it's referenced
     store().updateProfile(coach.id, { photoId: 'old' });
-    usePhotoStore.setState({ photos: { old: URI_A } });
     store().selectProfile(coach.id);
     await renderRouter('./app', { initialUrl: '/profile' });
     await screen.findByTestId('profile-card');
@@ -97,8 +97,8 @@ describe('profile photos', () => {
   it('the profile list shows photos and edits them', async () => {
     const coach = store().addProfile({ name: 'Coach', color: '#FF6B00' });
     store().addProfile({ name: 'Other', color: '#3D8BFF' });
+    usePhotoStore.setState({ photos: { p1: URI_A } }); // the photo exists before it's referenced
     store().updateProfile(coach.id, { photoId: 'p1' });
-    usePhotoStore.setState({ photos: { p1: URI_A } });
     await renderRouter('./app', { initialUrl: '/' });
     await screen.findByText(t.roster.profiles.heading);
     expect(photoCount()).toBe(1);

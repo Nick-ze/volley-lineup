@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { plausiblePlayerIds, type LastRally } from '@/domain/lastRally';
 import { kindTakesErrorType } from '@/domain/pointTags';
@@ -28,6 +28,9 @@ export interface TagPlayerPickerProps {
  * the rally (`plausiblePlayerIds`), by jersey number. The server is outlined for an ace or a
  * serve error; tapping the chosen player again removes them. For "our error" the optional error
  * types come first (`ErrorTypeChips`) and narrow the players.
+ *
+ * v6 QA: one line that scrolls sideways (✕ stays visible on the right), so the row is never
+ * taller than the kinds row and the live court + Substitution still fit at 390×844 (#75, #126).
  */
 export function TagPlayerPicker({
   kind,
@@ -59,33 +62,42 @@ export function TagPlayerPicker({
   );
   return (
     <View style={styles.row} accessibilityLabel={t.tags.playersLabel(name)} testID="point-tag-row">
-      {kindTakesErrorType(kind) ? (
-        <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
-      ) : (
-        kindChip
-      )}
-      {onCourt.map((p) => {
-        const selected = p.id === chosen;
-        const desc = playerDescription(t, p);
-        return (
-          <TagChip
-            key={p.id}
-            label={playerRef(t, playersById, p.id)}
-            accessibilityLabel={
-              selected ? t.tags.clearPlayer(desc) : t.tags.choosePlayer(desc, name)
-            }
-            selected={selected}
-            highlighted={served && p.id === rally.serverId}
-            onPress={() => onTag(kind, selected ? null : p.id)}
-            testID={`tag-player-${p.id}`}
-          />
-        );
-      })}
+      <ScrollView
+        horizontal
+        style={styles.scroll}
+        contentContainerStyle={styles.chips}
+        keyboardShouldPersistTaps="handled"
+      >
+        {kindTakesErrorType(kind) ? (
+          <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
+        ) : (
+          kindChip
+        )}
+        {onCourt.map((p) => {
+          const selected = p.id === chosen;
+          const desc = playerDescription(t, p);
+          return (
+            <TagChip
+              key={p.id}
+              label={playerRef(t, playersById, p.id)}
+              accessibilityLabel={
+                selected ? t.tags.clearPlayer(desc) : t.tags.choosePlayer(desc, name)
+              }
+              selected={selected}
+              highlighted={served && p.id === rally.serverId}
+              onPress={() => onTag(kind, selected ? null : p.id)}
+              testID={`tag-player-${p.id}`}
+            />
+          );
+        })}
+      </ScrollView>
       {close}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  scroll: { flex: 1 },
+  chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

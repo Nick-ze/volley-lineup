@@ -225,14 +225,22 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
   const profileIds = new Set(teams.map((t) => t.profileId));
   const profiles =
     teamId === undefined ? [...data.profiles] : data.profiles.filter((p) => profileIds.has(p.id));
+  // A photo id whose photo is missing (e.g. a storage write failed) is left out, so the file
+  // always imports (v6 QA).
+  const photoIds = new Set(data.photos.map((p) => p.id));
   const players = (
     teamId === undefined ? [...data.players] : data.players.filter((p) => p.teamId === teamId)
-  ).map((p) => (options.includeDescriptions === true ? p : withoutDescription(p)));
+  ).map((p) =>
+    withoutDanglingPhoto(
+      options.includeDescriptions === true ? p : withoutDescription(p),
+      photoIds,
+    ),
+  );
   const byTeam = <T extends { teamId: string }>(list: readonly T[]): T[] =>
     teamId === undefined ? [...list] : list.filter((x) => x.teamId === teamId);
   return {
     ...base,
-    profiles,
+    profiles: profiles.map((p) => withoutDanglingPhoto(p, photoIds)),
     teams,
     players,
     matches: byTeam(data.matches),
@@ -547,6 +555,13 @@ export function mergeData(existing: TransferData, incoming: TransferData): Merge
     }),
   };
   return isConsistent(data) ? { ok: true, data } : { ok: false, error: 'MERGE_CONFLICT' };
+}
+
+/** The item without its `photoId` when that photo isn't among `photoIds`. */
+function withoutDanglingPhoto<T extends { photoId?: string }>(item: T, photoIds: Set<string>): T {
+  if (item.photoId === undefined || photoIds.has(item.photoId)) return item;
+  const { photoId: _photoId, ...rest } = item;
+  return rest as T;
 }
 
 /** v7 merge: the incoming item, keeping the existing photo when the incoming one has none. */
