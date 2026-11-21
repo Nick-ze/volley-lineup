@@ -3,12 +3,15 @@
  * light print theme, A4 portrait) for a match — header, every stored set's starting six in court
  * layout (net on top, front row 4-3-2, back row 5-6-1), libero, who serves first, and the roster.
  * Optionally (v3, `withResults`) a played match gets a results section above the sets.
+ * v4: every filled spot shows the role its player plays (e.g. "S", "OPP"; "*" when it is none of
+ * the player's positions, explained in a note under the sets), and a switched-off libero says so.
  *
  * Pure: no React, no i18n import. Translated labels come in through `labels`, and every piece of
  * user text (names, team, opponent, season, labels) is HTML-escaped.
  */
 import { printColors as c, printLayout as l } from '../theme/print';
 import { getMatchState, type MatchState } from './matchState';
+import { isOffPosition, roleOf } from './roles';
 import type { CourtPosition, Match, Player, SetLineup, Team } from './types';
 
 /** Labels of the optional "with results" section (v3). */
@@ -45,6 +48,10 @@ export interface LineupSheetLabels {
   noLibero: string;
   /** e.g. "Libero replaces #7, #12" (`numbers` is already formatted). */
   liberoReplaces: (numbers: string) => string;
+  /** v4: shown instead of whom the libero replaces when the libero is switched off. */
+  liberoOff: string;
+  /** v4: explains the "*" next to a role; shown under the sets when any spot has one. */
+  offPositionNote: string;
   serveFirst: string;
   weServe: string;
   weReceive: string;
@@ -118,16 +125,35 @@ function playerCell(player: Player | undefined, id: string | null, labels: Lineu
   );
 }
 
+/** The role code of a known player on court (e.g. "S"), with "*" when off position. */
+function roleTag(set: SetLineup, player: Player | undefined): string {
+  if (!player) return '';
+  const role = roleOf(set.roles, player);
+  if (role === null) return '';
+  const off = isOffPosition(player, role) ? '<span class="off">*</span>' : '';
+  return `<span class="role">${escapeHtml(role)}${off}</span>`;
+}
+
+/** True when a known starter of the set plays a role that is none of their positions. */
+function hasOffPosition(set: SetLineup, byId: Map<string, Player>): boolean {
+  return Object.values(set.slots).some((id) => {
+    const player = id ? byId.get(id) : undefined;
+    return player !== undefined && isOffPosition(player, roleOf(set.roles, player));
+  });
+}
+
 function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupSheetLabels): string {
   const rows = SHEET_ROWS.map((row) => {
     const cells = row.map((pos) => {
       const id = set.slots[pos];
+      const player = id ? byId.get(id) : undefined;
       const serving = pos === 1 && set.weServeFirst;
       const tag = serving ? ` <span class="srv">${escapeHtml(labels.server)}</span>` : '';
       return (
         `<td class="cell${serving ? ' serving' : ''}" data-position="${pos}">` +
-        `<span class="pos">${escapeHtml(labels.positionShort(pos))}${tag}</span>` +
-        `${playerCell(id ? byId.get(id) : undefined, id, labels)}</td>`
+        `<span class="pos">${roleTag(set, player)}` +
+        `${escapeHtml(labels.positionShort(pos))}${tag}</span>` +
+        `${playerCell(player, id, labels)}</td>`
       );
     });
     return `<tr>${cells.join('')}</tr>`;
@@ -141,10 +167,11 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
     .map((id) => byId.get(id))
     .filter((p): p is Player => p !== undefined)
     .map((p) => `#${p.number}`);
-  const replaces =
-    set.liberoId && replaced.length > 0
-      ? `<div class="replaces">${escapeHtml(labels.liberoReplaces(replaced.join(', ')))}</div>`
-      : '';
+  let replaces = '';
+  if (set.liberoId && !set.liberoActive)
+    replaces = `<div class="libero-off">${escapeHtml(labels.liberoOff)}</div>`;
+  else if (set.liberoId && replaced.length > 0)
+    replaces = `<div class="replaces">${escapeHtml(labels.liberoReplaces(replaced.join(', ')))}</div>`;
 
   return (
     `<section class="set" data-set="${set.setNumber}">` +
@@ -231,6 +258,9 @@ table.court { width: 100%; border-collapse: collapse; table-layout: fixed; }
 td.cell { border: 1px solid ${c.grid}; height: ${l.cellHeight}; vertical-align: top; padding: 3px 4px; }
 td.serving { border: 2px solid ${c.border}; }
 .pos { display: block; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
+.role { float: right; font-weight: 700; color: ${c.text}; }
+.off { font-weight: 800; }
+p.off-note { margin: 4px 0 0; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
 .srv { font-weight: 700; color: ${c.text}; }
 .num { display: block; font-size: ${l.jerseyFontSize}; font-weight: 700; line-height: 1.1; }
 .name { display: block; font-size: ${l.nameFontSize}; overflow-wrap: anywhere; }
@@ -275,9 +305,12 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
       ? renderResults(getMatchState(match), labels.results)
       : '';
 
+  const offNote = sets.some((s) => hasOffPosition(s, byId))
+    ? `<p class="off-note">${escapeHtml(labels.offPositionNote)}</p>`
+    : '';
   const setsHtml =
     sets.length > 0
-      ? `<div class="sets">${sets.map((s) => renderSet(s, byId, labels)).join('')}</div>`
+      ? `<div class="sets">${sets.map((s) => renderSet(s, byId, labels)).join('')}</div>${offNote}`
       : `<p class="empty">${escapeHtml(labels.noSets)}</p>`;
 
   return (

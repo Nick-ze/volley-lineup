@@ -33,6 +33,8 @@ export const print: Strings['print'] = {
     libero: 'Libero:',
     noLibero: 'keiner',
     liberoReplaces: (numbers: string) => `Libero ersetzt ${numbers}`,
+    liberoOff: 'Libero aus',
+    offPositionNote: '* = spielt eine Rolle außerhalb der eigenen Positionen',
     serveFirst: 'Erster Aufschlag:',
     weServe: 'Wir',
     weReceive: 'Gegner',

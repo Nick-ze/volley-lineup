@@ -26,6 +26,8 @@ const labels: LineupSheetLabels = {
   libero: 'Libero:',
   noLibero: 'none',
   liberoReplaces: (numbers) => `Libero replaces ${numbers}`,
+  liberoOff: 'Libero off',
+  offPositionNote: '* = plays a role that is none of their positions',
   serveFirst: 'First serve:',
   weServe: 'We serve',
   weReceive: 'We receive',
@@ -204,6 +206,99 @@ describe('buildLineupSheetHtml', () => {
       });
       expect(other).not.toContain('class="replaces"');
     }
+  });
+
+  it('shows each starter’s role in their spot, primary position by default (v4)', () => {
+    const set1 = sectionOf(html, 1);
+    expect(cellOf(set1, 1)).toContain('<span class="pos"><span class="role">S</span>P1');
+    expect(cellOf(set1, 2)).toContain('<span class="role">OH</span>');
+    expect(cellOf(set1, 3)).toContain('<span class="role">MB</span>');
+    expect(cellOf(set1, 4)).toContain('<span class="role">OPP</span>');
+    expect(cellOf(set1, 6)).toContain('<span class="role">MB</span>');
+    // The role sits above the player, in the small position line (cell height unchanged).
+    expect(cellOf(set1, 4).indexOf('class="role"')).toBeLessThan(
+      cellOf(set1, 4).indexOf('class="num"'),
+    );
+    expect(html).not.toContain('class="off"');
+    expect(html).not.toContain('class="off-note"');
+  });
+
+  it('marks an off-position role with "*" and explains it once under the sets', () => {
+    const roles = { b: 'S', c: 'OPP', d: 'OPP' } as const; // b off; c secondary; d primary
+    const out = buildLineupSheetHtml({
+      match: { ...match, sets: [{ ...full(1, true), roles }, full(2, false)] },
+      team,
+      players,
+      labels,
+    });
+    const set1 = sectionOf(out, 1);
+    expect(cellOf(set1, 2)).toContain('<span class="role">S<span class="off">*</span></span>');
+    expect(cellOf(set1, 3)).toContain('<span class="role">OPP</span>');
+    expect(cellOf(set1, 4)).toContain('<span class="role">OPP</span>');
+    expect(cellOf(sectionOf(out, 2), 2)).toContain('<span class="role">OH</span>');
+    expect(out.match(/class="off"/g)).toHaveLength(1);
+    expect(out.match(/class="off-note"/g)).toHaveLength(1);
+    expect(out).toContain(
+      '</div><p class="off-note">* = plays a role that is none of their positions</p>',
+    );
+  });
+
+  it('shows no role for a player without positions or an empty / unknown spot', () => {
+    const noPos = players.map((p) => (p.id === 'b' ? { ...p, positions: [] } : p));
+    const partial: SetLineup = {
+      ...full(1, true),
+      slots: { 1: 'a', 2: 'b', 3: null, 4: 'ghost', 5: 'e', 6: 'f' },
+    };
+    const out = buildLineupSheetHtml({
+      match: { ...match, sets: [partial] },
+      team,
+      players: noPos,
+      labels,
+    });
+    const set = sectionOf(out, 1);
+    for (const pos of [2, 3, 4]) expect(cellOf(set, pos)).not.toContain('class="role"');
+    expect(cellOf(set, 1)).toContain('<span class="role">S</span>');
+  });
+
+  it('says "Libero off" instead of whom the libero replaces when switched off', () => {
+    const off: SetLineup = { ...full(1, true), liberoReplaces: ['c', 'f'], liberoActive: false };
+    const out = buildLineupSheetHtml({ match: { ...match, sets: [off] }, team, players, labels });
+    const set = sectionOf(out, 1);
+    expect(set).toContain('<div class="libero-off">Libero off</div>');
+    expect(set).not.toContain('class="replaces"');
+    expect(set).toContain('Libero:</span> <span class="num">7</span>');
+    // On: replaces as before. No libero: neither line.
+    const on = buildLineupSheetHtml({
+      match: { ...match, sets: [{ ...off, liberoActive: true }] },
+      team,
+      players,
+      labels,
+    });
+    expect(sectionOf(on, 1)).toContain('<div class="replaces">Libero replaces #3, #6</div>');
+    expect(sectionOf(on, 1)).not.toContain('libero-off');
+    const none = buildLineupSheetHtml({
+      match: { ...match, sets: [{ ...off, liberoId: null }] },
+      team,
+      players,
+      labels,
+    });
+    expect(none).not.toContain('libero-off');
+  });
+
+  it('escapes the v4 labels', () => {
+    const out = buildLineupSheetHtml({
+      match: {
+        ...match,
+        sets: [{ ...full(1, true), roles: { b: 'S' }, liberoActive: false }],
+      },
+      team,
+      players,
+      labels: { ...labels, liberoOff: '<b>off</b>', offPositionNote: '<i>*</i> & "x"' },
+    });
+    expect(out).not.toContain('<b>');
+    expect(out).not.toContain('<i>');
+    expect(out).toContain('&lt;b&gt;off&lt;/b&gt;');
+    expect(out).toContain('&lt;i&gt;*&lt;/i&gt; &amp; &quot;x&quot;');
   });
 
   it('keeps each set on one page but lets a long roster break across pages', () => {
