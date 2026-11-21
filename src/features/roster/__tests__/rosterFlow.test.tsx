@@ -121,7 +121,12 @@ describe('roster flows', () => {
     await press(s.roster.toggleActive('Ana Ace', true));
     expect(store().players[0].active).toBe(false);
 
+    // v6: a row opens the player detail screen; its Edit button opens the editor.
     await fireEvent.press(screen.getByTestId('player-7'));
+    expect(screen).toHavePathname(`/team/${team.id}/players/${p.id}`);
+    await fireEvent.press(
+      screen.getByRole('button', { name: t.playerDetail.editLabel('Ana Ace') }),
+    );
     await screen.findByLabelText(s.player.firstName);
     expect(screen.getByLabelText(s.player.firstName).props.value).toBe('Ana');
     await fireEvent.press(
