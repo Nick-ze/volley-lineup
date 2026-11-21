@@ -50,6 +50,7 @@ export function DraggablePlayer({
           player={player}
           size={size}
           selected={selected}
+          disabled={drag.disabled}
           onPress={() => {
             if (!drag.justDragged()) onPress();
           }}

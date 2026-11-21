@@ -7,9 +7,11 @@ import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 export function ServeToggle({
   weServeFirst,
   onChange,
+  disabled = false,
 }: {
   weServeFirst: boolean;
   onChange(value: boolean): void;
+  disabled?: boolean;
 }) {
   const t = useT();
   const option = (value: boolean, label: string, testID: string) => {
@@ -18,7 +20,9 @@ export function ServeToggle({
       <Pressable
         accessibilityRole="radio"
         accessibilityLabel={label}
-        accessibilityState={{ checked: active }}
+        accessibilityState={{ checked: active, disabled }}
+        aria-disabled={disabled}
+        disabled={disabled}
         onPress={() => onChange(value)}
         style={[styles.option, active && styles.active]}
         testID={testID}

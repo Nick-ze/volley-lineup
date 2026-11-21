@@ -17,6 +17,8 @@ export interface PlayerChipProps {
   lifted?: boolean;
   showName?: boolean;
   onPress?: () => void;
+  /** Shown and announced as disabled (presses ignored). */
+  disabled?: boolean;
   onLongPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -31,6 +33,7 @@ export function PlayerChip({
   lifted = false,
   showName = true,
   onPress,
+  disabled = false,
   onLongPress,
   accessibilityLabel,
   accessibilityHint,
@@ -81,8 +84,10 @@ export function PlayerChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
       aria-selected={selected}
+      aria-disabled={disabled}
+      disabled={disabled}
       onPress={onPress}
       onLongPress={onLongPress}
       testID={testID}

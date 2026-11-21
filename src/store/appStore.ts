@@ -3,7 +3,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { emptySetLineup } from '@/domain/lineup';
-import type { Match, SetLineup } from '@/domain/types';
+import { removePlayerEverywhere } from '@/domain/playerUsage';
+import type { Match } from '@/domain/types';
 import { createId } from '@/lib/id';
 
 import { migrateStore, STORE_VERSION } from './migrations';
@@ -22,16 +23,9 @@ const initialState = (): AppState => ({
 
 const now = () => new Date().toISOString();
 
-/** Removes a player id from every slot / libero in a match. */
+/** Removes every reference to a player (court, libero, libero replacements, subs) from a match. */
 function removePlayerFromMatch(match: Match, playerId: string): Match {
-  const sets = match.sets.map((set): SetLineup => {
-    const slots = { ...set.slots };
-    (Object.keys(slots) as unknown as (keyof SetLineup['slots'])[]).forEach((k) => {
-      if (slots[k] === playerId) slots[k] = null;
-    });
-    return { ...set, slots, liberoId: set.liberoId === playerId ? null : set.liberoId };
-  });
-  return { ...match, sets };
+  return { ...match, sets: match.sets.map((set) => removePlayerEverywhere(set, playerId)) };
 }
 
 export const useAppStore = create<AppStore>()(

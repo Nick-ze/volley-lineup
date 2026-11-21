@@ -47,6 +47,7 @@ export function LineupBuilder({ editor }: { editor: LineupEditor }) {
             <ServeToggle
               weServeFirst={set.weServeFirst}
               onChange={(v) => update(setServeFirst(set, v))}
+              disabled={locked}
             />
           </View>
         </View>

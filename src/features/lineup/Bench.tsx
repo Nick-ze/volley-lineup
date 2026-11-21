@@ -50,6 +50,9 @@ export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t.lineup.benchDropLabel}
+          disabled={editor.locked}
+          accessibilityState={{ disabled: editor.locked }}
+          aria-disabled={editor.locked}
           onPress={() => pressTarget({ kind: 'bench' })}
           style={styles.dropTarget}
           testID="bench-drop"

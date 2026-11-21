@@ -158,6 +158,34 @@ describe('roster flows', () => {
     expect(store().players).toHaveLength(0);
   });
 
+  it('blocks deleting a player who is part of a played set', async () => {
+    const { team } = seedTeam();
+    const p = store().addPlayer({
+      teamId: team.id,
+      firstName: 'Ana',
+      lastName: 'Ace',
+      number: 7,
+      positions: ['S'],
+      active: true,
+    });
+    const match = store().addMatch({
+      teamId: team.id,
+      opponent: 'X',
+      date: '2026-11-21',
+      home: true,
+    });
+    store().setLineup(match.id, {
+      ...match.sets[0],
+      slots: { 1: p.id, 2: null, 3: null, 4: null, 5: null, 6: null },
+      events: [{ type: 'point', winner: 'us' }],
+    });
+    await renderRouter('./app', { initialUrl: `/team/${team.id}/player?playerId=${p.id}` });
+    expect(screen.getByText(s.player.deleteBlocked)).toBeTruthy();
+    await press(s.player.delete);
+    expect(screen.queryByTestId('confirm')).toBeNull();
+    expect(store().players).toHaveLength(1);
+  });
+
   it('creates a match and opens it', async () => {
     const { team } = seedTeam();
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
