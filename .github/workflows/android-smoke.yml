@@ -28,14 +28,6 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Create AVD and boot emulator in the background
-        run: |
-          mkdir -p "$ANDROID_AVD_HOME"
-          SDK=$ANDROID_HOME
-          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null || true
-          echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k "system-images;android-30;default;x86_64" --force
-          $SDK/emulator/emulator -list-avds
-          nohup $SDK/emulator/emulator -avd smoke -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 > emu.log 2>&1 &
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -52,6 +44,14 @@ jobs:
       - name: Build release APK for the emulator (x86_64)
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+      - name: Create AVD and boot emulator (after the build, to avoid running out of memory)
+        run: |
+          mkdir -p "$ANDROID_AVD_HOME"
+          SDK=$ANDROID_HOME
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-30;default;x86_64" "emulator" > /dev/null || true
+          echo no | $SDK/cmdline-tools/latest/bin/avdmanager create avd -n smoke -k "system-images;android-30;default;x86_64" --force
+          $SDK/emulator/emulator -list-avds
+          nohup $SDK/emulator/emulator -avd smoke -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 > emu.log 2>&1 &
       - name: Wait for emulator boot
         run: |
           ADB=$ANDROID_HOME/platform-tools/adb
