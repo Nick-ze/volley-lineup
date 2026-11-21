@@ -55,6 +55,10 @@ afterEach(() => {
 
 describe('web printHtml', () => {
   it('prints the HTML from a hidden iframe and cleans up after printing', async () => {
+    let titleWhilePrinting = '';
+    fakeWin?.print.mockImplementation(() => {
+      titleWhilePrinting = document.title;
+    });
     const promise = printHtml('<p>sheet</p>', { title: 'Lineup sheet' });
     const el = frame();
     expect(el).not.toBeNull();
@@ -66,11 +70,13 @@ describe('web printHtml', () => {
 
     expect(fakeWin?.focus).toHaveBeenCalled();
     expect(fakeWin?.print).toHaveBeenCalledTimes(1);
-    expect(document.title).toBe('Lineup sheet');
+    expect(titleWhilePrinting).toBe('Lineup sheet');
+    // The title is restored as soon as print() returns; the frame stays until afterprint.
+    expect(document.title).toBe('Volley Lineup');
+    expect(frame()).not.toBeNull();
 
     fakeWin?.listeners.afterprint();
     expect(frame()).toBeNull();
-    expect(document.title).toBe('Volley Lineup');
   });
 
   it('keeps the page title when none is given and removes the frame after a timeout', async () => {

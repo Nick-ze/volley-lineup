@@ -29,7 +29,6 @@ export const printHtml: PrintHtml = (html, options = {}) =>
     const cleanup = () => {
       if (timer !== undefined) clearTimeout(timer);
       timer = undefined;
-      document.title = appTitle;
       frame.remove();
     };
 
@@ -43,15 +42,18 @@ export const printHtml: PrintHtml = (html, options = {}) =>
           return;
         }
         try {
-          if (options.title) document.title = options.title;
           win.addEventListener('afterprint', cleanup);
           timer = setTimeout(cleanup, PRINT_CLEANUP_MS);
+          // Browsers name the PDF after the page title; print() blocks while the dialog is open.
+          if (options.title) document.title = options.title;
           win.focus();
           win.print();
           resolve();
         } catch (error) {
           cleanup();
           reject(error);
+        } finally {
+          document.title = appTitle;
         }
       },
       { once: true },

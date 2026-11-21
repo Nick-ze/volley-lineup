@@ -1,7 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { A4_POINTS, printHtml } from './print.native';
+import { A4_POINTS, PDF_MARGINS, printHtml } from './print.native';
 
 jest.mock('expo-print', () => ({
   printToFileAsync: jest.fn(() =>
@@ -22,7 +22,9 @@ describe('native printHtml', () => {
       html: '<p>sheet</p>',
       width: 595,
       height: 842,
+      margins: { top: 34, right: 34, bottom: 34, left: 34 },
     });
+    expect(PDF_MARGINS.left).toBe(34);
     expect(A4_POINTS).toEqual({ width: 595, height: 842 });
     expect(Sharing.shareAsync).toHaveBeenCalledWith('file:///cache/Print/abc.pdf', {
       mimeType: 'application/pdf',
