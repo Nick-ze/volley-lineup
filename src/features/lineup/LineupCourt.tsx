@@ -44,6 +44,9 @@ export function LineupCourt({ editor }: { editor: LineupEditor }) {
         accessibilityRole="button"
         accessibilityLabel={t.lineup.slotLabel(position, null)}
         accessibilityHint={selectedId ? t.lineup.slotHintSelected : undefined}
+        disabled={editor.locked}
+        accessibilityState={{ disabled: editor.locked }}
+        aria-disabled={editor.locked}
         onPress={() => pressTarget({ kind: 'slot', position })}
         style={[styles.empty, selectedId !== null && styles.emptyArmed]}
         testID={`slot-empty-${position}`}

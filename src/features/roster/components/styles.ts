@@ -2,6 +2,9 @@ import { StyleSheet } from 'react-native';
 
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
+/** Below this width for the name area, a row's action buttons wrap onto a second line. */
+const listRowMainMinWidth = 190;
+
 /** Styles shared by the roster feature's forms and list rows. */
 export const formStyles = StyleSheet.create({
   card: {
@@ -22,6 +25,9 @@ export const listStyles = StyleSheet.create({
   list: { gap: spacing.sm },
   row: {
     flexDirection: 'row',
+    // Narrow phones: actions (Rename, Delete…) wrap below the name instead of truncating it.
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.surface,
@@ -31,7 +37,9 @@ export const listStyles = StyleSheet.create({
     paddingRight: spacing.sm,
   },
   main: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: listRowMainMinWidth,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -52,5 +60,11 @@ export const listStyles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   pressed: { opacity: 0.8 },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
   chevron: { ...typography.heading, color: colors.textMuted, paddingHorizontal: spacing.xs },
 });

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { buildExport, parseImport } from '@/domain/exportSchema';
 import { emptySetLineup } from '@/domain/lineup';
 
 import { STORAGE_KEY, emptyData, selectAppData, useAppStore } from './appStore';
@@ -105,6 +106,32 @@ describe('players', () => {
     expect(set.slots[1]).toBeNull();
     expect(set.slots[2]).toBe(p2.id);
     expect(set.liberoId).toBeNull();
+  });
+
+  it('deleting a player clears libero replacements and substitutions, so the export still imports', () => {
+    const { p1, p2, match } = seed();
+    const p3 = store().addPlayer({
+      teamId: p1.teamId,
+      firstName: 'Cid',
+      lastName: 'Sub',
+      number: 9,
+      positions: ['OH'],
+      active: true,
+    });
+    store().setLineup(match.id, {
+      ...emptySetLineup(1),
+      slots: { 1: p1.id, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoId: p2.id,
+      liberoReplaces: [p1.id],
+      events: [{ type: 'sub', outPlayerId: p1.id, inPlayerId: p3.id }],
+    });
+    store().deletePlayer(p3.id);
+    store().deletePlayer(p1.id);
+    const set = store().matches[0].sets[0];
+    expect(set.liberoReplaces).toEqual([]);
+    expect(set.events).toEqual([]);
+    const text = JSON.stringify(buildExport(selectAppData(store())));
+    expect(parseImport(text).ok).toBe(true);
   });
 
   it('deleting an unknown player is a no-op', () => {

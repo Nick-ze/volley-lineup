@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
@@ -18,10 +18,18 @@ export interface PlayerFormProps {
   player?: Player;
   onDone: () => void;
   onDelete?: () => void;
+  /** True when the player is part of a played set: deleting is not allowed (explained). */
+  deleteBlocked?: boolean;
 }
 
 /** Add / edit a player with inline validation. */
-export function PlayerForm({ teamId, player, onDone, onDelete }: PlayerFormProps) {
+export function PlayerForm({
+  teamId,
+  player,
+  onDone,
+  onDelete,
+  deleteBlocked = false,
+}: PlayerFormProps) {
   const t = useT();
   const { form, set, errors, save } = usePlayerForm(teamId, player);
   const { ask, dialogProps } = useConfirm();
@@ -62,6 +70,8 @@ export function PlayerForm({ teamId, player, onDone, onDelete }: PlayerFormProps
           <Button
             label={s.delete}
             variant="danger"
+            disabled={deleteBlocked}
+            accessibilityHint={deleteBlocked ? s.deleteBlocked : undefined}
             onPress={() =>
               ask(t.roster.confirm.deletePlayer(`${player.firstName} ${player.lastName}`), onDelete)
             }
@@ -70,6 +80,9 @@ export function PlayerForm({ teamId, player, onDone, onDelete }: PlayerFormProps
         <Button label={t.common.cancel} variant="secondary" onPress={onDone} />
         <Button label={t.common.save} onPress={() => save() && onDone()} />
       </View>
+      {player && onDelete && deleteBlocked ? (
+        <Text style={formStyles.hint}>{s.deleteBlocked}</Text>
+      ) : null}
       <ConfirmDialog {...dialogProps} />
     </View>
   );

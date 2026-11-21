@@ -53,7 +53,7 @@ export function ListRow({
           {t.roster.rowChevron}
         </Text>
       </Pressable>
-      {actions}
+      {actions ? <View style={styles.actions}>{actions}</View> : null}
     </View>
   );
 }

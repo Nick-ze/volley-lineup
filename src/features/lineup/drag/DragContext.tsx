@@ -31,6 +31,8 @@ interface DragApi {
   end(x: number, y: number, canceled: boolean): void;
   /** True right after a drag finished, so the trailing click/press is ignored. */
   justDragged(): boolean;
+  /** True while drags are disabled (locked lineup): chips also report themselves disabled. */
+  disabled: boolean;
   active: DragItem | null;
   hoverKey: string | null;
   /** Pointer position relative to the provider's root view (drives the overlay chip). */
@@ -141,8 +143,8 @@ export function DragProvider({ onDrop, children, style, disabled = false }: Drag
 
   const registerZone = zones.register;
   const api = useMemo<DragApi>(
-    () => ({ registerZone, begin, move, end, justDragged, active, hoverKey, x, y }),
-    [registerZone, begin, move, end, justDragged, active, hoverKey, x, y],
+    () => ({ registerZone, begin, move, end, justDragged, disabled, active, hoverKey, x, y }),
+    [registerZone, begin, move, end, justDragged, disabled, active, hoverKey, x, y],
   );
 
   return (
