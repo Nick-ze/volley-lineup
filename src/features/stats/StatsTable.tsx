@@ -82,7 +82,11 @@ export function StatsTable({
             </Text>
           ))}
         </View>
-        <ScrollView horizontal accessibilityLabel={s.tableScrollLabel(heading)}>
+        <ScrollView
+          horizontal
+          style={styles.scroller}
+          accessibilityLabel={s.tableScrollLabel(heading)}
+        >
           <View>
             <View style={styles.row}>
               {columns.map((c) => (
@@ -125,14 +129,18 @@ export function StatsTable({
 const styles = StyleSheet.create({
   wrap: { gap: spacing.sm },
   heading: listStyles.title,
+  // As wide as its columns, but never wider than the screen (then the numbers scroll).
   table: {
     flexDirection: 'row',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  scroller: { flexGrow: 0, flexShrink: 1 },
   row: { flexDirection: 'row' },
   cell: {
     ...typography.body,
