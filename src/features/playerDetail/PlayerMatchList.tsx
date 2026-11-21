@@ -32,7 +32,7 @@ export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
           blocks: p.blocks,
           errors: p.errors,
         };
-        const head = result ? `${match.date} · ${result}` : match.date;
+        const head = result ? `${match.date}${t.playerDetail.separator}${result}` : match.date;
         return (
           <ListRow
             key={match.id}
@@ -52,7 +52,7 @@ export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
               s.lineLabel(numbers),
             ]
               .filter((x) => x !== null)
-              .join('. ')}
+              .join(t.playerDetail.sentenceSeparator)}
             testID={`player-match-${match.id}`}
           />
         );

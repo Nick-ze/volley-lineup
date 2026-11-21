@@ -65,8 +65,14 @@ function noDeviceLock() {
 const showButton = () => screen.getByRole('button', { name: d.showLabel });
 const lockButton = () => screen.getByRole('button', { name: d.lockLabel });
 
+/** The app's foreground state as AppState reports it right now. */
+function appStateIs(state: 'active' | 'background') {
+  Object.defineProperty(AppState, 'currentState', { value: state, configurable: true });
+}
+
 beforeEach(async () => {
   jest.clearAllMocks();
+  appStateIs('active');
   useDescriptionLock.getState().lock();
   seed();
   await AsyncStorage.clear();
@@ -101,6 +107,19 @@ describe('confidential descriptions on the player detail', () => {
     await fireEvent.press(lockButton());
     expect(screen.queryByTestId('description-input')).toBeNull();
     expect(showButton()).toBeTruthy();
+  });
+
+  it('a prompt that succeeds after the app left the foreground keeps them hidden', async () => {
+    deviceLock(true);
+    auth.authenticateAsync.mockImplementation(async () => {
+      appStateIs('background');
+      return { success: true };
+    });
+    await renderRouter('./app', { initialUrl: '/team/t1/players/p4' });
+    await fireEvent.press(showButton());
+    expect(auth.authenticateAsync).toHaveBeenCalled();
+    expect(useDescriptionLock.getState().unlocked).toBe(false);
+    expect(screen.queryByTestId('description-input')).toBeNull();
   });
 
   it('a failed or cancelled prompt keeps them hidden', async () => {

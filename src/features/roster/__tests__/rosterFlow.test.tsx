@@ -161,6 +161,28 @@ describe('roster flows', () => {
     expect(screen.getByText(s.confirm.deletePlayer('Ana Ace'))).toBeTruthy();
     await fireEvent.press(screen.getByTestId('confirm'));
     expect(store().players).toHaveLength(0);
+    expect(screen).toHavePathname(`/team/${team.id}`);
+  });
+
+  it('deleting from roster → detail → Edit lands on the roster, not a "not found" screen', async () => {
+    const { team } = seedTeam();
+    store().addPlayer({
+      teamId: team.id,
+      firstName: 'Ana',
+      lastName: 'Ace',
+      number: 7,
+      positions: ['S'],
+      active: true,
+    });
+    await renderRouter('./app', { initialUrl: `/team/${team.id}` });
+    await fireEvent.press(screen.getByTestId('player-7'));
+    await press(t.playerDetail.editLabel('Ana Ace'));
+    await press(s.player.delete);
+    await fireEvent.press(screen.getByTestId('confirm'));
+    expect(store().players).toHaveLength(0);
+    expect(screen).toHavePathname(`/team/${team.id}`);
+    expect(screen.queryByText(s.player.notFound)).toBeNull();
+    expect(screen.getByText(s.roster.empty)).toBeTruthy();
   });
 
   it('blocks deleting a player who is part of a played set', async () => {

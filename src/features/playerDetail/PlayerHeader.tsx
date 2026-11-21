@@ -13,7 +13,7 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () =>
   const t = useT();
   const name = `${player.firstName} ${player.lastName}`;
   const status = player.active ? t.roster.roster.active : t.roster.roster.inactive;
-  const positions = player.positions.map((p) => t.positions[p]).join(', ');
+  const positions = player.positions.map((p) => t.positions[p]).join(t.playerDetail.listSeparator);
   return (
     <View style={styles.row}>
       <View
@@ -36,7 +36,8 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () =>
             {name}
           </Text>
           <Text style={styles.meta}>
-            {t.playerDetail.number(player.number)} ·{' '}
+            {t.playerDetail.number(player.number)}
+            {t.playerDetail.separator}
             <Text style={player.active ? styles.active : styles.injured}>{status}</Text>
           </Text>
           <View style={styles.badges}>

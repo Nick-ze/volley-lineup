@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import type { ErrorType, Match, Player, PointEvent, PointKind, SetLineup } from '@/domain/types';
@@ -176,6 +176,14 @@ describe('Player detail', () => {
     expect(screen.getByText('Injured')).toBeTruthy();
     expect(screen.queryByTestId('season-stats')).toBeNull();
     expect(screen.queryByTestId('player-matches')).toBeNull();
+  });
+
+  it('goes to the roster when the player is deleted while the screen is open', async () => {
+    await renderRouter('./app', { initialUrl: '/team/t1/players/p9' });
+    expect(await screen.findByTestId('player-detail')).toBeTruthy();
+    await act(async () => useAppStore.getState().deletePlayer('p9'));
+    expect(screen).toHavePathname('/team/t1');
+    expect(screen.queryByText(t.roster.player.notFound)).toBeNull();
   });
 
   it('a player of another team is not found', async () => {

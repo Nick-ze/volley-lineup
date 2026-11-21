@@ -6,6 +6,10 @@ export const playerDetail = {
   edit: 'Edit',
   editLabel: (name: string) => `Edit ${name}`,
   number: (n: number) => `#${n}`,
+  /** Separators: between short items, between sentences, in a list. */
+  separator: ' · ',
+  sentenceSeparator: '. ',
+  listSeparator: ', ',
   headerLabel: (number: number, name: string, positions: string, status: string) =>
     `Number ${number}, ${name}, ${positions}, ${status}`,
   /** "+3", "0", "−2" (plus/minus). */

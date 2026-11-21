@@ -8,6 +8,10 @@ export const playerDetail: Strings['playerDetail'] = {
   edit: 'Bearbeiten',
   editLabel: (name: string) => `Bearbeiten: ${name}`,
   number: (n: number) => `#${n}`,
+  /** Separators: between short items, between sentences, in a list. */
+  separator: ' · ',
+  sentenceSeparator: '. ',
+  listSeparator: ', ',
   headerLabel: (number: number, name: string, positions: string, status: string) =>
     `Nummer ${number}, ${name}, ${positions}, ${status}`,
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),

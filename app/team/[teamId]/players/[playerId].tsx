@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 
 import { Screen } from '@/components';
 import { PlayerDetail } from '@/features/playerDetail/PlayerDetail';
@@ -15,6 +16,12 @@ export default function PlayerDetailScreen() {
   const team = useTeam(teamId);
   const player = usePlayer(playerId);
   const goBack = useGoBack(`/team/${teamId}`);
+  // Deleted while this screen is open (or under the editor): go to the roster, not NotFound.
+  const existed = useRef(false);
+  useEffect(() => {
+    if (player) existed.current = true;
+    else if (existed.current) router.replace(`/team/${teamId}`);
+  }, [player, router, teamId]);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

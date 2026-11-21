@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { useT } from '@/i18n';
 import { deviceUnlock } from '@/lib/unlock';
@@ -25,8 +26,10 @@ export function useUnlockDescriptions() {
         promptMessage: t.playerDetail.description.prompt,
         cancelLabel: t.playerDetail.description.cancel,
       });
-      if (result === 'unlocked') useDescriptionLock.getState().unlock();
-      else if (result === 'confirm') setConfirmVisible(true);
+      // Only while the app is still in front: leaving it during the prompt keeps it locked.
+      if (result === 'unlocked') {
+        if (AppState.currentState === 'active') useDescriptionLock.getState().unlock();
+      } else if (result === 'confirm') setConfirmVisible(true);
       else setFailed(true);
     } finally {
       setPrompting(false);
