@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { plausibleKinds, type LastRally } from '@/domain/lastRally';
 import { kindTakesPlayer } from '@/domain/pointTags';
-import type { Player, PointKind } from '@/domain/types';
+import type { ErrorType, Player, PointKind } from '@/domain/types';
 import { useT } from '@/i18n';
 import { spacing } from '@/theme';
 
@@ -14,6 +14,8 @@ export interface PointTagRowProps {
   playersById: Map<string, Player>;
   /** Tags the last rally (kind null clears the tag). */
   onTag: (kind: PointKind | null, playerId: string | null) => void;
+  /** v6: sets the error type of "our error" (null clears it). */
+  onErrorType: (type: ErrorType | null) => void;
   onClose: () => void;
 }
 
@@ -21,7 +23,7 @@ export interface PointTagRowProps {
  * Optional details of the rally just recorded: the kinds of the winning side; once a kind that
  * names a player is chosen, the players on court instead. Tapping a chosen chip again clears it.
  */
-export function PointTagRow({ rally, playersById, onTag, onClose }: PointTagRowProps) {
+export function PointTagRow({ rally, playersById, onTag, onErrorType, onClose }: PointTagRowProps) {
   const t = useT();
   const { event } = rally;
   const chosen = event.kind;
@@ -41,6 +43,7 @@ export function PointTagRow({ rally, playersById, onTag, onClose }: PointTagRowP
         rally={rally}
         playersById={playersById}
         onTag={onTag}
+        onErrorType={onErrorType}
         close={close}
       />
     );
