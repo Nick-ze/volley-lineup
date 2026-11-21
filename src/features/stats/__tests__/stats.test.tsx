@@ -117,6 +117,9 @@ describe('Match stats', () => {
     await fireEvent.press(await screen.findByTestId('open-stats'));
     expect(screen).toHavePathname('/match/m1/stats');
     expect(await screen.findByTestId('match-stats')).toBeTruthy();
+    expect(screen.getByTestId('match-stats-heading').props.children).toBe(
+      t.stats.matchTitle('Rivals'),
+    );
 
     const won = () => cell('rotation-table', 'r1', 'won');
     expect(screen.getByLabelText(t.stats.filter.allLabel)).toBeSelected();

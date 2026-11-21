@@ -18,7 +18,7 @@ export default function MatchStatsScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: t.stats.matchTitle(match.opponent) }} />
+      <Stack.Screen options={{ title: t.nav.matchStats }} />
       <MatchStats match={match} />
     </Screen>
   );

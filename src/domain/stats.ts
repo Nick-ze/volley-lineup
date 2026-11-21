@@ -10,10 +10,14 @@
  *   starting six; the libero counts as started only if their swap applied in at least one rally.
  *   *Played* = among the six on court in at least one rally, or (libero) swapped in for at least
  *   one rally; a starter waiting while the libero stands in is still part of the six. Subbed in /
- *   out = applied substitutions only (skipped `INVALID_SUB` events don't count).
+ *   out = applied substitutions only (skipped `INVALID_SUB` events don't count). Substitutions in
+ *   a set with no rallies count for nobody (the set adds no row at all); in a played set they all
+ *   count, including those after its last rally.
  * - **Serve turns**: a run of consecutive rallies served by us with the same server is one turn
  *   for that server. So a turn starts at our first serve of the set (or after each side-out), and
- *   a substitution of the server during a turn starts a new turn for the new server.
+ *   a substitution of the server during a turn starts a new turn for the new server. A server
+ *   subbed out and back within one serving run (with rallies served by the substitute between)
+ *   has two turns; subbed out and back with no rally between, it stays one turn.
  * - **Tags**: kill / ace / block / ourError with a player add to that player's kills / aces /
  *   blocks / errors.
  * - **Matches**: only the sets that count for the result (`getMatchState`) — sets stored after

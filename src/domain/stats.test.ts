@@ -222,6 +222,24 @@ describe('setStats — players', () => {
     expect(setStats(lineup({ events: [sub('p1', 'p8')] }), players)).toEqual(emptyStats());
   });
 
+  it('counts subs after the last rally of a played set', () => {
+    const s = setStats(lineup({ events: [W(), sub('p1', 'p8')] }), players);
+    expect(s.players.p1?.subOut).toBe(1);
+    expect(s.players.p8).toEqual(line([0, 0, 1, 0, 0, 0, 0, 0, 0, 0]));
+  });
+
+  it('a server subbed out and back within one serving run has two turns', () => {
+    const run = [W(), sub('p1', 'p8'), W(), sub('p8', 'p1'), W()];
+    const s = setStats(lineup({ weServeFirst: true, liberoId: null, events: run }), players);
+    expect(s.players.p1?.serveTurns).toBe(2);
+    expect(s.players.p1?.servePoints).toBe(2);
+    expect(s.players.p8?.serveTurns).toBe(1);
+    // Out and straight back with no rally between: still one turn.
+    const back = [W(), sub('p1', 'p8'), sub('p8', 'p1'), W()];
+    const t = setStats(lineup({ weServeFirst: true, liberoId: null, events: back }), players);
+    expect(t.players.p1?.serveTurns).toBe(1);
+  });
+
   it('a libero whose swap never applied has not started or played', () => {
     const s = setStats(lineup({ liberoId: 'p12', liberoReplaces: [], events: [W()] }), players);
     expect(s.players.p12).toBeUndefined();

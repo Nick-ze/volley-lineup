@@ -22,16 +22,26 @@ export function MatchStats({ match }: { match: Match }) {
   const setNumber = filter !== null && sets.includes(filter) ? filter : null;
   const stats = useMemo(() => matchStats(match, players, setNumber), [match, players, setNumber]);
 
+  // The opponent goes here, not in the header, so long names wrap instead of overflowing.
+  const heading = (
+    <Text style={listStyles.heading} accessibilityRole="header" testID="match-stats-heading">
+      {t.stats.matchTitle(match.opponent)}
+    </Text>
+  );
   if (sets.length === 0) {
     return (
-      <Text style={listStyles.empty} testID="match-stats-empty">
-        {t.stats.matchEmpty}
-      </Text>
+      <View style={styles.wrap}>
+        {heading}
+        <Text style={listStyles.empty} testID="match-stats-empty">
+          {t.stats.matchEmpty}
+        </Text>
+      </View>
     );
   }
   const { us, them } = stats.points;
   return (
     <View style={styles.wrap} testID="match-stats">
+      {heading}
       <SetFilter sets={sets} value={setNumber} onChange={setFilter} />
       <Text
         style={styles.points}
