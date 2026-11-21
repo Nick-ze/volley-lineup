@@ -9,7 +9,7 @@ import { COMPACT_CHIP_SIZE, COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './c
 import { useDrag } from './drag/DragContext';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { zoneFeedback } from './drag/useDropZone';
-import type { LineupEditor } from './useLineupEditor';
+import type { LineupDraft } from './useLineupDraft';
 
 const playerName = (p: { firstName: string; lastName: string }) =>
   `${p.firstName} ${p.lastName}`.trim();
@@ -19,7 +19,7 @@ export function LineupCourt({
   editor,
   compact = false,
 }: {
-  editor: LineupEditor;
+  editor: LineupDraft;
   compact?: boolean;
 }) {
   const t = useT();

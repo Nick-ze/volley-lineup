@@ -8,7 +8,7 @@ import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 import { BENCH_MIN_HEIGHT, COMPACT_CHIP_SIZE } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { useDropZone } from './drag/useDropZone';
-import type { LineupEditor } from './useLineupEditor';
+import type { LineupDraft } from './useLineupDraft';
 
 /**
  * Active players not on court and not libero. Also a drop zone: dropping a court / libero
@@ -19,7 +19,7 @@ export function Bench({
   scrollable,
   compact = false,
 }: {
-  editor: LineupEditor;
+  editor: LineupDraft;
   scrollable: boolean;
   compact?: boolean;
 }) {

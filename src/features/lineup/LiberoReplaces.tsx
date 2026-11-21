@@ -7,10 +7,10 @@ import { COURT_POSITIONS } from '@/domain/types';
 import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
-import type { LineupEditor } from './useLineupEditor';
+import type { LineupDraft } from './useLineupDraft';
 
 /** "Libero replaces": pick which starters the libero comes in for in the back row. */
-export function LiberoReplaces({ editor }: { editor: LineupEditor }) {
+export function LiberoReplaces({ editor }: { editor: LineupDraft }) {
   const t = useT();
   const { set, players, playerById, update } = editor;
   if (set.liberoId === null) return null;
