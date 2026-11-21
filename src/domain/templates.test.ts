@@ -1,6 +1,7 @@
 import { emptySetLineup } from './lineup';
 import { validateLineup } from './lineupValidation';
-import { fillFromTemplate, TEMPLATE_LAYOUTS, TEMPLATE_SYSTEMS } from './templates';
+import { isOffPosition, roleOf } from './roles';
+import { acceptedFor, fillFromTemplate, TEMPLATE_SYSTEMS } from './templates';
 import { COURT_POSITIONS, type Player, type Position, type SetLineup } from './types';
 
 const player = (id: string, number: number, positions: Position[], active = true): Player => ({
@@ -133,44 +134,105 @@ describe('fillFromTemplate — rules', () => {
     expect(set.liberoReplaces).toEqual(['mb2', 'mb3']);
   });
 
-  it('describes every system with all six positions', () => {
-    for (const system of TEMPLATE_SYSTEMS) {
-      expect(Object.keys(TEMPLATE_LAYOUTS[system])).toHaveLength(6);
-    }
+  it('accepts an opposite after the outsides only on a 6-2 hitter spot', () => {
+    expect(TEMPLATE_SYSTEMS).toEqual(['5-1', '6-2']);
+    expect(acceptedFor('6-2', 'OH')).toEqual(['OH', 'OPP']);
+    expect(acceptedFor('5-1', 'OH')).toEqual(['OH']);
+    expect(acceptedFor('6-2', 'S')).toEqual(['S']);
+    expect(acceptedFor('5-1', 'OPP')).toEqual(['OPP']);
   });
 });
 
-describe('fillFromTemplate — roles (v4)', () => {
-  it('stores no overrides when everyone plays their primary position', () => {
-    expect(fillFromTemplate('5-1', roster, 1).set.roles).toEqual({});
+describe('fillFromTemplate — formation (v6)', () => {
+  it('sets the formation’s system; everyone plays the role of their spot', () => {
+    const fiveOne = fillFromTemplate('5-1', roster, 1).set;
+    expect(fiveOne.formation).toEqual({ system: '5-1', order: 'outside', setterAt: 1 });
+    expect(COURT_POSITIONS.map((p) => roleOf(fiveOne, fiveOne.slots[p] as string))).toEqual([
+      'S',
+      'OH',
+      'MB',
+      'OPP',
+      'OH',
+      'MB',
+    ]);
+    expect(fillFromTemplate('6-2', roster, 1).set.formation).toEqual({
+      system: '6-2',
+      order: 'outside',
+      setterAt: 1,
+    });
   });
 
-  it('gives an opposite on a 6-2 hitter spot the role OH', () => {
+  it('an opposite on a 6-2 hitter spot plays OH (off position, no dialog)', () => {
     const team = roster.filter((p) => !['oh2', 'oh3'].includes(p.id));
     const { set } = fillFromTemplate('6-2', team, 1);
     expect(set.slots[5]).toBe('opp1');
-    expect(set.roles).toEqual({ opp1: 'OH' });
+    expect(roleOf(set, 'opp1')).toBe('OH');
+    expect(isOffPosition(team.find((p) => p.id === 'opp1') as Player, 'OH')).toBe(true);
   });
 
-  it('gives a player filling a spot by a secondary position the template role', () => {
+  it('a player filling a spot by a secondary position plays the spot’s role', () => {
     const team = roster.filter((p) => !['mb1', 'mb2'].includes(p.id));
     const { set } = fillFromTemplate('5-1', [...team, player('x', 20, ['OH', 'MB'])], 1);
     // mb3 (primary MB) takes 3; the second middle spot goes to a secondary MB.
     expect(set.slots[3]).toBe('mb3');
     expect(set.slots[6]).toBe('x');
-    expect(set.roles).toEqual({ x: 'MB' });
+    expect(roleOf(set, 'x')).toBe('MB');
     expect(set.liberoReplaces).toEqual(['mb3', 'x']);
   });
 
-  it('drops the overrides of the previous starters', () => {
+  it('fills a formation with the setter spot at 4 (5-1, outside)', () => {
+    // Spots from the setter: S 4 · OH 5 · MB 6 · OPP 1 · OH 2 · MB 3 (worked out by hand).
+    const current = {
+      ...emptySetLineup(1),
+      formation: { ...emptySetLineup(1).formation, setterAt: 4 as const },
+    };
+    const { set, missing } = fillFromTemplate('5-1', roster, 1, current);
+    expect(set.slots).toEqual({ 1: 'opp1', 2: 'oh1', 3: 'mb1', 4: 's1', 5: 'oh2', 6: 'mb2' });
+    expect(set.formation).toEqual({ system: '5-1', order: 'outside', setterAt: 4 });
+    expect(missing).toEqual([]);
+    expect(set.liberoReplaces).toEqual(['mb1', 'mb2']);
+    expect(validateLineup(set, roster).warnings).toEqual([]);
+  });
+
+  it('fills the middle order: S 1 · MB 2 · OH 3 · OPP 4 · MB 5 · OH 6', () => {
+    const current = {
+      ...emptySetLineup(1),
+      formation: { system: '5-1' as const, order: 'middle' as const, setterAt: 1 as const },
+    };
+    const { set } = fillFromTemplate('5-1', roster, 1, current);
+    expect(set.slots).toEqual({ 1: 's1', 2: 'mb1', 3: 'oh1', 4: 'opp1', 5: 'mb2', 6: 'oh2' });
+    expect(set.liberoReplaces).toEqual(['mb1', 'mb2']);
+  });
+
+  it('keeps the current order and setter spot (6-2, middle, setter at 3) and the libero switch', () => {
+    // Spots: S 3 · MB 4 · OH 5 · S 6 · MB 1 · OH 2 (worked out by hand).
     const current: SetLineup = {
       ...emptySetLineup(1),
       slots: { 1: 'oh1', 2: null, 3: null, 4: null, 5: null, 6: null },
-      roles: { oh1: 'S' },
+      formation: { system: '5-1', order: 'middle', setterAt: 3 },
       liberoActive: false,
     };
-    const { set } = fillFromTemplate('5-1', roster, 1, current);
-    expect(set.roles).toEqual({});
+    const { set, missing } = fillFromTemplate('6-2', roster, 1, current);
+    expect(set.formation).toEqual({ system: '6-2', order: 'middle', setterAt: 3 });
+    expect(set.slots).toEqual({ 1: 'mb1', 2: 'oh1', 3: 's1', 4: 'mb2', 5: 'oh2', 6: 's2' });
+    expect(missing).toEqual([]);
+    expect(set.liberoReplaces).toEqual(['mb1', 'mb2']);
     expect(set.liberoActive).toBe(false);
+  });
+
+  it('reports missing spots by the formation’s roles', () => {
+    // 5-1 middle, setter at 3: S 3 · MB 4 · OH 5 · OPP 6 · MB 1 · OH 2.
+    const team = [player('s', 1, ['S']), player('oh', 2, ['OH']), player('mb', 3, ['MB'])];
+    const current = {
+      ...emptySetLineup(1),
+      formation: { system: '5-1' as const, order: 'middle' as const, setterAt: 3 as const },
+    };
+    const { set, missingSlots } = fillFromTemplate('5-1', team, 1, current);
+    expect(set.slots).toEqual({ 1: 'mb', 2: 'oh', 3: 's', 4: null, 5: null, 6: null });
+    expect(missingSlots).toEqual([
+      { position: 4, role: 'MB' },
+      { position: 5, role: 'OH' },
+      { position: 6, role: 'OPP' },
+    ]);
   });
 });

@@ -8,7 +8,7 @@
  * v3 → v4: point events may carry `kind`, `playerId` and `at` (all optional) — no data change;
  * existing events stay valid as they are.
  * v4 → v5: the state gains `chipLabel: 'number'` (player chips show numbers, as before).
- * v5 → v6: every set and preset gains `formation: { system: '5-1', order: 'outside', setterAt: 1 }` (everyone plays their primary position) and
+ * v5 → v6: every set and preset gains `roles: {}` (everyone plays their primary position) and
  * `liberoActive: true`.
  * v6 → v7: the per-player `roles` become a `formation` per set and preset (5-1 / 6-2, inferred
  * from where the setter stands; `upgradeLineupToFormation`).

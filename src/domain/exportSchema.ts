@@ -360,7 +360,7 @@ function upgradeV1(raw: Record<string, unknown>): Record<string, unknown> {
   return { ...raw, schemaVersion: 2, matches };
 }
 
-/** v4 → v5: every set and preset gains `formation: { system: '5-1', order: 'outside', setterAt: 1 }` (primary positions) and `liberoActive: true`. */
+/** v4 → v5: every set and preset gains `roles: {}` (primary positions) and `liberoActive: true`. */
 function upgradeV4(raw: Record<string, unknown>): Record<string, unknown> {
   const lineupDefaults = (x: unknown) =>
     isRecord(x) ? { roles: {}, liberoActive: true, ...x } : x;

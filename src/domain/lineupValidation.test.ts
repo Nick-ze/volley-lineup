@@ -87,48 +87,37 @@ describe('validateLineup', () => {
     expect(result.warnings).toEqual([{ code: 'NO_SETTER' }]);
   });
 
-  it('UNUSUAL_LAYOUT when the setter is not opposite the opposite', () => {
-    const result = validateLineup(
-      { ...good, slots: { ...good.slots, 4: 'oh2', 2: 'opp4' } },
-      players,
-    );
-    expect(result.warnings).toEqual([{ code: 'UNUSUAL_LAYOUT', positions: [1, 2] }]);
+  it('NO_SETTER looks at the formation’s setter spot, not at the whole court (v6)', () => {
+    // The setter stands at 2 but the formation puts the setter spot at 1.
+    const moved = { ...good, slots: { ...good.slots, 1: 'oh2', 2: 's1' } };
+    expect(validateLineup(moved, players).warnings).toEqual([{ code: 'NO_SETTER' }]);
+    // The formation follows the setter to 2: no warning.
+    const followed = { ...moved, formation: { ...moved.formation, setterAt: 2 as const } };
+    expect(validateLineup(followed, players).warnings).toEqual([]);
+    // An empty setter spot with a setter elsewhere on court is still NO_SETTER.
+    const emptySpot = lineup({ 2: 's1', 3: 'mb3' });
+    expect(validateLineup(emptySpot, players).warnings).toEqual([{ code: 'NO_SETTER' }]);
   });
 
-  it('UNUSUAL_LAYOUT when the two middles are not opposite each other', () => {
-    const result = validateLineup(
-      { ...good, slots: { ...good.slots, 6: 'oh5', 5: 'mb6' } },
-      players,
-    );
-    expect(result.warnings).toEqual([{ code: 'UNUSUAL_LAYOUT', positions: [3, 5] }]);
-  });
-
-  it('UNUSUAL_LAYOUT judges roles, not primary positions (v4)', () => {
-    // Swapping the roles of #2 (now OPP) and #4 (now OH): setter at 1, opposite at 2.
-    const swapped = { ...good, roles: { oh2: 'OPP', opp4: 'OH' } } satisfies SetLineup;
-    expect(validateLineup(swapped, players).warnings).toEqual([
-      { code: 'UNUSUAL_LAYOUT', positions: [1, 2] },
-    ]);
-    // Primary positions in an unusual layout, but the roles make it a classic 5-1.
-    const moved = {
+  it('NO_SETTER in a 6-2: either setter spot with a setter is enough', () => {
+    // 6-2 with setter spots 1 and 4: a setter at 4 only (an OH at 1) passes.
+    const sixTwo = {
       ...good,
-      slots: { ...good.slots, 2: 'opp4', 4: 'oh2' },
-      roles: { opp4: 'OH', oh2: 'OPP' },
-    } satisfies SetLineup;
-    expect(validateLineup(moved, players).warnings).toEqual([]);
-    // A middle playing OH leaves one middle: no middle check.
-    const oneMiddle = {
-      ...good,
-      slots: { ...good.slots, 6: 'oh5', 5: 'mb6' },
-      roles: { mb6: 'OH' },
-    } satisfies SetLineup;
-    expect(validateLineup(oneMiddle, players).warnings).toEqual([]);
+      slots: { ...good.slots, 1: 'oh5', 4: 's1', 5: 'opp4' },
+      formation: { system: '6-2' as const, order: 'outside' as const, setterAt: 1 as const },
+    };
+    expect(validateLineup(sixTwo, players).warnings).toEqual([]);
+    // The same court as a 5-1 (setter spot 1 only) has no setter.
+    const fiveOne = { ...sixTwo, formation: { ...sixTwo.formation, system: '5-1' as const } };
+    expect(validateLineup(fiveOne, players).warnings).toEqual([{ code: 'NO_SETTER' }]);
   });
 
-  it('no layout warning without exactly one S + one OPP / exactly two MBs', () => {
-    const twoSetters = [...players, mk('s11', ['S'])];
-    const result = validateLineup(lineup({ 1: 's1', 2: 's11', 3: 'opp4', 4: 'mb3' }), twoSetters);
-    expect(result.warnings.map((w) => w.code)).not.toContain('UNUSUAL_LAYOUT');
+  it('UNUSUAL_LAYOUT is no longer raised (v6: the formation keeps the pairs opposite)', () => {
+    // The layouts that used to warn: setter not opposite the opposite, middles side by side.
+    const oppAt2 = { ...good, slots: { ...good.slots, 4: 'oh2', 2: 'opp4' } };
+    const middlesAdjacent = { ...good, slots: { ...good.slots, 6: 'oh5', 5: 'mb6' } };
+    expect(validateLineup(oppAt2, players).warnings).toEqual([]);
+    expect(validateLineup(middlesAdjacent, players).warnings).toEqual([]);
   });
 
   it('INACTIVE_PLAYER for inactive starters and an inactive libero', () => {

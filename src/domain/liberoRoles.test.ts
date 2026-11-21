@@ -51,9 +51,11 @@ describe('libero replaces by role', () => {
     expect(s.liberoReplaces).toEqual(['oh2']);
   });
 
-  it('follows role overrides, not the primary position', () => {
-    const s = toggleLiberoRole(set({ roles: { opp4: 'OH' } }), players, 'OH');
-    expect(s.liberoReplaces).toEqual(['oh2', 'opp4', 'oh5']);
+  it('follows the spot roles of the formation, not the primary position (v6)', () => {
+    // 'middle' order, setter at 1: S 1 · MB 2 · OH 3 · OPP 4 · MB 5 · OH 6 — the OH spots hold
+    // the two middles.
+    const middle = set({ formation: { system: '5-1', order: 'middle', setterAt: 1 } });
+    expect(toggleLiberoRole(middle, players, 'OH').liberoReplaces).toEqual(['mb3', 'mb6']);
   });
 
   it('changes nothing for a role nobody plays', () => {
