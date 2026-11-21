@@ -35,10 +35,10 @@ describe('starters overview', () => {
         'position 4 number 4 O Oppo, role Opposite, ' +
         'position 5 number 5 W Wing, role Outside Hitter, ' +
         'position 6 number 6 B Block, role Middle Blocker. Libero: number 7 D Dig. ' +
-        'We serve first. Rotation 1 (setter at position 1).',
+        'We serve first. Rotation 1 (setter on 1).',
     );
     expect(card2.props.accessibilityLabel).toMatch(
-      /Libero: No libero\. We receive first\. Rotation 6 \(setter at position 6\)\.$/,
+      /Libero: No libero\. We receive first\. Rotation 6 \(setter on 6\)\.$/,
     );
     expect(card3.props.accessibilityLabel).toMatch(/position 1 empty/);
 
@@ -52,7 +52,7 @@ describe('starters overview', () => {
       await screen.findByRole('button', { name: /^Set 2: open rotation viewer/ }),
     );
     // Set 2 starts with the setter at 6.
-    expect(await screen.findByText('Rotation 6 (setter at position 6)')).toBeTruthy();
+    expect(await screen.findByText('Rotation 6 (setter on 6)')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Show set 2' })).toBeSelected();
   });
 

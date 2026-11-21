@@ -28,7 +28,7 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
   it('setter at 4 is "Rotation 4"; stepping goes 4 → 3 → 2 → 1 → 6 → 5 → 4', async () => {
     seedWith(setterAt4);
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    expect(await screen.findByText('Rotation 4 (setter at position 4)')).toBeTruthy();
+    expect(await screen.findByText('Rotation 4 (setter on 4)')).toBeTruthy();
     numberAt(4, '1');
     const seen = [];
     for (let i = 0; i < 6; i += 1) {
@@ -36,19 +36,19 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
       seen.push(title().props.children);
     }
     expect(seen).toEqual([
-      'Rotation 3 (setter at position 3)',
-      'Rotation 2 (setter at position 2)',
-      'Rotation 1 (setter at position 1)',
-      'Rotation 6 (setter at position 6)',
-      'Rotation 5 (setter at position 5)',
-      'Rotation 4 (setter at position 4)',
+      'Rotation 3 (setter on 3)',
+      'Rotation 2 (setter on 2)',
+      'Rotation 1 (setter on 1)',
+      'Rotation 6 (setter on 6)',
+      'Rotation 5 (setter on 5)',
+      'Rotation 4 (setter on 4)',
     ]);
   });
 
   it('the 1–6 row jumps by the setter’s position', async () => {
     seedWith(setterAt4);
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    await screen.findByText('Rotation 4 (setter at position 4)');
+    await screen.findByText('Rotation 4 (setter on 4)');
     const row = screen.getByLabelText('Rotations');
     const labels = within(row)
       .getAllByRole('button')
@@ -56,7 +56,7 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
     expect(labels).toEqual([1, 2, 3, 4, 5, 6].map((n) => `Show rotation ${n}`));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Show rotation 1' }));
-    expect(title()).toHaveTextContent('Rotation 1 (setter at position 1)');
+    expect(title()).toHaveTextContent('Rotation 1 (setter on 1)');
     numberAt(1, '1');
     await fireEvent.press(screen.getByRole('button', { name: 'Show rotation 6' }));
     numberAt(6, '1');
@@ -66,13 +66,13 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
     // #4 plays setter too (off position): setters at 1 (#1, back row) and 4 (#4, front row).
     seedWith({ ...set1, roles: { p4: 'S' } });
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    expect(await screen.findByText('Rotation 1 (setter at position 1)')).toBeTruthy();
+    expect(await screen.findByText('Rotation 1 (setter on 1)')).toBeTruthy();
     await next(); // setters at 6 and 3
-    expect(title()).toHaveTextContent('Rotation 6 (setter at position 6)');
+    expect(title()).toHaveTextContent('Rotation 6 (setter on 6)');
     await next(); // 5 and 2
-    expect(title()).toHaveTextContent('Rotation 5 (setter at position 5)');
+    expect(title()).toHaveTextContent('Rotation 5 (setter on 5)');
     await next(); // #1 front at 4, #4 back at 1
-    expect(title()).toHaveTextContent('Rotation 1 (setter at position 1)');
+    expect(title()).toHaveTextContent('Rotation 1 (setter on 1)');
     numberAt(1, '4');
   });
 
@@ -100,7 +100,7 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
       [wing2],
     );
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    await screen.findByText('Rotation 1 (setter at position 1)');
+    await screen.findByText('Rotation 1 (setter on 1)');
     expect(roleAt(1)).toHaveTextContent('S');
     expect(roleAt(5)).toHaveTextContent('OPP');
     expect(screen.queryByTestId('role-tag-5-off', hidden)).toBeNull();
@@ -121,7 +121,7 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
   it('a switched-off libero never swaps in and the toggle is replaced by a note', async () => {
     seedWith({ ...set1, liberoReplaces: ['p3', 'p6'], liberoActive: false });
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    await screen.findByText('Rotation 1 (setter at position 1)');
+    await screen.findByText('Rotation 1 (setter on 1)');
     expect(screen.getByTestId('libero-off-note')).toHaveTextContent(
       'Libero switched off for this set',
     );
@@ -139,7 +139,7 @@ describe('starters overview — roles and setter rotation (v4)', () => {
     seedWith(setterAt4);
     await renderRouter('./app', { initialUrl: '/match/m1/starters' });
     expect(await screen.findByTestId('starters-rotation-1')).toHaveTextContent(
-      'Rotation 4 (setter at position 4)',
+      'Rotation 4 (setter on 4)',
     );
     expect(roleAt(4)).toHaveTextContent('S');
     expect(roleAt(1)).toHaveTextContent('OPP');

@@ -7,7 +7,7 @@ export const rotation = {
   emptySet: 'No players in this set yet. Build the lineup on the match screen first.',
   rotationOf: (n: number, total: number) => `Rotation ${n} of ${total}`,
   /** v4: the rotation is named after the setter's position. */
-  setterRotation: (n: number) => `Rotation ${n} (setter at position ${n})`,
+  setterRotation: (n: number) => `Rotation ${n} (setter on ${n})`,
   goToRotation: (n: number) => `Show rotation ${n}`,
   previous: '‹ Previous',
   next: 'Next ›',

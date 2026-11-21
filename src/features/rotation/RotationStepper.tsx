@@ -13,7 +13,7 @@ export interface RotationStepperProps {
   step: RotationNumber;
   /** The rotation number of every step (index 0 = step 1): the setter's position, or the step. */
   labels: readonly RotationNumber[];
-  /** True when the labels follow the setter ("Rotation 4 (setter at position 4)"). */
+  /** True when the labels follow the setter ("Rotation 4 (setter on 4)"). */
   bySetter: boolean;
   onPrevious: () => void;
   onNext: () => void;
