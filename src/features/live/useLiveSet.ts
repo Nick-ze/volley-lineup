@@ -3,9 +3,11 @@ import { useCallback, useMemo } from 'react';
 import {
   addPoint,
   addSub,
+  liveCourtView,
   previewSub,
   replaySet,
   undo,
+  type LiveCourtView,
   type LiveState,
   type LiveWarningCode,
 } from '@/domain/liveSet';
@@ -16,6 +18,7 @@ import {
   type SetLineup,
   type Side,
 } from '@/domain/types';
+import { resetLiveData } from '@/domain/lineupLock';
 import { useAppStore, useMatch, usePlayersForTeam } from '@/store';
 
 export interface LiveSet {
@@ -24,12 +27,16 @@ export interface LiveSet {
   /** False when a court position is empty (live mode needs six players). */
   complete: boolean;
   state: LiveState | undefined;
+  /** The court as shown: real players plus the libero swap (undefined without a set). */
+  court: LiveCourtView | undefined;
   playersById: Map<string, Player>;
   /** Active players who are neither on court nor the libero, by jersey number. */
   bench: Player[];
   point: (winner: Side) => void;
   substitute: (outPlayerId: string, inPlayerId: string) => void;
   undoLast: () => void;
+  /** Clears the set's live data (score, subs) so its lineup can be edited again. */
+  resetLive: () => void;
   /** Warnings the substitution would trigger if made now (a warning, never a block). */
   preview: (outPlayerId: string, inPlayerId: string) => LiveWarningCode[];
 }
@@ -44,6 +51,7 @@ export function useLiveSet(matchId: string | undefined, setNumber: number | unde
 
   const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const state = useMemo(() => (set ? replaySet(set, players) : undefined), [set, players]);
+  const court = useMemo(() => (set && state ? liveCourtView(set, state) : undefined), [set, state]);
   const bench = useMemo(() => {
     if (!set || !state) return [];
     const taken = new Set<string | null>([
@@ -65,11 +73,13 @@ export function useLiveSet(matchId: string | undefined, setNumber: number | unde
     set,
     complete,
     state,
+    court,
     playersById,
     bench,
     point: (winner) => save((s) => addPoint(s, winner)),
     substitute: (out, inn) => save((s) => addSub(s, out, inn)),
     undoLast: () => save(undo),
+    resetLive: () => save(resetLiveData),
     preview: (out, inn) => (set ? previewSub(set, players, out, inn) : []),
   };
 }

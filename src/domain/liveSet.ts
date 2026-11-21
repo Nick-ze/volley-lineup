@@ -14,6 +14,7 @@
  * Rule breaches are warnings, never blocks: the event is still applied. Events that can't be
  * applied at all (player not on court, already on court, the libero, unknown) are skipped.
  */
+import { applyLiberoSwaps, findLiberoSwap, type LiberoSwap } from './liberoSwap';
 import {
   ROTATION_COUNT,
   rotateClockwise,
@@ -213,4 +214,23 @@ export function previewSub(
   return replaySet(addSub(set, outPlayerId, inPlayerId), players)
     .warnings.filter((w) => w.eventIndex === index)
     .map((w) => w.code);
+}
+
+/** The court as shown in live mode: the real players plus where the libero stands in. */
+export interface LiveCourtView {
+  slots: Slots;
+  liberoSwap: LiberoSwap | null;
+}
+
+/**
+ * Applies the libero swap to the live court. The libero may not serve, so position 1 is only
+ * excluded while we serve. `liberoReplaces` names starters: a substitute who replaced one of
+ * them is not swapped (the swap applies again once the starter is back on court).
+ */
+export function liveCourtView(set: SetLineup, state: LiveState): LiveCourtView {
+  const options = { serving: state.servingSide === 'us' };
+  return {
+    slots: applyLiberoSwaps(state.slots, set.liberoId, set.liberoReplaces, options),
+    liberoSwap: findLiberoSwap(state.slots, set.liberoId, set.liberoReplaces, options),
+  };
 }

@@ -1,16 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
-import type { Slots } from '@/domain/rotation';
+import type { LiveCourtView } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
 import { t } from '@/i18n/en';
 import { colors, radius, spacing, typography } from '@/theme';
 
-import { playerDescription } from './format';
+import { playerDescription, playerRef } from './format';
 import { COURT_COLUMN_MAX_WIDTH, LIVE_CHIP_SIZE } from './layout';
 
 export interface LiveCourtProps {
-  slots: Slots;
+  /** Court as shown (libero swap applied) and where the libero stands in. */
+  view: LiveCourtView;
   playersById: Map<string, Player>;
   serverId: string | null;
   /** The court player picked to go out (orange ring). */
@@ -18,15 +19,19 @@ export interface LiveCourtProps {
   onPressPlayer: (playerId: string) => void;
 }
 
-/** Who is on court right now; our server has a yellow ring, tapping a player starts a sub. */
+/**
+ * Who is on court right now; our server has a yellow ring, the libero is tagged "L for #n".
+ * Tapping a player starts a sub; tapping the libero picks the player they stand in for.
+ */
 export function LiveCourt({
-  slots,
+  view,
   playersById,
   serverId,
   selectedId,
   onPressPlayer,
 }: LiveCourtProps) {
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => (isFrontRow ? styles.front : styles.back);
+  const { slots, liberoSwap } = view;
   return (
     <Court
       testID="live-court"
@@ -37,6 +42,17 @@ export function LiveCourt({
         const id = slots[position];
         const player = id ? playersById.get(id) : undefined;
         const isServer = !!id && id === serverId;
+        const replacedId = liberoSwap?.position === position ? liberoSwap.replacedId : null;
+        // The real player at this spot: the libero acts for the starter they replace.
+        const realId = replacedId ?? id;
+        const desc = player
+          ? replacedId
+            ? t.rotation.liberoForLabel(
+                playerDescription(player),
+                playerRef(playersById, replacedId),
+              )
+            : playerDescription(player)
+          : '';
         return (
           <>
             <Text style={styles.pos} importantForAccessibility="no" accessibilityElementsHidden>
@@ -47,18 +63,24 @@ export function LiveCourt({
                 {t.live.serving}
               </Text>
             ) : null}
-            {player ? (
+            {replacedId ? (
+              <Text
+                style={[styles.tag, styles.liberoTag]}
+                importantForAccessibility="no"
+                accessibilityElementsHidden
+                testID={`live-libero-tag-${position}`}
+              >
+                {t.rotation.liberoFor(playersById.get(replacedId)?.number ?? null)}
+              </Text>
+            ) : null}
+            {player && realId ? (
               <PlayerChip
                 player={player}
                 size={LIVE_CHIP_SIZE}
                 highlighted={isServer}
-                selected={selectedId === player.id}
-                onPress={() => onPressPlayer(player.id)}
-                accessibilityLabel={t.live.courtPlayerLabel(
-                  playerDescription(player),
-                  position,
-                  isServer,
-                )}
+                selected={selectedId === realId}
+                onPress={() => onPressPlayer(realId)}
+                accessibilityLabel={t.live.courtPlayerLabel(desc, position, isServer)}
                 accessibilityHint={t.live.courtPlayerHint}
                 testID={`live-court-${position}`}
               />
@@ -98,5 +120,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     overflow: 'hidden',
   },
+  // Same look as the rotation viewer's "L for #n" tag (near-black on white).
+  liberoTag: { color: colors.onPrimary, backgroundColor: colors.text },
   empty: { ...typography.subheading, color: colors.text },
 });

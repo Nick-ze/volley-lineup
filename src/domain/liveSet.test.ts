@@ -1,6 +1,7 @@
 import {
   addPoint,
   addSub,
+  liveCourtView,
   MAX_SUBS_PER_SET,
   previewSub,
   replaySet,
@@ -360,5 +361,51 @@ describe('event helpers', () => {
     const two = withEvents([pt('us'), sub('p1', 'p8')]);
     expect(undo(two).events).toEqual([pt('us')]);
     expect(two.events).toHaveLength(2);
+  });
+});
+
+describe('liveCourtView — libero swaps on the live court', () => {
+  const numbers = (slots: Record<number, string | null>) =>
+    [1, 2, 3, 4, 5, 6].map((p) => (slots[p] ?? '-').slice(1)).join(' ');
+  // p3 and p6 are the middles the libero (p7) replaces.
+  const libero = { liberoReplaces: ['p3', 'p6'] };
+
+  it('puts the libero in for a chosen back-row starter', () => {
+    // Start: p6 is at position 6 (back row), p3 at 3 (front row).
+    const set = withEvents([], libero);
+    const view = liveCourtView(set, replaySet(set, players));
+    expect(numbers(view.slots)).toBe('1 2 3 4 5 7');
+    expect(view.liberoSwap).toEqual({ position: 6, replacedId: 'p6' });
+  });
+
+  it('never lets the libero serve, but takes position 1 while the opponent serves', () => {
+    // After 5 side-outs p6 is at position 1 (rotation 6).
+    const sideOuts = Array.from({ length: 5 }, () => [pt('them'), pt('us')]).flat();
+    const serving = withEvents(sideOuts, libero);
+    const servingState = replaySet(serving, players);
+    expect(servingState.serverId).toBe('p6');
+    const servingView = liveCourtView(serving, servingState);
+    // p6 serves; p3 is at position 4 (front): no swap.
+    expect(numbers(servingView.slots)).toBe('6 1 2 3 4 5');
+    expect(servingView.liberoSwap).toBeNull();
+
+    const receiving = addPoint(serving, 'them');
+    const view = liveCourtView(receiving, replaySet(receiving, players));
+    expect(numbers(view.slots)).toBe('7 1 2 3 4 5');
+    expect(view.liberoSwap).toEqual({ position: 1, replacedId: 'p6' });
+  });
+
+  it('does not swap for a substitute of a chosen starter', () => {
+    const set = withEvents([sub('p6', 'p8')], libero);
+    const view = liveCourtView(set, replaySet(set, players));
+    expect(numbers(view.slots)).toBe('1 2 3 4 5 8');
+    expect(view.liberoSwap).toBeNull();
+  });
+
+  it('shows the real court when there is no libero', () => {
+    const set = withEvents([], { liberoId: null, liberoReplaces: ['p6'] });
+    const view = liveCourtView(set, replaySet(set, players));
+    expect(numbers(view.slots)).toBe('1 2 3 4 5 6');
+    expect(view.liberoSwap).toBeNull();
   });
 });
