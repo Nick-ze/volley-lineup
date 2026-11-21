@@ -8,6 +8,7 @@ import { parseSetNumber } from '@/domain/lineupEditing';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { SetTabs } from '@/features/lineup/SetTabs';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
+import { PrintButton } from '@/features/print/PrintButton';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { t } from '@/i18n/en';
 import { colors, maxContentWidth, spacing, typography } from '@/theme';
@@ -71,6 +72,7 @@ export default function MatchScreen() {
               }
               testID="open-starters"
             />
+            <PrintButton matchId={matchId} style={styles.link} />
           </View>
           <LineupBuilder editor={editor} />
         </View>
