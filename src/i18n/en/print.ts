@@ -1,7 +1,7 @@
 /** Strings for the printable lineup sheet (v2 feature 5). */
 export const print = {
   button: 'Print / PDF',
-  buttonLabel: 'Print the lineup sheet of this match or save it as a PDF',
+  buttonLabel: 'Print / PDF: print the lineup sheet of this match or save it as a PDF',
   failed: 'Printing failed. Please try again.',
   dialogTitle: 'Share lineup sheet',
   choice: {

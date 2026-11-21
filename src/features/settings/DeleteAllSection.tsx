@@ -11,8 +11,9 @@ import { StatusMessage } from './StatusMessage';
 
 /**
  * Delete all data, with an in-app confirmation (`Alert.alert` does nothing on web).
+ * `onDeleted` lets the screen clear other sections' messages (e.g. a finished export).
  */
-export function DeleteAllSection() {
+export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
   const t = useT();
   const resetAll = useAppStore((s) => s.resetAll);
   const [confirming, setConfirming] = useState(false);
@@ -22,6 +23,7 @@ export function DeleteAllSection() {
     resetAll();
     setConfirming(false);
     setDone(true);
+    onDeleted?.();
   };
 
   return (

@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { HeaderBack } from '@/components/HeaderBack';
+import { HeaderTitle } from '@/components/HeaderTitle';
 import { useT } from '@/i18n';
 import { setDocumentLanguage } from '@/lib/documentLanguage';
 import { parentRoute } from '@/lib/parentRoute';
@@ -44,6 +45,7 @@ export default function RootLayout() {
               screenOptions={({ route }) => ({
                 headerStyle: { backgroundColor: colors.surface },
                 headerTintColor: colors.text,
+                headerTitle: ({ children }) => <HeaderTitle>{children}</HeaderTitle>,
                 contentStyle: { backgroundColor: colors.background },
                 // The picker and the tabs (headerShown: false) never get a back button.
                 headerLeft:

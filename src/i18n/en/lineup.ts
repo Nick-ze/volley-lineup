@@ -32,7 +32,7 @@ export const lineup = {
   rotation: 'Rotation',
   rotationLabel: 'Open the rotation viewer for this set',
   starters: 'Starters',
-  startersLabel: 'Open the starters overview for all sets',
+  startersLabel: 'Starters: open the overview of all sets',
   validationTitle: 'Lineup check',
   validationOk: 'Lineup is complete.',
   errorsHeading: 'Errors',

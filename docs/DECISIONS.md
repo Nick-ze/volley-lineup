@@ -148,3 +148,36 @@ Newest at the bottom. Format: **Decision** — why.
 91. **Match duration** = first to last timestamped rally of the counted sets. Rallies recorded from v3.0 carry `at`; matches played before have no duration (shown as nothing, not "0 min").
 92. **All statistics, including the tag totals, are computed in `src/domain/stats.ts`** (one place, as the plan says); the point-tagging worker builds the tagging UI and uses those totals.
 93. **Version 3.0.0** (Android versionCode 30000). Major version because the store and export formats change (older apps can't open v4 data).
+
+### Statistics (PR #26)
+
+94. **Rotation of a rally** = the rotation it was played in, before the side-out it causes. Received = the opponent served; side-out % = received rallies won ÷ received (shown "–" when nothing was received); break point = a rally won on our serve. Computed by `src/domain/stats.ts` from `replaySteps` (an additive export of `liveSet.ts`; `replaySet` unchanged).
+95. **What counts**: a set counts once it has a rally, and only sets that count for the result (#90). Subs in a set without rallies count for nobody; in a played set every applied sub counts (skipped `INVALID_SUB` don't; `SUB_LIMIT` / `REENTRY_RULE` ones do).
+96. **Started** = in the stored starting six; **played** = among the six for ≥ 1 rally. The **libero** counts as started and played only if their swap applied in at least one rally.
+97. **Serve turn** = a run of our serves by the same server (starts at our first serve and after each side-out; substituting the server starts a new turn for the new server; a server swapped out before serving gets none; out and back with the substitute serving in between = two turns). Points on serve = rallies won while that player served. Tag totals count only tags that name a player.
+98. **Stats tab** (5th team nav item, `?tab=stats`): season tiles (record W–L, "n in progress" separately, sets and points won : lost; matches without rallies aren't counted), rotation table, player table. **Match stats** `/match/[matchId]/stats` with a local set filter (All / Set N). Header title is fixed ("Match stats"); the opponent is a heading in the content. Tables keep the first column fixed and scroll the number columns sideways; abbreviations are explained in a legend and in each row's screen-reader summary (EN W L SO% BP · St Pl In Out Sv SvP K A B E; DE G V SO% BP · Sta Gsp Ein Aus Auf AuP Ang Ass Blo Feh).
+
+### Polish (PR #25)
+
+99. **Print with results**: only for a played match (`status !== 'notStarted'`), Print first offers _With results_ / _Lineups only_ / _Cancel_ (in-app dialog). The results section (above the sets) shows won / lost / in progress, sets won, every started set's score (open set marked "in progress") and the duration rounded to minutes, hidden under 1 minute. Unplayed matches print exactly as before.
+100. **"Delete all data"** text names saved lineups (presets and team starters) — "gespeicherte Aufstellungen (Vorlagen und Startsechs)". `docs/WORKER_BRIEF.md` rewritten for v3.
+
+### Whole-match live mode (PR #27)
+
+101. **Live mode follows the match**: the scoreboard shows "Sets x:y"; a won set replaces the point buttons with "Set won by …" + **Start set N+1** + **Undo last point** — no rallies or substitutions in a won set (court read-only). At 3 sets a **match summary** shows the result, every set's score and the duration (hidden without 2 timestamps or under 1 minute, rounded to minutes). Opening live mode without a valid `?set` (and the match screen's Live button) goes to the current set, or to the summary when the match is over; the set picker still browses earlier sets ("Go to set N").
+102. **Next set setup** inside live mode, for the current set when it isn't stored or is incomplete with nothing recorded: Team starters (if complete) / each preset / Copy set N (applied like the builder: injured or removed players left out, nobody twice), a serve choice, Start (enabled at 6/6), Edit lineup (opens the builder; saves the draft only if something was chosen). The setup is a local draft saved on Start.
+103. **Serve default for a new set**: whoever received first in the previous set serves first (set 5 too; the toggle covers a coin toss). A stored set without rallies gets this default when reached from the previous set; a choice made in the setup panel wins. A complete set without rallies goes straight to live play with a serve toggle until the first rally (no extra tap for set 1).
+104. **Undo across a set end**: from an untouched next set, the setup panel or the summary, Undo removes the last rally of the previous played set and returns to it (re-opening it). In an earlier won set Undo is hidden once a later set has rallies.
+105. **Pre-v3 data**: a set stored after the deciding set shows "Played after the match was decided — not counted" and no live controls.
+106. **Result labels** ("3:1 won", "1:3 lost", "2:1 · in progress", nothing before the first rally) on their own line in the match list (also in the row's screen-reader label) and under the set tabs on the match screen. The match screen's five links are one row on wide screens and 3 + 2 on phones.
+
+### Point tagging (PR #28)
+
+107. **Tag row** after every rally: Point us → Kill · Ace · Block · Opp. error · ✕; Point them → Our error · Their kill · Their ace · ✕ (DE: Angriff · Ass · Block · Gegn. Fehler / Eigenfehler · Gegn. Angriff · Gegn. Ass). Only plausible kinds are offered: no "Ace" when we didn't serve that rally, no "Their ace" when we did (`plausibleKinds`, `src/domain/lastRally.ts`; import validation stays as in #89). A kind is saved immediately (`tagLastPoint`); tapping it again clears it.
+108. **Never required**: the row refers only to the rally just recorded; the next rally replaces it, and a substitution, undo, reset, ✕ or switching sets closes it (it doesn't reopen for an earlier rally after undo). It also appears under the set-won panel and the match summary, so the winning rally can be tagged; undo labels name the tag ("· kill #7 Smith").
+109. **Player picker** (kill / ace / block / our error) offers the players on court _during_ that rally — before its side-out rotation, with that moment's libero swap — and replaces the chip row to save height; it stays open so a mistake can be fixed. For an ace our server is preselected (and keeps a yellow outline).
+110. The roster's "can't delete" explanation reads "appears in a played set (lineup, substitution or point details)".
+
+### QA fixes (orchestrator)
+
+111. **Header titles stay on one line** (`HeaderTitle`, set for every screen in `app/_layout.tsx`): long titles such as "vs <long opponent>" end in "…" instead of scrolling the page sideways; the title limits itself to the window width minus room for the back button. German link "Startaufstellung" → "Aufstellungen" (fits the 3 + 2 link row); the Print and Starters links' accessibility labels start with their visible text. "Delete all data" clears the export / import messages shown above it.

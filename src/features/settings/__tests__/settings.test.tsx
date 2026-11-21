@@ -282,4 +282,16 @@ describe('delete all and version', () => {
     expect(screen.getByText('All data deleted.')).toBeTruthy();
     expect(store().currentProfileId).toBeNull();
   });
+  it('clears an earlier export message when all data is deleted', async () => {
+    seed();
+    await renderSettings();
+    await fireEvent.press(screen.getByLabelText('Export everything'));
+    const [name] = mockSave.mock.calls[0];
+    expect(await screen.findByText(`Exported ${name}.`)).toBeTruthy();
+
+    await fireEvent.press(screen.getByLabelText('Delete all data'));
+    await fireEvent.press(screen.getByLabelText('Yes, delete everything'));
+    expect(screen.getByText('All data deleted.')).toBeTruthy();
+    expect(screen.queryByText(`Exported ${name}.`)).toBeNull();
+  });
 });

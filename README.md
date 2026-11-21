@@ -1,6 +1,6 @@
 # Volley Lineup
 
-A mobile + web app for volleyball team managers. Keep a roster, build the starting lineup for every set with drag and drop, and step through all six rotations. Everything is stored on your device — no account, no server. Move data between devices with a JSON export/import.
+A mobile + web app for volleyball team managers. Keep a roster, build the starting lineup for every set with drag and drop, step through all six rotations, follow a whole match live and see the stats. Everything is stored on your device — no account, no server. Move data between devices with a JSON export/import.
 
 Built with Expo (React Native + react-native-web), TypeScript, Expo Router and Zustand. See [`docs/PLAN.md`](docs/PLAN.md) for the full plan and [`docs/DECISIONS.md`](docs/DECISIONS.md) for the choices made while building it.
 
@@ -113,16 +113,25 @@ Production build (static files in `dist/`):
 npx expo export -p web
 ```
 
+New in **v3 — Match day & stats**:
+
+- **Whole match in live mode** — the scoreboard shows the set score (e.g. "Sets 2:1"). When a set is won (25, or 15 in set 5, by 2) you get "Start set N+1" and "Undo last point". The next set is set up right there: team starters, a preset or a copy of the previous set, plus who serves first. At 3 sets won a match summary shows the result, every set's score and how long the match took. Undo works across a set end.
+- **Results everywhere** — the match list and the match screen show "3:1 won", "1:3 lost" or "in progress"; the printed sheet can include the results.
+- **Stats** — a Stats tab in the team (season record, set ratio, per-rotation points won / lost, side-out % and break points, and per-player sets started / played, subs, serve turns and points on serve) and a Stats button on every match. All numbers come from the rallies you already record.
+- **Point details (optional)** — after a rally, one tap tags it: kill / ace / block / opponent error, or our error / their kill / their ace, with the player. Skip it by simply playing the next rally. Tags add kills, aces, blocks and errors to the player stats.
+
+Data from v2 (on the phone or in v1–v3 export files) opens in v3 automatically. Files exported by v3 (schema version 4) can't be opened by older versions.
+
 ## Export / import
 
-Open **Settings** (button in the top bar of the Teams screen).
+Open the **Settings** tab (bottom bar).
 
-- **Export everything** writes all profiles, teams, players and matches to `volley-lineup-YYYY-MM-DD.json`. **Export <team>** writes just that team, its profile, players and matches. On the web the file is downloaded; on a phone the share sheet opens (save to Files, AirDrop, mail, …).
+- **Export everything** writes all profiles, teams, players, matches (with their live data and point details) and saved lineups to `volley-lineup-YYYY-MM-DD.json`. **Export <team>** writes just that team, its profile, players and matches. On the web the file is downloaded; on a phone the share sheet opens (save to Files, AirDrop, mail, …).
 - **Import from file** opens a file picker, validates the file and shows a preview ("1 profile, 2 teams, 24 players, 5 matches"). Then choose:
   - **Replace** — your current data is replaced by the file.
   - **Merge** — items are matched by id; imported items win, nothing is deleted. If merging would make the data inconsistent (e.g. two players with the same number in a team) the merge is refused and you can use Replace instead.
 - Files carry `app: "volley-lineup"` and a `schemaVersion`. A broken, foreign or newer-version file shows a clear error and **nothing is changed**.
-- **Delete all data** wipes the device (after a confirmation). Export first if you want a backup.
+- **Delete all data** wipes the device — profiles, teams, players, matches and saved lineups (after a confirmation). Export first if you want a backup.
 
 To move data to another device: export on one, send the file, import on the other.
 

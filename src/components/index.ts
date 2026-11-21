@@ -6,3 +6,4 @@ export * from './PositionBadge';
 export * from './Screen';
 export * from './HeaderBack';
 export * from './ToggleRow';
+export * from './HeaderTitle';

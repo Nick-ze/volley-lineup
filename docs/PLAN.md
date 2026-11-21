@@ -288,15 +288,20 @@ v2.2 shipped as `v2.2.0`. v3 makes live mode follow a whole match, adds statisti
 ```ts
 /** v4: optional tag of a rally (what decided it). */
 type PointKind =
-  | 'kill' | 'ace' | 'block' | 'opponentError'   // winner: 'us'
-  | 'ourError' | 'opponentKill' | 'opponentAce'; // winner: 'them'
+  | 'kill'
+  | 'ace'
+  | 'block'
+  | 'opponentError' // winner: 'us'
+  | 'ourError'
+  | 'opponentKill'
+  | 'opponentAce'; // winner: 'them'
 type SetEvent =
   | {
       type: 'point';
       winner: Side;
-      kind?: PointKind;  // must belong to the winner
+      kind?: PointKind; // must belong to the winner
       playerId?: string; // only with kill / ace / block / ourError; a player of the team
-      at?: string;       // ISO time the rally was recorded (match duration)
+      at?: string; // ISO time the rally was recorded (match duration)
     }
   | { type: 'sub'; outPlayerId: string; inPlayerId: string };
 // ExportFile.schemaVersion: 4 (v1–v3 files upgraded on import; old events stay valid)
@@ -307,11 +312,11 @@ Set and match results are derived by pure functions (`src/domain/matchState.ts`)
 
 ## 17. v3 acceptance checklist
 
-- [ ] A full 5-set match can be played in live mode from set 1 to the match summary without leaving live mode, and the set / match results are correct (tests: 3:0, 3:2 with a 15-point tiebreak, deuce sets).
-- [ ] Undo works across a set end (it re-opens the set).
-- [ ] Rotation stats (points won / lost, side-out %, break points per rotation) are correct for a scripted match (tests with literal expected numbers).
-- [ ] Player stats are correct for a scripted match with substitutions and libero swaps (tests).
-- [ ] Point tagging is optional, and its per-player totals are correct.
-- [ ] v3.0.0 opens v2.x data (store v3) and v1–v3 export files without loss; export / import round trip with tags restores exactly.
-- [ ] Phone layout (390×844): live controls and the set / match score fit without scrolling; the stats tables are readable at 375 px. EN + DE.
-- [ ] Lint, typecheck and tests pass in CI; `src/domain` 100%.
+- [x] A full 5-set match can be played in live mode from set 1 to the match summary without leaving live mode, and the set / match results are correct (tests: 3:0, 3:2 with a 15-point tiebreak, deuce sets).
+- [x] Undo works across a set end (it re-opens the set).
+- [x] Rotation stats (points won / lost, side-out %, break points per rotation) are correct for a scripted match (tests with literal expected numbers).
+- [x] Player stats are correct for a scripted match with substitutions and libero swaps (tests).
+- [x] Point tagging is optional, and its per-player totals are correct.
+- [x] v3.0.0 opens v2.x data (store v3) and v1–v3 export files without loss; export / import round trip with tags restores exactly. — _web (localStorage) migration verified in a browser; Android AsyncStorage upgrade covered by unit tests only._
+- [x] Phone layout (390×844): live controls and the set / match score fit without scrolling; the stats tables are readable at 375 px. EN + DE. — _verified in a browser at 390×844 / 375 px (Playwright); not yet on a real phone._
+- [x] Lint, typecheck and tests pass in CI; `src/domain` 100%.

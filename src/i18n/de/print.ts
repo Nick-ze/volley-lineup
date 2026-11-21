@@ -3,7 +3,7 @@ import type { Strings } from '../en';
 /** Druckbarer Aufstellungsbogen. */
 export const print: Strings['print'] = {
   button: 'Drucken / PDF',
-  buttonLabel: 'Aufstellungsbogen dieses Spiels drucken oder als PDF speichern',
+  buttonLabel: 'Drucken / PDF: Aufstellungsbogen dieses Spiels drucken oder als PDF speichern',
   failed: 'Drucken fehlgeschlagen. Bitte versuche es noch einmal.',
   dialogTitle: 'Aufstellungsbogen teilen',
   choice: {
