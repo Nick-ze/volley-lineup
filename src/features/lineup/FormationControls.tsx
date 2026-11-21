@@ -1,11 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import {
-  FORMATION_ORDERS,
-  FORMATION_PATTERNS,
-  FORMATION_SYSTEMS,
-  setFormation,
-} from '@/domain/roles';
+import { changeFormation } from '@/domain/formationChange';
+import { FORMATION_ORDERS, FORMATION_PATTERNS, FORMATION_SYSTEMS } from '@/domain/roles';
 import type { FormationOrder, FormationSystem } from '@/domain/types';
 import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
@@ -16,12 +12,14 @@ import type { LineupDraft } from './useLineupDraft';
 /**
  * The formation of the lineup (v6): system 5-1 / 6-2 and the order around the court from the
  * setter (followed by an outside or by a middle), in one compact row, with the resulting role
- * order below. The setter's spot moves with "Rotate". Disabled in played sets.
+ * order below. A change that puts a starter on an unlisted role asks first; a libero who
+ * replaced the middles follows them (`changeFormation`). The setter's spot
+ * moves with "Rotate". Disabled in played sets.
  */
 export function FormationControls({ editor }: { editor: LineupDraft }) {
   const t = useT();
   const s = t.lineup.formation;
-  const { set, locked, update } = editor;
+  const { set, players, locked, propose } = editor;
   const { system, order } = set.formation;
   const pattern = (sys: FormationSystem, ord: FormationOrder) =>
     FORMATION_PATTERNS[sys][ord].join(' · ');
@@ -33,7 +31,7 @@ export function FormationControls({ editor }: { editor: LineupDraft }) {
         <Segmented
           groupLabel={s.systemGroupLabel}
           value={system}
-          onChange={(v) => update(setFormation(set, { system: v }))}
+          onChange={(v) => propose(changeFormation(set, { system: v }, players), 'formation')}
           disabled={locked}
           hint={hint}
           style={styles.system}
@@ -47,7 +45,7 @@ export function FormationControls({ editor }: { editor: LineupDraft }) {
         <Segmented
           groupLabel={s.orderGroupLabel}
           value={order}
-          onChange={(v) => update(setFormation(set, { order: v }))}
+          onChange={(v) => propose(changeFormation(set, { order: v }, players), 'formation')}
           disabled={locked}
           hint={hint}
           style={styles.order}

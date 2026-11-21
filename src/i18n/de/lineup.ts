@@ -18,7 +18,8 @@ export const lineup: Strings['lineup'] = {
   liberoSlotLabel: (name: string | null) => (name ? `Libero-Platz, ${name}` : 'Libero-Platz frei'),
   slotLabel: (position: number, name: string | null) =>
     name ? `Position ${position}, ${name}` : `Position ${position} frei`,
-  emptySlotLabel: (position: number, role: string) => `Position ${position} frei, ${role}`,
+  emptySlotLabel: (position: number, code: string, role: string) =>
+    `${code}, ${role}: Position ${position} frei`,
   playerHint:
     'Tippen zum Auswählen, dann eine Position, den Libero-Platz oder die Bank antippen. Oder ziehen.',
   slotHintSelected: 'Setzt den ausgewählten Spieler hierher',
@@ -79,7 +80,7 @@ export const lineup: Strings['lineup'] = {
     systemLabel: (system: string, explanation: string) => `${system}: ${explanation}`,
     systems: {
       '5-1': 'ein Zuspieler, der Diagonalspieler gegenüber',
-      '6-2': 'zwei Zuspieler gegenüber, der aus der Hinterreihe spielt zu',
+      '6-2': 'zwei Zuspieler gegenüber, der aus der Hinterreihe zuspielt',
     },
     orderGroupLabel: 'Reihenfolge ab dem Zuspieler',
     orders: { outside: 'S → Außen', middle: 'S → Mitte' },
@@ -108,7 +109,7 @@ export const lineup: Strings['lineup'] = {
     lockedHint:
       'Dieser Satz wurde schon gespielt, daher kann die Startaufstellung nicht neu gefüllt werden.',
     choose:
-      'Wähle ein System: Es wird die Formation (5-1 oder 6-2) und füllt die Startaufstellung nach Rollen aus dem Kader. Die aktuellen Startspieler werden ersetzt.',
+      'Wähle ein System: Es legt die Formation fest (5-1 oder 6-2) und füllt die Startaufstellung nach Rollen aus dem Kader. Die aktuellen Startspieler werden ersetzt.',
     systemLabel: (system: string) => `Startaufstellung mit einem ${system}-System füllen`,
     cancel: 'Abbrechen',
     cancelLabel: 'Vorlagenauswahl schließen',

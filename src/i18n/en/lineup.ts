@@ -18,8 +18,9 @@ export const lineup = {
   liberoSlotLabel: (name: string | null) => (name ? `Libero slot, ${name}` : 'Empty libero slot'),
   slotLabel: (position: number, name: string | null) =>
     name ? `Position ${position}, ${name}` : `Empty position ${position}`,
-  /** An empty court spot with its role (v6: every spot has a role). */
-  emptySlotLabel: (position: number, role: string) => `Empty position ${position}, ${role}`,
+  /** An empty court spot with its role (v6); starts with the visible role code. */
+  emptySlotLabel: (position: number, code: string, role: string) =>
+    `${code}, ${role}: empty position ${position}`,
   playerHint: 'Tap to select, then tap a position, the libero slot or the bench. Or drag it.',
   slotHintSelected: 'Moves the selected player here',
   selected: (name: string) => `Selected: ${name}. Tap a position, the libero slot or the bench.`,

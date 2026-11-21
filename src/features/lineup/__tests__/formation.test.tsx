@@ -52,7 +52,7 @@ describe('lineup builder — formation on an empty court', () => {
     await screen.findByTestId('slot-empty-1');
     expect(tagText()).toEqual(['S', 'OH', 'MB', 'OPP', 'OH', 'MB']);
     expect(screen.getByTestId('slot-empty-4').props.accessibilityLabel).toBe(
-      'Empty position 4, Opposite',
+      'OPP, Opposite: empty position 4',
     );
     expect(screen.getByTestId('formation-pattern')).toHaveTextContent(
       'From the setter: S · OH · MB · OPP · OH · MB',
@@ -111,6 +111,11 @@ describe('lineup builder — off-position confirmation', () => {
     expect(screen.queryByTestId('placement-confirm')).toBeNull();
     expect(useAppStore.getState().matches[0].sets[0].slots).toEqual(EMPTY);
     expect(bench(5)).toBeTruthy();
+    // Ola is still selected: tapping a listed spot (OH at 2) places her without asking.
+    expect(screen.getByText(/Selected: 5 Ola Test/)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('slot-empty-2'));
+    expect(screen.queryByTestId('placement-confirm')).toBeNull();
+    expect(set1().slots[2]).toBe('p5');
   });
 
   it('Confirm places the player and marks the spot with "*"', async () => {
@@ -155,12 +160,88 @@ describe('lineup builder — off-position confirmation', () => {
     expect(dialog).toHaveTextContent(/Put them on these spots\?/);
     await fireEvent.press(screen.getByTestId('placement-cancel'));
     expect(set1().slots).toMatchObject({ 1: 'p1', 3: 'p3' });
-    await fireEvent.press(screen.getByTestId('slot-player-1'));
+    // Sina stays selected after Cancel: tapping Mara again asks again.
     await fireEvent.press(screen.getByTestId('slot-player-3'));
     await fireEvent.press(screen.getByTestId('placement-confirm-button'));
     expect(set1().slots).toMatchObject({ 1: 'p3', 3: 'p1' });
     expect(screen.getByTestId('role-off-1', hidden)).toBeTruthy();
     expect(screen.getByTestId('role-off-3', hidden)).toBeTruthy();
+  });
+});
+
+describe('lineup builder — formation changes with players on court', () => {
+  const full = (): SetLineup => ({
+    ...emptySetLineup(1),
+    slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
+  });
+
+  it('asks before a new order puts starters on unlisted roles; Cancel keeps the formation', async () => {
+    seed(full());
+    await open();
+    await fireEvent.press(await screen.findByTestId('formation-order-middle'));
+    // S · MB · OH · OPP · MB · OH: Olga (OH, OPP) → MB, Mara (MB) → OH, Ola (OH) → MB, Mia (MB) → OH.
+    const dialog = screen.getByTestId('placement-confirm');
+    expect(dialog).toHaveTextContent(/#2 Olga Test isn’t listed as Middle Blocker\./);
+    expect(dialog).toHaveTextContent(/#3 Mara Test isn’t listed as Outside Hitter\./);
+    expect(dialog).toHaveTextContent(/#5 Ola Test isn’t listed as Middle Blocker\./);
+    expect(dialog).toHaveTextContent(/#6 Mia Test isn’t listed as Outside Hitter\./);
+    expect(dialog).toHaveTextContent(/Change the formation anyway\?/);
+    await fireEvent.press(screen.getByTestId('placement-cancel'));
+    expect(set1().formation).toEqual({ system: '5-1', order: 'outside', setterAt: 1 });
+    expect(screen.getByTestId('formation-order-outside')).toBeChecked();
+
+    await fireEvent.press(screen.getByTestId('formation-order-middle'));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Confirm: change the formation anyway' }),
+    );
+    expect(set1().formation.order).toBe('middle');
+    expect(screen.getByTestId('role-off-3', hidden)).toBeTruthy();
+  });
+
+  it('a libero who replaced the middles follows them to the new middle spots', async () => {
+    seed({ ...full(), liberoId: 'p7', liberoReplaces: ['p3', 'p6'] });
+    await open();
+    await fireEvent.press(await screen.findByTestId('formation-order-middle'));
+    await fireEvent.press(screen.getByTestId('placement-confirm-button'));
+    // Middle spots are now 2 and 5 (Olga, Ola).
+    expect(set1().liberoReplaces).toEqual(['p2', 'p5']);
+  });
+
+  it('any other libero choice stays when the formation changes', async () => {
+    seed({
+      ...full(),
+      slots: { ...full().slots, 4: 'p8' },
+      liberoId: 'p7',
+      liberoReplaces: ['p3'],
+    });
+    await open();
+    await fireEvent.press(await screen.findByTestId('formation-system-6-2'));
+    expect(set1().formation.system).toBe('6-2');
+    expect(set1().liberoReplaces).toEqual(['p3']);
+  });
+
+  it('a 6-2 that puts the opposite on a setter spot asks', async () => {
+    // 6-2 turns spot 4 into a setter spot: Opal (OPP) would be off position → asks.
+    seed(full());
+    await open();
+    await fireEvent.press(await screen.findByTestId('formation-system-6-2'));
+    expect(screen.getByTestId('placement-confirm')).toHaveTextContent(
+      /#4 Opal Test isn’t listed as Setter\./,
+    );
+    await fireEvent.press(screen.getByTestId('placement-cancel'));
+    expect(set1().formation.system).toBe('5-1');
+  });
+
+  it('a change that keeps everyone on a listed role, and rotating, never ask', async () => {
+    // Sara (S) on 4: a 6-2 needs no confirmation.
+    seed({ ...full(), slots: { ...full().slots, 4: 'p8' } });
+    await open();
+    await fireEvent.press(await screen.findByTestId('formation-system-6-2'));
+    expect(screen.queryByTestId('placement-confirm')).toBeNull();
+    expect(set1().formation.system).toBe('6-2');
+    await fireEvent.press(screen.getByRole('button', { name: 'Rotate clockwise' }));
+    expect(screen.queryByTestId('placement-confirm')).toBeNull();
+    expect(set1().formation.setterAt).toBe(6);
   });
 });
 

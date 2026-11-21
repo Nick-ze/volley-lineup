@@ -16,6 +16,8 @@ export const roles = {
     notListed: (player: string, role: string) => `${player} isn’t listed as ${role}.`,
     questionOne: 'Put them on this spot?',
     questionMany: 'Put them on these spots?',
+    questionFormation: 'Change the formation anyway?',
+    confirmFormationLabel: 'Confirm: change the formation anyway',
     confirm: 'Confirm',
     confirmLabel: 'Confirm: put them on the spot anyway',
     cancel: 'Cancel',

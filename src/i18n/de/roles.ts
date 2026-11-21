@@ -14,6 +14,8 @@ export const roles: Strings['roles'] = {
     notListed: (player: string, role: string) => `${player} ist nicht als ${role} eingetragen.`,
     questionOne: 'Trotzdem auf diese Position stellen?',
     questionMany: 'Trotzdem auf diese Positionen stellen?',
+    questionFormation: 'Formation trotzdem ändern?',
+    confirmFormationLabel: 'Bestätigen: Formation trotzdem ändern',
     confirm: 'Bestätigen',
     confirmLabel: 'Bestätigen: trotzdem auf die Position stellen',
     cancel: 'Abbrechen',

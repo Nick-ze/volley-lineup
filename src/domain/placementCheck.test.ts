@@ -1,7 +1,7 @@
 import { emptySetLineup } from './lineup';
 import { swapSlots, placePlayer } from './lineupEditing';
 import { newOffPositionPlacements } from './placementCheck';
-import { rotateStarters } from './roles';
+import { rotateStarters, setFormation } from './roles';
 import type { Player, SetLineup } from './types';
 
 const player = (id: string, positions: Player['positions']) => ({ id, positions });
@@ -68,6 +68,13 @@ describe('newOffPositionPlacements', () => {
       { playerId: 'opp', position: 1, role: 'S' },
       { playerId: 's', position: 4, role: 'OPP' },
     ]);
+  });
+
+  it('names starters a formation change puts on unlisted roles', () => {
+    const before = full();
+    expect(
+      newOffPositionPlacements(before, setFormation(before, { system: '6-2' }), players),
+    ).toEqual([{ playerId: 'opp', position: 4, role: 'S' }]);
   });
 
   it('names a libero moved onto court and ignores unknown ids', () => {

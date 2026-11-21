@@ -7,14 +7,14 @@ import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
 import type { LineupDraft } from './useLineupDraft';
 
 /**
- * "Are you sure?" before a drag & drop or tap-to-select move puts a player on a spot whose role
- * is none of their positions (one line per player, e.g. both players of a swap). Cancel changes
- * nothing; Confirm makes the move (the spot then shows "*").
+ * "Are you sure?" before a drag & drop / tap-to-select move or a formation change puts a player
+ * on a spot whose role is none of their positions (one line per player, e.g. both players of a
+ * swap). Cancel changes nothing; Confirm makes the change (the spot then shows "*").
  */
 export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
   const t = useT();
   const s = t.roles.confirm;
-  const { pending, playerById, confirmPending, cancelPending } = editor;
+  const { pending, pendingKind, playerById, confirmPending, cancelPending } = editor;
   const lines = (pending ?? []).map((p) => {
     const player = playerById(p.playerId);
     const name = player
@@ -40,7 +40,13 @@ export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
               {line}
             </Text>
           ))}
-          <Text style={styles.message}>{lines.length > 1 ? s.questionMany : s.questionOne}</Text>
+          <Text style={styles.message}>
+            {pendingKind === 'formation'
+              ? s.questionFormation
+              : lines.length > 1
+                ? s.questionMany
+                : s.questionOne}
+          </Text>
           <View style={styles.actions}>
             <Button
               label={s.cancel}
@@ -51,7 +57,9 @@ export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
             />
             <Button
               label={s.confirm}
-              accessibilityLabel={s.confirmLabel}
+              accessibilityLabel={
+                pendingKind === 'formation' ? s.confirmFormationLabel : s.confirmLabel
+              }
               onPress={confirmPending}
               testID="placement-confirm-button"
             />

@@ -49,7 +49,7 @@ export function LineupCourt({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t.lineup.emptySlotLabel(position, t.positions[role])}
+        accessibilityLabel={t.lineup.emptySlotLabel(position, role, t.positions[role])}
         accessibilityHint={selectedId ? t.lineup.slotHintSelected : undefined}
         disabled={editor.locked}
         accessibilityState={{ disabled: editor.locked }}
