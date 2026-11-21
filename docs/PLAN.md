@@ -222,11 +222,11 @@ Derived live state is computed by a pure function (`src/domain/liveSet.ts`): `re
 
 ## 13. v2 acceptance checklist
 
-- [ ] Choosing whom the libero replaces shows the libero in the right back-row spots in all 6 rotations, never at the serving position 1 (verified by tests).
-- [ ] 5-1 and 6-2 templates fill a valid lineup from a 12-player roster, and leave slots empty (with a message) when positions are missing.
-- [ ] Live mode: scoring a full set with side-outs produces the correct score, rotation and server after every rally (verified by tests); undo works.
-- [ ] Substitutions: 6 per set max, counter correct, the re-entry rule warning appears; libero swaps don't count.
-- [ ] Print view shows every set + libero + serve info; prints on web and produces a PDF on the phone.
-- [ ] The whole app can be switched to German and back; the choice survives a restart.
-- [ ] v1 data on a device and v1 export files open in v2 without loss.
-- [ ] Lint, typecheck and tests pass in CI; `src/domain` 100% coverage.
+- [x] Choosing whom the libero replaces shows the libero in the right back-row spots in all 6 rotations, never at the serving position 1 (verified by tests).
+- [x] 5-1 and 6-2 templates fill a valid lineup from a 12-player roster, and leave slots empty (with a message) when positions are missing.
+- [x] Live mode: scoring a full set with side-outs produces the correct score, rotation and server after every rally (verified by tests); undo works.
+- [x] Substitutions: 6 per set max, counter correct, the re-entry rule warning appears; libero swaps don't count.
+- [x] Print view shows every set + libero + serve info; prints on web and produces a PDF on the phone. — _web verified (browser print + A4 PDF); the phone PDF (`expo-print`) is unit-tested only and needs a manual check on a device._
+- [x] The whole app can be switched to German and back; the choice survives a restart.
+- [x] v1 data on a device and v1 export files open in v2 without loss.
+- [x] Lint, typecheck and tests pass in CI; `src/domain` 100% coverage.
