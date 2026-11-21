@@ -43,7 +43,7 @@ describe('starters overview', () => {
     expect(card3.props.accessibilityLabel).toMatch(/position 1 empty/);
 
     // Set 3: empty.
-    expect(within(card3).getByLabelText('Position 1, Back row: empty')).toBeTruthy();
+    expect(within(card3).getByLabelText('Position 1, Back row: empty (Setter)')).toBeTruthy();
   });
 
   it('tapping a set opens its rotation viewer', async () => {

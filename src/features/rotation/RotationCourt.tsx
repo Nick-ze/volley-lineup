@@ -4,7 +4,7 @@ import { Court, type CourtSlotInfo } from '@/components';
 import type { LiberoSwap } from '@/domain/liberoSwap';
 import { isOffPosition } from '@/domain/roles';
 import { serverPosition, type Slots } from '@/domain/rotation';
-import type { Player, PlayerRoles } from '@/domain/types';
+import type { CourtPosition, Player, Position } from '@/domain/types';
 import { colors, spacing } from '@/theme';
 
 import { CourtSpot } from './CourtSpot';
@@ -13,8 +13,11 @@ import { COMPACT_COURT_MAX_WIDTH, COMPACT_SLOT_MIN_HEIGHT } from './layout';
 export interface RotationCourtProps {
   slots: Slots;
   playersById: Map<string, Player>;
-  /** Role of every player on court (player id → role, e.g. from `startingRoles`); none = no tags. */
-  roles?: Readonly<PlayerRoles>;
+  /**
+   * Role of every spot (v6: from the formation, e.g. `spotRoles` / `stepSpotRoles`), shown also
+   * on empty spots; none = no tags.
+   */
+  spotRoles?: Readonly<Record<CourtPosition, Position>>;
   /** Highlight the server at position 1 (default true). */
   highlightServer?: boolean;
   compact?: boolean;
@@ -23,13 +26,11 @@ export interface RotationCourtProps {
   testID?: string;
 }
 
-const NO_ROLES: Readonly<PlayerRoles> = {};
-
 /** The shared Court (role tags on top of each spot) with the front row tinted blue, the back row dark and the server in yellow. */
 export function RotationCourt({
   slots,
   playersById,
-  roles = NO_ROLES,
+  spotRoles,
   highlightServer = true,
   compact = false,
   liberoSwap = null,
@@ -49,7 +50,7 @@ export function RotationCourt({
       renderSlot={({ position, isFrontRow }) => {
         const playerId = slots[position];
         const player = playerId ? playersById.get(playerId) : undefined;
-        const role = playerId ? (roles[playerId] ?? null) : null;
+        const role = spotRoles?.[position] ?? null;
         return (
           <CourtSpot
             position={position}

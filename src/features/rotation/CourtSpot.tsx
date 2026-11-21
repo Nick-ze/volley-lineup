@@ -17,7 +17,7 @@ export interface CourtSpotProps {
   compact?: boolean;
   /** Set when the libero stands here: the starter they replace (undefined if unknown). */
   liberoFor?: { replaced: Player | undefined };
-  /** The role the player here plays (v4), or null when unknown. The libero is always "L". */
+  /** The role of this spot (v6: from the formation, also when empty), or null. The libero is always "L". */
   role?: Position | null;
   /** The role is none of the player's positions ("*"). */
   offPosition?: boolean;
@@ -39,7 +39,7 @@ export function CourtSpot({
   const row = isFrontRow ? t.rotation.frontRow : t.rotation.backRow;
   const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
   const testID = `spot-${position}`;
-  const shownRole = liberoFor ? 'L' : player ? role : null;
+  const shownRole = liberoFor ? 'L' : role;
 
   let content;
   if (player) {
@@ -81,7 +81,7 @@ export function CourtSpot({
         accessibilityLabel={
           playerId
             ? t.rotation.spotLabel(position, row, t.rotation.unknownPlayer, isServer)
-            : t.rotation.emptySpotLabel(position, row)
+            : t.rotation.emptySpotLabel(position, row, role ? t.positions[role] : null)
         }
         style={[styles.empty, { width: size, height: size, borderRadius: size / 2 }]}
         testID={testID}

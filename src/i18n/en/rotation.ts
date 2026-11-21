@@ -31,7 +31,9 @@ export const rotation = {
   unknownGlyph: '?',
   spotLabel: (position: number, row: string, player: string, isServer: boolean) =>
     `Position ${position}, ${row}: ${player}${isServer ? ', server' : ''}`,
-  emptySpotLabel: (position: number, row: string) => `Position ${position}, ${row}: empty`,
+  /** v6: an empty spot still has its role from the formation (`role` is the role's name). */
+  emptySpotLabel: (position: number, row: string, role: string | null = null) =>
+    `Position ${position}, ${row}: empty${role ? ` (${role})` : ''}`,
   unknownPlayer: 'Unknown player',
   /** Screen-reader summary of a starters card: what the card shows + what tapping does. */
   cardLabel: (set: number, starters: string, libero: string, serve: string) =>

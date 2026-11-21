@@ -2,14 +2,13 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { activeLiberoReplaces, findLiberoSwap } from '@/domain/liberoSwap';
-import { setterRotation, startingRoles } from '@/domain/roles';
+import { formationLabels, stepSpotRoles } from '@/domain/formationSteps';
 import {
   getRotation,
   nextRotation,
   previousRotation,
   type RotationNumber,
 } from '@/domain/rotation';
-import { rotationLabels } from '@/domain/rotationNames';
 import type { Player, SetLineup } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
@@ -28,7 +27,7 @@ export interface RotationPanelProps {
 }
 
 /**
- * Court + stepper for one set. Rotations are named after the setter's position (v4); remount
+ * Court + stepper for one set. Rotations are named after the setter spot (v6); remount
  * (key by set number) to start again at the starting six.
  */
 export function RotationPanel({ set, playersById }: RotationPanelProps) {
@@ -36,8 +35,10 @@ export function RotationPanel({ set, playersById }: RotationPanelProps) {
   const isWide = useIsWide();
   const [step, setStep] = useState<RotationNumber>(1);
   const [showSwaps, setShowSwaps] = useState(true);
-  const roles = useMemo(() => startingRoles(set, [...playersById.values()]), [set, playersById]);
-  const labels = useMemo(() => rotationLabels(set.slots, roles), [set.slots, roles]);
+  // v6: the formation turns with the players, so every spot (also an empty one) has a role and
+  // the rotations are named after the setter spot.
+  const roles = useMemo(() => stepSpotRoles(set.formation, step), [set.formation, step]);
+  const labels = useMemo(() => formationLabels(set.formation), [set.formation]);
   const base = useMemo(() => getRotation(set.slots, step), [set.slots, step]);
   // The rotation viewer treats position 1 as serving, so the libero never stands there.
   const swap = showSwaps ? findLiberoSwap(base, set.liberoId, activeLiberoReplaces(set)) : null;
@@ -52,7 +53,6 @@ export function RotationPanel({ set, playersById }: RotationPanelProps) {
       <RotationStepper
         step={step}
         labels={labels}
-        bySetter={setterRotation(set.slots, roles) !== null}
         onNext={next}
         onPrevious={previous}
         onSelect={setStep}
@@ -65,7 +65,7 @@ export function RotationPanel({ set, playersById }: RotationPanelProps) {
               <RotationCourt
                 slots={slots}
                 playersById={playersById}
-                roles={roles}
+                spotRoles={roles}
                 liberoSwap={swap}
                 testID="rotation-court"
               />
