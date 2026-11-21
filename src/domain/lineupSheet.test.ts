@@ -1,12 +1,14 @@
 import { emptySetLineup } from './lineup';
 import {
   buildLineupSheetHtml,
+  durationParts,
   escapeHtml,
+  hasResults,
   playerName,
   SHEET_ROWS,
   type LineupSheetLabels,
 } from './lineupSheet';
-import type { Match, Player, SetLineup, Team } from './types';
+import type { Match, PointEvent, Player, SetLineup, Side, Team } from './types';
 
 const labels: LineupSheetLabels = {
   documentTitle: 'Lineup · Tigers vs Eagles',
@@ -36,6 +38,16 @@ const labels: LineupSheetLabels = {
   status: 'Status',
   inactive: 'Injured',
   noPlayers: 'No players yet.',
+  results: {
+    heading: 'Result',
+    won: 'Won',
+    lost: 'Lost',
+    inProgress: 'In progress',
+    setsWon: 'Sets won:',
+    setScore: (n, us, them, open) => `Set ${n} ${us}:${them}${open ? ' (in progress)' : ''}`,
+    duration: 'Duration:',
+    durationValue: (h, m) => (h > 0 ? `${h} h ${m} min` : `${m} min`),
+  },
 };
 
 const team: Team = { id: 't1', profileId: 'p1', name: 'Tigers', season: '2026', createdAt: '' };
@@ -263,5 +275,155 @@ describe('buildLineupSheetHtml', () => {
     expect(out).toContain('&lt;script&gt;alert(&#39;t&#39;)&lt;/script&gt;');
     expect(out).toContain('&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &lt;/td&gt;');
     expect(out).toContain('&quot;s&quot;');
+  });
+});
+
+/** Rallies of a set: the loser's points first, then the winner's (so the winner scores last). */
+function rallies(us: number, them: number, stamps: { first?: string; last?: string } = {}) {
+  const side = (winner: Side, n: number) =>
+    Array.from({ length: n }, (): PointEvent => ({ type: 'point', winner }));
+  const events =
+    us >= them
+      ? [...side('them', them), ...side('us', us)]
+      : [...side('us', us), ...side('them', them)];
+  if (stamps.first) events[0] = { ...events[0], at: stamps.first };
+  if (stamps.last) events[events.length - 1] = { ...events[events.length - 1], at: stamps.last };
+  return events;
+}
+
+const played = (setNumber: SetLineup['setNumber'], us: number, them: number, stamps = {}) => ({
+  ...full(setNumber, true),
+  events: rallies(us, them, stamps),
+});
+
+const resultsOf = (html: string) => {
+  const start = html.indexOf('<section class="results"');
+  return start < 0 ? '' : html.slice(start, html.indexOf('</section>', start));
+};
+
+describe('results section (v3)', () => {
+  const won31: Match = {
+    ...match,
+    sets: [
+      played(1, 25, 21, { first: '2026-11-21T18:00:00.000Z' }),
+      played(2, 22, 25),
+      played(3, 25, 18),
+      played(4, 26, 24, { last: '2026-11-21T19:32:10.000Z' }),
+    ],
+  };
+
+  it('prints the final result, sets won, every set score and the duration of a 3:1 win', () => {
+    const out = buildLineupSheetHtml({ match: won31, team, players, labels, withResults: true });
+    const results = resultsOf(out);
+    expect(results).toContain('data-status="won"');
+    expect(results).toContain('<h2>Result</h2>');
+    expect(results).toContain('<div class="final">Won</div>');
+    expect(results).toContain('<span class="label">Sets won:</span> 3:1');
+    expect(results).toContain(
+      '<ul class="set-scores"><li data-set-result="1">Set 1 25:21</li>' +
+        '<li data-set-result="2">Set 2 22:25</li><li data-set-result="3">Set 3 25:18</li>' +
+        '<li data-set-result="4">Set 4 26:24</li></ul>',
+    );
+    expect(results).toContain('<span class="label">Duration:</span> 1 h 32 min');
+    // The results come before the lineups; the lineups are still all there.
+    expect(out.indexOf('class="results"')).toBeLessThan(out.indexOf('class="sets"'));
+    for (const n of [1, 2, 3, 4]) expect(out).toContain(`data-set="${n}"`);
+  });
+
+  it('hides a duration under one minute and shows one of exactly a minute', () => {
+    const quick = (last: string): Match => ({
+      ...match,
+      sets: [played(1, 3, 1, { first: '2026-11-21T18:00:00.000Z', last })],
+    });
+    const html = (m: Match) =>
+      resultsOf(buildLineupSheetHtml({ match: m, team, players, labels, withResults: true }));
+    expect(html(quick('2026-11-21T18:00:59.999Z'))).not.toContain('Duration');
+    expect(html(quick('2026-11-21T18:00:59.999Z'))).not.toContain('0 min');
+    expect(html(quick('2026-11-21T18:01:00.000Z'))).toContain(
+      '<span class="label">Duration:</span> 1 min',
+    );
+  });
+
+  it('prints a lost match as lost', () => {
+    const lost: Match = {
+      ...match,
+      sets: [played(1, 10, 25), played(2, 20, 25), played(3, 23, 25)],
+    };
+    const results = resultsOf(
+      buildLineupSheetHtml({ match: lost, team, players, labels, withResults: true }),
+    );
+    expect(results).toContain('<div class="final">Lost</div>');
+    expect(results).toContain('Sets won:</span> 0:3');
+  });
+
+  it('marks a match in progress and the open set, without a duration when there are no stamps', () => {
+    const open: Match = {
+      ...match,
+      sets: [played(1, 25, 20), played(2, 12, 8), full(3, true)],
+    };
+    const results = resultsOf(
+      buildLineupSheetHtml({ match: open, team, players, labels, withResults: true }),
+    );
+    expect(results).toContain('data-status="inProgress"');
+    expect(results).toContain('<div class="final">In progress</div>');
+    expect(results).toContain('Sets won:</span> 1:0');
+    expect(results).toContain(
+      '<li data-set-result="1">Set 1 25:20</li><li data-set-result="2">Set 2 12:8 (in progress)</li></ul>',
+    );
+    expect(results).not.toContain('data-set-result="3"');
+    expect(results).not.toContain('Duration');
+  });
+
+  it('leaves an unplayed match exactly as before, and a played one without the option too', () => {
+    const plain = buildLineupSheetHtml({ match, team, players, labels });
+    expect(buildLineupSheetHtml({ match, team, players, labels, withResults: true })).toBe(plain);
+    expect(plain).not.toContain('class="results"');
+    const playedPlain = buildLineupSheetHtml({ match: won31, team, players, labels });
+    expect(playedPlain).not.toContain('class="results"');
+    expect(playedPlain).not.toContain('Sets won');
+  });
+
+  it('escapes the result labels', () => {
+    const out = buildLineupSheetHtml({
+      match: won31,
+      team,
+      players,
+      labels: {
+        ...labels,
+        results: {
+          ...labels.results,
+          heading: '<script>h()</script>',
+          won: '<b>won</b>',
+          setScore: (n) => `<i>${n}</i>`,
+          durationValue: () => '"<x>"',
+        },
+      },
+      withResults: true,
+    });
+    expect(out).not.toContain('<script');
+    expect(out).not.toContain('<b>');
+    expect(out).not.toContain('<i>');
+    expect(out).toContain('&lt;script&gt;h()&lt;/script&gt;');
+    expect(out).toContain('&lt;i&gt;1&lt;/i&gt;');
+    expect(out).toContain('&quot;&lt;x&gt;&quot;');
+  });
+});
+
+describe('hasResults', () => {
+  it('is false until a rally has been played', () => {
+    expect(hasResults(match)).toBe(false);
+    expect(hasResults({ sets: [] })).toBe(false);
+    expect(hasResults({ sets: [played(1, 1, 0)] })).toBe(true);
+  });
+});
+
+describe('durationParts', () => {
+  it('rounds to whole minutes and splits off the hours', () => {
+    expect(durationParts(0)).toEqual({ hours: 0, minutes: 0 });
+    expect(durationParts(29_999)).toEqual({ hours: 0, minutes: 0 });
+    expect(durationParts(30_000)).toEqual({ hours: 0, minutes: 1 });
+    expect(durationParts(59 * 60_000)).toEqual({ hours: 0, minutes: 59 });
+    expect(durationParts(92 * 60_000 + 10_000)).toEqual({ hours: 1, minutes: 32 });
+    expect(durationParts(120 * 60_000)).toEqual({ hours: 2, minutes: 0 });
   });
 });
