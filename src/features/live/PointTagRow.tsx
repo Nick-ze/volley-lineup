@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
-import type { LastRally } from '@/domain/lastRally';
-import { kindTakesPlayer, pointKindsFor } from '@/domain/pointTags';
+import { plausibleKinds, type LastRally } from '@/domain/lastRally';
+import { kindTakesPlayer } from '@/domain/pointTags';
 import type { Player, PointKind } from '@/domain/types';
 import { useT } from '@/i18n';
 import { spacing } from '@/theme';
@@ -57,7 +57,7 @@ export function PointTagRow({ rally, playersById, onTag, onClose }: PointTagRowP
       accessibilityLabel={t.tags.rowLabel(event.winner === 'us')}
       testID="point-tag-row"
     >
-      {pointKindsFor(event.winner).map((kind) => {
+      {plausibleKinds(rally).map((kind) => {
         const name = t.tags.kindNames[kind];
         return (
           <TagChip

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { borderWidth, colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface TagChipProps {
   label: string;
@@ -32,8 +32,9 @@ export function TagChip({
       testID={testID}
       style={({ pressed }) => [
         styles.chip,
-        highlighted && styles.highlighted,
         selected && styles.selected,
+        // After `selected`: the suggestion outline stays visible on a chosen chip.
+        highlighted && styles.highlighted,
         pressed && styles.pressed,
       ]}
     >
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  highlighted: { borderColor: colors.highlight, borderWidth: 2 },
+  highlighted: { borderColor: colors.highlight, borderWidth: borderWidth.thick },
   selected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pressed: { opacity: 0.8 },
   label: { ...typography.body, fontWeight: '600', color: colors.text },

@@ -1,4 +1,4 @@
-import { lastRally } from './lastRally';
+import { lastRally, plausibleKinds } from './lastRally';
 import type { Player, SetLineup } from './types';
 
 const player = (n: number): Player => ({
@@ -38,6 +38,7 @@ describe('lastRally', () => {
     const s = set({ events: [{ type: 'point', winner: 'us', kind: 'ace', playerId: 'p1' }] });
     expect(lastRally(s, players)).toEqual({
       event: { type: 'point', winner: 'us', kind: 'ace', playerId: 'p1' },
+      servingSide: 'us',
       playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'],
       serverId: 'p1',
     });
@@ -57,6 +58,7 @@ describe('lastRally', () => {
     });
     expect(lastRally(s, players)).toEqual({
       event: { type: 'point', winner: 'us' },
+      servingSide: 'them',
       playerIds: ['p7', 'p2', 'p3', 'p4', 'p5', 'p6'],
       serverId: null,
     });
@@ -68,5 +70,26 @@ describe('lastRally', () => {
       events: [{ type: 'point', winner: 'us' }],
     });
     expect(lastRally(s, players)?.playerIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5']);
+  });
+});
+
+describe('plausibleKinds', () => {
+  const rally = (winner: 'us' | 'them', servingSide: 'us' | 'them') => ({
+    event: { type: 'point' as const, winner },
+    servingSide,
+  });
+
+  it('offers our ace only on our serve', () => {
+    expect(plausibleKinds(rally('us', 'us'))).toEqual(['kill', 'ace', 'block', 'opponentError']);
+    expect(plausibleKinds(rally('us', 'them'))).toEqual(['kill', 'block', 'opponentError']);
+  });
+
+  it('offers their ace only on their serve', () => {
+    expect(plausibleKinds(rally('them', 'them'))).toEqual([
+      'ourError',
+      'opponentKill',
+      'opponentAce',
+    ]);
+    expect(plausibleKinds(rally('them', 'us'))).toEqual(['ourError', 'opponentKill']);
   });
 });

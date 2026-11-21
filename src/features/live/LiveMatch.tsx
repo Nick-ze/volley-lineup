@@ -12,6 +12,7 @@ import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
 import { useT } from '@/i18n';
 
+import { tagDetail } from './format';
 import { LiveSetView } from './LiveSetView';
 import { MatchSummary } from './MatchSummary';
 import { NextSetSetup } from './NextSetSetup';
@@ -73,13 +74,19 @@ export function LiveMatch({
   );
 
   if (decidingSetNumber(matchState) === setNumber) {
+    // The match-winning rally can still be tagged: the tag row stays under the summary.
+    const last = set?.events[set.events.length - 1];
     return screen(
-      <MatchSummary
-        state={matchState}
-        opponent={match.opponent}
-        onBack={onBackToMatch}
-        onUndo={undo}
-      />,
+      <>
+        <MatchSummary
+          state={matchState}
+          opponent={match.opponent}
+          onBack={onBackToMatch}
+          onUndo={undo}
+          tagDetail={last?.type === 'point' ? tagDetail(t, live.playersById, last) : null}
+        />
+        {tagRow}
+      </>,
     );
   }
   if (isAfterDecision(matchState, setNumber))

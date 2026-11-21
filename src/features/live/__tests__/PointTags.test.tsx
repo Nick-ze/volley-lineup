@@ -25,8 +25,12 @@ const players: Player[] = [
   player(8, 'Sub', ['OH']),
 ];
 
-const set1 = (events: SetEvent[] = [], weServeFirst = false): SetLineup => ({
-  setNumber: 1,
+const set1 = (
+  events: SetEvent[] = [],
+  weServeFirst = false,
+  setNumber: SetLineup['setNumber'] = 1,
+): SetLineup => ({
+  setNumber,
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
   liberoId: 'p7',
   weServeFirst,
@@ -34,14 +38,14 @@ const set1 = (events: SetEvent[] = [], weServeFirst = false): SetLineup => ({
   events,
 });
 
-function seed(set: SetLineup = set1()) {
+function seed(...sets: SetLineup[]) {
   const match: Match = {
     id: 'm1',
     teamId: 'team1',
     opponent: 'Rivals',
     date: '2026-11-20',
     home: true,
-    sets: [set],
+    sets: sets.length ? sets : [set1()],
   };
   useAppStore.getState().resetAll();
   useAppStore.setState({
@@ -54,15 +58,16 @@ function seed(set: SetLineup = set1()) {
   });
 }
 
-const events = () => useAppStore.getState().matches[0]?.sets[0]?.events ?? [];
+const events = (index = 0) => useAppStore.getState().matches[0]?.sets[index]?.events ?? [];
 /** The last stored event without its timestamp. */
-const lastTag = () => {
-  const { at: _at, ...rest } = events()[events().length - 1] as SetEvent & { at?: string };
+const lastTag = (index = 0) => {
+  const list = events(index);
+  const { at: _at, ...rest } = list[list.length - 1] as SetEvent & { at?: string };
   return rest;
 };
 const press = (testID: string) => fireEvent.press(screen.getByTestId(testID));
 const row = () => screen.queryByTestId('point-tag-row');
-const open = () => renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+const open = (set = 1) => renderRouter('./app', { initialUrl: `/match/m1/live?set=${set}` });
 
 describe('point tagging in live mode', () => {
   beforeEach(() => seed());
@@ -163,6 +168,31 @@ describe('point tagging in live mode', () => {
     await press('tag-block');
     expect(lastTag()).toEqual({ type: 'point', winner: 'us' });
     expect(screen.getByTestId('tag-kill')).toBeTruthy();
+  });
+
+  it('offers an ace only to the side that served the rally', async () => {
+    await open();
+    await press('point-us'); // they served: no ace for us
+    expect(screen.getByTestId('tag-kill')).toBeTruthy();
+    expect(screen.queryByTestId('tag-ace')).toBeNull();
+    await press('point-them'); // we served: no ace for them
+    expect(screen.getByTestId('tag-opponentKill')).toBeTruthy();
+    expect(screen.queryByTestId('tag-opponentAce')).toBeNull();
+  });
+
+  it('tags the match-winning rally under the match summary', async () => {
+    const us = (n: number): SetEvent[] =>
+      Array.from({ length: n }, () => ({ type: 'point', winner: 'us' }));
+    seed(set1(us(25), true, 1), set1(us(25), true, 2), set1(us(24), true, 3));
+    await open(3);
+    await press('point-us');
+    expect(screen.getByTestId('match-summary')).toBeTruthy();
+    await press('tag-kill');
+    await press('tag-player-p5');
+    expect(lastTag(2)).toEqual({ type: 'point', winner: 'us', kind: 'kill', playerId: 'p5' });
+    expect(
+      screen.getByRole('button', { name: 'Undo last point for us · kill #5 Wing' }),
+    ).toBeTruthy();
   });
 
   it('suggests our server for an ace', async () => {
