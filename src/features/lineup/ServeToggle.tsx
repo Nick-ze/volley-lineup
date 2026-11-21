@@ -21,6 +21,8 @@ export function ServeToggle({
         accessibilityRole="radio"
         accessibilityLabel={label}
         accessibilityState={{ checked: active, disabled }}
+        // react-native-web ignores accessibilityState: expose the state with aria-* too.
+        aria-checked={active}
         aria-disabled={disabled}
         disabled={disabled}
         onPress={() => onChange(value)}

@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
+import { matchResultLabel } from '@/features/live/matchResult';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForTeam } from '@/store';
 
@@ -35,9 +36,18 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
           <ListRow
             key={m.id}
             title={s.vs(m.opponent)}
-            subtitle={`${m.date} · ${m.home ? s.home : s.away}`}
+            subtitle={
+              <MatchSubtitle
+                text={`${m.date} · ${m.home ? s.home : s.away}`}
+                result={matchResultLabel(t, m)}
+              />
+            }
             onPress={() => onOpenMatch(m.id)}
-            accessibilityLabel={s.open(m.opponent, m.date)}
+            accessibilityLabel={rowLabel(
+              s.open(m.opponent, m.date),
+              matchResultLabel(t, m),
+              t.match.resultLabel,
+            )}
             actions={
               <Button
                 label={t.common.delete}
@@ -53,6 +63,31 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
         ))}
       </View>
       <ConfirmDialog {...dialogProps} />
+    </>
+  );
+}
+
+/** The row's screen-reader label: "Open match against …" plus the result, if any. */
+function rowLabel(
+  open: string,
+  result: string | null,
+  resultLabel: (text: string) => string,
+): string {
+  return result ? `${open}. ${resultLabel(result)}` : open;
+}
+
+/** Date · home/away on one line; the result (never truncated) on its own line below. */
+function MatchSubtitle({ text, result }: { text: string; result: string | null }) {
+  return (
+    <>
+      <Text style={styles.subtitle} numberOfLines={1}>
+        {text}
+      </Text>
+      {result ? (
+        <Text style={styles.subtitle} testID="match-row-result">
+          {result}
+        </Text>
+      ) : null}
     </>
   );
 }

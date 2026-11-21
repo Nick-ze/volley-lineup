@@ -17,6 +17,8 @@ export interface LiveCourtProps {
   /** The court player picked to go out (orange ring). */
   selectedId: string | null;
   onPressPlayer: (playerId: string) => void;
+  /** No substitutions possible (e.g. the set is won): chips are shown, not tappable. */
+  readOnly?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export function LiveCourt({
   serverId,
   selectedId,
   onPressPlayer,
+  readOnly = false,
 }: LiveCourtProps) {
   const t = useT();
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => (isFrontRow ? styles.front : styles.back);
@@ -80,9 +83,9 @@ export function LiveCourt({
                 size={LIVE_CHIP_SIZE}
                 highlighted={isServer}
                 selected={selectedId === realId}
-                onPress={() => onPressPlayer(realId)}
+                onPress={readOnly ? undefined : () => onPressPlayer(realId)}
                 accessibilityLabel={t.live.courtPlayerLabel(desc, position, isServer)}
-                accessibilityHint={t.live.courtPlayerHint}
+                accessibilityHint={readOnly ? undefined : t.live.courtPlayerHint}
                 testID={`live-court-${position}`}
               />
             ) : (

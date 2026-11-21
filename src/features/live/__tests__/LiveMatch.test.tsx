@@ -86,10 +86,12 @@ describe('live match mode', () => {
     await press('point-them'); // serve goes to them
     expect(score()).toBe('2:1');
     expect(screen.getByText('Rivals serves')).toBeTruthy();
+    // v3: every rally is stamped with the time it was recorded (match duration).
+    const at = expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/);
     expect(storedEvents()).toEqual([
-      { type: 'point', winner: 'us' },
-      { type: 'point', winner: 'us' },
-      { type: 'point', winner: 'them' },
+      { type: 'point', winner: 'us', at },
+      { type: 'point', winner: 'us', at },
+      { type: 'point', winner: 'them', at },
     ]);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Undo last point for them' }));
@@ -216,18 +218,21 @@ describe('live match mode', () => {
     await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
     expect(await screen.findByText('Set point for us!')).toBeTruthy();
     await press('point-us');
-    expect(screen.getByText('We won the set. End it whenever you like.')).toBeTruthy();
+    // v3: a won set replaces the rally buttons with the set-won panel.
+    expect(screen.getByTestId('set-won-title')).toHaveTextContent('Set won by us');
+    expect(screen.queryByTestId('point-us')).toBeNull();
   });
 
   it('is opened from the match screen and needs a complete lineup', async () => {
     seed([set1, { ...set1, setNumber: 2, slots: { ...set1.slots, 6: null } }]);
     await renderRouter('./app', { initialUrl: '/match/m1?set=2' });
+    // v3: the Live button opens the current set (set 1 here), not the tab being viewed.
     await fireEvent.press(await screen.findByTestId('open-live'));
+    expect(await screen.findByText('Rivals serves')).toBeTruthy();
+    await press('set-tab-2');
     expect(
       await screen.findByText('Put six players on court before starting live mode.'),
     ).toBeTruthy();
-    await press('set-tab-1');
-    expect(await screen.findByText('Rivals serves')).toBeTruthy();
   });
 
   it('explains when the set or match does not exist', async () => {
