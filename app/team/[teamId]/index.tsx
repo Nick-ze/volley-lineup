@@ -39,7 +39,7 @@ export default function TeamScreen() {
         <RosterTab
           teamId={id}
           onAddPlayer={() => router.push(`/team/${id}/player`)}
-          onEditPlayer={(playerId) => router.push(`/team/${id}/player?playerId=${playerId}`)}
+          onOpenPlayer={(playerId) => router.push(`/team/${id}/players/${playerId}`)}
         />
       ) : null}
       {tab === 'matches' ? (

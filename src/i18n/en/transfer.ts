@@ -13,6 +13,11 @@ export const transfer = {
     dialogTitle: 'Export Volley Lineup data',
     done: (fileName: string) => `Exported ${fileName}.`,
     failed: 'Export failed. Please try again.',
+    includeDescriptions: 'Include descriptions',
+    includeDescriptionsHint:
+      'Off by default: confidential player descriptions stay out of the file. Only available while descriptions are unlocked.',
+    checkMark: '✓',
+    includeDescriptionsLocked: 'Unlock the descriptions to include them.',
   },
   import: {
     title: 'Import',
@@ -33,6 +38,8 @@ export const transfer = {
         plural(s.presets, 'saved lineup', 'saved lineups'),
         plural(s.profiles, 'profile', 'profiles'),
       ].join(', '),
+    descriptions: (n: number) =>
+      n === 1 ? 'Includes 1 player description.' : `Includes ${n} player descriptions.`,
     mergeHint:
       'Merge adds the file to your data; items that already exist are updated. Team starters in the file replace yours.',
     replaceHint: 'Replace deletes all current data and keeps only the file’s data.',
