@@ -11,14 +11,19 @@
  * then by secondary positions. Within a pass, lower jersey numbers go first and positions are
  * filled in order 1–6. Only active players are used, never twice, never the set's libero and
  * never a player whose primary position is libero.
+ *
+ * Roles (v4): every filled spot plays the template's role for it (the first accepted position,
+ * e.g. an opposite on a 6-2 hitter spot plays OH); an override is stored only where that differs
+ * from the player's primary position. No confirmation — the court still marks off-position roles.
  */
 import { emptySetLineup } from './lineup';
-import { suggestLiberoReplaces } from './liberoSwap';
+import { primaryPosition, startersWithRoles } from './roles';
 import {
   COURT_POSITIONS,
   type CourtPosition,
   type Player,
   type Position,
+  type RoleOverrides,
   type SetLineup,
   type SetNumber,
 } from './types';
@@ -60,7 +65,8 @@ const PASSES: readonly Pass[] = [
 
 /**
  * Fills the six slots from the roster using a 5-1 or 6-2 layout. Keeps the current libero, serve
- * choice and event log; whom the libero replaces is reset to the suggestion (the new middles).
+ * choice, libero switch and event log; roles follow the template and whom the libero replaces is
+ * reset to the new middles.
  */
 export function fillFromTemplate(
   system: TemplateSystem,
@@ -91,7 +97,15 @@ export function fillFromTemplate(
     position,
     role: layout[position][0],
   }));
-  const filled: SetLineup = { ...base, setNumber, slots };
-  const set: SetLineup = { ...filled, liberoReplaces: suggestLiberoReplaces(filled, players) };
+  const byId = new Map(pool.map((p) => [p.id, p]));
+  const roles: RoleOverrides = {};
+  for (const position of COURT_POSITIONS) {
+    const player = byId.get(slots[position] ?? '');
+    const role = layout[position][0];
+    if (player && primaryPosition(player) !== role) roles[player.id] = role;
+  }
+  const filled: SetLineup = { ...base, setNumber, slots, roles };
+  // The libero replaces the template's middles (#62, by role since v4).
+  const set: SetLineup = { ...filled, liberoReplaces: startersWithRoles(filled, players, ['MB']) };
   return { set, missing: missingSlots.map((m) => m.role), missingSlots };
 }

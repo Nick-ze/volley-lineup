@@ -1,18 +1,26 @@
 import { render, screen } from '@testing-library/react-native';
 
+import { OffPositionMark } from '../OffPositionMark';
 import { RoleTag } from '../RoleTag';
 
-// The tag is hidden from assistive tech (the spot's label says the role), so query hidden elements.
+// Both are hidden from assistive tech (the spot's label says the role), so query hidden elements.
 const hidden = { includeHiddenElements: true };
 
 describe('RoleTag', () => {
-  it('shows the role, and an asterisk only off position', async () => {
+  // Since the review of PR #34 the "*" is drawn by OffPositionMark at the spot's top right,
+  // so RoleTag ignores `offPosition` (kept for compatibility) and only shows the role.
+  it('shows only the role, also off position', async () => {
     await render(<RoleTag role="OPP" testID="tag" />);
-    expect(screen.getByText('OPP', hidden)).toBeTruthy();
-    expect(screen.queryByTestId('tag-off', hidden)).toBeNull();
+    expect(screen.getByTestId('tag', hidden)).toHaveTextContent('OPP');
     await render(<RoleTag role="S" offPosition testID="tag2" />);
-    expect(screen.getByTestId('tag2-off', hidden)).toBeTruthy();
-    await render(<RoleTag role="MB" offPosition />);
-    expect(screen.getByText('MB', hidden)).toBeTruthy();
+    expect(screen.getByTestId('tag2', hidden)).toHaveTextContent('S');
+    expect(screen.queryByTestId('tag2-off', hidden)).toBeNull();
+  });
+});
+
+describe('OffPositionMark', () => {
+  it('draws the asterisk', async () => {
+    await render(<OffPositionMark testID="mark" />);
+    expect(screen.getByTestId('mark', hidden)).toHaveTextContent('*');
   });
 });
