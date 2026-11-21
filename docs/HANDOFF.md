@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-21, after releasing **v5.0.0**.
+Last updated: 2026-11-21, after releasing **v6.0.0**.
 
 ---
 
@@ -20,14 +20,17 @@ Last updated: 2026-11-21, after releasing **v5.0.0**.
 | v3.1.0  | Settings → "Show names instead of numbers" on player chips (store v5)                                                                                                                                                                      | `v3.1.0` |
 | v4.0.0  | Roles on court (tag + picker with confirmation, "*" for unlisted roles), rotate before the set, rotation named after the setter, libero by role + on/off, data model v5                                                                    | `v4.0.0` |
 | v5.0.0  | Formations: roles belong to the court spots (5-1 / 6-2, setter → outside / middle), roles on empty spots, confirmation for off-position placements and formation changes, volleyball rules doc, plausible point-tag players, data model v6 | `v5.0.0` |
+| v6.0.0  | Players & performance: profile / player photos, player detail screen with season + per-match stats, confidential descriptions (biometric / PIN unlock), performance view per set / match, error types on "our error", data model v7        | `v6.0.0` |
 
-- `main` is green (CI), **765 tests**, `src/domain` at 100% coverage.
-- Current versions: app **5.0.0** (`app.json` + `package.json`, must match), store **7**, export `schemaVersion` **6** (the store-only `chipLabel` setting isn't exported).
-- Last decision number in `docs/DECISIONS.md`: **#146**. Continue at #147.
+- `main` is green (CI), **907 tests**, `src/domain` at 100% coverage.
+- Current versions: app **6.0.0** (`app.json` + `package.json`, must match), store **8**, export `schemaVersion` **7** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
+- Last decision number in `docs/DECISIONS.md`: **#166**. Continue at #167.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
 
+- **v6 not verified on a real phone**: the camera and photo-library permission prompts (`expo-image-picker`), biometric / device-PIN unlock (`expo-local-authentication`, incl. whether iOS Face ID's `inactive` event interferes — DECISIONS #158), auto-lock when the app goes to the background, the store v7 → v8 upgrade in Android AsyncStorage. All checked in a browser (Playwright) and by unit tests with mocks only.
+- v6 known gaps (from QA, not fixed): no message in the form when a photo can't be stored (storage full; the reference is rolled back, #165); a Replace import of a file exported without descriptions removes existing descriptions (by design, #150 — maybe warn in the preview); the player detail match line shows no score while set 1 is still running; older (pre-v6) accessibility labels that don't start with the visible text — roster rows, Active / Injured toggles, Point us / them, tag kind and player chips, match links (Rotation / Live / Stats), DE Profile tab "Profil bearbeiten".
 - Never verified on a real phone: v2.x / v3.0 APKs (incl. the store v3 → v4 upgrade in Android AsyncStorage, the live screen with tag row on a device, safe areas), native touch drag & drop, the phone PDF (`expo-print`). v3 was checked in a browser only (Playwright, 390×844 / 375 / 1280, EN + DE).
 - GitHub Pages (web version) is not enabled — the repo is private; the owner must enable Pages (Settings → Pages → Source: GitHub Actions) or make the repo public. The deploy workflow skips with a warning until then.
 - The Android emulator smoke test (`android-smoke.yml`) is manual-only and flaky on hosted runners.
@@ -41,6 +44,7 @@ Last updated: 2026-11-21, after releasing **v5.0.0**.
 - v5 notes: migrated v4 lineups keep the setter spot; other old per-player roles that don't fit the pattern show "*" until the coach moves players. Not modelled (see VOLLEYBALL_RULES §6): overlap faults, 4-2 / 6-6 systems, second libero, libero-in-one-set-player-in-another, time-outs, changing ends, best-of-3 formats.
 - Stats ideas not built: per-rotation totals row, charts/trends over the season, CSV export of stats, opponent-side stats.
 - Tagging: more kinds (e.g. dig / serve error), tags for points before v3 can't be added afterwards (only the last rally is taggable).
+- v6 follow-ups: a 2-column performance grid on wide screens; photos on the print sheet or court chips (deliberately left out, #163); a "dig / defence" error type (owner chose 7 types, it's "Other" now); per-error-type columns in the Stats tab; a storage-full message for photos.
 - Cloud sync / real accounts (explicitly out of scope so far — needs a backend; see DECISIONS #55).
 - Whatever the owner asks for next — ask them if the request is ambiguous (e.g. "presets" was interpreted in DECISIONS #80–85).
 
@@ -51,7 +55,7 @@ Last updated: 2026-11-21, after releasing **v5.0.0**.
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
 3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6).
-4. `docs/DECISIONS.md` — every choice made so far (#1–146). Skim headings; read the ones touching your task.
+4. `docs/DECISIONS.md` — every choice made so far (#1–166). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Written for v3; for v4/v5 the data model notes are outdated (read HANDOFF §3 and PLAN §19–24 instead).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
 7. `README.md` — user-facing features, install, release steps.
@@ -61,12 +65,15 @@ Last updated: 2026-11-21, after releasing **v5.0.0**.
 ## 3. Architecture in one screen
 
 - Expo SDK 58, React Native 0.88, React 19.3, TypeScript 6 strict, Expo Router, Zustand v5 + AsyncStorage, zod, RNGH v3 + Reanimated 4, Jest (jest-expo) + RNTL v14.
-- **Routes** (`app/`): `/` profile picker · `(tabs)` group with `/teams`, `/profile`, `/settings` (bottom app tab bar) · `/team/[teamId]?tab=roster|matches|presets|starters|stats` (team nav bar, a component in `src/features/team/`) · `/team/[teamId]/player` (modal) · `/team/[teamId]/match-new` (modal) · `/team/[teamId]/preset/[presetId]` · `/team/[teamId]/starters` · `/match/[matchId]?set=N` (lineup builder) · `/match/[matchId]/rotation|starters|live|stats` (live without `?set` opens the current set / summary) · `+not-found`. Header titles go through `HeaderTitle` (one line, truncates) set in `app/_layout.tsx`.
+- **Routes** (`app/`): `/` profile picker · `(tabs)` group with `/teams`, `/profile`, `/settings` (bottom app tab bar) · `/team/[teamId]?tab=roster|matches|presets|starters|stats` (team nav bar, a component in `src/features/team/`) · `/team/[teamId]/players/[playerId]` (v6 player detail; a roster tap opens it, Edit → the form) · `/team/[teamId]/player` (modal editor) · `/match/[matchId]/performance?set=N|all&player=ID` (v6) · `/team/[teamId]/match-new` (modal) · `/team/[teamId]/preset/[presetId]` · `/team/[teamId]/starters` · `/match/[matchId]?set=N` (lineup builder) · `/match/[matchId]/rotation|starters|live|stats` (live without `?set` opens the current set / summary) · `+not-found`. Header titles go through `HeaderTitle` (one line, truncates) set in `app/_layout.tsx`.
 - **Domain** (`src/domain/`, pure, 100% tested): `types.ts` (single source of types), `rotation`, `lineupValidation`, `lineupEditing`, `lineupLock`, `liberoSwap`, `templates`, `liveSet` (replay of the event log; `replaySteps` gives the state before each event), `matchState` (set/match results, current set, duration — derived, never stored), `matchFlow` (next-set setup, serve default, undo across sets), `stats` (rotation / player / season stats incl. tag totals), `pointTags` (tag kinds and validity, `tagLastPoint`), `lastRally` (who was on court during the last rally, plausible tag kinds), `roles` (role overrides, off-position rule, rotate, setter rotation, libero by role), `liberoRoles`, `rotationNames` (viewer labels by setter), `presets`, `playerUsage`, `roster`, `exportSchema` (zod + upgrades of v1–v3 files), `lineupSheet` (print HTML, optional results section).
 - **Data model v4**: point events `{ type: 'point', winner, kind?, playerId?, at? }` (tags + ISO timestamp); subs unchanged. Nothing about results is stored.
 - **Data model v6** (app 5.0): sets and presets have a `formation` (`{ system: '5-1'|'6-2', order: 'outside'|'middle', setterAt }`, `src/domain/roles.ts`) that fixes every court spot's role (pairs 1–4, 2–5, 3–6 always match; locked in played sets) and `liberoActive`. Players play their spot's role; rotating turns the formation with them; placements / formation changes onto unlisted roles ask first (`placementCheck.ts`, `formationChange.ts`). The live replay tracks roles (substitutes inherit), the setter rotation and whom the libero currently replaces (`RallyStep` / `LiveState`). Every libero swap goes through those (or `activeLiberoReplaces` outside live play). Courts draw roles with `RoleTag` and the "*" with `OffPositionMark` (top right of the spot).
-- **Store** (`src/store/`): one `useAppStore` (profiles, teams, players, matches, presets, currentProfileId, language). Version 7 with migrations v1→…→v7 in `migrations.ts` (v3→v4 changes nothing; v4→v5 adds `chipLabel: 'number'`; v5→v6 adds `roles: {}` + `liberoActive: true` to sets and presets; v6→v7 turns per-player `roles` into a `formation`). Device settings (not exported): `language`, `chipLabel` (`PlayerChip` shows names when `'name'`). List selectors are hooks with `useShallow` (Zustand v5 loops otherwise).
-- **Features** (`src/features/`): roster, team, lineup (builder; `useLineupDraft` is the generic editor), rotation, live (whole match: `LiveMatch` → `LiveSetView` / `NextSetSetup` / `SetWonPanel` / `MatchSummary`, tag row `PointTagRow` + `usePointTagging`, result label `matchResult.ts`), stats (tables with fixed first column), presets, print (choice dialog with/without results), profile, settings.
+- **Data model v7** (app 6.0): `photoId?` on profiles / players, `description?` on players (confidential), `errorType?` on "our error" tags (`ErrorType`: serve · reception · attack · block · set · netFault · other), `ExportFile.photos: Photo[]`. Pure logic: `photos.ts` (data URI / description rules), `photoCrop.ts`, `performance.ts` (rallies on court with libero swap, ±, net points, rating, error rates — DECISIONS #152), `errorTagging.ts` (`chooseLastErrorType`, the tagged player always fits the type), `pointTags.setLastErrorType`, `lastRally.plausibleErrorTypes`.
+- **Photos** (`src/store/photoStore.ts`): one AsyncStorage key per photo (`volley-lineup-photo:<id>`, data URI ≤ 256 px JPEG), NOT in the main store; orphans pruned and dangling `photoId`s cleared automatically on profile / player changes; `transferSnapshot()` for export, `replacePhotos` / `putPhotos` for import. `<Photo photoId size fallback>` component. Picking: `src/lib/pickPhoto*.ts` (expo-image-picker + expo-image-manipulator), UI in `src/features/photos/`.
+- **Descriptions**: unlock state in an in-memory store (`src/features/descriptions/descriptionLock.ts`, never persisted), unlock via `src/lib/unlock*.ts` (expo-local-authentication on phones, a confirmation dialog on web / without a device lock), auto-lock on background / hidden tab. Exported only when "Include descriptions" is ticked while unlocked.
+- **Store** (`src/store/`): one `useAppStore` (profiles, teams, players, matches, presets, currentProfileId, language). Version 8 with migrations v1→…→v8 in `migrations.ts` (v3→v4 changes nothing; v4→v5 adds `chipLabel: 'number'`; v5→v6 adds `roles: {}` + `liberoActive: true` to sets and presets; v6→v7 turns per-player `roles` into a `formation`; v7→v8 changes nothing — the v6.0 fields are optional). Device settings (not exported): `language`, `chipLabel` (`PlayerChip` shows names when `'name'`). List selectors are hooks with `useShallow` (Zustand v5 loops otherwise).
+- **Features** (`src/features/`): roster, team, lineup (builder; `useLineupDraft` is the generic editor), rotation, live (whole match: `LiveMatch` → `LiveSetView` / `NextSetSetup` / `SetWonPanel` / `MatchSummary`, tag row `PointTagRow` + `usePointTagging`, result label `matchResult.ts`), stats (tables with fixed first column), presets, print (choice dialog with/without results), profile, settings; v6: photos, playerDetail, descriptions, performance.
 - **i18n**: `src/i18n/en/*.ts` + `src/i18n/de/*.ts`, `useT()` hook; the German type is derived from English so missing keys fail typecheck; ESLint forbids importing `@/i18n/en` directly.
 - **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language).
 - **Theme** tokens in `src/theme/` (dark app theme; `print.ts` light print theme).
@@ -122,6 +129,9 @@ Small requests (layout tweaks) are faster done yourself; still use a branch + PR
 - **Before merging a PR whose base is behind `main`**: merge `origin/main` into its branch (in a scratch worktree), run the checks, push the merge commit, and merge only after CI is green on that SHA.
 - **Header titles on web**: the header's title container doesn't shrink, so long titles overflow the page; `HeaderTitle` caps its own width — keep using it.
 - **Branch names**: old feature branches still exist on origin (e.g. `feat/live-match` from v2) — pick new names; the git proxy can't delete remote branches.
+- **Photo store order**: save a photo (`setPhoto`, in memory at once) before pointing a profile / player at it — the prune deletes unreferenced photos and clears `photoId`s without a photo on every profile / player change. Tests must seed `usePhotoStore` before `updatePlayer({ photoId })`.
+- **Live screen height**: anything added to the live screen must keep the court + Substitution visible at 390×844 (DECISIONS #75, #126); the tag row is one sideways-scrolling 44 px line for that reason (#164).
+- **Agents and PR footers**: workers kept writing `_Generated by Claude Code_` footers — give them the exact footer and check it before merging.
 - **Label in name** (WCAG 2.5.3): an `accessibilityLabel` must start with the button's visible text — reviewers check this.
 
 ---
