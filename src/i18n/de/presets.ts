@@ -47,7 +47,6 @@ export const presets: Strings['presets'] = {
   },
   editor: {
     title: (name: string) => `Vorlage: ${name}`,
-    startersTitle: 'Startsechs des Teams',
     rename: 'Umbenennen',
     renameLabel: 'Diese Vorlage umbenennen',
     notFound: 'Diese Vorlage gibt es nicht mehr.',
@@ -57,7 +56,7 @@ export const presets: Strings['presets'] = {
       'Änderungen werden automatisch gespeichert. Im Spiel kannst du diese Vorlage in einen Satz übernehmen.',
   },
   starters: {
-    heading: 'Startaufstellung',
+    heading: 'Startsechs',
     empty:
       'Noch keine Startsechs. Lege die übliche Startaufstellung und den Libero einmal fest; neue Spiele beginnen damit.',
     set: 'Startsechs festlegen',
@@ -67,6 +66,10 @@ export const presets: Strings['presets'] = {
     incomplete: (filled: number) =>
       `${filled} von 6 Positionen besetzt. Besetze alle sechs, damit neue Spiele damit beginnen.`,
     complete: 'Neue Spiele beginnen in Satz 1 mit dieser Aufstellung.',
+    leftOut: (n: number) =>
+      n === 1
+        ? '1 dieser Spieler ist verletzt und wird in neuen Spielen ausgelassen.'
+        : `${n} dieser Spieler sind verletzt und werden in neuen Spielen ausgelassen.`,
     libero: (name: string) => `Libero: ${name}`,
     noLibero: 'Kein Libero',
     courtLabel: (summary: string) => `Startsechs: ${summary}`,

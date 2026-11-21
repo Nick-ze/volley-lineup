@@ -60,7 +60,9 @@ describe('presets in the match lineup builder', () => {
     expect((await screen.findByTestId('use-starters')).props.accessibilityState?.disabled).toBe(
       true,
     );
-    expect(screen.getByText(s.noStarters)).toBeTruthy();
+    expect(screen.getByTestId('use-starters').props.accessibilityHint).toBe(s.noStarters);
+    expect(screen.getByTestId('apply-preset').props.accessibilityHint).toBe(s.applyPresetLabel);
+    expect(screen.queryByText(s.noStarters)).toBeNull(); // no permanent hint lines
     await fireEvent.press(screen.getByTestId('apply-preset'));
     expect(screen.getByTestId('preset-picker')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: s.presetLabel('Swap') }));
@@ -80,7 +82,8 @@ describe('presets in the match lineup builder', () => {
     expect((await screen.findByTestId('apply-preset')).props.accessibilityState?.disabled).toBe(
       true,
     );
-    expect(screen.getByText(s.noPresets)).toBeTruthy();
+    expect(screen.getByTestId('apply-preset').props.accessibilityHint).toBe(s.noPresets);
+    expect(screen.queryByText(s.noPresets)).toBeNull();
     // Switching sets remounts the controls once (no duplicate after a set change).
     await fireEvent.press(screen.getByTestId('set-tab-2'));
     expect(screen.getAllByTestId('apply-preset')).toHaveLength(1);
@@ -98,7 +101,35 @@ describe('presets in the match lineup builder', () => {
     expect(screen.getByTestId('apply-preset').props.accessibilityState?.disabled).toBe(true);
     await fireEvent.press(screen.getByTestId('use-starters'));
     expect(set(1)?.slots[1]).toBeNull();
-    expect(screen.getByText(s.locked)).toBeTruthy();
+    expect(screen.getByTestId('use-starters').props.accessibilityHint).toBe(s.locked);
+    expect(screen.getByTestId('apply-preset').props.accessibilityHint).toBe(s.locked);
+  });
+
+  it('treats empty starters (0/6, no libero) as no starters, so a set is never wiped', async () => {
+    store().setStarters('team1', {
+      slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoId: null,
+      liberoReplaces: [],
+    });
+    addMatch([{ ...emptySetLineup(1), ...fullLineup() }]);
+    await renderRouter('./app', { initialUrl: `/match/${store().matches[0].id}?set=1` });
+    const button = await screen.findByTestId('use-starters');
+    expect(button.props.accessibilityState?.disabled).toBe(true);
+    expect(button.props.accessibilityHint).toBe(s.noStarters);
+    await fireEvent.press(button);
+    expect(set(1)?.slots).toEqual(fullLineup().slots);
+  });
+
+  it('allows starters that only have a libero', async () => {
+    store().setStarters('team1', {
+      slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoId: 'p7',
+      liberoReplaces: [],
+    });
+    addMatch();
+    await renderRouter('./app', { initialUrl: `/match/${store().matches[0].id}?set=1` });
+    await fireEvent.press(await screen.findByTestId('use-starters'));
+    expect(set(1)?.liberoId).toBe('p7');
   });
 
   it('shows German labels', async () => {

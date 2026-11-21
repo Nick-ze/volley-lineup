@@ -36,7 +36,7 @@ export const transfer: Strings['transfer'] = {
         plural(s.profiles, 'Profil', 'Profile'),
       ].join(', '),
     mergeHint:
-      'Zusammenführen fügt die Datei zu deinen Daten hinzu; vorhandene Einträge werden aktualisiert.',
+      'Zusammenführen fügt die Datei zu deinen Daten hinzu; vorhandene Einträge werden aktualisiert. Die Startsechs eines Teams aus der Datei ersetzt deine.',
     replaceHint: 'Ersetzen löscht alle aktuellen Daten und behält nur die Daten aus der Datei.',
     merge: 'Zusammenführen',
     replace: 'Ersetzen',

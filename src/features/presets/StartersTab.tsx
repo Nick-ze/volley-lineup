@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { filledCount, isPresetComplete } from '@/domain/presets';
+import { emptySetLineup } from '@/domain/lineup';
+import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
 import { COURT_POSITIONS, type Player } from '@/domain/types';
 import { RotationCourt } from '@/features/rotation';
 import { listStyles } from '@/features/roster/components/styles';
@@ -53,6 +54,13 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
 
   const libero = starters.liberoId ? byId.get(starters.liberoId) : undefined;
   const complete = isPresetComplete(starters);
+  // Injured (inactive) starters are skipped when a new match is pre-filled.
+  const leftOut = applyPresetToSet(emptySetLineup(1), starters, players).skipped.length;
+  const status = !complete
+    ? s.incomplete(filledCount(starters))
+    : leftOut > 0
+      ? s.leftOut(leftOut)
+      : s.complete;
   return (
     <View style={styles.wrap}>
       <View style={listStyles.headerRow}>
@@ -76,8 +84,11 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
         <RotationCourt slots={starters.slots} playersById={byId} compact />
         <Text style={styles.libero}>{libero ? s.libero(playerName(libero)) : s.noLibero}</Text>
       </View>
-      <Text style={[styles.status, !complete && styles.warn]} testID="starters-status">
-        {complete ? s.complete : s.incomplete(filledCount(starters))}
+      <Text
+        style={[styles.status, (!complete || leftOut > 0) && styles.warn]}
+        testID="starters-status"
+      >
+        {status}
       </Text>
     </View>
   );

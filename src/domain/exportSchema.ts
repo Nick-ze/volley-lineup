@@ -18,6 +18,7 @@ import type {
   SetLineup,
   Team,
 } from './types';
+import { validatePresetName } from './presets';
 import { ALL_POSITIONS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
@@ -242,7 +243,8 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - every lineup slot / libero refers to a player of the match's own team;
  * - within a set, no player is in two slots and the libero is not also a starter;
  * - presets (v3) follow the same lineup rules for their team, and a team has at most one
- *   'starters' preset.
+ *   'starters' preset; named presets have a valid name (≤ 40 characters, not blank) that is
+ *   unique within the team, ignoring case.
  */
 export function isConsistent(data: TransferData): boolean {
   const { profiles, teams, players, matches, presets } = data;
@@ -277,6 +279,10 @@ export function isConsistent(data: TransferData): boolean {
     );
   };
   if (!presets.every((p) => lineupOk(p.teamId, p))) return false;
+  const namesOk = presets.every(
+    (p) => p.kind === 'starters' || validatePresetName(p.name, presets, p.teamId, p.id).ok,
+  );
+  if (!namesOk) return false;
   return matches.every((m) => {
     if (hasDuplicates(m.sets.map((s) => s.setNumber))) return false;
     return m.sets.every((set) => {
@@ -371,13 +377,17 @@ function mergeById<T extends { id: string }>(existing: readonly T[], incoming: r
 export type MergeResult = { ok: true; data: TransferData } | { ok: false; error: 'MERGE_CONFLICT' };
 
 /**
- * Merge: every profile, team, player, match and preset is matched by id (the team's starters are
- * replaced by incoming starters for the same team). **On an equal id the incoming
- * item wins** (it replaces the existing one in place); items only in `existing` are kept, items
- * only in `incoming` are appended. Nothing is deleted.
+ * Merge: every profile, team, player, match and preset is matched by id. **On an equal id the
+ * incoming item wins** (it replaces the existing one in place); items only in `existing` are
+ * kept, items only in `incoming` are appended.
+ *
+ * The one deletion: a team has a single starters preset, so when the file has starters for a
+ * team, they replace that team's existing starters (even under a different id). Nothing else is
+ * deleted.
  *
  * If the combined data would be inconsistent (e.g. two different players with the same jersey
- * number in one team, or an id that belongs to a different team in each data set) the merge is refused with `MERGE_CONFLICT` (the user can choose
+ * number in one team, an id that belongs to a different team in each data set, or two presets
+ * of a team with the same name) the merge is refused with `MERGE_CONFLICT` (the user can choose
  * Replace instead); data is never silently dropped or renumbered.
  */
 export function mergeData(existing: TransferData, incoming: TransferData): MergeResult {

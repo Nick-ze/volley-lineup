@@ -44,7 +44,6 @@ export const presets = {
   },
   editor: {
     title: (name: string) => `Preset: ${name}`,
-    startersTitle: 'Team starters',
     rename: 'Rename',
     renameLabel: 'Rename this preset',
     notFound: 'This preset no longer exists.',
@@ -63,6 +62,10 @@ export const presets = {
     incomplete: (filled: number) =>
       `${filled} of 6 positions filled. Fill all six so new matches start with them.`,
     complete: 'New matches start with this lineup in set 1.',
+    leftOut: (n: number) =>
+      n === 1
+        ? '1 of these players is injured and will be left out of new matches.'
+        : `${n} of these players are injured and will be left out of new matches.`,
     libero: (name: string) => `Libero: ${name}`,
     noLibero: 'No libero',
     courtLabel: (summary: string) => `Starters: ${summary}`,

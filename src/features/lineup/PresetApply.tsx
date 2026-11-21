@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { applyPresetToSet } from '@/domain/presets';
+import { applyPresetToSet, filledCount } from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
 import { useT } from '@/i18n';
 import { usePresetsForTeam, useStarters } from '@/store';
@@ -20,14 +20,18 @@ type Outcome = { name: string | null; skipped: string[] } | null;
 
 /**
  * "Use team starters" and "Apply preset…" for a match set. Disabled for played (locked) sets and
- * when there is nothing to apply; afterwards it says who was left out (injured / not in the team).
+ * when there is nothing to apply (no presets; no or empty starters, which would only wipe the
+ * set) — the reason is the disabled button's accessibility hint. Afterwards it says who was left
+ * out (injured / not in the team).
  * Remount (key by set number) to reset the message.
  */
 export function PresetApply({ editor, teamId }: PresetApplyProps) {
   const t = useT();
   const s = t.presets.apply;
   const { set, players, replace, locked, playerById } = editor;
-  const starters = useStarters(teamId);
+  const saved = useStarters(teamId);
+  // Empty starters (0/6, no libero) would only clear the set: treat them as "no starters".
+  const starters = saved && (filledCount(saved) > 0 || saved.liberoId !== null) ? saved : undefined;
   const presets = usePresetsForTeam(teamId);
   const [open, setOpen] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -50,18 +54,15 @@ export function PresetApply({ editor, teamId }: PresetApplyProps) {
     return s.skipped(name, who.join(', '));
   })();
 
-  const hints = [
-    locked ? s.locked : null,
-    !locked && !starters ? s.noStarters : null,
-    !locked && presets.length === 0 ? s.noPresets : null,
-  ].filter((x): x is string => x !== null);
+  const startersHint = locked ? s.locked : starters ? s.useStartersLabel : s.noStarters;
+  const presetHint = locked ? s.locked : presets.length > 0 ? s.applyPresetLabel : s.noPresets;
 
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
         <Button
           label={s.useStarters}
-          accessibilityLabel={s.useStartersLabel}
+          accessibilityHint={startersHint}
           variant="secondary"
           compact
           disabled={locked || !starters}
@@ -71,7 +72,7 @@ export function PresetApply({ editor, teamId }: PresetApplyProps) {
         />
         <Button
           label={s.applyPreset}
-          accessibilityLabel={s.applyPresetLabel}
+          accessibilityHint={presetHint}
           variant="secondary"
           compact
           disabled={locked || presets.length === 0}
@@ -105,11 +106,6 @@ export function PresetApply({ editor, teamId }: PresetApplyProps) {
           />
         </View>
       ) : null}
-      {hints.map((h) => (
-        <Text key={h} style={styles.hint}>
-          {h}
-        </Text>
-      ))}
       {message ? (
         <Text
           style={[styles.message, outcome && outcome.skipped.length > 0 && styles.warn]}

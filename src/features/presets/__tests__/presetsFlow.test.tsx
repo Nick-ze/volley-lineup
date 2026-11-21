@@ -130,6 +130,15 @@ describe('starters tab', () => {
     expect(screen.getByRole('button', { name: s.starters.editLabel })).toBeTruthy();
   });
 
+  it('says injured starters will be left out of new matches', async () => {
+    store().setStarters('team1', fullLineup());
+    store().updatePlayer('p2', { active: false });
+    store().updatePlayer('p7', { active: false });
+    await renderRouter('./app', { initialUrl: '/team/team1?tab=starters' });
+    expect(await screen.findByTestId('starters-status')).toHaveTextContent(s.starters.leftOut(2));
+    expect(screen.queryByText(s.starters.complete)).toBeNull();
+  });
+
   it('warns when the starters are incomplete', async () => {
     store().setStarters('team1', { ...fullLineup(), slots: { ...fullLineup().slots, 6: null } });
     await renderRouter('./app', { initialUrl: '/team/team1?tab=starters' });

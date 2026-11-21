@@ -431,6 +431,12 @@ describe('parseImport rejects', () => {
       (d) => (d.presets[1].liberoReplaces = ['p4']),
     ],
     ['two starters for one team', (d) => (d.presets[1].kind = 'starters')],
+    ['blank preset name', (d) => (d.presets[1].name = '   ')],
+    ['preset name over 40 characters', (d) => (d.presets[1].name = 'x'.repeat(41))],
+    [
+      'two presets of a team with the same name (ignoring case)',
+      (d) => d.presets.push({ ...d.presets[1], id: 'ps9', name: 'STRONG SERVE' }),
+    ],
   ];
 
   it.each(consistencyCases)('inconsistent references: %s', (_label, breakIt) => {
@@ -438,6 +444,19 @@ describe('parseImport rejects', () => {
     breakIt(data);
     expect(isConsistent(data)).toBe(false);
     expect(parseImport(exportText(data))).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
+
+  it('accepts the same preset name in different teams and an empty starters name', () => {
+    const data = fixture();
+    data.presets[2].name = 'Strong serve'; // t2 — same name as t1's preset
+    expect(data.presets[0].name).toBe(''); // starters
+    expect(isConsistent(data)).toBe(true);
+  });
+
+  it('refuses a merge that adds a second preset with an existing name', () => {
+    const incoming = buildExport(fixture(), { teamId: 't1' });
+    incoming.presets = [{ ...incoming.presets[1], id: 'ps-new', name: 'strong serve' }];
+    expect(mergeData(fixture(), incoming)).toEqual({ ok: false, error: 'MERGE_CONFLICT' });
   });
 
   it('accepts the same jersey number in different teams', () => {
