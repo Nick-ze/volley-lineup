@@ -122,3 +122,7 @@ Newest at the bottom. Format: **Decision** — why.
 ## v2.1
 
 75. **Phone lineup layout**: below 768 px the order is court → libero + serve → bench → instructions → templates / copy / clear → checks, with compact sizes (48 px chips, 76 px court slots, compact libero row). The court, libero and a 10–12-player bench fit on one 390×844 screen without scrolling. Wide screens are unchanged (court left, bench right).
+76. **Bottom tab bar** (Teams · Profile · Settings) via a route group `app/(tabs)/` with `expo-router/js-tabs`, so URLs stay the same (`/teams`, `/settings`, new `/profile`). Detail screens (team, match, rotation, live, …) open over the tabs with their back button and no tab bar. 56 px bar + bottom safe area; Ionicons from `@expo/vector-icons` (new dependency — tab icons).
+77. **Profile tab**: shows the current profile (avatar, name, team/player counts), edits name and colour inline, **Log out**, and Delete profile (with confirmation). It replaces the profile section in Settings and the "Switch profile" / header "Settings" buttons on Teams (amends #42).
+78. **Log out** clears the selected profile and returns to the profile picker with no history behind it; it is also the way to switch profile (there are no passwords — data stays on the device, see §2 of the plan). The tabs layout marks the startup redirect as handled, so the picker never jumps back into a profile after logging out (amends #28).
+79. **Version 2.1.0**: phone lineup layout (#75) + tab bar / profile / log out (#76–78).
