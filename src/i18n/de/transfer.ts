@@ -21,11 +21,18 @@ export const transfer: Strings['transfer'] = {
     hint: 'Lade eine .json-Datei, die aus Volley Lineup exportiert wurde.',
     pick: 'Aus Datei importieren',
     previewTitle: (fileName: string) => `Bereit, ${fileName} zu importieren`,
-    summary: (s: { profiles: number; teams: number; players: number; matches: number }) =>
+    summary: (s: {
+      profiles: number;
+      teams: number;
+      players: number;
+      matches: number;
+      presets: number;
+    }) =>
       [
         plural(s.teams, 'Team', 'Teams'),
         plural(s.players, 'Spieler', 'Spieler'),
         plural(s.matches, 'Spiel', 'Spiele'),
+        plural(s.presets, 'gespeicherte Aufstellung', 'gespeicherte Aufstellungen'),
         plural(s.profiles, 'Profil', 'Profile'),
       ].join(', '),
     mergeHint:

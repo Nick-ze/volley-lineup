@@ -9,6 +9,8 @@ import {
   selectCurrentProfile,
   selectMatchesForTeam,
   selectPlayersForTeam,
+  selectPresetsForTeam,
+  selectStarters,
   selectTeamsForProfile,
 } from './selectors';
 
@@ -177,6 +179,88 @@ describe('matches', () => {
   });
 });
 
+describe('presets', () => {
+  const lineup = (ids: (string | null)[], liberoId: string | null = null) => ({
+    slots: {
+      1: ids[0] ?? null,
+      2: ids[1] ?? null,
+      3: ids[2] ?? null,
+      4: ids[3] ?? null,
+      5: ids[4] ?? null,
+      6: ids[5] ?? null,
+    },
+    liberoId,
+    liberoReplaces: [] as string[],
+  });
+
+  it('adds, renames, edits and deletes a preset', () => {
+    const { team, p1 } = seed();
+    const preset = store().addPreset({ teamId: team.id, name: '5-1' });
+    expect(preset).toMatchObject({ kind: 'preset', name: '5-1', liberoId: null });
+    expect(preset.slots).toEqual({ 1: null, 2: null, 3: null, 4: null, 5: null, 6: null });
+    store().updatePreset(preset.id, { name: 'Strong serve', ...lineup([p1.id]) });
+    expect(selectPresetsForTeam(store(), team.id)[0]).toMatchObject({
+      name: 'Strong serve',
+      slots: { 1: p1.id },
+    });
+    store().deletePreset(preset.id);
+    expect(store().presets).toEqual([]);
+  });
+
+  it('setStarters creates the single starters preset and then replaces its lineup', () => {
+    const { team, p1, p2 } = seed();
+    const first = store().setStarters(team.id, lineup([p1.id], p2.id));
+    const second = store().setStarters(team.id, lineup([p2.id]));
+    expect(second.id).toBe(first.id);
+    expect(store().presets).toHaveLength(1);
+    expect(selectStarters(store(), team.id)).toMatchObject({
+      kind: 'starters',
+      slots: { 1: p2.id },
+      liberoId: null,
+    });
+    expect(selectPresetsForTeam(store(), team.id)).toEqual([]); // starters are not listed
+  });
+
+  it('deleting a team or profile deletes its presets', () => {
+    const { profile, team } = seed();
+    const other = store().addProfile({ name: 'Other', color: '#000' });
+    const otherTeam = store().addTeam({ profileId: other.id, name: 'Damen' });
+    store().addPreset({ teamId: team.id, name: 'A' });
+    store().addPreset({ teamId: otherTeam.id, name: 'B' });
+    store().setStarters(team.id, lineup([]));
+    store().deleteTeam(team.id);
+    expect(store().presets.map((p) => p.name)).toEqual(['B']);
+    store().addTeam({ profileId: profile.id, name: 'X' });
+    store().deleteProfile(other.id);
+    expect(store().presets).toEqual([]);
+  });
+
+  it('deleting a player clears them from presets, even next to a played set', () => {
+    const { team, p1, p2, match } = seed();
+    store().setLineup(match.id, {
+      ...emptySetLineup(1),
+      slots: { 1: p2.id, 2: null, 3: null, 4: null, 5: null, 6: null },
+      events: [{ type: 'point', winner: 'us' }],
+    });
+    const preset = store().addPreset({
+      teamId: team.id,
+      name: 'A',
+      ...lineup([p1.id, p2.id], null),
+      liberoReplaces: [p1.id],
+    });
+    store().setStarters(team.id, lineup([p2.id], p1.id));
+    store().deletePlayer(p1.id);
+    const [a, starters] = store().presets;
+    expect(a.slots[1]).toBeNull();
+    expect(a.slots[2]).toBe(p2.id);
+    expect(a.liberoReplaces).toEqual([]);
+    expect(starters.liberoId).toBeNull();
+    expect(a.id).toBe(preset.id);
+    const text = JSON.stringify(buildExport(selectAppData(store())));
+    expect(parseImport(text).ok).toBe(true);
+  });
+});
+
 describe('whole data', () => {
   it('replaceAll swaps data and keeps the current profile only if it still exists', () => {
     const { profile } = seed();
@@ -232,6 +316,7 @@ describe('migrations', () => {
       ],
     };
     expect(migrateStore(v1, 1)).toEqual({
+      presets: [],
       language: 'en',
       profiles: [],
       currentProfileId: null,
@@ -254,8 +339,18 @@ describe('migrations', () => {
         { id: 'm2' },
       ],
     });
-    expect(migrateStore({ matches: 'x' }, 1)).toEqual({ language: 'en', matches: 'x' });
+    expect(migrateStore({ matches: 'x' }, 1)).toEqual({
+      presets: [],
+      language: 'en',
+      matches: 'x',
+    });
     expect(migrateStore(null, 1)).toBeNull();
+  });
+
+  it('upgrades v2 data: the state gains an empty preset list', () => {
+    const v2 = { profiles: [], matches: [], language: 'de' };
+    expect(migrateStore(v2, 2)).toEqual({ presets: [], profiles: [], matches: [], language: 'de' });
+    expect(migrateStore(null, 2)).toBeNull();
   });
 
   it('remembers the chosen language', () => {

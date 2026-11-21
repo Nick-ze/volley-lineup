@@ -79,6 +79,38 @@ function fixture(): TransferData {
         sets: [emptySetLineup(1)],
       },
     ],
+    presets: [
+      {
+        id: 'ps1',
+        teamId: 't1',
+        name: '',
+        kind: 'starters',
+        slots: { 1: 'p1', 2: 'p2', 3: null, 4: null, 5: null, 6: null },
+        liberoId: 'p3',
+        liberoReplaces: ['p2'],
+        createdAt: '2026-01-05T00:00:00.000Z',
+      },
+      {
+        id: 'ps2',
+        teamId: 't1',
+        name: 'Strong serve',
+        kind: 'preset',
+        slots: { 1: null, 2: null, 3: null, 4: 'p1', 5: null, 6: null },
+        liberoId: null,
+        liberoReplaces: [],
+        createdAt: '2026-01-06T00:00:00.000Z',
+      },
+      {
+        id: 'ps3',
+        teamId: 't2',
+        name: 'Damen A',
+        kind: 'preset',
+        slots: { 1: 'p4', 2: null, 3: null, 4: null, 5: null, 6: null },
+        liberoId: null,
+        liberoReplaces: [],
+        createdAt: '2026-01-07T00:00:00.000Z',
+      },
+    ],
   };
 }
 
@@ -96,7 +128,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 2,
+      schemaVersion: 3,
       exportedAt: NOW.toISOString(),
       ...data,
     });
@@ -110,12 +142,13 @@ describe('buildExport', () => {
     expect(Date.parse(file.exportedAt)).toBeGreaterThanOrEqual(before);
   });
 
-  it('exports a single team with its profile, players and matches only', () => {
+  it('exports a single team with its profile, players, matches and presets only', () => {
     const file = buildExport(fixture(), { teamId: 't1', now: NOW });
     expect(file.profiles.map((p) => p.id)).toEqual(['pr1']);
     expect(file.teams.map((t) => t.id)).toEqual(['t1']);
     expect(file.players.map((p) => p.id)).toEqual(['p1', 'p2', 'p3']);
     expect(file.matches.map((m) => m.id)).toEqual(['m1']);
+    expect(file.presets.map((p) => p.id)).toEqual(['ps1', 'ps2']);
     expect(parseImport(serializeExport(file)).ok).toBe(true);
   });
 
@@ -125,6 +158,7 @@ describe('buildExport', () => {
       teams: 0,
       players: 0,
       matches: 0,
+      presets: 0,
     });
   });
 });
@@ -152,11 +186,11 @@ describe('round trip', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(replaceData(result.file)).toEqual(original);
-    expect(result.summary).toEqual({ profiles: 2, teams: 2, players: 4, matches: 2 });
+    expect(result.summary).toEqual({ profiles: 2, teams: 2, players: 4, matches: 2, presets: 3 });
   });
 
   it('round-trips empty data', () => {
-    const empty = { profiles: [], teams: [], players: [], matches: [] };
+    const empty = { profiles: [], teams: [], players: [], matches: [], presets: [] };
     const result = parseImport(exportText(empty));
     expect(result.ok && replaceData(result.file)).toEqual(empty);
   });
@@ -192,7 +226,7 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([3, 0, '1', '2', undefined])('schemaVersion %p', (version) => {
+  it.each([4, 0, '1', '2', '3', undefined])('schemaVersion %p', (version) => {
     expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
       ok: false,
       error: 'UNSUPPORTED_VERSION',
@@ -202,6 +236,7 @@ describe('parseImport rejects', () => {
   it('upgrades a v1 file (sets without liberoReplaces/events) to the current version', () => {
     const v1 = rawExport();
     v1.schemaVersion = 1;
+    delete v1.presets; // v1 and v2 files have no presets
     for (const m of v1.matches as { sets: Record<string, unknown>[] }[]) {
       for (const set of m.sets) {
         delete set.liberoReplaces;
@@ -211,8 +246,37 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(2);
-    expect(result.file).toEqual(JSON.parse(exportText()));
+    expect(result.file.schemaVersion).toBe(3);
+    expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
+  });
+
+  it('upgrades a v2 file (no presets) to v3 with an empty preset list', () => {
+    const v2 = rawExport();
+    v2.schemaVersion = 2;
+    delete v2.presets;
+    const result = parseObject(v2);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(3);
+    expect(result.file.presets).toEqual([]);
+    expect(result.summary.presets).toBe(0);
+    expect(result.file.matches).toEqual(fixture().matches);
+  });
+
+  it('a v3 file without presets is rejected as INVALID_SHAPE', () => {
+    const raw = rawExport();
+    delete raw.presets;
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it.each([
+    ['an unknown kind', { kind: 'other' }],
+    ['a missing slot', { slots: { 1: null, 2: null, 3: null, 4: null, 5: null } }],
+    ['a name that is not text', { name: 5 }],
+  ])('a preset with a wrong shape: %s', (_label, patch) => {
+    const raw = rawExport();
+    Object.assign((raw.presets as Record<string, unknown>[])[1], patch);
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
   });
 
   it.each([
@@ -356,6 +420,17 @@ describe('parseImport rejects', () => {
     ['set number twice in a match', (d) => (d.matches[0].sets[1].setNumber = 1)],
     ['same player in two slots', (d) => (d.matches[0].sets[0].slots[3] = 'p1')],
     ['libero also in a starting slot', (d) => (d.matches[0].sets[0].liberoId = 'p2')],
+    ['preset of an unknown team', (d) => (d.presets[1].teamId = 'ghost')],
+    ['duplicate preset id', (d) => (d.presets[2].id = d.presets[1].id)],
+    ['preset with a player of another team', (d) => (d.presets[1].slots[2] = 'p4')],
+    ['preset with an unknown libero', (d) => (d.presets[1].liberoId = 'ghost')],
+    ['preset with a player twice', (d) => (d.presets[1].slots[5] = 'p1')],
+    ['preset libero also on court', (d) => (d.presets[0].liberoId = 'p1')],
+    [
+      'preset libero replaces a player of another team',
+      (d) => (d.presets[1].liberoReplaces = ['p4']),
+    ],
+    ['two starters for one team', (d) => (d.presets[1].kind = 'starters')],
   ];
 
   it.each(consistencyCases)('inconsistent references: %s', (_label, breakIt) => {
@@ -383,6 +458,7 @@ describe('mergeData', () => {
       ],
       players: [{ ...existing.players[0], firstName: 'Changed' }, player('p9', 't3', 10)],
       matches: [{ ...existing.matches[0], opponent: 'New rivals' }],
+      presets: [{ ...existing.presets[1], name: 'Renamed preset' }],
     };
     const result = mergeData(existing, file(incoming));
     expect(result.ok).toBe(true);
@@ -397,11 +473,16 @@ describe('mergeData', () => {
     expect(data.players.map((p) => p.id)).toEqual(['p1', 'p2', 'p3', 'p4', 'p9']);
     expect(data.players[0].firstName).toBe('Changed');
     expect(data.matches.map((m) => m.opponent)).toEqual(['New rivals', 'X']);
+    expect(data.presets.map((p) => [p.id, p.name])).toEqual([
+      ['ps1', ''],
+      ['ps2', 'Renamed preset'],
+      ['ps3', 'Damen A'],
+    ]);
     expect(isConsistent(data)).toBe(true);
   });
 
   it('merging a file into empty data equals replacing', () => {
-    const empty = { profiles: [], teams: [], players: [], matches: [] };
+    const empty = { profiles: [], teams: [], players: [], matches: [], presets: [] };
     const result = mergeData(empty, file(fixture()));
     expect(result).toEqual({ ok: true, data: fixture() });
   });
@@ -416,6 +497,16 @@ describe('mergeData', () => {
     expect(mergeData(fixture(), incoming)).toEqual({ ok: false, error: 'MERGE_CONFLICT' });
   });
 
+  it("replaces a team's starters with incoming starters that have another id", () => {
+    const incoming = buildExport(fixture(), { teamId: 't1' });
+    incoming.presets = [{ ...incoming.presets[0], id: 'ps-new', liberoReplaces: [] }];
+    const result = mergeData(fixture(), incoming);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.presets.map((p) => p.id)).toEqual(['ps2', 'ps3', 'ps-new']);
+    expect(result.data.presets.filter((p) => p.kind === 'starters')).toHaveLength(1);
+  });
+
   it('accepts a renumbering when the incoming player keeps its id', () => {
     const incoming = buildExport(fixture(), { teamId: 't1' });
     incoming.players = [{ ...incoming.players[0], number: 42 }];
@@ -428,7 +519,7 @@ describe('replaceData', () => {
   it('returns only the incoming data', () => {
     const result = replaceData(file());
     expect(result).toEqual(fixture());
-    expect(Object.keys(result)).toEqual(['profiles', 'teams', 'players', 'matches']);
+    expect(Object.keys(result)).toEqual(['profiles', 'teams', 'players', 'matches', 'presets']);
   });
 
   function file() {

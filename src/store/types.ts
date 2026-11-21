@@ -1,4 +1,5 @@
-import type { ManagerProfile, Match, Player, SetLineup, Team } from '@/domain/types';
+import type { LineupPreset, ManagerProfile, Match, Player, SetLineup, Team } from '@/domain/types';
+import type { PresetLineup } from '@/domain/presets';
 
 /** The persisted data. Bump STORE_VERSION and add a migration when this shape changes. */
 export interface AppData {
@@ -6,6 +7,8 @@ export interface AppData {
   teams: Team[];
   players: Player[];
   matches: Match[];
+  /** v3: saved lineups and the team's starters. */
+  presets: LineupPreset[];
 }
 
 /** UI language (v2). English is the default; strings live in src/i18n. */
@@ -24,6 +27,8 @@ export type NewPlayer = Omit<Player, 'id'>;
 export type NewMatch = Pick<Match, 'teamId' | 'opponent' | 'date' | 'home'> & {
   sets?: SetLineup[];
 };
+
+export type NewPreset = Pick<LineupPreset, 'teamId' | 'name'> & Partial<PresetLineup>;
 
 export interface AppActions {
   // profiles
@@ -45,6 +50,13 @@ export interface AppActions {
   deleteMatch(id: string): void;
   /** Insert or replace the lineup for `set.setNumber` in a match. */
   setLineup(matchId: string, set: SetLineup): void;
+  // presets (v3)
+  /** Adds a named preset (kind 'preset'); the lineup defaults to empty. */
+  addPreset(input: NewPreset): LineupPreset;
+  updatePreset(id: string, patch: Partial<Pick<LineupPreset, 'name'> & PresetLineup>): void;
+  deletePreset(id: string): void;
+  /** Creates or replaces the lineup of the team's single 'starters' preset. */
+  setStarters(teamId: string, lineup: PresetLineup): LineupPreset;
   // whole-data operations (used by import / settings)
   replaceAll(data: AppData): void;
   resetAll(): void;

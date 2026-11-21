@@ -4,8 +4,9 @@
  *
  * v1 → v2: every SetLineup gains `liberoReplaces: []` and `events: []`; the state gains
  * `language: 'en'`.
+ * v2 → v3: the state gains `presets: []` (saved lineups and team starters).
  */
-export const STORE_VERSION = 2;
+export const STORE_VERSION = 3;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -34,5 +35,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   }
   let state = persisted;
   if (fromVersion < 2 && isRec(state)) state = v1ToV2(state);
+  if (fromVersion < 3 && isRec(state)) state = { presets: [], ...state };
   return state;
 }

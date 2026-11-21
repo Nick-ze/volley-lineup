@@ -1,4 +1,5 @@
-import type { ManagerProfile, Match, Player, Team } from '@/domain/types';
+import { namedPresetsFor, startersFor } from '@/domain/presets';
+import type { LineupPreset, ManagerProfile, Match, Player, Team } from '@/domain/types';
 
 import type { AppState } from './types';
 
@@ -13,3 +14,10 @@ export const selectPlayersForTeam = (s: AppState, teamId: string): Player[] =>
 
 export const selectMatchesForTeam = (s: AppState, teamId: string): Match[] =>
   s.matches.filter((m) => m.teamId === teamId).sort((a, b) => b.date.localeCompare(a.date));
+
+/** The team's named presets (kind 'preset'), sorted by name. */
+export const selectPresetsForTeam = (s: AppState, teamId: string): LineupPreset[] =>
+  namedPresetsFor(s.presets, teamId);
+
+export const selectStarters = (s: AppState, teamId: string): LineupPreset | undefined =>
+  startersFor(s.presets, teamId);

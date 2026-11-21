@@ -62,6 +62,7 @@ function otherData(): AppData {
       active: true,
     })),
     matches: [],
+    presets: [],
   };
 }
 
@@ -87,7 +88,9 @@ describe('import', () => {
     await renderSettings();
 
     await fireEvent.press(screen.getByLabelText('Import from file'));
-    expect(await screen.findByText('1 team, 3 players, 0 matches, 1 profile')).toBeTruthy();
+    expect(
+      await screen.findByText('1 team, 3 players, 0 matches, 0 saved lineups, 1 profile'),
+    ).toBeTruthy();
     expect(screen.getByText('Ready to import backup.json')).toBeTruthy();
 
     await fireEvent.press(screen.getByLabelText('Replace'));
@@ -117,7 +120,7 @@ describe('import', () => {
     ['broken JSON', '{"app": "volley-lineup",', 'This file is not valid JSON.'],
     [
       'a newer schema version',
-      JSON.stringify({ app: 'volley-lineup', schemaVersion: 3 }),
+      JSON.stringify({ app: 'volley-lineup', schemaVersion: 4 }),
       'different version',
     ],
   ])('shows an error for %s and changes nothing', async (_label, text, message) => {
@@ -180,7 +183,13 @@ describe('export', () => {
     const [name, text] = mockSave.mock.calls[0];
     expect(name).toMatch(/^volley-lineup-\d{4}-\d{2}-\d{2}\.json$/);
     const parsed = parseImport(text);
-    expect(parsed.ok && parsed.summary).toEqual({ profiles: 2, teams: 3, players: 1, matches: 1 });
+    expect(parsed.ok && parsed.summary).toEqual({
+      profiles: 2,
+      teams: 3,
+      players: 1,
+      matches: 1,
+      presets: 0,
+    });
     expect(await screen.findByText(`Exported ${name}.`)).toBeTruthy();
   });
 
@@ -193,7 +202,13 @@ describe('export', () => {
     const [name, text] = mockSave.mock.calls[0];
     expect(name).toMatch(/^volley-lineup-herren-1-\d{4}-\d{2}-\d{2}\.json$/);
     const parsed = parseImport(text);
-    expect(parsed.ok && parsed.summary).toEqual({ profiles: 1, teams: 1, players: 1, matches: 1 });
+    expect(parsed.ok && parsed.summary).toEqual({
+      profiles: 1,
+      teams: 1,
+      players: 1,
+      matches: 1,
+      presets: 0,
+    });
   });
 
   it('shows an error when saving fails', async () => {
@@ -243,7 +258,13 @@ describe('delete all and version', () => {
 
     await fireEvent.press(screen.getByLabelText('Delete all data'));
     await fireEvent.press(screen.getByLabelText('Yes, delete everything'));
-    expect(selectAppData(store())).toEqual({ profiles: [], teams: [], players: [], matches: [] });
+    expect(selectAppData(store())).toEqual({
+      profiles: [],
+      teams: [],
+      players: [],
+      matches: [],
+      presets: [],
+    });
     expect(screen.getByText('All data deleted.')).toBeTruthy();
     expect(store().currentProfileId).toBeNull();
   });

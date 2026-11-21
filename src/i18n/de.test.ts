@@ -11,7 +11,7 @@ function leaves(obj: object, prefix = ''): string[] {
   );
 }
 
-const counts = { profiles: 1, teams: 2, players: 1, matches: 3 };
+const counts = { profiles: 1, teams: 2, players: 1, matches: 3, presets: 2 };
 
 describe('German strings', () => {
   it('have exactly the same keys as English (TypeScript checks this too)', () => {
@@ -39,7 +39,9 @@ describe('German strings', () => {
     ];
     for (const [german, english] of pairs) expect(german).not.toBe(english);
     expect(de.positions.MB).toBe('Mittelblocker');
-    expect(de.transfer.import.summary(counts)).toBe('2 Teams, 1 Spieler, 3 Spiele, 1 Profil');
+    expect(de.transfer.import.summary(counts)).toBe(
+      '2 Teams, 1 Spieler, 3 Spiele, 2 gespeicherte Aufstellungen, 1 Profil',
+    );
   });
 
   it('are picked by language', () => {

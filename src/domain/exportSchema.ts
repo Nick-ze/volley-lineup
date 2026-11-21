@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import type {
   ExportFile,
+  LineupPreset,
   ManagerProfile,
   Match,
   Player,
@@ -20,15 +21,18 @@ import type {
 import { ALL_POSITIONS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 2 as const;
+export const EXPORT_SCHEMA_VERSION = 3 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3];
 
 /**
- * The four persisted collections. Derived from `ExportFile` (the domain layer can't import the
+ * The five persisted collections. Derived from `ExportFile` (the domain layer can't import the
  * store); it is structurally identical to the store's `AppData`.
  */
-export type TransferData = Pick<ExportFile, 'profiles' | 'teams' | 'players' | 'matches'>;
+export type TransferData = Pick<
+  ExportFile,
+  'profiles' | 'teams' | 'players' | 'matches' | 'presets'
+>;
 
 /* ------------------------------------------------------------------ schema */
 
@@ -62,16 +66,18 @@ const playerSchema = z.object({
   active: z.boolean(),
 });
 
+const slotsSchema = z.object({
+  1: playerRef,
+  2: playerRef,
+  3: playerRef,
+  4: playerRef,
+  5: playerRef,
+  6: playerRef,
+});
+
 const setLineupSchema = z.object({
   setNumber: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
-  slots: z.object({
-    1: playerRef,
-    2: playerRef,
-    3: playerRef,
-    4: playerRef,
-    5: playerRef,
-    6: playerRef,
-  }),
+  slots: slotsSchema,
   liberoId: playerRef,
   weServeFirst: z.boolean(),
   liberoReplaces: z.array(id),
@@ -92,6 +98,17 @@ const matchSchema = z.object({
   sets: z.array(setLineupSchema).min(1).max(5),
 });
 
+const presetSchema = z.object({
+  id,
+  teamId: id,
+  name: z.string(),
+  kind: z.enum(['starters', 'preset']),
+  slots: slotsSchema,
+  liberoId: playerRef,
+  liberoReplaces: z.array(id),
+  createdAt: z.string(),
+});
+
 export const exportFileSchema = z.object({
   app: z.literal(EXPORT_APP_ID),
   schemaVersion: z.literal(EXPORT_SCHEMA_VERSION),
@@ -100,6 +117,7 @@ export const exportFileSchema = z.object({
   teams: z.array(teamSchema),
   players: z.array(playerSchema),
   matches: z.array(matchSchema),
+  presets: z.array(presetSchema),
 });
 
 /*
@@ -115,13 +133,14 @@ export type SchemaMatchesTypes = [
   Assert<Same<z.infer<typeof setLineupSchema>, SetLineup>>,
   Assert<Same<z.infer<typeof setLineupSchema>['events'][number], SetEvent>>,
   Assert<Same<z.infer<typeof matchSchema>, Match>>,
+  Assert<Same<z.infer<typeof presetSchema>, LineupPreset>>,
   Assert<Same<z.infer<typeof exportFileSchema>, ExportFile>>,
 ];
 
 /* ------------------------------------------------------------------ export */
 
 export interface BuildExportOptions {
-  /** Export only this team (plus its owning profile, players and matches). */
+  /** Export only this team (plus its owning profile, players, matches and presets). */
   teamId?: string;
   /** Timestamp to write into `exportedAt` (defaults to now). */
   now?: Date;
@@ -138,6 +157,7 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
       teams: [...data.teams],
       players: [...data.players],
       matches: [...data.matches],
+      presets: [...data.presets],
     };
   }
   const teamId = options.teamId;
@@ -149,6 +169,7 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
     teams,
     players: data.players.filter((p) => p.teamId === teamId),
     matches: data.matches.filter((m) => m.teamId === teamId),
+    presets: data.presets.filter((p) => p.teamId === teamId),
   };
 }
 
@@ -190,6 +211,7 @@ export interface ImportSummary {
   teams: number;
   players: number;
   matches: number;
+  presets: number;
 }
 
 export type ParseImportResult =
@@ -201,6 +223,7 @@ export function summarize(data: TransferData): ImportSummary {
     teams: data.teams.length,
     players: data.players.length,
     matches: data.matches.length,
+    presets: data.presets.length,
   };
 }
 
@@ -217,36 +240,50 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - jersey numbers are unique within a team;
  * - set numbers are unique within a match;
  * - every lineup slot / libero refers to a player of the match's own team;
- * - within a set, no player is in two slots and the libero is not also a starter.
+ * - within a set, no player is in two slots and the libero is not also a starter;
+ * - presets (v3) follow the same lineup rules for their team, and a team has at most one
+ *   'starters' preset.
  */
 export function isConsistent(data: TransferData): boolean {
-  const { profiles, teams, players, matches } = data;
-  if ([profiles, teams, players, matches].some((list) => hasDuplicates(list.map((x) => x.id)))) {
-    return false;
-  }
+  const { profiles, teams, players, matches, presets } = data;
+  const lists = [profiles, teams, players, matches, presets];
+  if (lists.some((list) => hasDuplicates(list.map((x) => x.id)))) return false;
   const profileIds = new Set(profiles.map((p) => p.id));
   const teamIds = new Set(teams.map((t) => t.id));
   if (!teams.every((t) => profileIds.has(t.profileId))) return false;
   if (!players.every((p) => teamIds.has(p.teamId))) return false;
   if (!matches.every((m) => teamIds.has(m.teamId))) return false;
+  if (!presets.every((p) => teamIds.has(p.teamId))) return false;
+  if (hasDuplicates(presets.filter((p) => p.kind === 'starters').map((p) => p.teamId))) {
+    return false;
+  }
 
   const teamOfPlayer = new Map(players.map((p) => [p.id, p.teamId]));
   for (const teamId of teamIds) {
     const numbers = players.filter((p) => p.teamId === teamId).map((p) => p.number);
     if (hasDuplicates(numbers)) return false;
   }
+  /** A lineup (set or preset) of `teamId`: nobody twice, libero not on court, own players only. */
+  const lineupOk = (
+    teamId: string,
+    lineup: Pick<SetLineup, 'slots' | 'liberoId' | 'liberoReplaces'>,
+    extraPlayers: readonly string[] = [],
+  ): boolean => {
+    const starters = Object.values(lineup.slots).filter((x): x is string => x !== null);
+    if (hasDuplicates(starters)) return false; // a player in two slots
+    if (lineup.liberoId !== null && starters.includes(lineup.liberoId)) return false;
+    return [...starters, lineup.liberoId, ...lineup.liberoReplaces, ...extraPlayers].every(
+      (playerId) => playerId === null || teamOfPlayer.get(playerId) === teamId,
+    );
+  };
+  if (!presets.every((p) => lineupOk(p.teamId, p))) return false;
   return matches.every((m) => {
     if (hasDuplicates(m.sets.map((s) => s.setNumber))) return false;
     return m.sets.every((set) => {
-      const starters = Object.values(set.slots).filter((x): x is string => x !== null);
-      if (hasDuplicates(starters)) return false; // a player in two slots
-      if (set.liberoId !== null && starters.includes(set.liberoId)) return false;
       const subPlayers = set.events.flatMap((e) =>
         e.type === 'sub' ? [e.outPlayerId, e.inPlayerId] : [],
       );
-      return [...starters, set.liberoId, ...set.liberoReplaces, ...subPlayers].every(
-        (playerId) => playerId === null || teamOfPlayer.get(playerId) === m.teamId,
-      );
+      return lineupOk(m.teamId, set, subPlayers);
     });
   });
 }
@@ -255,8 +292,7 @@ export function isConsistent(data: TransferData): boolean {
  * v1 → v2: sets gain `liberoReplaces: []` and `events: []`. Anything malformed is passed through
  * untouched so the zod check reports it as INVALID_SHAPE.
  */
-function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
-  if (raw.schemaVersion !== 1) return raw;
+function upgradeV1(raw: Record<string, unknown>): Record<string, unknown> {
   const matches = Array.isArray(raw.matches)
     ? raw.matches.map((m: unknown) =>
         isRecord(m) && Array.isArray(m.sets)
@@ -269,7 +305,14 @@ function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown>
           : m,
       )
     : raw.matches;
-  return { ...raw, schemaVersion: EXPORT_SCHEMA_VERSION, matches };
+  return { ...raw, schemaVersion: 2, matches };
+}
+
+/** Upgrades an older file step by step: v1 → v2 (sets), v2 → v3 (`presets: []`). */
+function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
+  const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
+  if (v2.schemaVersion !== 2) return v2;
+  return { presets: [], ...v2, schemaVersion: EXPORT_SCHEMA_VERSION };
 }
 
 /**
@@ -313,6 +356,7 @@ export function replaceData(incoming: TransferData): TransferData {
     teams: [...incoming.teams],
     players: [...incoming.players],
     matches: [...incoming.matches],
+    presets: [...incoming.presets],
   };
 }
 
@@ -327,7 +371,8 @@ function mergeById<T extends { id: string }>(existing: readonly T[], incoming: r
 export type MergeResult = { ok: true; data: TransferData } | { ok: false; error: 'MERGE_CONFLICT' };
 
 /**
- * Merge: every profile, team, player and match is matched by id. **On an equal id the incoming
+ * Merge: every profile, team, player, match and preset is matched by id (the team's starters are
+ * replaced by incoming starters for the same team). **On an equal id the incoming
  * item wins** (it replaces the existing one in place); items only in `existing` are kept, items
  * only in `incoming` are appended. Nothing is deleted.
  *
@@ -336,11 +381,19 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * Replace instead); data is never silently dropped or renumbered.
  */
 export function mergeData(existing: TransferData, incoming: TransferData): MergeResult {
+  // A team has one set of starters: incoming starters replace the existing ones of that team.
+  const incomingStarters = new Map(
+    incoming.presets.filter((p) => p.kind === 'starters').map((p) => [p.teamId, p.id]),
+  );
+  const keptPresets = existing.presets.filter(
+    (p) => p.kind !== 'starters' || (incomingStarters.get(p.teamId) ?? p.id) === p.id,
+  );
   const data: TransferData = {
     profiles: mergeById(existing.profiles, incoming.profiles),
     teams: mergeById(existing.teams, incoming.teams),
     players: mergeById(existing.players, incoming.players),
     matches: mergeById(existing.matches, incoming.matches),
+    presets: mergeById(keptPresets, incoming.presets),
   };
   return isConsistent(data) ? { ok: true, data } : { ok: false, error: 'MERGE_CONFLICT' };
 }

@@ -19,11 +19,18 @@ export const transfer = {
     hint: 'Load a .json file exported from Volley Lineup.',
     pick: 'Import from file',
     previewTitle: (fileName: string) => `Ready to import ${fileName}`,
-    summary: (s: { profiles: number; teams: number; players: number; matches: number }) =>
+    summary: (s: {
+      profiles: number;
+      teams: number;
+      players: number;
+      matches: number;
+      presets: number;
+    }) =>
       [
         plural(s.teams, 'team', 'teams'),
         plural(s.players, 'player', 'players'),
         plural(s.matches, 'match', 'matches'),
+        plural(s.presets, 'saved lineup', 'saved lineups'),
         plural(s.profiles, 'profile', 'profiles'),
       ].join(', '),
     mergeHint: 'Merge adds the file to your data; items that already exist are updated.',
