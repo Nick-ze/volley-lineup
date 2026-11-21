@@ -419,3 +419,55 @@ interface LineupPreset {
 - [x] Point tags offer only plausible players (rules doc checks #35); the rules doc's check list is updated with PASS for everything the app now models.
 - [x] Phone 375 px EN + DE: role tags on empty spots and the formation controls fit. — _verified in a browser (Playwright); not yet on a real phone._
 - [x] Lint, typecheck, tests in CI; `src/domain` 100%.
+
+---
+
+# v6 plan — Players & performance
+
+v5 shipped as `v5.0.0`. v6 adds pictures, a player detail screen with season stats, confidential player descriptions, a performance view per set / match, and error types on "our error". Owner's choices (asked before building): photos **are** exported; descriptions are exported **only when chosen** at export time; **7 error types**.
+
+## 25. v6 features
+
+1. **Profile pictures** — each manager profile and each player can have a photo: take one with the camera or pick one from the gallery, change it, remove it. Pictures are resized and compressed on the device (256 px, JPEG 0.7). Without a photo the fallback stays (coloured avatar for profiles, jersey number for players). Shown on the profile, in the roster, on the player detail screen, in the player picker / bench; court chips keep the number or name (`chipLabel` setting) with at most a small photo where it fits at 375 px.
+2. **Player detail screen** (tap a player in the roster): photo, name, number, positions, status, and season stats — sets started and played, rallies on court (including as libero) also as "x of y rallies", subs in / out, serve turns, serves and points on serve, kills, aces, blocks, errors (by type), plus/minus while on court. A per-match list with the same numbers; tapping a match opens the performance view of that match for this player. "Edit" opens the existing player form.
+3. **Confidential descriptions** — every player can have a free-text description (≤ 1000 characters). Hidden by default everywhere. "Show descriptions" unlocks them with the phone's biometrics or device PIN (`expo-local-authentication`); where that isn't available (web, no biometrics / PIN set up) a confirmation dialog is used instead. Once unlocked, all descriptions stay visible until "Lock" is pressed, the app goes to the background, or it restarts. The unlock state is never persisted. Descriptions never appear in lists, previews or the print sheet; export files contain them only if "Include descriptions" is ticked (only offered while unlocked, off by default).
+4. **Performance view** (`/match/[matchId]/performance`, a "Performance" link on the match screen for the selected set): per player rallies on court, won – lost (plus/minus), kills / aces / blocks vs errors (net points) and a one-glance rating. Switch between every played set and "All sets". Tapping a player shows their detail for that set / all sets: error rate (errors per rally on court), errors per action, serve / attack error rates, and errors by type ("3 reception errors, 5 attack errors").
+5. **Error types** — the optional tag "Our error" gets an optional error type: Serve · Reception · Attack · Block · Set · Net / foul · Other. Still optional, one tap to skip; no type = "unspecified". Only plausible types / players are offered (`docs/VOLLEYBALL_RULES.md` §7).
+
+## 26. v6 data model changes
+
+```ts
+interface ManagerProfile {
+  /* … */ photoId?: string;
+}
+interface Player {
+  /* … */ photoId?: string;
+  description?: string;
+} // description: trimmed, 1–1000 chars
+interface Photo {
+  id: string;
+  dataUri: string;
+} // data:image/jpeg;base64,… (≤ 200 000 chars)
+type ErrorType = 'serve' | 'reception' | 'attack' | 'block' | 'set' | 'netFault' | 'other';
+interface PointEvent {
+  /* … */ errorType?: ErrorType;
+} // only with kind 'ourError'
+interface ExportFile {
+  schemaVersion: 7;
+  /* … */ photos: Photo[];
+} // v1–v6 files upgraded (photos: [])
+// Store: version 8 (v7 → v8 changes no data: the new fields are optional).
+// Photos live outside the main store: one storage key per photo (src/store/photoStore.ts).
+```
+
+Pure logic: `src/domain/photos.ts` (data URI and description rules, referenced photos), `src/domain/performance.ts` (`setPerformance`, `matchPerformance`, `playerSeason`, `performanceRows`, `plusMinus`, `netPoints`, `rating`, `errorRate`, `errorsPerAction`, `serveErrorRate`, `attackErrorRate`, `errorBreakdown`), `pointTags.ts` (`setLastErrorType`, `kindTakesErrorType`), `lastRally.ts` (`plausibleErrorTypes`, error-type-aware `plausiblePlayerIds`).
+
+## 27. v6 acceptance checklist
+
+- [ ] Manager and player photos can be added (camera / gallery), changed and removed. They show in the profile, roster, player detail and pickers, with a fallback without a photo. They persist and the store stays small (tests for the domain parts; browser check on web).
+- [ ] Player detail screen shows season and per-match stats, including points / sets on court, correct for a scripted season with subs and libero swaps (tests with literal numbers).
+- [ ] Descriptions are hidden until unlocked (biometrics / PIN on phones, confirmation on web). Unlocking shows all descriptions until locked again, the app goes to the background, or it restarts. Nothing confidential shows in lists, print or (per decision) export.
+- [ ] The performance tab shows every player for each set and for all sets. Player per-set detail shows the error rate and errors by type, correct for a scripted match (tests with literal numbers).
+- [ ] The error type on "our error" is optional; old data and v1–v6 export files open without loss; export/import round trip restores exactly.
+- [ ] Phone layout 375 px, EN + DE.
+- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%.

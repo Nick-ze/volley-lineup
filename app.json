@@ -2,7 +2,7 @@
   "expo": {
     "name": "Volley Lineup",
     "slug": "volley-lineup",
-    "version": "5.0.0",
+    "version": "6.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "volleylineup",
@@ -35,7 +35,20 @@
           "imageWidth": 76
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Volley Lineup uses your photos to set profile and player pictures.",
+          "cameraPermission": "Volley Lineup uses the camera to take profile and player pictures."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Volley Lineup uses Face ID to unlock confidential player descriptions."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

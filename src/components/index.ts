@@ -9,3 +9,4 @@ export * from './ToggleRow';
 export * from './HeaderTitle';
 export * from './RoleTag';
 export * from './OffPositionMark';
+export * from './Photo';

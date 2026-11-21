@@ -1,0 +1,150 @@
+/**
+ * v7 (app 6.0): pictures of profiles and players (docs/PLAN.md §26, DECISIONS #148).
+ *
+ * Photos are kept out of the main store: each one is a small data URI under its own storage
+ * key (`volley-lineup-photo:<id>`), so the main store stays small and fast to write (every
+ * rally in live mode writes it) and no single stored value grows with the number of photos.
+ * Profiles and players only hold a `photoId`.
+ *
+ * - Loading starts when this module is imported; `whenPhotosLoaded()` waits for it (export /
+ *   import await it; screens simply show the fallback until a photo has loaded).
+ * - Photos nobody refers to are deleted automatically whenever profiles or players change
+ *   (and after loading). So: save a new photo with `setPhoto` *before* pointing a profile /
+ *   player at it, and keep an unsaved form's picture in local state, not here.
+ */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
+
+import type { TransferData } from '@/domain/exportSchema';
+import { referencedPhotoIds } from '@/domain/photos';
+import type { Photo } from '@/domain/types';
+
+import { selectAppData, useAppStore } from './appStore';
+
+export const PHOTO_KEY_PREFIX = 'volley-lineup-photo:';
+const keyOf = (id: string) => `${PHOTO_KEY_PREFIX}${id}`;
+
+interface PhotoState {
+  /** photo id → data URI */
+  photos: Record<string, string>;
+  /** True once the stored photos have been read. */
+  hydrated: boolean;
+}
+
+export const usePhotoStore = create<PhotoState>()(() => ({ photos: {}, hydrated: false }));
+
+/** Writes / deletes storage keys; failures are ignored (the in-memory state stays right). */
+async function persist(write: Record<string, string>, remove: readonly string[]): Promise<void> {
+  try {
+    const entries = Object.entries(write).map(([id, uri]) => [keyOf(id), uri] as [string, string]);
+    if (entries.length > 0) await AsyncStorage.multiSet(entries);
+    if (remove.length > 0) await AsyncStorage.multiRemove(remove.map(keyOf));
+  } catch {
+    // Storage full or unavailable: keep going with what is in memory.
+  }
+}
+
+/** Saves (or replaces) a photo. */
+export async function setPhoto(id: string, dataUri: string): Promise<void> {
+  usePhotoStore.setState((s) => ({ photos: { ...s.photos, [id]: dataUri } }));
+  await persist({ [id]: dataUri }, []);
+}
+
+/** Deletes a photo. */
+export async function removePhoto(id: string): Promise<void> {
+  usePhotoStore.setState((s) => {
+    const { [id]: _removed, ...photos } = s.photos;
+    return { photos };
+  });
+  await persist({}, [id]);
+}
+
+/** Import (replace): the given photos become all photos. */
+export async function replacePhotos(list: readonly Photo[]): Promise<void> {
+  const next = Object.fromEntries(list.map((p) => [p.id, p.dataUri]));
+  const removed = Object.keys(usePhotoStore.getState().photos).filter((id) => !(id in next));
+  usePhotoStore.setState({ photos: next });
+  await persist(next, removed);
+}
+
+/** Import (merge): adds / replaces the given photos, keeps the others. */
+export async function putPhotos(list: readonly Photo[]): Promise<void> {
+  const added = Object.fromEntries(list.map((p) => [p.id, p.dataUri]));
+  usePhotoStore.setState((s) => ({ photos: { ...s.photos, ...added } }));
+  await persist(added, []);
+}
+
+/** All photos as a list (for export). */
+export function photoList(): Photo[] {
+  return Object.entries(usePhotoStore.getState().photos).map(([id, dataUri]) => ({ id, dataUri }));
+}
+
+/** The data URI of a photo id, or null (none / not loaded yet). Re-renders on change. */
+export function usePhotoUri(photoId: string | undefined): string | null {
+  return usePhotoStore((s) => (photoId === undefined ? null : (s.photos[photoId] ?? null)));
+}
+
+/** Deletes the photos no profile or player refers to (only once both stores have loaded). */
+export async function prunePhotos(): Promise<void> {
+  const app = useAppStore.getState();
+  const { photos, hydrated } = usePhotoStore.getState();
+  if (!hydrated || !app.hydrated) return;
+  const keep = referencedPhotoIds(app);
+  const orphans = Object.keys(photos).filter((id) => !keep.has(id));
+  if (orphans.length === 0) return;
+  usePhotoStore.setState((s) => ({
+    photos: Object.fromEntries(Object.entries(s.photos).filter(([id]) => keep.has(id))),
+  }));
+  await persist({}, orphans);
+}
+
+/** Reads every stored photo. */
+export async function loadPhotos(): Promise<void> {
+  try {
+    const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith(PHOTO_KEY_PREFIX));
+    const pairs = keys.length === 0 ? [] : await AsyncStorage.multiGet(keys);
+    const loaded: Record<string, string> = {};
+    for (const [key, value] of pairs) {
+      if (value !== null) loaded[key.slice(PHOTO_KEY_PREFIX.length)] = value;
+    }
+    // Photos saved while loading win over the stored copies.
+    usePhotoStore.setState((s) => ({ photos: { ...loaded, ...s.photos }, hydrated: true }));
+  } catch {
+    usePhotoStore.setState({ hydrated: true });
+  }
+  await prunePhotos();
+}
+
+let loading: Promise<void> | null = null;
+
+/** Resolves once the stored photos have been read (starts loading if needed). */
+export function whenPhotosLoaded(): Promise<void> {
+  loading ??= loadPhotos();
+  return loading;
+}
+
+/** Tests only: forget the photos and load again on the next `whenPhotosLoaded()`. */
+export function resetPhotoStoreForTests(): void {
+  loading = null;
+  usePhotoStore.setState({ photos: {}, hydrated: false });
+}
+
+// Prune whenever the profiles or players change (e.g. a player deleted, a photo replaced, an
+// import, "Delete all data") and once the main store has loaded.
+useAppStore.subscribe((state, prev) => {
+  if (
+    state.profiles !== prev.profiles ||
+    state.players !== prev.players ||
+    state.hydrated !== prev.hydrated
+  ) {
+    void prunePhotos();
+  }
+});
+
+void whenPhotosLoaded();
+
+/** Everything an export needs: the main store's data plus the photos (waits for them). */
+export async function transferSnapshot(): Promise<TransferData> {
+  await whenPhotosLoaded();
+  return { ...selectAppData(useAppStore.getState()), photos: photoList() };
+}

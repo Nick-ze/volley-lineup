@@ -79,11 +79,19 @@ export default function RootLayout() {
                 options={{ title: t.nav.preset }}
               />
               <Stack.Screen name="team/[teamId]/starters" options={{ title: t.nav.teamStarters }} />
+              <Stack.Screen
+                name="team/[teamId]/players/[playerId]"
+                options={{ title: t.nav.playerDetail }}
+              />
               <Stack.Screen name="match/[matchId]/index" options={{ title: t.nav.match }} />
               <Stack.Screen name="match/[matchId]/rotation" options={{ title: t.nav.rotation }} />
               <Stack.Screen name="match/[matchId]/starters" options={{ title: t.nav.starters }} />
               <Stack.Screen name="match/[matchId]/live" options={{ title: t.nav.live }} />
               <Stack.Screen name="match/[matchId]/stats" options={{ title: t.nav.matchStats }} />
+              <Stack.Screen
+                name="match/[matchId]/performance"
+                options={{ title: t.nav.performance }}
+              />
             </Stack>
           ) : (
             <View style={styles.loading}>
