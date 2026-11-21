@@ -5,7 +5,7 @@ import type { CourtPosition } from '@/domain/types';
 import { useT } from '@/i18n';
 import { colors, radius, typography } from '@/theme';
 
-import { EMPTY_SLOT_SIZE } from './constants';
+import { COMPACT_CHIP_SIZE, COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
 import { useDrag } from './drag/DragContext';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { zoneFeedback } from './drag/useDropZone';
@@ -15,7 +15,13 @@ const playerName = (p: { firstName: string; lastName: string }) =>
   `${p.firstName} ${p.lastName}`.trim();
 
 /** The court with six drop slots. Slots with validation errors get a red outline. */
-export function LineupCourt({ editor }: { editor: LineupEditor }) {
+export function LineupCourt({
+  editor,
+  compact = false,
+}: {
+  editor: LineupEditor;
+  compact?: boolean;
+}) {
   const t = useT();
   const drag = useDrag();
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
@@ -34,6 +40,7 @@ export function LineupCourt({ editor }: { editor: LineupEditor }) {
           from={{ kind: 'slot', position }}
           selected={selectedId === player.id}
           onPress={() => pressPlayer(player.id)}
+          size={compact ? COMPACT_CHIP_SIZE : undefined}
           accessibilityLabel={t.lineup.slotLabel(position, `${player.number} ${name}`)}
           testID={`slot-player-${position}`}
         />
@@ -63,6 +70,7 @@ export function LineupCourt({ editor }: { editor: LineupEditor }) {
       slotRef={(position, view) => drag.registerZone({ kind: 'slot', position }, view)}
       slotStyle={({ position }) => [
         styles.slot,
+        compact && styles.compactSlot,
         errorPositions.has(position) && styles.error,
         zoneFeedback(drag, `slot-${position}`).style,
       ]}
@@ -72,6 +80,7 @@ export function LineupCourt({ editor }: { editor: LineupEditor }) {
 
 const styles = StyleSheet.create({
   slot: { borderWidth: 3, borderColor: colors.transparent },
+  compactSlot: { minHeight: COMPACT_SLOT_MIN_HEIGHT, paddingVertical: 0 },
   error: { borderColor: colors.error, borderStyle: 'dashed' },
   empty: {
     width: EMPTY_SLOT_SIZE,

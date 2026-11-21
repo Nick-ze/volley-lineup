@@ -5,7 +5,7 @@ import { locatePlayer } from '@/domain/lineupEditing';
 import { useT } from '@/i18n';
 import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
-import { BENCH_MIN_HEIGHT } from './constants';
+import { BENCH_MIN_HEIGHT, COMPACT_CHIP_SIZE } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { useDropZone } from './drag/useDropZone';
 import type { LineupEditor } from './useLineupEditor';
@@ -14,14 +14,22 @@ import type { LineupEditor } from './useLineupEditor';
  * Active players not on court and not libero. Also a drop zone: dropping a court / libero
  * player here takes them off. `scrollable` gives the bench its own scroll area (wide layout).
  */
-export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable: boolean }) {
+export function Bench({
+  editor,
+  scrollable,
+  compact = false,
+}: {
+  editor: LineupEditor;
+  scrollable: boolean;
+  compact?: boolean;
+}) {
   const t = useT();
   const { bench, set, selectedId, pressPlayer, pressTarget } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'bench' });
   const selectedOffBench = selectedId !== null && locatePlayer(set, selectedId).kind !== 'bench';
 
   const grid = (
-    <View style={styles.grid}>
+    <View style={[styles.grid, compact && styles.compactGrid]}>
       {bench.map((p) => (
         <DraggablePlayer
           key={p.id}
@@ -29,6 +37,7 @@ export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable
           from={{ kind: 'bench' }}
           selected={selectedId === p.id}
           onPress={() => pressPlayer(p.id)}
+          size={compact ? COMPACT_CHIP_SIZE : undefined}
           testID={`bench-player-${p.number}`}
         />
       ))}
@@ -40,10 +49,10 @@ export function Bench({ editor, scrollable }: { editor: LineupEditor; scrollable
     <View
       ref={zoneRef}
       collapsable={false}
-      style={[styles.box, scrollable && styles.fill, zoneStyle]}
+      style={[styles.box, compact && styles.compactBox, scrollable && styles.fill, zoneStyle]}
       testID="bench"
     >
-      <Text style={styles.title} accessibilityRole="header">
+      <Text style={compact ? styles.compactTitle : styles.title} accessibilityRole="header">
         {t.lineup.benchTitle(bench.length)}
       </Text>
       {selectedOffBench ? (
@@ -75,8 +84,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   fill: { flex: 1, minHeight: BENCH_MIN_HEIGHT },
+  compactBox: { padding: spacing.sm, gap: spacing.xs },
+  compactGrid: { gap: spacing.sm, paddingVertical: 0 },
   scroll: { flex: 1 },
   title: { ...typography.subheading, color: colors.text },
+  compactTitle: { ...typography.label, color: colors.text },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, paddingVertical: spacing.xs },
   empty: { ...typography.body, color: colors.textMuted },
   dropTarget: {

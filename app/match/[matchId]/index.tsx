@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: maxContentWidth,
     alignSelf: 'center',
-    padding: spacing.lg,
-    gap: spacing.lg,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   // Four links: one row on wide screens, two rows of two on phones.

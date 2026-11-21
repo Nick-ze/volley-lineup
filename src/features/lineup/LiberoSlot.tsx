@@ -3,13 +3,19 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useT } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
-import { EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
+import { COMPACT_CHIP_SIZE, EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import { useDropZone } from './drag/useDropZone';
 import type { LineupEditor } from './useLineupEditor';
 
 /** The libero spot next to the court: a drop zone holding at most one player. */
-export function LiberoSlot({ editor }: { editor: LineupEditor }) {
+export function LiberoSlot({
+  editor,
+  compact = false,
+}: {
+  editor: LineupEditor;
+  compact?: boolean;
+}) {
   const t = useT();
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'libero' });
@@ -20,7 +26,7 @@ export function LiberoSlot({ editor }: { editor: LineupEditor }) {
     <View
       ref={zoneRef}
       collapsable={false}
-      style={[styles.box, hasError && styles.error, zoneStyle]}
+      style={[styles.box, compact && styles.compactBox, hasError && styles.error, zoneStyle]}
       testID="libero-slot"
     >
       <Text style={styles.title}>{t.lineup.libero}</Text>
@@ -30,6 +36,7 @@ export function LiberoSlot({ editor }: { editor: LineupEditor }) {
           from={{ kind: 'libero' }}
           selected={selectedId === libero.id}
           onPress={() => pressPlayer(libero.id)}
+          size={compact ? COMPACT_CHIP_SIZE : undefined}
           accessibilityLabel={t.lineup.liberoSlotLabel(
             `${libero.number} ${libero.firstName} ${libero.lastName}`,
           )}
@@ -65,6 +72,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.border,
   },
+  // Phone layout: title beside the chip, so the row stays low.
+  compactBox: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
   error: { borderColor: colors.error },
   title: { ...typography.label, color: colors.text },
   empty: {
