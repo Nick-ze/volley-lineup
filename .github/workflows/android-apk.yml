@@ -1,17 +1,14 @@
 name: Android APK
 
-# Builds an installable Android APK and publishes it as the GitHub release "android-latest".
-# The APK is signed with the default debug key (fine for sideloading, not for the Play Store).
+# Builds an installable Android APK.
+# - Push a tag like v1.2.3 → release "v1.2.3" with asset volley-lineup-1.2.3.apk.
+#   The tag must match "version" in app.json and package.json.
+# - Manual run (Actions → Android APK → Run workflow) → build only (workflow artifact), no release.
+# The APK is signed with the Expo template's fixed debug key: fine for sideloading and for
+# updating over earlier versions, not for the Play Store.
 on:
   push:
-    branches: [main]
-  pull_request:
-    paths:
-      - .github/workflows/android-apk.yml
-      - app.json
-      - app.config.js
-      - package.json
-      - package-lock.json
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -22,11 +19,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Removes the old rolling "android-latest" release (replaced by versioned releases).
+  remove-android-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release delete android-latest --cleanup-tag --yes || echo "android-latest already gone"
+
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Read app version
+        id: version
+        run: |
+          APP_VERSION=$(node -p "require('./app.json').expo.version")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$APP_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::app.json version ($APP_VERSION) != package.json version ($PKG_VERSION)"; exit 1
+          fi
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v$APP_VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match app version v$APP_VERSION"; exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,19 +62,22 @@ jobs:
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
-      - name: Rename APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk volley-lineup.apk
+      - name: Name the APK
+        id: apk
+        run: |
+          FILE="volley-lineup-${{ steps.version.outputs.version }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: volley-lineup-apk
-          path: volley-lineup.apk
-      - name: Publish release "android-latest"
-        if: github.event_name != 'pull_request'
+          path: ${{ steps.apk.outputs.file }}
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete android-latest --cleanup-tag --yes || true
-          gh release create android-latest volley-lineup.apk \
-            --target "$GITHUB_SHA" \
-            --title "Volley Lineup – Android APK (latest)" \
-            --notes "Built automatically from main @ ${GITHUB_SHA::7}. Download volley-lineup.apk below and open it on your Android phone (allow installing from unknown sources)."
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.file }}" \
+            --title "Volley Lineup $GITHUB_REF_NAME" \
+            --notes "Android APK for Volley Lineup $GITHUB_REF_NAME. Download **${{ steps.apk.outputs.file }}** under Assets and open it on your Android phone. See the README section \"Install on Android (APK)\"." \
+            --latest
