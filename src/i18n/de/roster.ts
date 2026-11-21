@@ -80,6 +80,8 @@ export const roster: Strings['roster'] = {
     activeLabel: 'Aktiv (nicht verletzt)',
     delete: 'Spieler löschen',
     notFound: 'Diesen Spieler gibt es nicht mehr.',
+    deleteBlocked:
+      'Diese Person gehört zu einem gespielten Satz und kann nicht gelöscht werden. Markiere sie stattdessen als verletzt oder setze zuerst die Live-Daten dieses Satzes zurück.',
   },
   matches: {
     empty: 'Noch keine Spiele.',

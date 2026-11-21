@@ -40,6 +40,9 @@ export function LiberoSlot({ editor }: { editor: LineupEditor }) {
           accessibilityRole="button"
           accessibilityLabel={t.lineup.liberoSlotLabel(null)}
           accessibilityHint={selectedId ? t.lineup.slotHintSelected : undefined}
+          disabled={editor.locked}
+          accessibilityState={{ disabled: editor.locked }}
+          aria-disabled={editor.locked}
           onPress={() => pressTarget({ kind: 'libero' })}
           style={[styles.empty, selectedId !== null && styles.emptyArmed]}
           testID="libero-empty"

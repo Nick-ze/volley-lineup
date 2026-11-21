@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Screen } from '@/components';
+import { isPlayerInPlayedSet } from '@/domain/playerUsage';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { PlayerForm } from '@/features/roster/components/PlayerForm';
 import { useGoBack } from '@/features/roster/hooks/useGoBack';
@@ -13,6 +14,7 @@ export default function PlayerEditorScreen() {
   const { teamId, playerId } = useLocalSearchParams<{ teamId: string; playerId?: string }>();
   const team = useTeam(teamId);
   const player = usePlayer(playerId);
+  const deleteBlocked = useAppStore((s) => !!playerId && isPlayerInPlayedSet(s.matches, playerId));
   const goBack = useGoBack(`/team/${teamId}`);
   const router = useRouter();
 
@@ -38,6 +40,7 @@ export default function PlayerEditorScreen() {
         teamId={team.id}
         player={player}
         onDone={goBack}
+        deleteBlocked={deleteBlocked}
         onDelete={
           player
             ? () => {

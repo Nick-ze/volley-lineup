@@ -78,6 +78,8 @@ export const roster = {
     activeLabel: 'Active (not injured)',
     delete: 'Delete player',
     notFound: 'This player no longer exists.',
+    deleteBlocked:
+      "This player is part of a played set, so they can't be deleted. Mark them as injured instead, or reset that set's live data first.",
   },
   matches: {
     empty: 'No matches yet.',
