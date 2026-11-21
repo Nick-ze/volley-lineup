@@ -15,6 +15,17 @@ Built with Expo (React Native + react-native-web), TypeScript, Expo Router and Z
 - **Export / import** — export everything or one team as `.json`; import with a preview and a choice of merge or replace.
 - **Persistence** — data survives app restarts and page reloads (AsyncStorage / localStorage).
 
+New in **v2**:
+
+- **Libero swaps** — choose which starters the libero replaces (the middles by default). The rotation viewer shows the libero in their back-row spot ("L for #6"), never at the serving position; a toggle shows the base lineup.
+- **5-1 / 6-2 templates** — "Fill from template" fills the starting six from the roster by position and tells you which spots it couldn't fill.
+- **Live match mode** — "Point us" / "Point them" keep the score, rotate on side-outs, show who serves and when it's set point. Undo any action. Once a set has live data its starting lineup is locked ("Reset live data" unlocks it).
+- **Substitutions** — swap a court player for a bench player; the app counts subs (6 per set) and warns before a sub that breaks the limit or the re-entry rule. Libero swaps don't count.
+- **Print / PDF** — a printable sheet with every set's starting six, libero, first serve and the roster (browser print on the web, a shareable PDF on the phone).
+- **Deutsch** — the whole app in German: Settings → Language / Sprache.
+
+Data from v1 (on the phone or in a v1 export file) opens in v2 automatically.
+
 ## Live web app
 
 **https://nick-ze.github.io/volley-lineup/**
