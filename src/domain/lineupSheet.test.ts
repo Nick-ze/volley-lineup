@@ -239,7 +239,7 @@ describe('buildLineupSheetHtml', () => {
     expect(out.match(/class="off"/g)).toHaveLength(1);
     expect(out.match(/class="off-note"/g)).toHaveLength(1);
     expect(out).toContain(
-      '</div><p class="off-note">* = plays a role that is none of their positions</p>',
+      '<section class="roster-section"><p class="off-note">* = plays a role that is none of their positions</p><h2>Roster</h2>',
     );
   });
 

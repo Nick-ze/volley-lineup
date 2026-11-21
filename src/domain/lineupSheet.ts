@@ -260,7 +260,7 @@ td.serving { border: 2px solid ${c.border}; }
 .pos { display: block; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
 .role { float: right; font-weight: 700; color: ${c.text}; }
 .off { font-weight: 800; }
-p.off-note { margin: 4px 0 0; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
+p.off-note { float: right; margin: 0; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
 .srv { font-weight: 700; color: ${c.text}; }
 .num { display: block; font-size: ${l.jerseyFontSize}; font-weight: 700; line-height: 1.1; }
 .name { display: block; font-size: ${l.nameFontSize}; overflow-wrap: anywhere; }
@@ -272,7 +272,7 @@ section.roster-section { margin-top: ${l.sectionGap}; }
 table.roster thead { display: table-header-group; }
 table.roster tr { break-inside: avoid; page-break-inside: avoid; }
 table.roster { width: 100%; border-collapse: collapse; font-size: ${l.infoFontSize}; }
-table.roster th, table.roster td { border: 1px solid ${c.grid}; padding: 2px 6px; text-align: left; }
+table.roster th, table.roster td { border: 1px solid ${c.grid}; padding: 1px 6px; text-align: left; }
 table.roster th { background: ${c.fill}; }
 table.roster td.n { width: 3em; font-weight: 700; text-align: right; }
 section.results { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border};
@@ -305,12 +305,13 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
       ? renderResults(getMatchState(match), labels.results)
       : '';
 
+  // On the roster heading's line (floated right), so it adds no height to the page.
   const offNote = sets.some((s) => hasOffPosition(s, byId))
     ? `<p class="off-note">${escapeHtml(labels.offPositionNote)}</p>`
     : '';
   const setsHtml =
     sets.length > 0
-      ? `<div class="sets">${sets.map((s) => renderSet(s, byId, labels)).join('')}</div>${offNote}`
+      ? `<div class="sets">${sets.map((s) => renderSet(s, byId, labels)).join('')}</div>`
       : `<p class="empty">${escapeHtml(labels.noSets)}</p>`;
 
   return (
@@ -318,7 +319,8 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${escapeHtml(labels.documentTitle)}</title><style>${CSS}</style></head><body>` +
     `<header><h1>${escapeHtml(team.name)}</h1><dl class="meta">${metaHtml}</dl></header>` +
-    `<main>${resultsHtml}${setsHtml}<section class="roster-section"><h2>${escapeHtml(labels.roster)}</h2>` +
+    `<main>${resultsHtml}${setsHtml}<section class="roster-section">${offNote}` +
+    `<h2>${escapeHtml(labels.roster)}</h2>` +
     `${renderRoster(roster, labels)}</section></main></body></html>`
   );
 }
