@@ -184,12 +184,11 @@ describe('removePlayerFromPreset', () => {
     );
   });
 
-  it('drops the player’s role override (a role alone also counts as being in it)', () => {
-    const p = preset({ roles: { c: 'OPP', f: 'DS' } });
-    expect(removePlayerFromPreset(p, 'c').roles).toEqual({ f: 'DS' });
-    // stale data: a role for someone no longer on court is removed too
-    const stale = preset({ roles: { x: 'OH' } });
-    expect(removePlayerFromPreset(stale, 'x').roles).toEqual({});
+  it('keeps the formation: the roles belong to the spots, not the player (v6)', () => {
+    const p = preset({ formation: { system: '6-2', order: 'middle', setterAt: 3 } });
+    const removed = removePlayerFromPreset(p, 'c');
+    expect(removed.slots[3]).toBeNull();
+    expect(removed.formation).toEqual({ system: '6-2', order: 'middle', setterAt: 3 });
   });
 
   it('returns the same object when the player is not in it', () => {

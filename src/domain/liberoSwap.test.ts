@@ -130,16 +130,25 @@ describe('suggestLiberoReplaces', () => {
     expect(suggestLiberoReplaces(setWith(start), players)).toEqual(['mb1', 'mb2']);
   });
 
-  it('goes by role (v4): a primary MB playing S is left out, anyone playing MB is in', () => {
-    const set = { ...setWith(start), roles: { mb1: 'S' as const } };
-    expect(suggestLiberoReplaces(set, players)).toEqual(['mb2']);
-    const asMiddle = { ...setWith({ ...start, 1: 'dsmb' }), roles: { dsmb: 'MB' as const } };
-    expect(suggestLiberoReplaces(asMiddle, players)).toContain('dsmb');
+  it('goes by spot role (v6): whoever stands on the MB spots of the formation', () => {
+    // A DS on the MB spot 3 is suggested.
+    expect(suggestLiberoReplaces(setWith({ ...start, 3: 'dsmb' }), players)).toEqual([
+      'dsmb',
+      'mb2',
+    ]);
+    // Setter spot at 2 (players unchanged): S 2 · OH 3 · MB 4 · OPP 5 · OH 6 · MB 1.
+    const shifted = {
+      ...setWith(start),
+      formation: { system: '5-1' as const, order: 'outside' as const, setterAt: 2 as const },
+    };
+    expect(suggestLiberoReplaces(shifted, players)).toEqual(['s', 'opp']);
   });
 
-  it('ignores secondary MBs, empty slots and unknown players', () => {
-    const slots: Slots = { 1: 'dsmb', 2: null, 3: 'ghost', 4: 'mb2', 5: null, 6: null };
-    expect(suggestLiberoReplaces(setWith(slots), players)).toEqual(['mb2']);
+  it('ignores primary MBs off the MB spots, empty MB spots and unknown players', () => {
+    // MB spots 3 (unknown) and 6 (mb1); mb2 stands on the OPP spot 4, spot 2 is empty.
+    const slots: Slots = { 1: 'dsmb', 2: null, 3: 'ghost', 4: 'mb2', 5: null, 6: 'mb1' };
+    expect(suggestLiberoReplaces(setWith(slots), players)).toEqual(['mb1']);
+    expect(suggestLiberoReplaces(setWith({ ...slots, 6: null }), players)).toEqual([]);
   });
 });
 

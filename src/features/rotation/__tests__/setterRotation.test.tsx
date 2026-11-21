@@ -13,10 +13,11 @@ const numberAt = (position: number, num: string) =>
   expect(within(screen.getByTestId(`spot-${position}`)).getByText(num)).toBeTruthy();
 const roleAt = (position: number) => screen.getByTestId(`role-tag-${position}`, hidden);
 
-/** The setter #1 starts at position 4. */
+/** The setter #1 starts at position 4 (the formation's setter spot is 4). */
 const setterAt4: SetLineup = {
   ...set1,
   slots: { 1: 'p4', 2: 'p5', 3: 'p6', 4: 'p1', 5: 'p2', 6: 'p3' },
+  formation: { system: '5-1', order: 'outside', setterAt: 4 },
 };
 
 function seedWith(set: SetLineup, extraPlayers: Player[] = []) {
@@ -63,8 +64,9 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
   });
 
   it('with two setters (6-2) the back-row setter names the rotation', async () => {
-    // #4 plays setter too (off position): setters at 1 (#1, back row) and 4 (#4, front row).
-    seedWith({ ...set1, roles: { p4: 'S' } });
+    // A 6-2: #4 stands on the second setter spot (off position): setters at 1 (#1, back row)
+    // and 4 (#4, front row).
+    seedWith({ ...set1, formation: { system: '6-2', order: 'outside', setterAt: 1 } });
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
     // Each number comes up twice: title and jump buttons tell the two apart.
     expect(await screen.findByText('Rotation 1 (setter on\u00a01), first time')).toBeTruthy();
@@ -91,8 +93,8 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
   });
 
   it('without a setter on court the rotations are counted from the start', async () => {
-    // #1 plays defensive specialist: nobody sets.
-    seedWith({ ...set1, roles: { p1: 'DS' } });
+    // v6: the setter spot (1) is empty, so nobody sets.
+    seedWith({ ...set1, slots: { ...set1.slots, 1: null } });
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
     expect(await screen.findByText('Rotation 1 of 6')).toBeTruthy();
     await next();
@@ -103,12 +105,12 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
 
   it('shows each role on top of the spot, "*" when it is none of the player’s positions', async () => {
     const wing2: Player = { ...players[4]!, id: 'p8', number: 8, positions: ['OH', 'OPP'] };
-    // #8 plays opposite (secondary: no "*"), #3 plays outside (off position: "*").
+    // v6: the spots decide (S 1 · OH 2 · MB 3 · OPP 4 · OH 5 · MB 6). #8 on the OPP spot plays a
+    // secondary position (no "*"); #4 (OPP) on the OH spot 2 is off position ("*").
     seedWith(
       {
         ...set1,
-        slots: { ...set1.slots, 5: 'p8' },
-        roles: { p8: 'OPP', p3: 'OH' },
+        slots: { ...set1.slots, 2: 'p4', 4: 'p8', 5: 'p5' },
         liberoReplaces: ['p6'],
       },
       [wing2],
@@ -116,20 +118,21 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
     await screen.findByText('Rotation 1 (setter on\u00a01)');
     expect(roleAt(1)).toHaveTextContent('S');
-    expect(roleAt(5)).toHaveTextContent('OPP');
-    expect(screen.queryByTestId('role-tag-5-off', hidden)).toBeNull();
-    expect(roleAt(3)).toHaveTextContent('OH');
-    expect(screen.getByTestId('role-tag-3-off', hidden)).toBeTruthy();
+    expect(roleAt(4)).toHaveTextContent('OPP');
+    expect(screen.queryByTestId('role-tag-4-off', hidden)).toBeNull();
+    expect(roleAt(2)).toHaveTextContent('OH');
+    expect(screen.getByTestId('role-tag-2-off', hidden)).toBeTruthy();
     expect(
       screen.getByLabelText(
-        /^Position 3, Front row: Number 3, .*plays Outside Hitter, not one of their positions$/,
+        /^Position 2, Front row: Number 4, .*plays Outside Hitter, not one of their positions$/,
       ),
     ).toBeTruthy();
     // The libero standing in for #6 shows "L".
     expect(roleAt(6)).toHaveTextContent('L');
-    // Roles follow the players around: #3 (OH*) moves to 2.
+    // Roles follow the players around: #4 (OH*) moves to 1.
     await next();
-    expect(roleAt(2)).toHaveTextContent('OH');
+    expect(roleAt(1)).toHaveTextContent('OH');
+    expect(screen.getByTestId('role-tag-1-off', hidden)).toBeTruthy();
   });
 
   it('a switched-off libero never swaps in and the toggle is replaced by a note', async () => {
