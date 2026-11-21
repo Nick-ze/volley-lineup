@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
+import { matchResultLabel } from '@/features/live/matchResult';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForTeam } from '@/store';
 
@@ -35,7 +36,9 @@ export function MatchesTab({ teamId, onNewMatch, onOpenMatch }: MatchesTabProps)
           <ListRow
             key={m.id}
             title={s.vs(m.opponent)}
-            subtitle={`${m.date} · ${m.home ? s.home : s.away}`}
+            subtitle={[m.date, m.home ? s.home : s.away, matchResultLabel(t, m)]
+              .filter(Boolean)
+              .join(' · ')}
             onPress={() => onOpenMatch(m.id)}
             accessibilityLabel={s.open(m.opponent, m.date)}
             actions={

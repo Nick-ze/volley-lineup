@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
+import { MatchResultLine } from '@/features/live/MatchResultLine';
 import { PresetApply } from '@/features/lineup/PresetApply';
 import { SetTabs } from '@/features/lineup/SetTabs';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
@@ -48,6 +49,7 @@ export default function MatchScreen() {
             existing={match.sets.map((s) => s.setNumber)}
             onSelect={(n) => router.setParams({ set: String(n) })}
           />
+          <MatchResultLine match={match} />
           <View style={styles.links}>
             <Button
               label={t.lineup.rotation}
@@ -82,10 +84,7 @@ export default function MatchScreen() {
               compact
               style={styles.link}
               onPress={() =>
-                router.push({
-                  pathname: '/match/[matchId]/live',
-                  params: { matchId, set: String(setNumber) },
-                })
+                router.push({ pathname: '/match/[matchId]/live', params: { matchId } })
               }
               testID="open-live"
             />

@@ -26,20 +26,16 @@ function warningText(t: Strings, w: LiveWarning, playersById: Map<string, Player
   }
 }
 
-/** Set point / set won (yellow) and substitution rule warnings (red outline). */
+/** Set point (yellow) and substitution rule warnings (red outline). */
 export function LiveBanners({ state, opponent, playersById }: LiveBannersProps) {
   const t = useT();
-  const { setPoint, setWinner, warnings } = state;
-  const side = setWinner ?? setPoint;
+  // A won set is shown by the set-won panel instead of a banner.
+  const { setPoint: side, warnings } = state;
   return (
     <>
       {side ? (
         <View style={styles.setPoint} accessibilityRole="alert" testID="set-banner">
-          <Text style={styles.setPointText}>
-            {setWinner
-              ? t.live.setWon(side === 'us', opponent)
-              : t.live.setPoint(side === 'us', opponent)}
-          </Text>
+          <Text style={styles.setPointText}>{t.live.setPoint(side === 'us', opponent)}</Text>
         </View>
       ) : null}
       {warnings.length > 0 ? (

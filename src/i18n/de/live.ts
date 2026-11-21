@@ -4,7 +4,7 @@ import type { Strings } from '../en';
 export const live: Strings['live'] = {
   title: (set: number) => `Live · Satz ${set}`,
   open: 'Live',
-  openLabel: 'Live-Modus für diesen Satz öffnen',
+  openLabel: 'Live-Modus beim aktuellen Satz öffnen',
   matchNotFound: 'Dieses Spiel wurde nicht gefunden.',
   noSet: 'Dieser Satz hat noch keine Aufstellung. Stelle sie zuerst im Spiel auf.',
   incomplete: 'Stelle sechs Spieler aufs Feld, bevor du den Live-Modus startest.',
@@ -51,10 +51,6 @@ export const live: Strings['live'] = {
   unknownPlayer: '?',
   setPoint: (us: boolean, opponent: string) =>
     us ? 'Satzball für uns!' : `Satzball für ${opponent}`,
-  setWon: (us: boolean, opponent: string) =>
-    us
-      ? 'Wir haben den Satz gewonnen. Beende ihn, wann du willst.'
-      : `${opponent} hat den Satz gewonnen.`,
   warningsTitle: 'Hinweise zu Wechseln',
   warnSubLimit: (out: string, inn: string, max: number) =>
     `${inn} für ${out}: mehr als ${max} Wechsel in diesem Satz.`,
@@ -69,4 +65,45 @@ export const live: Strings['live'] = {
     'Spielstand und alle Wechsel dieses Satzes löschen? Danach kann die Aufstellung wieder bearbeitet werden.',
   resetConfirmButton: 'Zurücksetzen',
   lineupLocked: 'Dieser Satz wurde gespielt – setze die Live-Daten zurück, um ihn zu bearbeiten.',
+  setsScore: (us: number, them: number) => `Sätze ${us}:${them}`,
+  setsScoreLabel: (us: number, them: number) => `Gewonnene Sätze: wir ${us}, Gegner ${them}`,
+  undoAcross: (set: number) => `Letzten Punkt von Satz ${set} zurücknehmen (öffnet ihn wieder)`,
+  setWonBy: (us: boolean, opponent: string) => (us ? 'Satz für uns' : `Satz für ${opponent}`),
+  setFinalScore: (us: number, them: number) => `${us}:${them}`,
+  startSet: (n: number) => `Satz ${n} starten`,
+  startSetLabel: (n: number) => `Satz ${n} starten: Aufstellung und Aufschlag wählen`,
+  goToSet: (n: number) => `Zu Satz ${n}`,
+  undoLastPoint: 'Letzten Punkt zurücknehmen',
+  serveChoice: 'Wer in diesem Satz zuerst aufschlägt',
+  setup: {
+    title: (n: number) => `Satz ${n}: Aufstellung`,
+    filled: (n: number) => `${n}/6 auf dem Feld`,
+    onCourt: (refs: string) => `Auf dem Feld: ${refs}`,
+    libero: (ref: string) => `Libero ${ref}`,
+    fillFrom: 'Übernehmen von',
+    starters: 'Startsechs',
+    startersLabel: 'Diesen Satz mit der Startsechs des Teams füllen',
+    copy: (n: number) => `Satz ${n} kopieren`,
+    copyLabel: (n: number) => `Die Aufstellung von Satz ${n} kopieren`,
+    presetLabel: (name: string) => `Diesen Satz mit der Aufstellung ${name} füllen`,
+    nothing:
+      'Noch keine Startsechs oder gespeicherten Aufstellungen. Stelle über „Aufstellung bearbeiten“ sechs Spieler aufs Feld.',
+    skipped: (who: string) => `Nicht übernommen (verletzt oder nicht mehr im Team): ${who}`,
+    edit: 'Aufstellung bearbeiten',
+    editLabel: 'Diesen Satz im Aufstellungs-Editor bearbeiten',
+    startHint: 'Stelle zuerst sechs Spieler aufs Feld',
+  },
+  summary: {
+    title: 'Spiel beendet',
+    won: (us: number, them: number) => `Gewonnen ${us}:${them}`,
+    lost: (us: number, them: number) => `Verloren ${us}:${them}`,
+    setLine: (n: number) => `Satz ${n}`,
+    setScoreLabel: (n: number, us: number, them: number, opponent: string) =>
+      `Satz ${n}: wir ${us}, ${opponent} ${them}`,
+    duration: (hours: number, minutes: number) =>
+      hours > 0 ? `${hours} Std. ${minutes} Min.` : `${minutes} Min.`,
+    durationLabel: (text: string) => `Dauer ${text}`,
+    back: 'Zurück zum Spiel',
+    backLabel: 'Zurück zur Spielansicht',
+  },
 };

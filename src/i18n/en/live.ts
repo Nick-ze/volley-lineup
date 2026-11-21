@@ -2,7 +2,7 @@
 export const live = {
   title: (set: number) => `Live · Set ${set}`,
   open: 'Live',
-  openLabel: 'Open live match mode for this set',
+  openLabel: 'Open live match mode at the current set',
   matchNotFound: 'This match could not be found.',
   noSet: 'This set has no lineup yet. Build it on the match screen first.',
   incomplete: 'Put six players on court before starting live mode.',
@@ -47,8 +47,6 @@ export const live = {
   unknownPlayer: '?',
   setPoint: (us: boolean, opponent: string) =>
     us ? 'Set point for us!' : `Set point for ${opponent}`,
-  setWon: (us: boolean, opponent: string) =>
-    us ? 'We won the set. End it whenever you like.' : `${opponent} won the set.`,
   warningsTitle: 'Substitution warnings',
   warnSubLimit: (out: string, inn: string, max: number) =>
     `${inn} for ${out}: more than ${max} substitutions in this set.`,
@@ -62,4 +60,45 @@ export const live = {
     'Clear the score and all substitutions of this set? The lineup can then be edited again.',
   resetConfirmButton: 'Reset',
   lineupLocked: 'This set has been played — reset live data to edit.',
+  // v3: whole-match flow
+  setsScore: (us: number, them: number) => `Sets ${us}:${them}`,
+  setsScoreLabel: (us: number, them: number) => `Sets won: us ${us}, them ${them}`,
+  undoAcross: (set: number) => `Undo the last point of set ${set} (re-opens it)`,
+  setWonBy: (us: boolean, opponent: string) => (us ? 'Set won by us' : `Set won by ${opponent}`),
+  setFinalScore: (us: number, them: number) => `${us}:${them}`,
+  startSet: (n: number) => `Start set ${n}`,
+  startSetLabel: (n: number) => `Start set ${n}: choose its lineup and who serves first`,
+  goToSet: (n: number) => `Go to set ${n}`,
+  undoLastPoint: 'Undo last point',
+  serveChoice: 'Who serves first in this set',
+  setup: {
+    title: (n: number) => `Set ${n}: lineup`,
+    filled: (n: number) => `${n}/6 on court`,
+    onCourt: (refs: string) => `On court: ${refs}`,
+    libero: (ref: string) => `Libero ${ref}`,
+    fillFrom: 'Fill from',
+    starters: 'Team starters',
+    startersLabel: 'Fill this set with the team starters',
+    copy: (n: number) => `Copy set ${n}`,
+    copyLabel: (n: number) => `Copy the lineup of set ${n}`,
+    presetLabel: (name: string) => `Fill this set with the preset ${name}`,
+    nothing: 'No starters or presets yet. Use "Edit lineup" to put six players on court.',
+    skipped: (who: string) => `Left out (injured or no longer in the team): ${who}`,
+    edit: 'Edit lineup',
+    editLabel: 'Edit this set in the lineup builder',
+    startHint: 'Put six players on court first',
+  },
+  summary: {
+    title: 'Match over',
+    won: (us: number, them: number) => `Won ${us}:${them}`,
+    lost: (us: number, them: number) => `Lost ${us}:${them}`,
+    setLine: (n: number) => `Set ${n}`,
+    setScoreLabel: (n: number, us: number, them: number, opponent: string) =>
+      `Set ${n}: us ${us}, ${opponent} ${them}`,
+    duration: (hours: number, minutes: number) =>
+      hours > 0 ? `${hours} h ${minutes} min` : `${minutes} min`,
+    durationLabel: (text: string) => `Duration ${text}`,
+    back: 'Back to match',
+    backLabel: 'Back to the match screen',
+  },
 } as const;

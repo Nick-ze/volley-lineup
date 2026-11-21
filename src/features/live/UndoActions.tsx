@@ -11,17 +11,27 @@ import { ResetLiveData } from './ResetLiveData';
 export interface UndoActionsProps {
   /** The set's last event (undefined when nothing has happened yet). */
   last: SetEvent | undefined;
+  /** With nothing to undo here: the previous won set whose last point Undo removes. */
+  acrossSet?: number | null;
   playersById: Map<string, Player>;
   onUndo: () => void;
   onReset: () => void;
 }
 
-/** Undo (labelled with what it undoes) and "Reset live data". */
-export function UndoActions({ last, playersById, onUndo, onReset }: UndoActionsProps) {
+/** Undo (labelled with what it undoes, also across a set end) and "Reset live data". */
+export function UndoActions({
+  last,
+  acrossSet = null,
+  playersById,
+  onUndo,
+  onReset,
+}: UndoActionsProps) {
   const t = useT();
   const ref = (id: string) => playerRef(t, playersById, id);
   const undoLabel = !last
-    ? t.live.undoNothing
+    ? acrossSet !== null
+      ? t.live.undoAcross(acrossSet)
+      : t.live.undoNothing
     : last.type === 'point'
       ? t.live.undoPoint(last.winner === 'us')
       : t.live.undoSub(ref(last.outPlayerId), ref(last.inPlayerId));
@@ -31,7 +41,7 @@ export function UndoActions({ last, playersById, onUndo, onReset }: UndoActionsP
         label={t.live.undo}
         accessibilityLabel={undoLabel}
         variant="secondary"
-        disabled={!last}
+        disabled={!last && acrossSet === null}
         onPress={onUndo}
         style={styles.grow}
         testID="undo"

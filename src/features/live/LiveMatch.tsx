@@ -1,49 +1,98 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
 
-import type { SetNumber, Side } from '@/domain/types';
+import { decidingSetNumber, needsSetup } from '@/domain/matchFlow';
+import type { SetNumber } from '@/domain/types';
 import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
 import { useT } from '@/i18n';
-import { useIsWide } from '@/lib/useIsWide';
-import { spacing } from '@/theme';
 
-import { playerRef } from './format';
-import { CONTROLS_COLUMN_WIDTH } from './layout';
-import { LiveBanners } from './LiveBanners';
-import { LiveCourt } from './LiveCourt';
-import { PointButtons } from './PointButtons';
-import { Scoreboard } from './Scoreboard';
-import { SubPanel } from './SubPanel';
-import { UndoActions } from './UndoActions';
+import { LiveSetView } from './LiveSetView';
+import { MatchSummary } from './MatchSummary';
+import { NextSetSetup } from './NextSetSetup';
 import { useLiveSet } from './useLiveSet';
 
 export interface LiveMatchProps {
   matchId: string | undefined;
   setNumber: SetNumber | undefined;
   onSelectSet: (set: SetNumber) => void;
+  /** Opens the lineup builder for a set. */
+  onEditLineup: (set: SetNumber) => void;
+  /** Back to the match screen (from the match summary). */
+  onBackToMatch: () => void;
+  /** Optional content under the point buttons (e.g. point tagging after a rally). */
+  belowPointButtons?: ReactNode;
 }
 
-/** Live match mode for one set: score, serve, current court, undo and substitutions. */
-export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
+/**
+ * Live match mode, following the whole match: the set being played (score, serve, court,
+ * undo, subs), a "set won" panel with the next set, the setup of a new set, and the match
+ * summary once a side has won 3 sets.
+ */
+export function LiveMatch({
+  matchId,
+  setNumber,
+  onSelectSet,
+  onEditLineup,
+  onBackToMatch,
+  belowPointButtons,
+}: LiveMatchProps) {
   const t = useT();
   const live = useLiveSet(matchId, setNumber);
-  const wide = useIsWide();
-  const [subMode, setSubMode] = useState(false);
-  const [outId, setOutId] = useState<string | null>(null);
-  const { match, set, state, court, playersById } = live;
+  const { match, set, state, court, matchState } = live;
 
-  if (!match) return <Message text={t.live.matchNotFound} />;
+  if (!match || !matchState || setNumber === undefined) {
+    return <Message text={t.live.matchNotFound} />;
+  }
+  const tabs = [...new Set([...match.sets.map((s) => s.setNumber), setNumber])].sort(
+    (a, b) => a - b,
+  );
   const picker =
-    match.sets.length > 1 && set ? (
-      <SetPicker
-        sets={match.sets.map((s) => s.setNumber)}
-        selected={set.setNumber}
-        onSelect={onSelectSet}
-      />
-    ) : null;
-  if (!set || !state || !court) return <Message text={t.live.noSet} />;
+    tabs.length > 1 ? <SetPicker sets={tabs} selected={setNumber} onSelect={onSelectSet} /> : null;
+  const title = <Stack.Screen options={{ title: t.live.title(setNumber) }} />;
+  const undo = () => {
+    const target = live.undoLast();
+    if (target !== null && target !== setNumber) onSelectSet(target);
+  };
+
+  if (decidingSetNumber(matchState) === setNumber) {
+    return (
+      <>
+        {title}
+        {picker}
+        <MatchSummary
+          state={matchState}
+          opponent={match.opponent}
+          onBack={onBackToMatch}
+          onUndo={undo}
+        />
+      </>
+    );
+  }
+  if (needsSetup(match, setNumber)) {
+    return (
+      <>
+        {title}
+        {picker}
+        <NextSetSetup
+          match={match}
+          setNumber={setNumber}
+          onSave={live.saveSet}
+          onEdit={() => onEditLineup(setNumber)}
+          undoSet={live.undoSet}
+          onUndo={undo}
+        />
+      </>
+    );
+  }
+  if (!set || !state || !court) {
+    return (
+      <>
+        {picker}
+        <Message text={t.live.noSet} />
+      </>
+    );
+  }
   if (!live.complete) {
     return (
       <>
@@ -52,100 +101,15 @@ export function LiveMatch({ matchId, setNumber, onSelectSet }: LiveMatchProps) {
       </>
     );
   }
-
-  const ref = (id: string | null) => playerRef(t, playersById, id);
-  const reset = () => {
-    setSubMode(false);
-    setOutId(null);
-  };
-  const point = (winner: Side) => {
-    reset();
-    live.point(winner);
-  };
-  const pressCourt = (id: string) => {
-    setSubMode(true);
-    setOutId((cur) => (cur === id ? null : id));
-  };
-  const pickIn = (inId: string) => {
-    if (outId) live.substitute(outId, inId);
-    reset();
-  };
-  const serveText =
-    state.servingSide === 'us'
-      ? t.live.weServe(state.serverId ? (playersById.get(state.serverId)?.number ?? null) : null)
-      : t.live.theyServe(match.opponent);
-
-  const controls = (
-    <View style={styles.column}>
-      <Scoreboard
-        setNumber={set.setNumber}
-        opponent={match.opponent}
-        score={state.score}
-        servingSide={state.servingSide}
-        serveText={serveText}
-        rotation={state.rotation}
-      />
-      <LiveBanners state={state} opponent={match.opponent} playersById={playersById} />
-      <PointButtons opponent={match.opponent} onPoint={point} />
-      <UndoActions
-        last={set.events[set.events.length - 1]}
-        playersById={playersById}
-        onUndo={() => {
-          reset();
-          live.undoLast();
-        }}
-        onReset={() => {
-          reset();
-          live.resetLive();
-        }}
-      />
-    </View>
-  );
-  const courtAndSubs = (
-    <View style={styles.column}>
-      <LiveCourt
-        view={court}
-        playersById={playersById}
-        serverId={state.serverId}
-        selectedId={outId}
-        onPressPlayer={pressCourt}
-      />
-      <SubPanel
-        subsUsed={state.subsUsed}
-        active={subMode}
-        outRef={outId ? ref(outId) : null}
-        bench={live.bench}
-        liberoRef={set.liberoId ? ref(set.liberoId) : null}
-        onStart={() => setSubMode(true)}
-        onCancel={reset}
-        onPickIn={pickIn}
-        warningsFor={(inId) => (outId ? live.preview(outId, inId) : [])}
-      />
-    </View>
-  );
-
   return (
     <>
-      <Stack.Screen options={{ title: t.live.title(set.setNumber) }} />
+      {title}
       {picker}
-      {wide ? (
-        <View style={styles.wide}>
-          <View style={styles.controls}>{controls}</View>
-          <View style={styles.fill}>{courtAndSubs}</View>
-        </View>
-      ) : (
-        <>
-          {controls}
-          {courtAndSubs}
-        </>
-      )}
+      <LiveSetView
+        live={{ ...live, match, set, state, court, matchState }}
+        onSelectSet={onSelectSet}
+        belowPointButtons={belowPointButtons}
+      />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  column: { gap: spacing.md },
-  wide: { flexDirection: 'row', gap: spacing.xl, alignItems: 'flex-start' },
-  controls: { width: CONTROLS_COLUMN_WIDTH },
-  fill: { flex: 1 },
-});

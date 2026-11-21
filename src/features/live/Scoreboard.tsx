@@ -11,17 +11,20 @@ export interface ScoreboardProps {
   setNumber: number;
   opponent: string;
   score: Score;
+  /** Sets won so far in the match. */
+  setsWon: Score;
   servingSide: Side;
   /** "We serve · #8" / "Rivals serves". */
   serveText: string;
   rotation: number;
 }
 
-/** Big "us : them" score with the set number; the serving side gets a yellow dot and name. */
+/** Big "us : them" score with the set number and sets won; the serving side gets a yellow dot and name. */
 export function Scoreboard({
   setNumber,
   opponent,
   score,
+  setsWon,
   servingSide,
   serveText,
   rotation,
@@ -49,10 +52,15 @@ export function Scoreboard({
       style={styles.box}
       accessible
       accessibilityRole="summary"
-      accessibilityLabel={`${t.live.scoreLabel(setNumber, score.us, score.them, opponent)}. ${serveText}. ${t.live.rotation(rotation)}`}
+      accessibilityLabel={`${t.live.scoreLabel(setNumber, score.us, score.them, opponent)}. ${t.live.setsScoreLabel(setsWon.us, setsWon.them)}. ${serveText}. ${t.live.rotation(rotation)}`}
       testID="scoreboard"
     >
-      <Text style={styles.set}>{t.live.setLabel(setNumber)}</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.set}>{t.live.setLabel(setNumber)}</Text>
+        <Text style={styles.sets} testID="set-score">
+          {t.live.setsScore(setsWon.us, setsWon.them)}
+        </Text>
+      </View>
       <View style={styles.row}>
         {side('us', t.live.us, score.us)}
         <Text style={styles.colon}>:</Text>
@@ -79,7 +87,9 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
   },
-  set: { ...typography.label, color: colors.textMuted, textAlign: 'center' },
+  topRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md },
+  set: { ...typography.label, color: colors.textMuted },
+  sets: { ...typography.label, color: colors.text },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   side: { flex: 1, alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, maxWidth: '100%' },
