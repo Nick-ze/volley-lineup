@@ -139,3 +139,38 @@ describe('fillFromTemplate — rules', () => {
     }
   });
 });
+
+describe('fillFromTemplate — roles (v4)', () => {
+  it('stores no overrides when everyone plays their primary position', () => {
+    expect(fillFromTemplate('5-1', roster, 1).set.roles).toEqual({});
+  });
+
+  it('gives an opposite on a 6-2 hitter spot the role OH', () => {
+    const team = roster.filter((p) => !['oh2', 'oh3'].includes(p.id));
+    const { set } = fillFromTemplate('6-2', team, 1);
+    expect(set.slots[5]).toBe('opp1');
+    expect(set.roles).toEqual({ opp1: 'OH' });
+  });
+
+  it('gives a player filling a spot by a secondary position the template role', () => {
+    const team = roster.filter((p) => !['mb1', 'mb2'].includes(p.id));
+    const { set } = fillFromTemplate('5-1', [...team, player('x', 20, ['OH', 'MB'])], 1);
+    // mb3 (primary MB) takes 3; the second middle spot goes to a secondary MB.
+    expect(set.slots[3]).toBe('mb3');
+    expect(set.slots[6]).toBe('x');
+    expect(set.roles).toEqual({ x: 'MB' });
+    expect(set.liberoReplaces).toEqual(['mb3', 'x']);
+  });
+
+  it('drops the overrides of the previous starters', () => {
+    const current: SetLineup = {
+      ...emptySetLineup(1),
+      slots: { 1: 'oh1', 2: null, 3: null, 4: null, 5: null, 6: null },
+      roles: { oh1: 'S' },
+      liberoActive: false,
+    };
+    const { set } = fillFromTemplate('5-1', roster, 1, current);
+    expect(set.roles).toEqual({});
+    expect(set.liberoActive).toBe(false);
+  });
+});

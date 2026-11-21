@@ -15,13 +15,15 @@
  * - Warnings (never block):
  *   - NO_SETTER: at least one slot is filled and no known starter has 'S' in any position.
  *     (An empty lineup only gets INCOMPLETE, so a fresh set isn't noisy.)
- *   - UNUSUAL_LAYOUT, judged on each starter's PRIMARY position (positions[0]) only:
- *     a) exactly one primary setter and exactly one primary opposite who are not opposite
- *        each other (positions differ by 3);
- *     b) exactly two primary middle blockers who are not opposite each other.
+ *   - UNUSUAL_LAYOUT, judged on each starter's ROLE (v4: `roleOf` — the role override, else the
+ *     primary position):
+ *     a) exactly one setter and exactly one opposite who are not opposite each other
+ *        (positions differ by 3);
+ *     b) exactly two middle blockers who are not opposite each other.
  *   - INACTIVE_PLAYER: one issue per inactive player in a slot or the libero slot.
  *   - LIBERO_NOT_LIBERO: the libero is a known player without 'L' in positions.
  */
+import { roleOf } from './roles';
 import { oppositePosition } from './rotation';
 import { COURT_POSITIONS, type CourtPosition, type Player, type SetLineup } from './types';
 
@@ -66,20 +68,27 @@ export function positionsByPlayer(set: SetLineup): Map<string, CourtPosition[]> 
   return map;
 }
 
-function layoutWarnings(placed: Map<string, CourtPosition[]>, byId: Map<string, Player>) {
-  const byPrimary = (pos: Player['positions'][number]) =>
+function layoutWarnings(
+  placed: Map<string, CourtPosition[]>,
+  byId: Map<string, Player>,
+  roles: SetLineup['roles'],
+) {
+  const byRole = (pos: Player['positions'][number]) =>
     [...placed]
-      .filter(([id]) => byId.get(id)?.positions[0] === pos)
+      .filter(([id]) => {
+        const player = byId.get(id);
+        return player !== undefined && roleOf(roles, player) === pos;
+      })
       .map(([, positions]) => positions[0]);
   const notOpposite = (a: CourtPosition, b: CourtPosition) => oppositePosition(a) !== b;
 
   const warnings: WarningIssue[] = [];
-  const setters = byPrimary('S');
-  const opposites = byPrimary('OPP');
+  const setters = byRole('S');
+  const opposites = byRole('OPP');
   if (setters.length === 1 && opposites.length === 1 && notOpposite(setters[0], opposites[0])) {
     warnings.push({ code: 'UNUSUAL_LAYOUT', positions: [setters[0], opposites[0]] });
   }
-  const middles = byPrimary('MB');
+  const middles = byRole('MB');
   if (middles.length === 2 && notOpposite(middles[0], middles[1])) {
     warnings.push({ code: 'UNUSUAL_LAYOUT', positions: [middles[0], middles[1]] });
   }
@@ -120,7 +129,7 @@ export function validateLineup(set: SetLineup, players: Player[]): ValidationRes
     warnings.push({ code: 'NO_SETTER' });
   }
 
-  warnings.push(...layoutWarnings(placed, byId));
+  warnings.push(...layoutWarnings(placed, byId, set.roles));
 
   for (const p of starters) {
     if (!p.active)

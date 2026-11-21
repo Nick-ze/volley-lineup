@@ -63,6 +63,23 @@ export const lineup = {
     suggest: 'Suggest middles',
     suggestLabel: 'Suggest the middle blockers on court',
   },
+  rotate: {
+    clockwise: 'Rotate ↻',
+    clockwiseLabel: 'Rotate clockwise',
+    counterclockwise: 'Rotate ↺',
+    counterclockwiseLabel: 'Rotate counter-clockwise',
+    hint: 'Moves the whole starting six one position, so the setter can start anywhere',
+    emptyHint: 'Put players on court to rotate them',
+  },
+  liberoPlays: 'Libero plays',
+  liberoOut: 'The libero stays out this set: no libero swaps.',
+  liberoRoles: {
+    title: 'By role',
+    groupLabel: 'Roles the libero replaces',
+    groups: { MB: 'Middles', OH: 'Outsides', OPP: 'Opposite', S: 'Setter', DS: 'DS', L: 'Libero' },
+    optionLabel: (group: string) => `${group}: libero replaces the starters in this role`,
+    players: 'Players',
+  },
   template: {
     open: 'Fill from template',
     openHint: 'Choose a 5-1 or 6-2 system to fill the starting six from the roster',

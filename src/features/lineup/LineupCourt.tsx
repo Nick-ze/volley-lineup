@@ -1,20 +1,23 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { Court } from '@/components';
-import type { CourtPosition } from '@/domain/types';
+import { roleOf, setRole } from '@/domain/roles';
+import type { CourtPosition, Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { colors, radius, typography } from '@/theme';
 
-import { COMPACT_CHIP_SIZE, COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
+import { COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
+import { CourtPlayerSpot } from './CourtPlayerSpot';
 import { useDrag } from './drag/DragContext';
-import { DraggablePlayer } from './drag/DraggablePlayer';
 import { zoneFeedback } from './drag/useDropZone';
+import { RolePicker } from './RolePicker';
 import type { LineupDraft } from './useLineupDraft';
 
-const playerName = (p: { firstName: string; lastName: string }) =>
-  `${p.firstName} ${p.lastName}`.trim();
-
-/** The court with six drop slots. Slots with validation errors get a red outline. */
+/**
+ * The court with six drop slots. Slots with validation errors get a red outline. Each starter
+ * shows their role on top; tapping it opens the role picker (v4).
+ */
 export function LineupCourt({
   editor,
   compact = false,
@@ -24,7 +27,8 @@ export function LineupCourt({
 }) {
   const t = useT();
   const drag = useDrag();
-  const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
+  const { set, selectedId, playerById, pressTarget, validation, update } = editor;
+  const [roleFor, setRoleFor] = useState<Player | null>(null);
   // Empty slots already look empty, so INCOMPLETE is only listed in the panel, not outlined.
   const errorPositions = new Set(
     validation.errors.filter((e) => e.code !== 'INCOMPLETE').flatMap((e) => e.positions ?? []),
@@ -33,16 +37,13 @@ export function LineupCourt({
   const renderSlot = ({ position }: { position: CourtPosition }) => {
     const player = playerById(set.slots[position]);
     if (player) {
-      const name = playerName(player);
       return (
-        <DraggablePlayer
+        <CourtPlayerSpot
+          editor={editor}
           player={player}
-          from={{ kind: 'slot', position }}
-          selected={selectedId === player.id}
-          onPress={() => pressPlayer(player.id)}
-          size={compact ? COMPACT_CHIP_SIZE : undefined}
-          accessibilityLabel={t.lineup.slotLabel(position, `${player.number} ${name}`)}
-          testID={`slot-player-${position}`}
+          position={position}
+          compact={compact}
+          onRolePress={setRoleFor}
         />
       );
     }
@@ -64,17 +65,30 @@ export function LineupCourt({
   };
 
   return (
-    <Court
-      testID="lineup-court"
-      renderSlot={renderSlot}
-      slotRef={(position, view) => drag.registerZone({ kind: 'slot', position }, view)}
-      slotStyle={({ position }) => [
-        styles.slot,
-        compact && styles.compactSlot,
-        errorPositions.has(position) && styles.error,
-        zoneFeedback(drag, `slot-${position}`).style,
-      ]}
-    />
+    <>
+      <Court
+        testID="lineup-court"
+        renderSlot={renderSlot}
+        slotRef={(position, view) => drag.registerZone({ kind: 'slot', position }, view)}
+        slotStyle={({ position }) => [
+          styles.slot,
+          compact && styles.compactSlot,
+          errorPositions.has(position) && styles.error,
+          zoneFeedback(drag, `slot-${position}`).style,
+        ]}
+      />
+      {roleFor ? (
+        <RolePicker
+          player={roleFor}
+          current={roleOf(set.roles, roleFor)}
+          onPick={(role) => {
+            setRoleFor(null);
+            update(setRole(set, roleFor, role));
+          }}
+          onClose={() => setRoleFor(null)}
+        />
+      ) : null}
+    </>
   );
 }
 

@@ -13,6 +13,7 @@ import { DragProvider, type DragItem } from './drag/DragContext';
 import { LiberoReplaces } from './LiberoReplaces';
 import { LiberoSlot } from './LiberoSlot';
 import { LineupCourt } from './LineupCourt';
+import { RotateButtons } from './RotateButtons';
 import { ServeToggle } from './ServeToggle';
 import { TemplateFill } from './TemplateFill';
 import type { LineupDraft } from './useLineupDraft';
@@ -94,6 +95,7 @@ export function LineupBuilder({
       <DragProvider onDrop={onDrop} disabled={locked} style={styles.layout}>
         {lockedNotice}
         <LineupCourt editor={editor} compact />
+        <RotateButtons editor={editor} />
         {liberoAndServe}
         <Bench editor={editor} scrollable={false} compact />
         {hint}
@@ -108,6 +110,7 @@ export function LineupBuilder({
       <View style={[styles.column, styles.courtColumn]}>
         {lockedNotice}
         <LineupCourt editor={editor} />
+        <RotateButtons editor={editor} />
         {liberoAndServe}
         {moreControls}
       </View>
