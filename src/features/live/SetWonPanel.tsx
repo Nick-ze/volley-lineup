@@ -18,6 +18,8 @@ export interface SetWonPanelProps {
   onNext: (set: SetNumber) => void;
   /** Undo the winning point (re-opens the set); null when later sets were played. */
   onUndo: (() => void) | null;
+  /** The winning rally's tag ("kill #7 Smith"), named in the undo label; null when untagged. */
+  tagDetail?: string | null;
 }
 
 /** Replaces the rally buttons once a set is won: who won, the score, next set, undo. */
@@ -30,6 +32,7 @@ export function SetWonPanel({
   nextPlayed,
   onNext,
   onUndo,
+  tagDetail = null,
 }: SetWonPanelProps) {
   const t = useT();
   const us = winner === 'us';
@@ -55,7 +58,9 @@ export function SetWonPanel({
       {onUndo ? (
         <Button
           label={t.live.undoLastPoint}
-          accessibilityLabel={t.live.undoPoint(us)}
+          accessibilityLabel={
+            tagDetail ? t.tags.withDetail(t.live.undoPoint(us), tagDetail) : t.live.undoPoint(us)
+          }
           variant="secondary"
           onPress={onUndo}
           testID="undo"

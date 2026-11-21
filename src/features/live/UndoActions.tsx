@@ -5,7 +5,7 @@ import type { Player, SetEvent } from '@/domain/types';
 import { useT } from '@/i18n';
 import { spacing } from '@/theme';
 
-import { playerRef } from './format';
+import { playerRef, tagDetail } from './format';
 import { ResetLiveData } from './ResetLiveData';
 
 export interface UndoActionsProps {
@@ -28,12 +28,15 @@ export function UndoActions({
 }: UndoActionsProps) {
   const t = useT();
   const ref = (id: string) => playerRef(t, playersById, id);
+  const detail = last?.type === 'point' ? tagDetail(t, playersById, last) : null;
   const undoLabel = !last
     ? acrossSet !== null
       ? t.live.undoAcross(acrossSet)
       : t.live.undoNothing
     : last.type === 'point'
-      ? t.live.undoPoint(last.winner === 'us')
+      ? detail
+        ? t.tags.withDetail(t.live.undoPoint(last.winner === 'us'), detail)
+        : t.live.undoPoint(last.winner === 'us')
       : t.live.undoSub(ref(last.outPlayerId), ref(last.inPlayerId));
   return (
     <View style={styles.row}>

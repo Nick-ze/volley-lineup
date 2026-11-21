@@ -79,7 +79,7 @@ export const roster: Strings['roster'] = {
     delete: 'Spieler löschen',
     notFound: 'Diesen Spieler gibt es nicht mehr.',
     deleteBlocked:
-      'Diese Person gehört zu einem gespielten Satz und kann nicht gelöscht werden. Markiere sie stattdessen als verletzt oder setze zuerst die Live-Daten dieses Satzes zurück.',
+      'Diese Person kommt in einem gespielten Satz vor (Aufstellung, Wechsel oder Punkt-Details) und kann nicht gelöscht werden. Markiere sie stattdessen als verletzt oder setze zuerst die Live-Daten dieses Satzes zurück.',
   },
   matches: {
     empty: 'Noch keine Spiele.',

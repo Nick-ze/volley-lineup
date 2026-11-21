@@ -1,4 +1,4 @@
-import type { Player } from '@/domain/types';
+import type { Player, PointEvent } from '@/domain/types';
 import type { Strings } from '@/i18n';
 
 /** "#8 Smith" for a player id, or "?" when it isn't in the team. */
@@ -16,4 +16,15 @@ export function playerDescription(t: Strings, p: Player): string {
     `${p.firstName} ${p.lastName}`.trim(),
     primary ? t.positions[primary] : '',
   );
+}
+
+/** "kill #7 Smith" for a tagged rally, or null when the rally has no tag. */
+export function tagDetail(
+  t: Strings,
+  playersById: Map<string, Player>,
+  event: PointEvent,
+): string | null {
+  if (event.kind === undefined) return null;
+  const player = event.playerId === undefined ? null : playerRef(t, playersById, event.playerId);
+  return t.tags.detail(t.tags.kindNames[event.kind], player);
 }
