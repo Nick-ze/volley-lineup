@@ -7,7 +7,7 @@ import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 export interface SetupRotateRowProps {
-  /** Where the setter starts (`setterRotation` of the draft), or null without a setter. */
+  /** Where the setter spot starts (`formationRotation` of the draft's formation). */
   setterAt: RotationNumber | null;
   /** Nobody on court yet: nothing to rotate. */
   disabled: boolean;

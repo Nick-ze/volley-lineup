@@ -98,6 +98,13 @@ export const live: Strings['live'] = {
     rotateCcw: 'Rotieren ↺',
     rotateCcwLabel: 'Rotieren ↺: alle Starter eine Position gegen den Uhrzeigersinn weiter',
     setterAt: (n: number) => `Zuspieler auf ${n}`,
+    systemLabel: 'System',
+    systemOption: (system: string) => `${system}-System`,
+    orderLabel: 'Reihenfolge nach dem Zuspieler',
+    orderOutside: 'Zuspieler → Außen',
+    orderOutsideLabel: 'Zuspieler → Außen: nach dem Zuspieler kommt ein Außenangreifer',
+    orderMiddle: 'Zuspieler → Mitte',
+    orderMiddleLabel: 'Zuspieler → Mitte: nach dem Zuspieler kommt ein Mittelblocker',
   },
   summary: {
     title: 'Spiel beendet',

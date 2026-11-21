@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { filledCount } from '@/domain/presets';
-import { setterRotation, startingRoles } from '@/domain/roles';
+import { formationRotation } from '@/domain/roles';
 import { COURT_POSITIONS, type Match, type SetLineup, type SetNumber } from '@/domain/types';
 import { ServeToggle } from '@/features/lineup/ServeToggle';
 import { useT } from '@/i18n';
@@ -10,6 +10,7 @@ import { usePlayersForTeam } from '@/store';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
+import { SetupFormationRow } from './SetupFormationRow';
 import { SetupRotateRow } from './SetupRotateRow';
 import { SetupSourceButtons } from './SetupSourceButtons';
 import { useSetupDraft } from './useSetupDraft';
@@ -28,7 +29,8 @@ export interface NextSetSetupProps {
 
 /**
  * Setting up a set inside live mode: fill it from the team starters, a preset or the previous
- * set, rotate it so the setter starts where you want, choose who serves first, then Start (enabled once six players are on court).
+ * set, choose the formation (v5) and rotate it so the setter starts where you want, choose who
+ * serves first, then Start (enabled once six players are on court).
  */
 export function NextSetSetup({
   match,
@@ -70,8 +72,9 @@ export function NextSetSetup({
           {s.skipped(setup.skipped.map(ref).join(', '))}
         </Text>
       ) : null}
+      <SetupFormationRow formation={draft.formation} onChange={setup.changeFormation} />
       <SetupRotateRow
-        setterAt={setterRotation(draft.slots, startingRoles(draft, players))}
+        setterAt={formationRotation(draft.formation)}
         disabled={filledCount(draft) === 0}
         onRotate={setup.rotate}
       />
