@@ -4,7 +4,7 @@ import { Court, type CourtSlotInfo } from '@/components';
 import type { LiberoSwap } from '@/domain/liberoSwap';
 import { isOffPosition } from '@/domain/roles';
 import { serverPosition, type Slots } from '@/domain/rotation';
-import type { Player, RoleOverrides } from '@/domain/types';
+import type { Player, PlayerRoles } from '@/domain/types';
 import { colors, spacing } from '@/theme';
 
 import { CourtSpot } from './CourtSpot';
@@ -14,7 +14,7 @@ export interface RotationCourtProps {
   slots: Slots;
   playersById: Map<string, Player>;
   /** Role of every player on court (player id → role, e.g. from `startingRoles`); none = no tags. */
-  roles?: Readonly<RoleOverrides>;
+  roles?: Readonly<PlayerRoles>;
   /** Highlight the server at position 1 (default true). */
   highlightServer?: boolean;
   compact?: boolean;
@@ -23,7 +23,7 @@ export interface RotationCourtProps {
   testID?: string;
 }
 
-const NO_ROLES: Readonly<RoleOverrides> = {};
+const NO_ROLES: Readonly<PlayerRoles> = {};
 
 /** The shared Court (role tags on top of each spot) with the front row tinted blue, the back row dark and the server in yellow. */
 export function RotationCourt({

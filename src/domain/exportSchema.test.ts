@@ -37,7 +37,7 @@ function fixture(): TransferData {
     home: true,
     sets: [
       {
-        roles: {},
+        formation: { system: '5-1', order: 'outside', setterAt: 1 },
         liberoActive: true,
         setNumber: 1,
         slots: { 1: 'p1', 2: 'p2', 3: null, 4: null, 5: null, 6: null },
@@ -83,7 +83,7 @@ function fixture(): TransferData {
     ],
     presets: [
       {
-        roles: {},
+        formation: { system: '5-1', order: 'outside', setterAt: 1 },
         liberoActive: true,
         id: 'ps1',
         teamId: 't1',
@@ -95,7 +95,7 @@ function fixture(): TransferData {
         createdAt: '2026-01-05T00:00:00.000Z',
       },
       {
-        roles: {},
+        formation: { system: '5-1', order: 'outside', setterAt: 1 },
         liberoActive: true,
         id: 'ps2',
         teamId: 't1',
@@ -107,7 +107,7 @@ function fixture(): TransferData {
         createdAt: '2026-01-06T00:00:00.000Z',
       },
       {
-        roles: {},
+        formation: { system: '5-1', order: 'outside', setterAt: 1 },
         liberoActive: true,
         id: 'ps3',
         teamId: 't2',

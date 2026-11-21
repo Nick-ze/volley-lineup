@@ -8,10 +8,13 @@
  * v3 → v4: point events may carry `kind`, `playerId` and `at` (all optional) — no data change;
  * existing events stay valid as they are.
  * v4 → v5: the state gains `chipLabel: 'number'` (player chips show numbers, as before).
- * v5 → v6: every set and preset gains `roles: {}` (everyone plays their primary position) and
+ * v5 → v6: every set and preset gains `formation: { system: '5-1', order: 'outside', setterAt: 1 }` (everyone plays their primary position) and
  * `liberoActive: true`.
+ * v6 → v7: the per-player `roles` become a `formation` per set and preset (5-1 / 6-2, inferred
+ * from where the setter stands; `upgradeLineupToFormation`).
  */
-export const STORE_VERSION = 6;
+import { upgradeLineupToFormation } from '@/domain/roles';
+export const STORE_VERSION = 7;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -43,6 +46,18 @@ function v5ToV6(state: Rec): Rec {
   return { ...state, matches, presets };
 }
 
+/** v6 → v7: per-player role overrides become a formation per set and preset (roles.ts). */
+function v6ToV7(state: Rec): Rec {
+  const toFormation = (x: unknown) => upgradeLineupToFormation(x, state.players);
+  const matches = Array.isArray(state.matches)
+    ? state.matches.map((m: unknown) =>
+        isRec(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(toFormation) } : m,
+      )
+    : state.matches;
+  const presets = Array.isArray(state.presets) ? state.presets.map(toFormation) : state.presets;
+  return { ...state, matches, presets };
+}
+
 export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion > STORE_VERSION) {
     throw new Error(
@@ -54,5 +69,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion < 3 && isRec(state)) state = { presets: [], ...state };
   if (fromVersion < 5 && isRec(state)) state = { chipLabel: 'number', ...state };
   if (fromVersion < 6 && isRec(state)) state = v5ToV6(state);
+  if (fromVersion < 7 && isRec(state)) state = v6ToV7(state);
   return state;
 }

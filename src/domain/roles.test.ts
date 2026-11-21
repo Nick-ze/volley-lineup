@@ -122,7 +122,7 @@ describe('roles follow their players while editing', () => {
 
   it('roles are locked in a played set (like the starting six)', () => {
     const played = addPoint(set, 'us');
-    expect(applyLineupEdit(played, { ...played, roles: {} })).toBe(played);
+    expect(applyLineupEdit(played, { ...played, formation: { system: '5-1', order: 'outside', setterAt: 1 } })).toBe(played);
     expect(applyLineupEdit(played, { ...played, roles: { p4: 'S', p2: 'OH' } })).toBe(played);
     const unchanged = { ...played, roles: { p4: 'S' as const, p2: 'DS' as const } };
     expect(applyLineupEdit(played, unchanged)).toBe(unchanged);

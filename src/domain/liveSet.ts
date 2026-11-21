@@ -32,7 +32,7 @@ import {
   COURT_POSITIONS,
   type Player,
   type PointEvent,
-  type RoleOverrides,
+  type PlayerRoles,
   type SetEvent,
   type SetLineup,
   type Side,
@@ -74,7 +74,7 @@ export interface LiveState {
   /** 1 = the starting rotation; +1 per side-out, wrapping 6 → 1. */
   rotation: RotationNumber;
   /** v5: roles of the players on court now (substitutes inherit the role of who they replaced). */
-  roles: RoleOverrides;
+  roles: PlayerRoles;
   /** v5: the rotation named after the setter's position (null without a setter on court). */
   setterRotation: RotationNumber | null;
   /** v4.0: whom the libero replaces now — a substitute takes over from the player they replaced. */
@@ -144,7 +144,7 @@ export interface RallyStep {
   /** The real players on court during the rally (without the libero swap). */
   slots: Slots;
   /** v5: roles of the players on court during the rally (substitutes inherit). */
-  roles: RoleOverrides;
+  roles: PlayerRoles;
   /** v5: the rotation named after the setter's position, or null without a setter (roles.ts). */
   setterRotation: RotationNumber | null;
   /** v4.0: whom the libero replaces during the rally (substitutes take over; see #130). */
@@ -192,11 +192,11 @@ function replay(
   const pairUses = new Map<string, number>();
   const steps: ReplayStep[] = [];
   /** v5: player id → role, for everyone who has been on court; subs inherit. */
-  const roles: RoleOverrides = startingRoles(set, players);
+  const roles: PlayerRoles = startingRoles(set, players);
   /** v4.0: whom the libero replaces; a substitute takes the place of the player they replace. */
   let liberoReplaces: string[] = [...activeLiberoReplaces(set)];
-  const onCourtRoles = (): RoleOverrides => {
-    const now: RoleOverrides = {};
+  const onCourtRoles = (): PlayerRoles => {
+    const now: PlayerRoles = {};
     for (const p of COURT_POSITIONS) {
       const id = slots[p];
       if (id !== null && roles[id] !== undefined) now[id] = roles[id];

@@ -1,20 +1,25 @@
 /**
- * Roles on court (docs/PLAN.md §19–20, data model v5). Pure functions, no React, no storage.
+ * Roles on court (docs/PLAN.md §22–24, data model v6; volleyball background in
+ * docs/VOLLEYBALL_RULES.md). Pure functions, no React, no storage.
  *
- * Every starter plays a role (S, OH, MB, OPP, DS — the court position codes). By default it is
- * the player's primary position; `SetLineup.roles` stores only the exceptions, keyed by player
- * id, so a role follows its player through swaps and rotations. Any player may play any role;
- * a role that is none of the player's positions (primary or secondary, from the roster) is
- * "off position": the UI asks to confirm it and marks the spot with an asterisk. In live play a substitute takes over the role of the player they
- * replace.
+ * Roles belong to the six court spots, not to players: a set has a **formation** (5-1 or 6-2, an
+ * order variant, and where the setter stands), which fixes the role of every spot so that the
+ * pairs are always opposite each other (1–4, 2–5, 3–6: S–OPP or S–S, OH–OH, MB–MB). Whoever
+ * stands on a spot plays its role. Rotating the starters before the set rotates the formation
+ * with them; in live play the players carry their starting role (a substitute takes the role of
+ * the player they replace).
+ *
+ * Any player may stand on any spot; a role that is none of the player's positions (primary or
+ * secondary, from the roster) is "off position": the UI asks to confirm it and marks the spot
+ * with an asterisk.
  *
  * The rotation number follows the setter: a setter at position 4 means "rotation 4". With two
- * setters (6-2) the one in the back row counts. Without a setter on court there is no setter
- * rotation (callers fall back to counting rotations from the start).
+ * setters (6-2) the one in the back row counts.
  */
 import { isLineupLocked } from './lineupLock';
 import {
   BACK_ROW_POSITIONS,
+  nextPositionClockwise,
   rotateClockwise,
   rotateBy,
   type RotationNumber,
@@ -23,26 +28,67 @@ import {
 import {
   COURT_POSITIONS,
   type CourtPosition,
+  type Formation,
+  type FormationOrder,
+  type FormationSystem,
   type Player,
+  type PlayerRoles,
   type Position,
-  type RoleOverrides,
   type SetLineup,
 } from './types';
 
 /** Roles a starter can play (the libero has its own slot). */
 export const COURT_ROLES: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'DS'];
 
+export const FORMATION_SYSTEMS: readonly FormationSystem[] = ['5-1', '6-2'];
+export const FORMATION_ORDERS: readonly FormationOrder[] = ['outside', 'middle'];
+
+/**
+ * Roles around the court starting at the setter and going up the position numbers
+ * (setter at 1 → positions 1, 2, 3, 4, 5, 6). docs/VOLLEYBALL_RULES.md §2.
+ */
+export const FORMATION_PATTERNS: Record<
+  FormationSystem,
+  Record<FormationOrder, readonly Position[]>
+> = {
+  '5-1': {
+    outside: ['S', 'OH', 'MB', 'OPP', 'OH', 'MB'],
+    middle: ['S', 'MB', 'OH', 'OPP', 'MB', 'OH'],
+  },
+  '6-2': {
+    outside: ['S', 'OH', 'MB', 'S', 'OH', 'MB'],
+    middle: ['S', 'MB', 'OH', 'S', 'MB', 'OH'],
+  },
+};
+
+/** The default formation: 5-1, setter followed by an outside, setter at position 1. */
+export const DEFAULT_FORMATION: Formation = { system: '5-1', order: 'outside', setterAt: 1 };
+
+/** The role of one court spot in a formation. */
+export function spotRole(formation: Formation, position: CourtPosition): Position {
+  const pattern = FORMATION_PATTERNS[formation.system][formation.order];
+  return pattern[(position - formation.setterAt + 6) % 6] as Position;
+}
+
+/** The roles of all six spots. */
+export function spotRoles(formation: Formation): Record<CourtPosition, Position> {
+  const roles = {} as Record<CourtPosition, Position>;
+  for (const p of COURT_POSITIONS) roles[p] = spotRole(formation, p);
+  return roles;
+}
+
 /** A player's primary position, or null when none is set. */
 export function primaryPosition(player: Pick<Player, 'positions'>): Position | null {
   return player.positions[0] ?? null;
 }
 
-/** The role a player plays given the overrides: the override, else the primary position. */
+/** The role a starter plays in the set: the role of their spot; null when not on court. */
 export function roleOf(
-  roles: RoleOverrides,
-  player: Pick<Player, 'id' | 'positions'>,
+  set: Pick<SetLineup, 'slots' | 'formation'>,
+  playerId: string,
 ): Position | null {
-  return roles[player.id] ?? primaryPosition(player);
+  const position = COURT_POSITIONS.find((p) => set.slots[p] === playerId);
+  return position === undefined ? null : spotRole(set.formation, position);
 }
 
 /**
@@ -54,35 +100,34 @@ export function isOffPosition(player: Pick<Player, 'positions'>, role: Position 
 }
 
 /**
- * Sets the role a starter plays. Playing the primary position removes the override. Unchanged
- * when the player isn't on court or the set is locked (played).
+ * Changes the formation's system and/or order, keeping the setter's spot. Unchanged for a
+ * locked (played) set or when nothing changes.
  */
-export function setRole(
+export function setFormation(
   set: SetLineup,
-  player: Pick<Player, 'id' | 'positions'>,
-  role: Position,
+  change: Partial<Pick<Formation, 'system' | 'order'>>,
 ): SetLineup {
-  if (isLineupLocked(set) || !COURT_POSITIONS.some((p) => set.slots[p] === player.id)) return set;
-  const roles: RoleOverrides = { ...set.roles };
-  if (role === primaryPosition(player)) delete roles[player.id];
-  else roles[player.id] = role;
-  const same =
-    Object.keys(roles).length === Object.keys(set.roles).length &&
-    Object.keys(roles).every((id) => roles[id] === set.roles[id]);
-  return same ? set : { ...set, roles };
+  if (isLineupLocked(set)) return set;
+  const formation = { ...set.formation, ...change };
+  const same = formation.system === set.formation.system && formation.order === set.formation.order;
+  return same ? set : { ...set, formation };
 }
 
 export type RotateDirection = 'clockwise' | 'counterclockwise';
 
 /**
- * Rotates the starting six one position before the set starts (so e.g. the setter can start at
- * any position). Roles, libero and whom the libero replaces follow the players. Unchanged for a
- * locked (played) set.
+ * Rotates the starting six one position before the set starts (so the setter can start at any
+ * position); the formation turns with the players, so everyone keeps their role. Unchanged for
+ * a locked (played) set.
  */
 export function rotateStarters(set: SetLineup, direction: RotateDirection): SetLineup {
   if (isLineupLocked(set)) return set;
-  const slots = direction === 'clockwise' ? rotateClockwise(set.slots) : rotateBy(set.slots, -1);
-  return { ...set, slots };
+  const clockwise = direction === 'clockwise';
+  const slots = clockwise ? rotateClockwise(set.slots) : rotateBy(set.slots, -1);
+  const setterAt = clockwise
+    ? nextPositionClockwise(set.formation.setterAt)
+    : (((set.formation.setterAt % 6) + 1) as CourtPosition);
+  return { ...set, slots, formation: { ...set.formation, setterAt } };
 }
 
 /** Switches the libero on or off (off = no libero swaps). Allowed in played sets, like #68. */
@@ -90,34 +135,27 @@ export function setLiberoActive(set: SetLineup, liberoActive: boolean): SetLineu
   return set.liberoActive === liberoActive ? set : { ...set, liberoActive };
 }
 
-/** The starters (on court, in position order) whose role is one of `wanted`. */
+/** The starters (known players on court, in position order) whose spot has one of `wanted`. */
 export function startersWithRoles(
   set: SetLineup,
   players: readonly Player[],
   wanted: readonly Position[],
 ): string[] {
-  const byId = new Map(players.map((p) => [p.id, p]));
+  const known = new Set(players.map((p) => p.id));
   return COURT_POSITIONS.flatMap((position) => {
     const id = set.slots[position];
-    const player = id === null ? undefined : byId.get(id);
-    if (!player) return [];
-    const role = roleOf(set.roles, player);
-    return role !== null && wanted.includes(role) ? [player.id] : [];
+    if (id === null || !known.has(id)) return [];
+    return wanted.includes(spotRole(set.formation, position)) ? [id] : [];
   });
 }
 
-/**
- * Role of every starter on court at the start of the set (player id → role). Players without a
- * role (no positions) or unknown ids are left out.
- */
-export function startingRoles(set: SetLineup, players: readonly Player[]): RoleOverrides {
-  const byId = new Map(players.map((p) => [p.id, p]));
-  const result: RoleOverrides = {};
+/** Role of every known starter on court at the start of the set (player id → spot role). */
+export function startingRoles(set: SetLineup, players: readonly Player[]): PlayerRoles {
+  const known = new Set(players.map((p) => p.id));
+  const result: PlayerRoles = {};
   for (const position of COURT_POSITIONS) {
     const id = set.slots[position];
-    const player = id === null ? undefined : byId.get(id);
-    const role = player ? roleOf(set.roles, player) : null;
-    if (player && role !== null) result[player.id] = role;
+    if (id !== null && known.has(id)) result[id] = spotRole(set.formation, position);
   }
   return result;
 }
@@ -126,10 +164,7 @@ export function startingRoles(set: SetLineup, players: readonly Player[]): RoleO
  * The rotation named after the setter's position: the position of the player whose role is S;
  * with several setters, the one in the back row (lowest position first). Null without a setter.
  */
-export function setterRotation(
-  slots: Slots,
-  roles: Readonly<RoleOverrides>,
-): RotationNumber | null {
+export function setterRotation(slots: Slots, roles: Readonly<PlayerRoles>): RotationNumber | null {
   const setters = COURT_POSITIONS.filter((p) => {
     const id = slots[p];
     return id !== null && roles[id] === 'S';
@@ -137,4 +172,67 @@ export function setterRotation(
   if (setters.length === 0) return null;
   const backRow = setters.find((p) => BACK_ROW_POSITIONS.includes(p));
   return (backRow ?? setters[0]) as CourtPosition as RotationNumber;
+}
+
+/**
+ * The setter rotation of a formation itself (works on an empty court): the setter's spot; in a
+ * 6-2 the back-row setter spot.
+ */
+export function formationRotation(formation: Formation): RotationNumber {
+  const spots = COURT_POSITIONS.filter((p) => spotRole(formation, p) === 'S');
+  return (spots.find((p) => BACK_ROW_POSITIONS.includes(p)) ?? spots[0]) as RotationNumber;
+}
+
+/**
+ * Migration helper (v5 → v6 data): the formation that matches an old lineup with per-player role
+ * overrides (`roles`, else primary positions). The setter is the first starter playing S; two
+ * setters opposite each other make a 6-2. The order is 'middle' when the spot after the setter
+ * is played by a middle, else 'outside'. Without a setter: the default formation.
+ */
+export function inferFormation(
+  slots: Slots,
+  overrides: Readonly<Record<string, string>>,
+  players: readonly Pick<Player, 'id' | 'positions'>[],
+): Formation {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const role = (position: CourtPosition): string | null => {
+    const id = slots[position];
+    if (id === null) return null;
+    return overrides[id] ?? byId.get(id)?.positions[0] ?? null;
+  };
+  const setterAt = COURT_POSITIONS.find((p) => role(p) === 'S');
+  if (setterAt === undefined) return { ...DEFAULT_FORMATION };
+  const opposite = (((setterAt + 2) % 6) + 1) as CourtPosition;
+  const system: FormationSystem = role(opposite) === 'S' ? '6-2' : '5-1';
+  const next = ((setterAt % 6) + 1) as CourtPosition;
+  const order: FormationOrder = role(next) === 'MB' ? 'middle' : 'outside';
+  return { system, order, setterAt };
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Upgrades one stored lineup (set or preset) of the v5 data shape to v6: drops the per-player
+ * `roles` overrides and adds the matching `formation` (`inferFormation`). Anything malformed is
+ * passed through so the caller's validation reports it; a lineup that already has a formation is
+ * left alone.
+ */
+export function upgradeLineupToFormation(lineup: unknown, players: unknown): unknown {
+  if (!isRecord(lineup) || 'formation' in lineup || !isRecord(lineup.slots)) return lineup;
+  const { roles, ...rest } = lineup;
+  const known = Array.isArray(players)
+    ? players.flatMap((p) =>
+        isRecord(p) && typeof p.id === 'string' && Array.isArray(p.positions)
+          ? [{ id: p.id, positions: p.positions as Position[] }]
+          : [],
+      )
+    : [];
+  const overrides: Record<string, string> = {};
+  if (isRecord(roles)) {
+    for (const [id, role] of Object.entries(roles))
+      if (typeof role === 'string') overrides[id] = role;
+  }
+  const formation = inferFormation(lineup.slots as Slots, overrides, known);
+  return { ...rest, formation };
 }

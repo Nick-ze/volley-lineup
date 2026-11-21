@@ -107,7 +107,7 @@ describe('presets in the match lineup builder', () => {
 
   it('treats empty starters (0/6, no libero) as no starters, so a set is never wiped', async () => {
     store().setStarters('team1', {
-      roles: {},
+      formation: { system: '5-1', order: 'outside', setterAt: 1 },
       liberoActive: true,
       slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
       liberoId: null,
@@ -124,7 +124,7 @@ describe('presets in the match lineup builder', () => {
 
   it('allows starters that only have a libero', async () => {
     store().setStarters('team1', {
-      roles: {},
+      formation: { system: '5-1', order: 'outside', setterAt: 1 },
       liberoActive: true,
       slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
       liberoId: 'p7',

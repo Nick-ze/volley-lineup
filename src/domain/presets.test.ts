@@ -28,7 +28,7 @@ const player = (id: string, number: number, active = true): Player => ({
 const players = ['a', 'b', 'c', 'd', 'e', 'f', 'l'].map((id, i) => player(id, i + 1));
 
 const preset = (extra: Partial<LineupPreset> = {}): LineupPreset => ({
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   id: 'ps1',
   teamId: 't1',
@@ -56,7 +56,7 @@ describe('presetFromSet / presetToDraft', () => {
       slots: set.slots,
       liberoId: 'l',
       liberoReplaces: ['c'],
-      roles: {},
+      formation: { system: '5-1', order: 'outside', setterAt: 1 },
       liberoActive: true,
     });
     expect(lineup.slots).not.toBe(set.slots);

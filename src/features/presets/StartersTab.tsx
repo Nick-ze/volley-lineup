@@ -5,7 +5,7 @@ import { Button } from '@/components';
 import { emptySetLineup } from '@/domain/lineup';
 import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
 import { isOffPosition, startingRoles } from '@/domain/roles';
-import { COURT_POSITIONS, type Player, type RoleOverrides } from '@/domain/types';
+import { COURT_POSITIONS, type Player, type PlayerRoles } from '@/domain/types';
 import { RotationCourt } from '@/features/rotation';
 import { listStyles } from '@/features/roster/components/styles';
 import { useT, type Strings } from '@/i18n';
@@ -27,7 +27,7 @@ function courtSummary(
   t: Strings,
   slots: Record<number, string | null>,
   byId: Map<string, Player>,
-  roles: Readonly<RoleOverrides>,
+  roles: Readonly<PlayerRoles>,
 ) {
   return COURT_POSITIONS.map((pos) => {
     const id = slots[pos];
@@ -64,9 +64,9 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
   }
 
   const libero = starters.liberoId ? byId.get(starters.liberoId) : undefined;
-  // v4: the role every starter plays (overrides from the starters, else the primary position).
+  // The role every starter plays: the role of their spot in the starters' formation (v6).
   const roles = startingRoles(
-    { ...emptySetLineup(1), slots: starters.slots, roles: starters.roles },
+    { ...emptySetLineup(1), slots: starters.slots, formation: starters.formation },
     players,
   );
   const complete = isPresetComplete(starters);

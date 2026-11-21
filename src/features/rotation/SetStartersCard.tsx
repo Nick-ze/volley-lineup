@@ -5,7 +5,7 @@ import { isOffPosition, setterRotation, startingRoles } from '@/domain/roles';
 import {
   COURT_POSITIONS,
   type Player,
-  type RoleOverrides,
+  type PlayerRoles,
   type SetLineup,
   type SetNumber,
 } from '@/domain/types';
@@ -27,7 +27,7 @@ export function startersCardLabel(
   t: Strings,
   set: SetLineup,
   playersById: Map<string, Player>,
-  roles: Readonly<RoleOverrides>,
+  roles: Readonly<PlayerRoles>,
 ): string {
   const describe = (id: string | null, withRole = false) => {
     if (id === null) return t.rotation.emptySummary;

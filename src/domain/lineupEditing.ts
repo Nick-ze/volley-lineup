@@ -37,18 +37,10 @@ export function locatePlayer(set: SetLineup, playerId: string): PlayerLocation {
   return { kind: 'bench' };
 }
 
-/**
- * Drops everyone who is no longer on court from `liberoReplaces` and from the role overrides
- * (v5), so both only ever name starters. Same object if nothing changes.
- */
+/** Drops everyone who is no longer on court from `liberoReplaces` (same object if no change). */
 export function pruneLiberoReplaces(set: SetLineup): SetLineup {
   const kept = set.liberoReplaces.filter((id) => findSlot(set, id) !== null);
-  const roleIds = Object.keys(set.roles);
-  const keptRoles = roleIds.filter((id) => findSlot(set, id) !== null);
-  if (kept.length === set.liberoReplaces.length && keptRoles.length === roleIds.length) return set;
-  const roles: SetLineup['roles'] = {};
-  for (const id of keptRoles) roles[id] = set.roles[id];
-  return { ...set, liberoReplaces: kept, roles };
+  return kept.length === set.liberoReplaces.length ? set : { ...set, liberoReplaces: kept };
 }
 
 /** Removes a player from every slot and the libero spot. */
@@ -130,7 +122,7 @@ export function clearLineup(set: SetLineup): SetLineup {
 }
 
 /**
- * Copies the six starters (with their roles), the libero, whom the libero replaces and whether
+ * Copies the six starters, the formation (v6), the libero, whom the libero replaces and whether
  * the libero is on (v5) of `from` into a lineup for
  * `toSetNumber`. The copy has not been played yet, so its event log starts empty.
  * The serve choice is not part of the lineup: pass the target set's current value to keep it
@@ -148,7 +140,7 @@ export function copyLineup(
     weServeFirst,
     liberoReplaces: [...from.liberoReplaces],
     events: [],
-    roles: { ...from.roles },
+    formation: { ...from.formation },
     liberoActive: from.liberoActive,
   };
 }

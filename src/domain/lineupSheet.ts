@@ -128,7 +128,7 @@ function playerCell(player: Player | undefined, id: string | null, labels: Lineu
 /** The role code of a known player on court (e.g. "S"), with "*" when off position. */
 function roleTag(set: SetLineup, player: Player | undefined): string {
   if (!player) return '';
-  const role = roleOf(set.roles, player);
+  const role = roleOf(set, player.id);
   if (role === null) return '';
   const off = isOffPosition(player, role) ? '<span class="off">*</span>' : '';
   return `<span class="role">${escapeHtml(role)}${off}</span>`;
@@ -138,7 +138,7 @@ function roleTag(set: SetLineup, player: Player | undefined): string {
 function hasOffPosition(set: SetLineup, byId: Map<string, Player>): boolean {
   return Object.values(set.slots).some((id) => {
     const player = id ? byId.get(id) : undefined;
-    return player !== undefined && isOffPosition(player, roleOf(set.roles, player));
+    return player !== undefined && isOffPosition(player, roleOf(set, player.id));
   });
 }
 

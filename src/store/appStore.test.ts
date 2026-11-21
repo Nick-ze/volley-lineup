@@ -191,7 +191,7 @@ describe('presets', () => {
     },
     liberoId,
     liberoReplaces: [] as string[],
-    roles: {},
+    formation: { system: '5-1', order: 'outside', setterAt: 1 },
     liberoActive: true,
   });
 
@@ -334,7 +334,7 @@ describe('migrations', () => {
               weServeFirst: true,
               liberoReplaces: [],
               events: [],
-              roles: {},
+              formation: { system: '5-1', order: 'outside', setterAt: 1 },
               liberoActive: true,
             },
             'junk',
@@ -389,7 +389,7 @@ describe('migrations', () => {
       ...v3,
       chipLabel: 'number',
       matches: [
-        { ...v3.matches[0], sets: [{ ...v3.matches[0].sets[0], roles: {}, liberoActive: true }] },
+        { ...v3.matches[0], sets: [{ ...v3.matches[0].sets[0], formation: { system: '5-1', order: 'outside', setterAt: 1 }, liberoActive: true }] },
       ],
     });
   });
@@ -408,9 +408,9 @@ describe('migrations', () => {
     };
     expect(migrateStore(v5, 5)).toEqual({
       chipLabel: 'name',
-      presets: [{ id: 'ps', slots: {}, roles: {}, liberoActive: true }, 'junk'],
+      presets: [{ id: 'ps', slots: {}, formation: { system: '5-1', order: 'outside', setterAt: 1 }, liberoActive: true }, 'junk'],
       matches: [
-        { id: 'm', sets: [{ setNumber: 1, roles: {}, liberoActive: true }, 'junk'] },
+        { id: 'm', sets: [{ setNumber: 1, formation: { system: '5-1', order: 'outside', setterAt: 1 }, liberoActive: true }, 'junk'] },
         { id: 'n' },
         'junk',
       ],

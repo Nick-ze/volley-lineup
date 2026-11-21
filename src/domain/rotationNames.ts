@@ -8,10 +8,10 @@
  */
 import { setterRotation } from './roles';
 import { getRotation, ROTATION_NUMBERS, type RotationNumber, type Slots } from './rotation';
-import type { RoleOverrides } from './types';
+import type { PlayerRoles } from './types';
 
 /** The label of every step (index 0 = step 1). */
-export function rotationLabels(slots: Slots, roles: Readonly<RoleOverrides>): RotationNumber[] {
+export function rotationLabels(slots: Slots, roles: Readonly<PlayerRoles>): RotationNumber[] {
   return ROTATION_NUMBERS.map((step) => setterRotation(getRotation(slots, step), roles) ?? step);
 }
 

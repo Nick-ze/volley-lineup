@@ -14,7 +14,7 @@ import { COURT_POSITIONS, type LineupPreset, type Player, type SetLineup } from 
 /** The lineup part of a preset (what the builder edits and what is applied to a set). */
 export type PresetLineup = Pick<
   LineupPreset,
-  'slots' | 'liberoId' | 'liberoReplaces' | 'roles' | 'liberoActive'
+  'slots' | 'liberoId' | 'liberoReplaces' | 'formation' | 'liberoActive'
 >;
 
 /** Preset names have the same limit as other names (40 characters). */
@@ -26,7 +26,7 @@ export function presetFromSet(set: SetLineup): PresetLineup {
     slots: { ...set.slots },
     liberoId: set.liberoId,
     liberoReplaces: [...set.liberoReplaces],
-    roles: { ...set.roles },
+    formation: { ...set.formation },
     liberoActive: set.liberoActive,
   };
 }
@@ -38,7 +38,7 @@ export function presetToDraft(preset: PresetLineup): SetLineup {
     slots: { ...preset.slots },
     liberoId: preset.liberoId,
     liberoReplaces: [...preset.liberoReplaces],
-    roles: { ...preset.roles },
+    formation: { ...preset.formation },
     liberoActive: preset.liberoActive,
   };
 }
@@ -85,10 +85,15 @@ export function applyPresetToSet(
   const liberoReplaces = preset.liberoReplaces.filter(
     (id, i) => onCourt.has(id) && preset.liberoReplaces.indexOf(id) === i,
   );
-  const roles: SetLineup['roles'] = {};
-  for (const [id, role] of Object.entries(preset.roles)) if (onCourt.has(id)) roles[id] = role;
   return {
-    set: { ...set, slots, liberoId, liberoReplaces, roles, liberoActive: preset.liberoActive },
+    set: {
+      ...set,
+      slots,
+      liberoId,
+      liberoReplaces,
+      formation: { ...preset.formation },
+      liberoActive: preset.liberoActive,
+    },
     skipped,
   };
 }
@@ -134,14 +139,12 @@ export function firstSetForNewMatch(
 }
 
 /**
- * Removes a player from a preset (court, libero, libero replaces, role override); same object
- * if not in it.
+ * Removes a player from a preset (court, libero, libero replaces); same object if not in it.
  */
 export function removePlayerFromPreset(preset: LineupPreset, playerId: string): LineupPreset {
   const inIt =
     preset.liberoId === playerId ||
     preset.liberoReplaces.includes(playerId) ||
-    playerId in preset.roles ||
     COURT_POSITIONS.some((p) => preset.slots[p] === playerId);
   if (!inIt) return preset;
   const slots = { ...preset.slots };
@@ -151,7 +154,6 @@ export function removePlayerFromPreset(preset: LineupPreset, playerId: string): 
     slots,
     liberoId: preset.liberoId === playerId ? null : preset.liberoId,
     liberoReplaces: preset.liberoReplaces.filter((id) => id !== playerId),
-    roles: Object.fromEntries(Object.entries(preset.roles).filter(([id]) => id !== playerId)),
   };
 }
 

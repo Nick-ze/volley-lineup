@@ -23,7 +23,7 @@ export const players: Player[] = [
 ];
 
 export const set1: SetLineup = {
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   setNumber: 1,
   slots: { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' },
@@ -35,7 +35,7 @@ export const set1: SetLineup = {
 
 /** Set 2 starts one rotation further on, opponent serves. */
 export const set2: SetLineup = {
-  roles: {},
+  formation: { system: '5-1', order: 'outside', setterAt: 1 },
   liberoActive: true,
   setNumber: 2,
   slots: { 1: 'p2', 2: 'p3', 3: 'p4', 4: 'p5', 5: 'p6', 6: 'p1' },

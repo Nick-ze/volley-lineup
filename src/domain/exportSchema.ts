@@ -9,6 +9,8 @@ import { z } from 'zod';
 
 import type {
   ExportFile,
+  FormationOrder,
+  FormationSystem,
   LineupPreset,
   ManagerProfile,
   Match,
@@ -20,14 +22,14 @@ import type {
   Team,
 } from './types';
 import { isValidPointTag } from './pointTags';
-import { COURT_ROLES } from './roles';
+import { FORMATION_ORDERS, FORMATION_SYSTEMS, upgradeLineupToFormation } from './roles';
 import { validatePresetName } from './presets';
 import { ALL_POSITIONS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 5 as const;
+export const EXPORT_SCHEMA_VERSION = 6 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6];
 
 /**
  * The five persisted collections. Derived from `ExportFile` (the domain layer can't import the
@@ -90,7 +92,18 @@ const slotsSchema = z.object({
 });
 
 /** v5: player id → role. */
-const rolesSchema = z.record(id, z.enum(COURT_ROLES as [Position, ...Position[]]));
+const formationSchema = z.object({
+  system: z.enum(FORMATION_SYSTEMS as [FormationSystem, ...FormationSystem[]]),
+  order: z.enum(FORMATION_ORDERS as [FormationOrder, ...FormationOrder[]]),
+  setterAt: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+    z.literal(5),
+    z.literal(6),
+  ]),
+});
 
 const setLineupSchema = z.object({
   setNumber: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
@@ -110,7 +123,7 @@ const setLineupSchema = z.object({
       z.object({ type: z.literal('sub'), outPlayerId: id, inPlayerId: id }),
     ]),
   ),
-  roles: rolesSchema,
+  formation: formationSchema,
   liberoActive: z.boolean(),
 });
 
@@ -131,7 +144,7 @@ const presetSchema = z.object({
   slots: slotsSchema,
   liberoId: playerRef,
   liberoReplaces: z.array(id),
-  roles: rolesSchema,
+  formation: formationSchema,
   liberoActive: z.boolean(),
   createdAt: z.string(),
 });
@@ -268,7 +281,6 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - set numbers are unique within a match;
  * - every lineup slot / libero refers to a player of the match's own team;
  * - within a set, no player is in two slots and the libero is not also a starter;
- * - role overrides (v5) name only starters on court of that set / preset;
  * - point tags (v4) are coherent (a kind of the winning side, a player only where the kind takes
  *   one) and a tagged player belongs to the match's team;
  * - presets (v3) follow the same lineup rules for their team, and a team has at most one
@@ -297,14 +309,12 @@ export function isConsistent(data: TransferData): boolean {
   /** A lineup (set or preset) of `teamId`: nobody twice, libero not on court, own players only. */
   const lineupOk = (
     teamId: string,
-    lineup: Pick<SetLineup, 'slots' | 'liberoId' | 'liberoReplaces' | 'roles'>,
+    lineup: Pick<SetLineup, 'slots' | 'liberoId' | 'liberoReplaces'>,
     extraPlayers: readonly string[] = [],
   ): boolean => {
     const starters = Object.values(lineup.slots).filter((x): x is string => x !== null);
     if (hasDuplicates(starters)) return false; // a player in two slots
     if (lineup.liberoId !== null && starters.includes(lineup.liberoId)) return false;
-    // v5: role overrides only for starters on court
-    if (!Object.keys(lineup.roles).every((playerId) => starters.includes(playerId))) return false;
     return [...starters, lineup.liberoId, ...lineup.liberoReplaces, ...extraPlayers].every(
       (playerId) => playerId === null || teamOfPlayer.get(playerId) === teamId,
     );
@@ -350,7 +360,7 @@ function upgradeV1(raw: Record<string, unknown>): Record<string, unknown> {
   return { ...raw, schemaVersion: 2, matches };
 }
 
-/** v4 → v5: every set and preset gains `roles: {}` (primary positions) and `liberoActive: true`. */
+/** v4 → v5: every set and preset gains `formation: { system: '5-1', order: 'outside', setterAt: 1 }` (primary positions) and `liberoActive: true`. */
 function upgradeV4(raw: Record<string, unknown>): Record<string, unknown> {
   const lineupDefaults = (x: unknown) =>
     isRecord(x) ? { roles: {}, liberoActive: true, ...x } : x;
@@ -363,15 +373,29 @@ function upgradeV4(raw: Record<string, unknown>): Record<string, unknown> {
   return { ...raw, schemaVersion: 5, matches, presets };
 }
 
+/** v5 → v6: per-player role overrides become a formation per set and preset (roles.ts). */
+function upgradeV5(raw: Record<string, unknown>): Record<string, unknown> {
+  const toFormation = (x: unknown) => upgradeLineupToFormation(x, raw.players);
+  const matches = Array.isArray(raw.matches)
+    ? raw.matches.map((m: unknown) =>
+        isRecord(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(toFormation) } : m,
+      )
+    : raw.matches;
+  const presets = Array.isArray(raw.presets) ? raw.presets.map(toFormation) : raw.presets;
+  return { ...raw, schemaVersion: 6, matches, presets };
+}
+
 /**
  * Upgrades an older file step by step: v1 → v2 (sets), v2 → v3 (`presets: []`), v3 → v4 (no data
- * change: untagged points without timestamps stay valid), v4 → v5 (roles + libero on/off).
+ * change: untagged points without timestamps stay valid), v4 → v5 (roles + libero on/off),
+ * v5 → v6 (roles become a formation per lineup).
  */
 function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
   const v3 = v2.schemaVersion === 2 ? { presets: [], ...v2, schemaVersion: 3 } : v2;
   const v4 = v3.schemaVersion === 3 ? { ...v3, schemaVersion: 4 } : v3;
-  return v4.schemaVersion === 4 ? upgradeV4(v4) : v4;
+  const v5 = v4.schemaVersion === 4 ? upgradeV4(v4) : v4;
+  return v5.schemaVersion === 5 ? upgradeV5(v5) : v5;
 }
 
 /**
