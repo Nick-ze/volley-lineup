@@ -15,8 +15,8 @@ export const COMPACT_SLOT_MIN_HEIGHT = 84;
 
 /** Height of the row above a chip that holds the role tag (kept even when empty so chips line up). */
 export const ROLE_ROW_HEIGHT = 18;
-/** Height of the row below a chip that holds the "Server" / "L for #n" tag. */
-export const BADGE_ROW_HEIGHT = 18;
+/** How far the "Server" / "L for #n" badge reaches up into the bottom of the chip circle (px). */
+export const BADGE_OVERLAP = 16;
 
 /** Width of the libero / serve-info column beside the court on wide screens. */
 export const SIDE_PANEL_WIDTH = 200;

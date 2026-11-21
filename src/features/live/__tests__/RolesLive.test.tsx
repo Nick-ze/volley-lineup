@@ -75,7 +75,7 @@ describe('live mode — roles and the setter rotation (v4)', () => {
     expect(screen.queryByTestId('live-role-2-off', hidden)).toBeNull(); // secondary position
     // The libero stands in for middle #3 at 6 and shows "L".
     expect(roleAt(6)).toHaveTextContent('L');
-    expect(screen.getByLabelText(/^Position 4: .*Setter, role Setter$/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Position 4: .*Setter, plays Setter$/)).toBeTruthy();
 
     await press('point-us'); // side-out: the setter moves 4 → 3
     expect(rotationText()).toHaveTextContent('Rotation 3');
@@ -85,10 +85,10 @@ describe('live mode — roles and the setter rotation (v4)', () => {
     await press('sub-start');
     await press('live-court-3');
     await press('live-bench-8');
-    expect(roleAt(3)).toHaveTextContent('S*');
+    expect(roleAt(3)).toHaveTextContent('S');
     expect(screen.getByTestId('live-role-3-off', hidden)).toBeTruthy();
     expect(
-      screen.getByLabelText(/^Position 3: .*role Setter, not one of their positions$/),
+      screen.getByLabelText(/^Position 3: .*plays Setter, not one of their positions$/),
     ).toBeTruthy();
     expect(rotationText()).toHaveTextContent('Rotation 3');
 
@@ -114,12 +114,12 @@ describe('live mode — roles and the setter rotation (v4)', () => {
     expect(screen.getByTestId('setup-rotate-cw')).toBeDisabled(); // nobody on court yet
 
     await press('setup-copy');
-    expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter at position 4');
+    expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter on 4');
     await fireEvent.press(screen.getByRole('button', { name: /^Rotate ↻/ }));
-    expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter at position 3');
+    expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter on 3');
     await fireEvent.press(screen.getByRole('button', { name: /^Rotate ↺/ }));
     await fireEvent.press(screen.getByRole('button', { name: /^Rotate ↺/ }));
-    expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter at position 5');
+    expect(screen.getByTestId('setup-setter-at')).toHaveTextContent('Setter on 5');
 
     await press('setup-start');
     expect(stored(2)?.slots).toEqual({ 1: 'p3', 2: 'p4', 3: 'p5', 4: 'p6', 5: 'p1', 6: 'p2' });

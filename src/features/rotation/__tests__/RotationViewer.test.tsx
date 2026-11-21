@@ -27,7 +27,7 @@ describe('rotation viewer', () => {
     // The server (position 1) is announced, front row distinguished.
     expect(
       screen.getByLabelText(
-        /^Position 1, Back row: Number 1, S Setter, Setter, role Setter, server$/,
+        /^Position 1, Back row: Number 1, S Setter, Setter, plays Setter, server$/,
       ),
     ).toBeTruthy();
     expect(screen.getByLabelText(/^Position 3, Front row: Number 3/)).toBeTruthy();

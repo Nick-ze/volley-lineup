@@ -97,7 +97,7 @@ export const live: Strings['live'] = {
     rotateCwLabel: 'Rotieren ↻: alle Starter eine Position im Uhrzeigersinn weiter',
     rotateCcw: 'Rotieren ↺',
     rotateCcwLabel: 'Rotieren ↺: alle Starter eine Position gegen den Uhrzeigersinn weiter',
-    setterAt: (n: number) => `Zuspieler auf Position ${n}`,
+    setterAt: (n: number) => `Zuspieler auf ${n}`,
   },
   summary: {
     title: 'Spiel beendet',

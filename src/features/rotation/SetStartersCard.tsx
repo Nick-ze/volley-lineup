@@ -36,7 +36,7 @@ export function startersCardLabel(
     const summary = t.rotation.playerSummary(p.number, `${p.firstName} ${p.lastName}`.trim());
     const role = roles[id];
     return withRole && role
-      ? `${summary}, ${t.rotation.roleLabel(t.positions[role], isOffPosition(p, role))}`
+      ? `${summary}, ${t.roles.spotRole(t.positions[role], isOffPosition(p, role))}`
       : summary;
   };
   const starters = COURT_POSITIONS.map((pos) =>

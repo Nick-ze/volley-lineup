@@ -16,11 +16,11 @@ describe('team starters tab — role tags (v4)', () => {
     await renderRouter('./app', { initialUrl: '/team/team1?tab=starters' });
     const court = await screen.findByTestId('starters-court');
     expect(screen.getByTestId('role-tag-1', hidden)).toHaveTextContent('S');
-    expect(screen.getByTestId('role-tag-2', hidden)).toHaveTextContent('OPP*');
+    expect(screen.getByTestId('role-tag-2', hidden)).toHaveTextContent('OPP');
     expect(screen.getByTestId('role-tag-2-off', hidden)).toBeTruthy();
     expect(screen.queryByTestId('role-tag-1-off', hidden)).toBeNull();
     expect(court.props.accessibilityLabel).toMatch(
-      /position 2 #2 Olga Test, role Opposite, not one of their positions/,
+      /position 2 #2 Olga Test, plays Opposite, not one of their positions/,
     );
   });
 });

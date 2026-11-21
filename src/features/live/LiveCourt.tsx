@@ -4,7 +4,7 @@ import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
 import type { LiveCourtView } from '@/domain/liveSet';
 import { isOffPosition } from '@/domain/roles';
 import type { Player, RoleOverrides } from '@/domain/types';
-import { RoleRow, SpotBadge } from '@/features/rotation/SpotTags';
+import { ChipWithBadge, RoleRow } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
@@ -40,7 +40,10 @@ export function LiveCourt({
   readOnly = false,
 }: LiveCourtProps) {
   const t = useT();
-  const slotStyle = ({ isFrontRow }: CourtSlotInfo) => (isFrontRow ? styles.front : styles.back);
+  const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
+    isFrontRow ? styles.front : styles.back,
+    styles.slot,
+  ];
   const { slots, liberoSwap } = view;
   return (
     <Court
@@ -64,7 +67,7 @@ export function LiveCourt({
                 playerRef(t, playersById, replacedId),
               )
             : role
-              ? `${playerDescription(t, player)}, ${t.rotation.roleLabel(t.positions[role], off)}`
+              ? `${playerDescription(t, player)}, ${t.roles.spotRole(t.positions[role], off)}`
               : playerDescription(t, player)
           : '';
         return (
@@ -78,29 +81,33 @@ export function LiveCourt({
               testID={`live-role-${position}`}
             />
             {player && realId ? (
-              <PlayerChip
-                player={player}
-                size={LIVE_CHIP_SIZE}
-                highlighted={isServer}
-                selected={selectedId === realId}
-                onPress={readOnly ? undefined : () => onPressPlayer(realId)}
-                accessibilityLabel={t.live.courtPlayerLabel(desc, position, isServer)}
-                accessibilityHint={readOnly ? undefined : t.live.courtPlayerHint}
-                testID={`live-court-${position}`}
-              />
+              <ChipWithBadge
+                chipSize={LIVE_CHIP_SIZE}
+                text={
+                  replacedId
+                    ? t.rotation.liberoFor(playersById.get(replacedId)?.number ?? null)
+                    : isServer
+                      ? t.live.serving
+                      : null
+                }
+                kind={replacedId ? 'libero' : 'server'}
+                testID={replacedId ? `live-libero-tag-${position}` : undefined}
+              >
+                <PlayerChip
+                  player={player}
+                  size={LIVE_CHIP_SIZE}
+                  highlighted={isServer}
+                  selected={selectedId === realId}
+                  onPress={readOnly ? undefined : () => onPressPlayer(realId)}
+                  accessibilityLabel={t.live.courtPlayerLabel(desc, position, isServer)}
+                  accessibilityHint={readOnly ? undefined : t.live.courtPlayerHint}
+                  testID={`live-court-${position}`}
+                />
+              </ChipWithBadge>
             ) : (
               <View accessible accessibilityLabel={t.live.emptySpot(position)}>
                 <Text style={styles.empty}>{t.live.unknownPlayer}</Text>
               </View>
-            )}
-            {replacedId ? (
-              <SpotBadge
-                kind="libero"
-                text={t.rotation.liberoFor(playersById.get(replacedId)?.number ?? null)}
-                testID={`live-libero-tag-${position}`}
-              />
-            ) : (
-              <SpotBadge kind="server" text={isServer ? t.live.serving : null} />
             )}
           </>
         );
@@ -114,6 +121,8 @@ const styles = StyleSheet.create({
   // White text on these fills passes AA (white directly on orange does not).
   front: { backgroundColor: colors.secondary },
   back: { backgroundColor: colors.overlay },
+  // The role row takes the room of the default vertical padding (the court keeps its height).
+  slot: { paddingVertical: spacing.xxs },
   pos: {
     position: 'absolute',
     top: spacing.xs,

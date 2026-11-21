@@ -8,6 +8,8 @@ export const rotation = {
   rotationOf: (n: number, total: number) => `Rotation ${n} of ${total}`,
   /** v4: the rotation is named after the setter's position. */
   setterRotation: (n: number) => `Rotation ${n} (setter on ${n})`,
+  /** v4, 6-2: the same rotation number comes up twice; tells the two apart. */
+  repeat: (time: number) => (time === 1 ? 'first time' : 'second time'),
   goToRotation: (n: number) => `Show rotation ${n}`,
   previous: '‹ Previous',
   next: 'Next ›',
@@ -41,9 +43,6 @@ export const rotation = {
   showLiberoSwaps: 'Show libero swaps',
   noLiberoReplaces: 'Choose whom the libero replaces in the lineup builder to see libero swaps.',
   liberoOff: 'Libero switched off for this set',
-  /** v4: the role a starter plays, for screen readers (the tag on court shows the short code). */
-  roleLabel: (role: string, offPosition: boolean) =>
-    `role ${role}${offPosition ? ', not one of their positions' : ''}`,
   liberoFor: (number: number | null) => (number === null ? 'L' : `L for #${number}`),
   liberoForLabel: (player: string, replaced: string) => `Libero ${player}, in for ${replaced}`,
 } as const;

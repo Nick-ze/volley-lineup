@@ -82,7 +82,7 @@ describe('live match mode', () => {
     expect([1, 2, 3, 4, 5, 6].map(numberAt)).toEqual([2, 3, 4, 5, 6, 1]);
     expect(
       screen.getByLabelText(
-        /^Position 1: Number 2, O Outside, Outside Hitter, role Outside Hitter, serving$/,
+        /^Position 1: Number 2, O Outside, Outside Hitter, plays Outside Hitter, serving$/,
       ),
     );
 

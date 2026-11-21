@@ -66,14 +66,28 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
     // #4 plays setter too (off position): setters at 1 (#1, back row) and 4 (#4, front row).
     seedWith({ ...set1, roles: { p4: 'S' } });
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=1' });
-    expect(await screen.findByText('Rotation 1 (setter on 1)')).toBeTruthy();
+    // Each number comes up twice: title and jump buttons tell the two apart.
+    expect(await screen.findByText('Rotation 1 (setter on 1), first time')).toBeTruthy();
     await next(); // setters at 6 and 3
-    expect(title()).toHaveTextContent('Rotation 6 (setter on 6)');
+    expect(title()).toHaveTextContent('Rotation 6 (setter on 6), first time');
     await next(); // 5 and 2
-    expect(title()).toHaveTextContent('Rotation 5 (setter on 5)');
+    expect(title()).toHaveTextContent('Rotation 5 (setter on 5), first time');
     await next(); // #1 front at 4, #4 back at 1
-    expect(title()).toHaveTextContent('Rotation 1 (setter on 1)');
+    expect(title()).toHaveTextContent('Rotation 1 (setter on 1), second time');
     numberAt(1, '4');
+    const jumps = within(screen.getByLabelText('Rotations'))
+      .getAllByRole('button')
+      .map((b) => b.props.accessibilityLabel);
+    expect(jumps).toEqual([
+      'Show rotation 1, first time',
+      'Show rotation 1, second time',
+      'Show rotation 5, first time',
+      'Show rotation 5, second time',
+      'Show rotation 6, first time',
+      'Show rotation 6, second time',
+    ]);
+    await fireEvent.press(screen.getByRole('button', { name: 'Show rotation 6, second time' }));
+    expect(title()).toHaveTextContent('Rotation 6 (setter on 6), second time');
   });
 
   it('without a setter on court the rotations are counted from the start', async () => {
@@ -104,18 +118,18 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
     expect(roleAt(1)).toHaveTextContent('S');
     expect(roleAt(5)).toHaveTextContent('OPP');
     expect(screen.queryByTestId('role-tag-5-off', hidden)).toBeNull();
-    expect(roleAt(3)).toHaveTextContent('OH*');
+    expect(roleAt(3)).toHaveTextContent('OH');
     expect(screen.getByTestId('role-tag-3-off', hidden)).toBeTruthy();
     expect(
       screen.getByLabelText(
-        /^Position 3, Front row: Number 3, .*role Outside Hitter, not one of their positions$/,
+        /^Position 3, Front row: Number 3, .*plays Outside Hitter, not one of their positions$/,
       ),
     ).toBeTruthy();
     // The libero standing in for #6 shows "L".
     expect(roleAt(6)).toHaveTextContent('L');
     // Roles follow the players around: #3 (OH*) moves to 2.
     await next();
-    expect(roleAt(2)).toHaveTextContent('OH*');
+    expect(roleAt(2)).toHaveTextContent('OH');
   });
 
   it('a switched-off libero never swaps in and the toggle is replaced by a note', async () => {

@@ -92,7 +92,7 @@ export const live = {
     rotateCwLabel: 'Rotate ↻: move every starter one position clockwise',
     rotateCcw: 'Rotate ↺',
     rotateCcwLabel: 'Rotate ↺: move every starter one position counterclockwise',
-    setterAt: (n: number) => `Setter at position ${n}`,
+    setterAt: (n: number) => `Setter on ${n}`,
   },
   summary: {
     title: 'Match over',

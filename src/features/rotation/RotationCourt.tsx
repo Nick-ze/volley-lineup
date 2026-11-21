@@ -5,7 +5,7 @@ import type { LiberoSwap } from '@/domain/liberoSwap';
 import { isOffPosition } from '@/domain/roles';
 import { serverPosition, type Slots } from '@/domain/rotation';
 import type { Player, RoleOverrides } from '@/domain/types';
-import { colors } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 import { CourtSpot } from './CourtSpot';
 import { COMPACT_COURT_MAX_WIDTH, COMPACT_SLOT_MIN_HEIGHT } from './layout';
@@ -37,6 +37,7 @@ export function RotationCourt({
 }: RotationCourtProps) {
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
     isFrontRow ? styles.front : styles.back,
+    styles.slot,
     compact && styles.compactSlot,
   ];
   return (
@@ -75,6 +76,8 @@ const styles = StyleSheet.create({
   // White text on these fills passes WCAG AA (white directly on orange #FF6B00 is ≈ 2.9:1).
   front: { backgroundColor: colors.secondary },
   back: { backgroundColor: colors.overlay },
+  // The role row takes the room of the default vertical padding (the court keeps its height).
+  slot: { paddingVertical: spacing.xxs },
   compactSlot: { minHeight: COMPACT_SLOT_MIN_HEIGHT },
   compactCourt: { maxWidth: COMPACT_COURT_MAX_WIDTH },
 });

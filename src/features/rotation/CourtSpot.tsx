@@ -6,7 +6,7 @@ import { useT, type Strings } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
-import { RoleRow, SpotBadge } from './SpotTags';
+import { ChipWithBadge, RoleRow } from './SpotTags';
 
 export interface CourtSpotProps {
   position: CourtPosition;
@@ -49,16 +49,30 @@ export function CourtSpot({
     const desc = liberoFor
       ? t.rotation.liberoForLabel(chip, describe(t, liberoFor.replaced))
       : role
-        ? `${chip}, ${t.rotation.roleLabel(t.positions[role], offPosition)}`
+        ? `${chip}, ${t.roles.spotRole(t.positions[role], offPosition)}`
         : chip;
+    const badge = compact
+      ? null
+      : liberoFor
+        ? t.rotation.liberoFor(liberoFor.replaced?.number ?? null)
+        : isServer
+          ? t.rotation.server
+          : null;
     content = (
-      <PlayerChip
-        player={player}
-        size={size}
-        highlighted={isServer}
-        accessibilityLabel={t.rotation.spotLabel(position, row, desc, isServer)}
-        testID={testID}
-      />
+      <ChipWithBadge
+        chipSize={size}
+        text={badge}
+        kind={liberoFor ? 'libero' : 'server'}
+        testID={liberoFor ? `libero-tag-${position}` : undefined}
+      >
+        <PlayerChip
+          player={player}
+          size={size}
+          highlighted={isServer}
+          accessibilityLabel={t.rotation.spotLabel(position, row, desc, isServer)}
+          testID={testID}
+        />
+      </ChipWithBadge>
     );
   } else {
     content = (
@@ -90,15 +104,6 @@ export function CourtSpot({
         testID={`role-tag-${position}`}
       />
       {content}
-      {compact ? null : liberoFor ? (
-        <SpotBadge
-          kind="libero"
-          text={t.rotation.liberoFor(liberoFor.replaced?.number ?? null)}
-          testID={`libero-tag-${position}`}
-        />
-      ) : (
-        <SpotBadge kind="server" text={isServer ? t.rotation.server : null} />
-      )}
     </>
   );
 }

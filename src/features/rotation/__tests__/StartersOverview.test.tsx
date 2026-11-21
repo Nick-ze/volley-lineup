@@ -29,12 +29,12 @@ describe('starters overview', () => {
     // The card is one button, so its label must summarise what it shows.
     // v4: with each starter's role and the rotation named after the setter.
     expect(card1.props.accessibilityLabel).toBe(
-      'Set 1: open rotation viewer. Starters: position 1 number 1 S Setter, role Setter, ' +
-        'position 2 number 2 O Outside, role Outside Hitter, ' +
-        'position 3 number 3 M Middle, role Middle Blocker, ' +
-        'position 4 number 4 O Oppo, role Opposite, ' +
-        'position 5 number 5 W Wing, role Outside Hitter, ' +
-        'position 6 number 6 B Block, role Middle Blocker. Libero: number 7 D Dig. ' +
+      'Set 1: open rotation viewer. Starters: position 1 number 1 S Setter, plays Setter, ' +
+        'position 2 number 2 O Outside, plays Outside Hitter, ' +
+        'position 3 number 3 M Middle, plays Middle Blocker, ' +
+        'position 4 number 4 O Oppo, plays Opposite, ' +
+        'position 5 number 5 W Wing, plays Outside Hitter, ' +
+        'position 6 number 6 B Block, plays Middle Blocker. Libero: number 7 D Dig. ' +
         'We serve first. Rotation 1 (setter on 1).',
     );
     expect(card2.props.accessibilityLabel).toMatch(

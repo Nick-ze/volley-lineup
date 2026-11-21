@@ -35,7 +35,7 @@ function courtSummary(
     if (!p) return t.rotation.starterSummary(pos, t.rotation.emptySummary);
     const role = roles[p.id];
     const desc = role
-      ? `${playerName(p)}, ${t.rotation.roleLabel(t.positions[role], isOffPosition(p, role))}`
+      ? `${playerName(p)}, ${t.roles.spotRole(t.positions[role], isOffPosition(p, role))}`
       : playerName(p);
     return t.rotation.starterSummary(pos, desc);
   }).join(', ');
