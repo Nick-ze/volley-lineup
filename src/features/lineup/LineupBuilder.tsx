@@ -9,9 +9,11 @@ import { colors, spacing, typography } from '@/theme';
 
 import { Bench } from './Bench';
 import { DragProvider, type DragItem } from './drag/DragContext';
+import { LiberoReplaces } from './LiberoReplaces';
 import { LiberoSlot } from './LiberoSlot';
 import { LineupCourt } from './LineupCourt';
 import { ServeToggle } from './ServeToggle';
+import { TemplateFill } from './TemplateFill';
 import type { LineupEditor } from './useLineupEditor';
 import { ValidationPanel } from './ValidationPanel';
 
@@ -42,6 +44,8 @@ export function LineupBuilder({ editor }: { editor: LineupEditor }) {
             />
           </View>
         </View>
+        <LiberoReplaces editor={editor} />
+        <TemplateFill key={set.setNumber} editor={editor} />
         <View style={styles.buttons}>
           <Button
             label={t.lineup.copyPrevious}

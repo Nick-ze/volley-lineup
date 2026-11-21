@@ -10,14 +10,17 @@ import {
   movePlayer,
   parseSetNumber,
   placePlayer,
+  pruneLiberoReplaces,
   previousSet,
   removeFromCourt,
   removePlayer,
   setLibero,
+  setLiberoReplaces,
   setServeFirst,
   swapSlots,
   tapPlayer,
   tapTarget,
+  toggleLiberoReplace,
 } from './lineupEditing';
 import { COURT_POSITIONS, type Player, type SetLineup } from './types';
 
@@ -297,5 +300,69 @@ describe('no-op operations return the same object (nothing to save)', () => {
     expect(setLibero(empty, null)).toBe(empty);
     const onlyLibero = { ...empty, liberoId: 'l' };
     expect(clearLineup(onlyLibero).liberoId).toBeNull();
+  });
+});
+
+describe('liberoReplaces stays limited to players on court', () => {
+  /** a at 1, b at 2, c at 3; the libero replaces a and c. */
+  const withChoice = (): SetLineup => {
+    const s = base();
+    return { ...s, slots: { ...s.slots, 3: 'c' }, liberoReplaces: ['a', 'c'] };
+  };
+
+  it('pruneLiberoReplaces drops players who are not on court', () => {
+    const s = { ...withChoice(), liberoReplaces: ['a', 'x', 'c'] };
+    expect(pruneLiberoReplaces(s).liberoReplaces).toEqual(['a', 'c']);
+    const ok = withChoice();
+    expect(pruneLiberoReplaces(ok)).toBe(ok);
+  });
+
+  it('removing a player to the bench removes them from liberoReplaces', () => {
+    expect(removePlayer(withChoice(), 'a').liberoReplaces).toEqual(['c']);
+    expect(movePlayer(withChoice(), 'c', { kind: 'bench' }).liberoReplaces).toEqual(['a']);
+  });
+
+  it('emptying a court position removes that player', () => {
+    expect(removeFromCourt(withChoice(), 3).liberoReplaces).toEqual(['a']);
+  });
+
+  it('replacing a starter with a bench player removes the replaced starter', () => {
+    expect(placePlayer(withChoice(), 'd', 1).liberoReplaces).toEqual(['c']);
+  });
+
+  it('making a starter the libero removes them', () => {
+    expect(setLibero(withChoice(), 'c').liberoReplaces).toEqual(['a']);
+  });
+
+  it('moving or swapping players on court keeps the choice', () => {
+    expect(placePlayer(withChoice(), 'a', 5).liberoReplaces).toEqual(['a', 'c']);
+    expect(swapSlots(withChoice(), 1, 3).liberoReplaces).toEqual(['a', 'c']);
+  });
+
+  it('clearing the lineup clears the choice', () => {
+    expect(clearLineup(withChoice()).liberoReplaces).toEqual([]);
+  });
+});
+
+describe('setLiberoReplaces / toggleLiberoReplace', () => {
+  const s = (): SetLineup => ({ ...base(), liberoReplaces: ['a'] });
+
+  it('sets the choice, ignoring players off court and duplicates', () => {
+    expect(setLiberoReplaces(s(), ['b', 'x', 'b', 'a']).liberoReplaces).toEqual(['b', 'a']);
+    expect(setLiberoReplaces(s(), []).liberoReplaces).toEqual([]);
+  });
+
+  it('returns the same object when nothing changes', () => {
+    const set = s();
+    expect(setLiberoReplaces(set, ['a'])).toBe(set);
+    expect(setLiberoReplaces(set, ['a', 'x'])).toBe(set);
+  });
+
+  it('toggles one starter in and out', () => {
+    const added = toggleLiberoReplace(s(), 'b');
+    expect(added.liberoReplaces).toEqual(['a', 'b']);
+    expect(toggleLiberoReplace(added, 'a').liberoReplaces).toEqual(['b']);
+    const set = s();
+    expect(toggleLiberoReplace(set, 'x')).toBe(set);
   });
 });

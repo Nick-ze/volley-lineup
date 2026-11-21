@@ -14,6 +14,8 @@ export interface CourtSpotProps {
   player: Player | undefined;
   isServer: boolean;
   compact?: boolean;
+  /** Set when the libero stands here: the starter they replace (undefined if unknown). */
+  liberoFor?: { replaced: Player | undefined };
 }
 
 /** One spot in the rotation court: position number + the player (or an empty marker). */
@@ -24,6 +26,7 @@ export function CourtSpot({
   player,
   isServer,
   compact = false,
+  liberoFor,
 }: CourtSpotProps) {
   const row = isFrontRow ? t.rotation.frontRow : t.rotation.backRow;
   const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
@@ -33,7 +36,8 @@ export function CourtSpot({
   if (player) {
     const name = `${player.firstName} ${player.lastName}`.trim();
     const primary = player.positions[0];
-    const desc = t.player.chipLabel(player.number, name, primary ? t.positions[primary] : '');
+    const chip = t.player.chipLabel(player.number, name, primary ? t.positions[primary] : '');
+    const desc = liberoFor ? t.rotation.liberoForLabel(chip, describe(liberoFor.replaced)) : chip;
     content = (
       <PlayerChip
         player={player}
@@ -72,9 +76,24 @@ export function CourtSpot({
           {t.rotation.server}
         </Text>
       ) : null}
+      {liberoFor ? (
+        <Text
+          style={styles.liberoTag}
+          importantForAccessibility="no"
+          accessibilityElementsHidden
+          testID={`libero-tag-${position}`}
+        >
+          {t.rotation.liberoFor(liberoFor.replaced?.number ?? null)}
+        </Text>
+      ) : null}
       {content}
     </>
   );
+}
+
+function describe(player: Player | undefined): string {
+  if (!player) return t.rotation.unknownPlayer;
+  return t.rotation.playerSummary(player.number, `${player.firstName} ${player.lastName}`.trim());
 }
 
 const styles = StyleSheet.create({
@@ -93,6 +112,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.onHighlight,
     backgroundColor: colors.highlight,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.xs,
+    overflow: 'hidden',
+  },
+  liberoTag: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.onPrimary,
+    backgroundColor: colors.text,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
     overflow: 'hidden',

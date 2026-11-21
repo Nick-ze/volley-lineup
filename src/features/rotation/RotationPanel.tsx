@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { findLiberoSwap } from '@/domain/liberoSwap';
 import {
   getRotation,
   nextRotation,
@@ -13,6 +14,7 @@ import { useIsWide } from '@/lib/useIsWide';
 import { colors, spacing, typography } from '@/theme';
 
 import { COURT_MAX_WIDTH, SIDE_PANEL_WIDTH } from './layout';
+import { LiberoSwapControl } from './LiberoSwapControl';
 import { RotationCourt } from './RotationCourt';
 import { RotationStepper } from './RotationStepper';
 import { SetInfo } from './SetInfo';
@@ -27,7 +29,12 @@ export interface RotationPanelProps {
 export function RotationPanel({ set, playersById }: RotationPanelProps) {
   const isWide = useIsWide();
   const [rotation, setRotation] = useState<RotationNumber>(1);
-  const slots = useMemo(() => getRotation(set.slots, rotation), [set.slots, rotation]);
+  const [showSwaps, setShowSwaps] = useState(true);
+  const base = useMemo(() => getRotation(set.slots, rotation), [set.slots, rotation]);
+  // The rotation viewer treats position 1 as serving, so the libero never stands there.
+  const swap = showSwaps ? findLiberoSwap(base, set.liberoId, set.liberoReplaces) : null;
+  const liberoId = set.liberoId;
+  const slots = swap && liberoId ? { ...base, [swap.position]: liberoId } : base;
   const isEmpty = Object.values(set.slots).every((id) => id === null);
   const next = () => setRotation(nextRotation);
   const previous = () => setRotation(previousRotation);
@@ -45,10 +52,16 @@ export function RotationPanel({ set, playersById }: RotationPanelProps) {
         <View style={styles.courtCol}>
           <SwipeArea onSwipeLeft={next} onSwipeRight={previous}>
             <View collapsable={false} testID="rotation-swipe-area">
-              <RotationCourt slots={slots} playersById={playersById} testID="rotation-court" />
+              <RotationCourt
+                slots={slots}
+                playersById={playersById}
+                liberoSwap={swap}
+                testID="rotation-court"
+              />
             </View>
           </SwipeArea>
           <Text style={styles.hint}>{t.rotation.swipeHint}</Text>
+          <LiberoSwapControl set={set} showSwaps={showSwaps} onChange={setShowSwaps} />
         </View>
         <View style={isWide ? styles.sideWide : undefined}>
           <SetInfo

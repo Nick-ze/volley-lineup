@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 import { Court, type CourtSlotInfo } from '@/components';
+import type { LiberoSwap } from '@/domain/liberoSwap';
 import { serverPosition, type Slots } from '@/domain/rotation';
 import type { Player } from '@/domain/types';
 import { colors } from '@/theme';
@@ -14,6 +15,8 @@ export interface RotationCourtProps {
   /** Highlight the server at position 1 (default true). */
   highlightServer?: boolean;
   compact?: boolean;
+  /** Where the libero stands in for a starter (already applied to `slots`). */
+  liberoSwap?: LiberoSwap | null;
   testID?: string;
 }
 
@@ -23,6 +26,7 @@ export function RotationCourt({
   playersById,
   highlightServer = true,
   compact = false,
+  liberoSwap = null,
   testID,
 }: RotationCourtProps) {
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
@@ -45,6 +49,11 @@ export function RotationCourt({
             player={playerId ? playersById.get(playerId) : undefined}
             isServer={highlightServer && position === serverPosition}
             compact={compact}
+            liberoFor={
+              liberoSwap?.position === position
+                ? { replaced: playersById.get(liberoSwap.replacedId) }
+                : undefined
+            }
           />
         );
       }}
