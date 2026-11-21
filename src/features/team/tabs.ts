@@ -1,5 +1,5 @@
 /** The sections of the team screen (`/team/[teamId]?tab=…`), in nav bar order. */
-export const TEAM_TABS = ['roster', 'matches', 'presets', 'starters'] as const;
+export const TEAM_TABS = ['roster', 'matches', 'presets', 'starters', 'stats'] as const;
 
 export type TeamTab = (typeof TEAM_TABS)[number];
 

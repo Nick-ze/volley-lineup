@@ -89,6 +89,17 @@ export default function MatchScreen() {
               }
               testID="open-live"
             />
+            <Button
+              label={t.stats.open}
+              accessibilityLabel={t.stats.openLabel}
+              variant="secondary"
+              compact
+              style={styles.link}
+              onPress={() =>
+                router.push({ pathname: '/match/[matchId]/stats', params: { matchId } })
+              }
+              testID="open-stats"
+            />
           </View>
           <LineupBuilder
             editor={editor}

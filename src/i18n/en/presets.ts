@@ -6,10 +6,12 @@ export const presets = {
     matches: 'Matches',
     presets: 'Presets',
     starters: 'Starters',
+    stats: 'Stats',
     rosterLabel: 'Roster: players of the team',
     matchesLabel: 'Matches of the team',
     presetsLabel: 'Presets: saved lineups',
     startersLabel: 'Starters: the team’s usual starting lineup',
+    statsLabel: 'Stats: season statistics of the team',
   },
   list: {
     count: (n: number) => (n === 1 ? '1 preset' : `${n} presets`),
