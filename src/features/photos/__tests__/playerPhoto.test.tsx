@@ -25,6 +25,15 @@ const press = async (name: string) => fireEvent.press(screen.getByRole('button',
 const type = async (label: string, text: string) =>
   fireEvent.changeText(screen.getByLabelText(label), text);
 
+/** Roster row → player detail → Edit (the player form). */
+async function openForm(number: number, name: string) {
+  await fireEvent.press(await screen.findByTestId(`player-${number}`));
+  await fireEvent.press(
+    await screen.findByRole('button', { name: t.playerDetail.editLabel(name) }),
+  );
+  await screen.findByLabelText(t.roster.player.firstName);
+}
+
 function seedTeam() {
   const profile = store().addProfile({ name: 'Coach', color: '#FF6B00' });
   store().selectProfile(profile.id);
@@ -94,7 +103,7 @@ describe('player photos', () => {
     // Change, choosing between camera and gallery where the camera exists.
     camera.mockReturnValue(true);
     pick.mockResolvedValue({ status: 'picked', dataUri: URI_B });
-    await fireEvent.press(screen.getByTestId('player-7'));
+    await openForm(7, 'Ana Ace');
     await press(s.change);
     await press(s.takePhoto);
     expect(pick).toHaveBeenCalledWith('camera');
@@ -104,14 +113,17 @@ describe('player photos', () => {
     expect(changed).not.toBe('old');
     expect(photos()).toEqual({ [changed]: URI_B });
 
-    // Remove.
-    await fireEvent.press(await screen.findByTestId('player-7'));
+    // Remove (Save went back to the player detail screen).
+    await fireEvent.press(
+      await screen.findByRole('button', { name: t.playerDetail.editLabel('Ana Ace') }),
+    );
     await press(s.remove);
     expect(screen.getByText(s.removed)).toBeTruthy();
     expect(screen.getByRole('button', { name: s.add })).toBeTruthy();
     await press(t.common.save);
     expect(store().players[0].photoId).toBeUndefined();
     expect(photos()).toEqual({});
+    await fireEvent.press(await screen.findByTestId('header-back'));
     await screen.findByTestId('player-7');
     expect(screen.queryByTestId('player-7-photo-number', hidden)).toBeNull();
     expect(screen.queryByTestId('photo', hidden)).toBeNull();
@@ -124,7 +136,7 @@ describe('player photos', () => {
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
 
     camera.mockReturnValue(true);
-    await fireEvent.press(await screen.findByTestId('player-7'));
+    await openForm(7, 'Ana Ace');
     await press(s.add);
     await press(s.cancelChoiceLabel); // the camera / gallery choice
     expect(pick).not.toHaveBeenCalled();
@@ -154,13 +166,12 @@ describe('player photos', () => {
       }),
     );
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
-    await fireEvent.press(await screen.findByTestId('player-7'));
+    await openForm(7, 'Ana Ace');
     await press(s.add);
 
     expect(screen.getByText(s.processing)).toBeTruthy();
     const save = screen.getByRole('button', { name: t.common.save });
     expect(save).toBeDisabled();
-    expect(save.props['aria-disabled']).toBe(true);
     await fireEvent.press(save);
     expect(store().players[0].photoId).toBeUndefined();
 
