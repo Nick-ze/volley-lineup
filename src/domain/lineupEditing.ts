@@ -3,8 +3,9 @@
  * Every function returns a new `SetLineup` and never mutates its input. When an operation
  * changes nothing, the SAME object is returned, so callers can skip saving no-ops by identity.
  *
- * Invariant kept by every operation: a player id appears at most once in a set
- * (in one of the six slots OR as the libero, never both, never twice).
+ * Invariants kept by every operation: a player id appears at most once in a set
+ * (in one of the six slots OR as the libero, never both, never twice), and `liberoReplaces`
+ * only lists players who are on court (a player who leaves the court is dropped from it).
  */
 import { emptySetLineup } from './lineup';
 import {
@@ -36,6 +37,12 @@ export function locatePlayer(set: SetLineup, playerId: string): PlayerLocation {
   return { kind: 'bench' };
 }
 
+/** Drops everyone from `liberoReplaces` who is no longer on court (same object if no change). */
+export function pruneLiberoReplaces(set: SetLineup): SetLineup {
+  const kept = set.liberoReplaces.filter((id) => findSlot(set, id) !== null);
+  return kept.length === set.liberoReplaces.length ? set : { ...set, liberoReplaces: kept };
+}
+
 /** Removes a player from every slot and the libero spot. */
 export function removePlayer(set: SetLineup, playerId: string): SetLineup {
   if (locatePlayer(set, playerId).kind === 'bench') return set;
@@ -43,7 +50,11 @@ export function removePlayer(set: SetLineup, playerId: string): SetLineup {
   COURT_POSITIONS.forEach((p) => {
     if (slots[p] === playerId) slots[p] = null;
   });
-  return { ...set, slots, liberoId: set.liberoId === playerId ? null : set.liberoId };
+  return pruneLiberoReplaces({
+    ...set,
+    slots,
+    liberoId: set.liberoId === playerId ? null : set.liberoId,
+  });
 }
 
 /** Swaps the contents of two court positions (either may be empty). */
@@ -63,13 +74,34 @@ export function placePlayer(set: SetLineup, playerId: string, position: CourtPos
   const from = findSlot(set, playerId);
   if (from !== null) return swapSlots(set, from, position);
   const cleared = removePlayer(set, playerId);
-  return { ...cleared, slots: { ...cleared.slots, [position]: playerId } };
+  return pruneLiberoReplaces({ ...cleared, slots: { ...cleared.slots, [position]: playerId } });
 }
 
 /** Empties one court position (the player goes back to the bench). */
 export function removeFromCourt(set: SetLineup, position: CourtPosition): SetLineup {
   if (set.slots[position] === null) return set;
-  return { ...set, slots: { ...set.slots, [position]: null } };
+  return pruneLiberoReplaces({ ...set, slots: { ...set.slots, [position]: null } });
+}
+
+/** Sets whom the libero replaces. Players not on court are ignored; order follows the input. */
+export function setLiberoReplaces(set: SetLineup, playerIds: readonly string[]): SetLineup {
+  const next = playerIds.filter(
+    (id, i) => findSlot(set, id) !== null && playerIds.indexOf(id) === i,
+  );
+  const same =
+    next.length === set.liberoReplaces.length &&
+    next.every((id, i) => set.liberoReplaces[i] === id);
+  return same ? set : { ...set, liberoReplaces: next };
+}
+
+/** Adds or removes one starter from whom the libero replaces. */
+export function toggleLiberoReplace(set: SetLineup, playerId: string): SetLineup {
+  return set.liberoReplaces.includes(playerId)
+    ? setLiberoReplaces(
+        set,
+        set.liberoReplaces.filter((id) => id !== playerId),
+      )
+    : setLiberoReplaces(set, [...set.liberoReplaces, playerId]);
 }
 
 /** Sets (or clears with `null`) the libero. A player taken as libero leaves the court. */
