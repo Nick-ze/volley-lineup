@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
+import { IncludeDescriptionsToggle } from '@/features/descriptions/IncludeDescriptionsToggle';
+import { useDescriptionLock } from '@/features/descriptions/descriptionLock';
 import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
 import { colors, spacing, typography } from '@/theme';
@@ -9,18 +11,22 @@ import { Section } from './Section';
 import { StatusMessage } from './StatusMessage';
 import { useExport } from './useExport';
 
-/** Export everything, or one team of the current profile. */
+/** Export everything, or one team of the current profile; optionally with descriptions. */
 export function ExportSection() {
   const t = useT();
   const { exportData, status, busy } = useExport();
   const currentProfileId = useAppStore((s) => s.currentProfileId);
   const teams = useTeamsForProfile(currentProfileId);
+  // Only true while unlocked (locking clears it): descriptions are exported only when chosen.
+  const includeDescriptions = useDescriptionLock((x) => x.unlocked && x.includeInExport);
+  const options = { includeDescriptions };
 
   return (
     <Section title={t.transfer.export.title} hint={t.transfer.export.hint}>
+      <IncludeDescriptionsToggle />
       <Button
         label={t.transfer.export.all}
-        onPress={() => exportData()}
+        onPress={() => exportData(undefined, options)}
         disabled={busy}
         testID="export-all"
       />
@@ -36,7 +42,7 @@ export function ExportSection() {
                 label={t.transfer.export.team(team.name)}
                 accessibilityLabel={t.transfer.export.teamLabel(team.name)}
                 variant="secondary"
-                onPress={() => exportData(team)}
+                onPress={() => exportData(team, options)}
                 disabled={busy}
               />
             ))

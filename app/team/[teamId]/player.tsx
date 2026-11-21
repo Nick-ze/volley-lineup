@@ -44,7 +44,8 @@ export default function PlayerEditorScreen() {
         onDelete={
           player
             ? () => {
-                goBack();
+                // Not goBack(): the previous screen may be this player's detail screen.
+                router.dismissTo(`/team/${team.id}`);
                 useAppStore.getState().deletePlayer(player.id);
               }
             : undefined

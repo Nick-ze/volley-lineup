@@ -10,11 +10,12 @@ import { listStyles as styles } from './styles';
 export interface RosterTabProps {
   teamId: string;
   onAddPlayer: () => void;
-  onEditPlayer: (playerId: string) => void;
+  /** Opens the player detail screen (v6; it has the Edit button). */
+  onOpenPlayer: (playerId: string) => void;
 }
 
 /** Players sorted by jersey number, with quick active / injured toggle. */
-export function RosterTab({ teamId, onAddPlayer, onEditPlayer }: RosterTabProps) {
+export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps) {
   const t = useT();
   const players = usePlayersForTeam(teamId);
   const updatePlayer = useAppStore((s) => s.updatePlayer);
@@ -31,7 +32,7 @@ export function RosterTab({ teamId, onAddPlayer, onEditPlayer }: RosterTabProps)
           <PlayerRow
             key={p.id}
             player={p}
-            onPress={() => onEditPlayer(p.id)}
+            onPress={() => onOpenPlayer(p.id)}
             onToggleActive={() => updatePlayer(p.id, { active: !p.active })}
           />
         ))}
