@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { RotationNumber } from '@/domain/rotation';
-import { stepsByLabel } from '@/domain/rotationNames';
+import { stepsByLabel } from '@/domain/formationSteps';
 import { useT } from '@/i18n';
 import { colors, spacing, typography } from '@/theme';
 

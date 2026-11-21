@@ -10,6 +10,7 @@ import { usePlayersForTeam } from '@/store';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
+import { FormationConfirm } from './FormationConfirm';
 import { SetupFormationRow } from './SetupFormationRow';
 import { SetupRotateRow } from './SetupRotateRow';
 import { SetupSourceButtons } from './SetupSourceButtons';
@@ -73,11 +74,13 @@ export function NextSetSetup({
         </Text>
       ) : null}
       <SetupFormationRow formation={draft.formation} onChange={setup.changeFormation} />
-      <SetupRotateRow
-        setterAt={formationRotation(draft.formation)}
-        disabled={filledCount(draft) === 0}
-        onRotate={setup.rotate}
+      <FormationConfirm
+        change={setup.pendingFormation}
+        playersById={playersById}
+        onConfirm={setup.confirmFormation}
+        onCancel={setup.cancelFormation}
       />
+      <SetupRotateRow setterAt={formationRotation(draft.formation)} onRotate={setup.rotate} />
       <Text style={styles.label}>{t.live.serveChoice}</Text>
       <ServeToggle weServeFirst={draft.weServeFirst} onChange={setup.setServe} />
       <Button

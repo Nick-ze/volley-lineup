@@ -33,7 +33,7 @@ describe('German strings', () => {
       [de.roster.matches.away, en.roster.matches.away],
       [de.lineup.setTab(2), en.lineup.setTab(2)],
       [de.lineup.weServe, en.lineup.weServe],
-      [de.rotation.rotationOf(3, 6), en.rotation.rotationOf(3, 6)],
+      [de.rotation.setterRotation(3), en.rotation.setterRotation(3)],
       [de.transfer.import.summary(counts), en.transfer.import.summary(counts)],
       [de.transfer.danger.title, en.transfer.danger.title],
     ];

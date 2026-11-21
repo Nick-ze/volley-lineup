@@ -7,7 +7,6 @@ export const rotation: Strings['rotation'] = {
   matchNotFound: 'Dieses Spiel wurde nicht gefunden.',
   noSets: 'Dieses Spiel hat noch keine Sätze.',
   emptySet: 'In diesem Satz sind noch keine Spieler. Stelle zuerst im Spiel die Aufstellung auf.',
-  rotationOf: (n: number, total: number) => `Rotation ${n} von ${total}`,
   setterRotation: (n: number) => `Rotation ${n} (Zuspieler auf\u00a0${n})`,
   repeat: (time: number) => (time === 1 ? 'erstes Mal' : 'zweites Mal'),
   goToRotation: (n: number) => `Rotation ${n} zeigen`,

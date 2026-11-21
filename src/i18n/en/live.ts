@@ -101,6 +101,14 @@ export const live = {
     orderOutsideLabel: 'Setter → outside: the setter is followed by an outside hitter',
     orderMiddle: 'Setter → middle',
     orderMiddleLabel: 'Setter → middle: the setter is followed by a middle blocker',
+    formationOffTitle: 'Are you sure?',
+    /** `list` e.g. "#2 Outside as Middle Blocker, #5 Wing as Middle Blocker". */
+    formationOff: (list: string) =>
+      `With this formation these players play roles that aren’t their positions: ${list}.`,
+    formationOffAs: (player: string, role: string) => `${player} as ${role}`,
+    formationConfirm: 'Change formation',
+    formationConfirmLabel: 'Change formation: the players above play these roles',
+    formationCancelLabel: 'Cancel: keep the formation',
   },
   summary: {
     title: 'Match over',

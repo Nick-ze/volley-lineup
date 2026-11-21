@@ -1,4 +1,10 @@
-import { formationAtStep, formationLabels, rotateFormation, stepSpotRoles } from './formationSteps';
+import {
+  formationAtStep,
+  formationLabels,
+  rotateFormation,
+  stepSpotRoles,
+  stepsByLabel,
+} from './formationSteps';
 import { ROTATION_NUMBERS } from './rotation';
 import { COURT_POSITIONS, type Formation, type Position } from './types';
 
@@ -95,5 +101,17 @@ describe('formationLabels', () => {
   it('6-2: the back-row setter spot, so each number comes up twice', () => {
     expect(formationLabels(f({ system: '6-2' }))).toEqual([1, 6, 5, 1, 6, 5]);
     expect(formationLabels(f({ system: '6-2', setterAt: 3 }))).toEqual([6, 5, 1, 6, 5, 1]);
+  });
+});
+
+describe('stepsByLabel', () => {
+  it('orders steps so the jump row reads 1–6', () => {
+    // Labels 4, 3, 2, 1, 6, 5: label 1 is step 4, label 2 is step 3, …
+    expect(stepsByLabel([4, 3, 2, 1, 6, 5])).toEqual([4, 3, 2, 1, 6, 5]);
+    expect(stepsByLabel([1, 2, 3, 4, 5, 6])).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('keeps step order for equal labels (6-2)', () => {
+    expect(stepsByLabel([1, 6, 5, 1, 6, 5])).toEqual([1, 4, 3, 6, 2, 5]);
   });
 });

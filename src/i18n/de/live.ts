@@ -105,6 +105,13 @@ export const live: Strings['live'] = {
     orderOutsideLabel: 'Zuspieler → Außen: nach dem Zuspieler kommt ein Außenangreifer',
     orderMiddle: 'Zuspieler → Mitte',
     orderMiddleLabel: 'Zuspieler → Mitte: nach dem Zuspieler kommt ein Mittelblocker',
+    formationOffTitle: 'Bist du sicher?',
+    formationOff: (list: string) =>
+      `Mit dieser Formation spielen diese Spieler Rollen, die nicht zu ihren Positionen gehören: ${list}.`,
+    formationOffAs: (player: string, role: string) => `${player} als ${role}`,
+    formationConfirm: 'Formation ändern',
+    formationConfirmLabel: 'Formation ändern: die Spieler oben spielen diese Rollen',
+    formationCancelLabel: 'Abbrechen: Formation behalten',
   },
   summary: {
     title: 'Spiel beendet',

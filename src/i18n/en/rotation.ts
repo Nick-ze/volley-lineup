@@ -5,7 +5,6 @@ export const rotation = {
   matchNotFound: 'This match could not be found.',
   noSets: 'This match has no sets yet.',
   emptySet: 'No players in this set yet. Build the lineup on the match screen first.',
-  rotationOf: (n: number, total: number) => `Rotation ${n} of ${total}`,
   /** v4: the rotation is named after the setter's position. */
   setterRotation: (n: number) => `Rotation ${n} (setter on\u00a0${n})`,
   /** v4, 6-2: the same rotation number comes up twice; tells the two apart. */

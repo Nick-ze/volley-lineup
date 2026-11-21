@@ -80,7 +80,14 @@ export function CourtSpot({
         accessible
         accessibilityLabel={
           playerId
-            ? t.rotation.spotLabel(position, row, t.rotation.unknownPlayer, isServer)
+            ? t.rotation.spotLabel(
+                position,
+                row,
+                role
+                  ? `${t.rotation.unknownPlayer}, ${t.roles.spotRole(t.positions[role], false)}`
+                  : t.rotation.unknownPlayer,
+                isServer,
+              )
             : t.rotation.emptySpotLabel(position, row, role ? t.positions[role] : null)
         }
         style={[styles.empty, { width: size, height: size, borderRadius: size / 2 }]}

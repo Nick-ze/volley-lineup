@@ -37,3 +37,8 @@ export function stepSpotRoles(
 export function formationLabels(formation: Formation): RotationNumber[] {
   return ROTATION_NUMBERS.map((step) => formationRotation(formationAtStep(formation, step)));
 }
+
+/** The steps ordered by label (ties — two setters, 6-2 — by step): the order of a 1–6 jump row. */
+export function stepsByLabel(labels: readonly RotationNumber[]): RotationNumber[] {
+  return [...ROTATION_NUMBERS].sort((a, b) => labels[a - 1] - labels[b - 1] || a - b);
+}

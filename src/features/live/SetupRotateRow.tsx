@@ -8,30 +8,25 @@ import { colors, spacing, typography } from '@/theme';
 
 export interface SetupRotateRowProps {
   /** Where the setter spot starts (`formationRotation` of the draft's formation). */
-  setterAt: RotationNumber | null;
-  /** Nobody on court yet: nothing to rotate. */
-  disabled: boolean;
+  setterAt: RotationNumber;
   onRotate: (direction: RotateDirection) => void;
 }
 
 /** "Setter on n" + Rotate ↺ / ↻ (same order as the lineup builder) in the next-set setup (v4, before the set starts). */
-export function SetupRotateRow({ setterAt, disabled, onRotate }: SetupRotateRowProps) {
+export function SetupRotateRow({ setterAt, onRotate }: SetupRotateRowProps) {
   const t = useT();
   const s = t.live.setup;
   return (
     <View style={styles.wrap}>
-      {setterAt !== null ? (
-        <Text style={styles.text} testID="setup-setter-at">
-          {s.setterAt(setterAt)}
-        </Text>
-      ) : null}
+      <Text style={styles.text} testID="setup-setter-at">
+        {s.setterAt(setterAt)}
+      </Text>
       <View style={styles.row}>
         <Button
           label={s.rotateCcw}
           accessibilityLabel={s.rotateCcwLabel}
           variant="secondary"
           compact
-          disabled={disabled}
           style={styles.grow}
           onPress={() => onRotate('counterclockwise')}
           testID="setup-rotate-ccw"
@@ -41,7 +36,6 @@ export function SetupRotateRow({ setterAt, disabled, onRotate }: SetupRotateRowP
           accessibilityLabel={s.rotateCwLabel}
           variant="secondary"
           compact
-          disabled={disabled}
           style={styles.grow}
           onPress={() => onRotate('clockwise')}
           testID="setup-rotate-cw"
