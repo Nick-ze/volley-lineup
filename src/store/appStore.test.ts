@@ -6,6 +6,7 @@ import type { Formation } from '@/domain/types';
 
 import { STORAGE_KEY, emptyData, selectAppData, useAppStore } from './appStore';
 import { migrateStore, STORE_VERSION } from './migrations';
+import type { AppData } from './types';
 import {
   selectCurrentProfile,
   selectMatchesForTeam,
@@ -14,6 +15,8 @@ import {
   selectStarters,
   selectTeamsForProfile,
 } from './selectors';
+
+const withPhotos = (data: AppData) => ({ ...data, photos: [] });
 
 const store = () => useAppStore.getState();
 
@@ -133,7 +136,7 @@ describe('players', () => {
     const set = store().matches[0].sets[0];
     expect(set.liberoReplaces).toEqual([]);
     expect(set.events).toEqual([]);
-    const text = JSON.stringify(buildExport(selectAppData(store())));
+    const text = JSON.stringify(buildExport(withPhotos(selectAppData(store()))));
     expect(parseImport(text).ok).toBe(true);
   });
 
@@ -259,7 +262,7 @@ describe('presets', () => {
     expect(a.liberoReplaces).toEqual([]);
     expect(starters.liberoId).toBeNull();
     expect(a.id).toBe(preset.id);
-    const text = JSON.stringify(buildExport(selectAppData(store())));
+    const text = JSON.stringify(buildExport(withPhotos(selectAppData(store()))));
     expect(parseImport(text).ok).toBe(true);
   });
 });
@@ -513,7 +516,7 @@ describe('migrations', () => {
     };
     expect(migrateStore(current, 6)).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(7);
+    expect(STORE_VERSION).toBe(8); // v6.0 bump: optional photo / description / error-type fields
   });
 
   it('remembers whether chips show names or numbers, also after delete all', () => {

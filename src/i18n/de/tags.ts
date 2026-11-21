@@ -21,6 +21,26 @@ export const tags: Strings['tags'] = {
     opponentKill: 'Angriffspunkt des Gegners',
     opponentAce: 'Ass des Gegners',
   },
+  errorTypes: {
+    serve: 'Aufschlag',
+    reception: 'Annahme',
+    attack: 'Angriff',
+    block: 'Block',
+    set: 'Zuspiel',
+    netFault: 'Netz / Regel',
+    other: 'Sonstiges',
+    unspecified: 'Ohne Angabe',
+  },
+  errorTypeNames: {
+    serve: 'Aufschlagfehler',
+    reception: 'Annahmefehler',
+    attack: 'Angriffsfehler',
+    block: 'Blockfehler',
+    set: 'Zuspielfehler',
+    netFault: 'Netz- / Regelfehler',
+    other: 'sonstiger Fehler',
+    unspecified: 'Fehler ohne Angabe',
+  },
   rowLabel: (us: boolean) =>
     us
       ? 'Optional: Wie haben wir den Punkt gewonnen?'

@@ -215,7 +215,7 @@ export function combineStats(list: readonly Stats[]): Stats {
 }
 
 /** The match's sets that count for the result, in set order. */
-function countedSets(match: Pick<Match, 'sets'>): SetLineup[] {
+export function countedSets(match: Pick<Match, 'sets'>): SetLineup[] {
   const numbers = new Set(getMatchState(match).sets.map((s) => s.setNumber));
   return [...match.sets]
     .filter((s) => numbers.has(s.setNumber))

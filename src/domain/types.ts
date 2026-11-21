@@ -4,7 +4,9 @@
  * v4 / app 3.0: optional tags and timestamps on point events, schemaVersion 4 — PLAN §16;
  * v5 / app 4.0: roles on court + libero on/off per lineup, schemaVersion 5 — PLAN §20;
  * v6 / app 5.0: roles belong to the court spots (a formation), not players, schemaVersion 6 —
- * PLAN §23; see docs/VOLLEYBALL_RULES.md).
+ * PLAN §23; see docs/VOLLEYBALL_RULES.md;
+ * v7 / app 6.0: photos for profiles and players, confidential player descriptions, an optional
+ * error type on "our error" tags, schemaVersion 7 — PLAN §26).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -15,6 +17,8 @@ export interface ManagerProfile {
   name: string;
   color: string;
   createdAt: string;
+  /** v7: the profile picture (`Photo.id`); none = the coloured avatar. */
+  photoId?: string;
 }
 
 export interface Player {
@@ -25,6 +29,20 @@ export interface Player {
   number: number; // unique within team
   positions: Position[]; // first = primary
   active: boolean;
+  /** v7: the player's picture (`Photo.id`); none = the jersey number. */
+  photoId?: string;
+  /**
+   * v7: confidential free-text notes. Hidden in the UI until unlocked; exported only when the
+   * user ticks "Include descriptions". Never empty when present (trimmed, ≤ 1000 characters).
+   */
+  description?: string;
+}
+
+/** v7: a small picture (≤ 256 px JPEG) stored on the device, referenced by `photoId`. */
+export interface Photo {
+  id: string;
+  /** `data:image/jpeg;base64,…` (also png / webp). */
+  dataUri: string;
 }
 
 export interface Team {
@@ -91,6 +109,13 @@ export type Side = 'us' | 'them';
 export type PointKind =
   'kill' | 'ace' | 'block' | 'opponentError' | 'ourError' | 'opponentKill' | 'opponentAce';
 
+/**
+ * v7: what kind of error an "our error" tag was (optional; none = unspecified). Net / foul
+ * covers the referee's faults that aren't a skill error: net touch, centre line, rotation /
+ * positional fault, ball handling (double / catch), 4 hits. See docs/VOLLEYBALL_RULES.md §7.
+ */
+export type ErrorType = 'serve' | 'reception' | 'attack' | 'block' | 'set' | 'netFault' | 'other';
+
 /** A rally. v4 adds the optional tag (`kind` + `playerId`) and the time it was recorded (`at`). */
 export interface PointEvent {
   type: 'point';
@@ -99,6 +124,8 @@ export interface PointEvent {
   kind?: PointKind;
   /** v4: the player of our team the tag is about (kill / ace / block / ourError only). */
   playerId?: string;
+  /** v7: the kind of error, only with `kind: 'ourError'` (optional). */
+  errorType?: ErrorType;
   /** v4: ISO time the rally was recorded (used for the match duration). */
   at?: string;
 }
@@ -134,13 +161,15 @@ export interface LineupPreset {
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 6;
+  schemaVersion: 7;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
   players: Player[];
   matches: Match[];
   presets: LineupPreset[];
+  /** v7: the pictures referenced by profiles and players. */
+  photos: Photo[];
 }
 
 /* ---- Derived helper types (not part of the persisted shape) ---- */
@@ -153,4 +182,14 @@ export type SetNumber = SetLineup['setNumber'];
 
 export const COURT_POSITIONS: readonly CourtPosition[] = [1, 2, 3, 4, 5, 6] as const;
 export const SET_NUMBERS: readonly SetNumber[] = [1, 2, 3, 4, 5] as const;
+/** v7: error types in display order. */
+export const ERROR_TYPES: readonly ErrorType[] = [
+  'serve',
+  'reception',
+  'attack',
+  'block',
+  'set',
+  'netFault',
+  'other',
+] as const;
 export const ALL_POSITIONS: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'L', 'DS'] as const;

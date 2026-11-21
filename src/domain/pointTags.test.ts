@@ -1,13 +1,15 @@
 import { emptySetLineup } from './lineup';
 import {
   isValidPointTag,
+  kindTakesErrorType,
   kindTakesPlayer,
+  setLastErrorType,
   pointKindsFor,
   tagLastPoint,
   THEM_POINT_KINDS,
   US_POINT_KINDS,
 } from './pointTags';
-import type { SetLineup } from './types';
+import { ERROR_TYPES, type ErrorType, type SetLineup } from './types';
 
 const withEvents = (events: SetLineup['events']): SetLineup => ({ ...emptySetLineup(1), events });
 
@@ -86,5 +88,90 @@ describe('tagLastPoint', () => {
       { type: 'sub', outPlayerId: 'a', inPlayerId: 'b' },
     ]);
     expect(tagLastPoint(afterSub, 'kill')).toBe(afterSub);
+  });
+});
+
+describe('v7 error types', () => {
+  const at = '2026-11-21T10:00:00.000Z';
+  const lost = withEvents([{ type: 'point', winner: 'them', at }]);
+
+  it('only "our error" carries an error type, and only a known one', () => {
+    expect(kindTakesErrorType('ourError')).toBe(true);
+    expect(kindTakesErrorType('opponentKill')).toBe(false);
+    expect(isValidPointTag({ winner: 'them', kind: 'ourError', errorType: 'serve' })).toBe(true);
+    expect(
+      isValidPointTag({ winner: 'them', kind: 'ourError', playerId: 'p', errorType: 'netFault' }),
+    ).toBe(true);
+    expect(isValidPointTag({ winner: 'them', errorType: 'serve' })).toBe(false);
+    expect(isValidPointTag({ winner: 'them', kind: 'opponentKill', errorType: 'serve' })).toBe(
+      false,
+    );
+    expect(
+      isValidPointTag({
+        winner: 'them',
+        kind: 'ourError',
+        errorType: 'dig' as unknown as ErrorType,
+      }),
+    ).toBe(false);
+  });
+
+  it('lists the seven error types in display order', () => {
+    expect(ERROR_TYPES).toEqual([
+      'serve',
+      'reception',
+      'attack',
+      'block',
+      'set',
+      'netFault',
+      'other',
+    ]);
+  });
+
+  it('sets, changes and clears the error type of the last lost rally', () => {
+    const typed = setLastErrorType(lost, 'reception');
+    expect(typed.events[0]).toEqual({
+      type: 'point',
+      winner: 'them',
+      at,
+      kind: 'ourError',
+      errorType: 'reception',
+    });
+    expect(setLastErrorType(typed, 'attack').events[0]).toMatchObject({ errorType: 'attack' });
+    expect(setLastErrorType(typed, null).events[0]).toEqual({
+      type: 'point',
+      winner: 'them',
+      at,
+      kind: 'ourError',
+    });
+  });
+
+  it('keeps the error type when the player is picked, drops it for another kind', () => {
+    const typed = setLastErrorType(lost, 'serve');
+    expect(tagLastPoint(typed, 'ourError', 'p1').events[0]).toEqual({
+      type: 'point',
+      winner: 'them',
+      at,
+      kind: 'ourError',
+      playerId: 'p1',
+      errorType: 'serve',
+    });
+    expect(tagLastPoint(typed, 'opponentKill').events[0]).toEqual({
+      type: 'point',
+      winner: 'them',
+      at,
+      kind: 'opponentKill',
+    });
+    expect(tagLastPoint(typed, null).events[0]).toEqual({ type: 'point', winner: 'them', at });
+  });
+
+  it('leaves other last events alone', () => {
+    const won = withEvents([{ type: 'point', winner: 'us' }]);
+    expect(setLastErrorType(won, 'serve')).toBe(won);
+    const theirKill = withEvents([{ type: 'point', winner: 'them', kind: 'opponentKill' }]);
+    expect(setLastErrorType(theirKill, 'serve')).toBe(theirKill);
+    const sub = withEvents([{ type: 'sub', outPlayerId: 'a', inPlayerId: 'b' }]);
+    expect(setLastErrorType(sub, 'serve')).toBe(sub);
+    expect(setLastErrorType(withEvents([]), 'serve').events).toEqual([]);
+    expect(setLastErrorType(lost, 'bogus' as unknown as ErrorType)).toBe(lost);
   });
 });

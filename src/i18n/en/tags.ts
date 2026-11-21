@@ -21,6 +21,28 @@ export const tags = {
     opponentKill: 'their kill',
     opponentAce: 'their ace',
   },
+  /** v6: chip text per error type of "our error" (docs/VOLLEYBALL_RULES.md §7). */
+  errorTypes: {
+    serve: 'Serve',
+    reception: 'Reception',
+    attack: 'Attack',
+    block: 'Block',
+    set: 'Set',
+    netFault: 'Net / foul',
+    other: 'Other',
+    unspecified: 'Unspecified',
+  },
+  /** v6: spoken / sentence name per error type ("3 reception errors"). */
+  errorTypeNames: {
+    serve: 'serve error',
+    reception: 'reception error',
+    attack: 'attack error',
+    block: 'block error',
+    set: 'setting error',
+    netFault: 'net / foul',
+    other: 'other error',
+    unspecified: 'unspecified error',
+  },
   rowLabel: (us: boolean) =>
     us ? 'Optional: how did we win the point?' : 'Optional: how did we lose the point?',
   chooseKind: (kind: string) => `Tag the last point as ${kind}`,

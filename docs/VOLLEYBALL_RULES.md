@@ -322,7 +322,37 @@ Since v5 (data model v6) a set has a **formation** (`types.ts` `Formation`: syst
 61. **The formation is locked once a set is played**, like the starting six. PASS. `roles.ts` `setFormation`, `rotateStarters` (`isLineupLocked`).
 62. **A player on a spot whose role is none of their positions is "off position"**: legal, but confirmed and marked with `*`. PASS. `roles.ts` `isOffPosition`; the `*` via `OffPositionMark` on every court and `<span class="off">` in the print sheet. A formation change in the live next-set setup that puts starters onto such roles asks first and Cancel keeps the old formation (`formationChange.ts` `changeFormation`, `placementCheck.ts` `newOffPositionPlacements`, `src/features/live/FormationConfirm.tsx`); placing a player or changing the formation in the lineup builder asks the same way (`placementCheck.ts` `newOffPositionPlacements`, `src/features/lineup/PlacementConfirm.tsx`).
 
+### Error types (v6)
+
+63. **A serve error is ours only on our serve, by our server.** PASS. `lastRally.ts` `plausibleErrorTypes` (no "Serve" when they served), `plausiblePlayerIds(…, 'ourError', 'serve')` = our server of that rally.
+64. **A reception error is ours only when they served.** PASS. `plausibleErrorTypes` (no "Reception" on our serve).
+65. **A block error is a front-row player's, never the libero's** (FIVB 14.6.2, 19.3.1.3). PASS. `plausiblePlayerIds(…, 'ourError', 'block')`.
+66. **An attack error is not the libero's** (the libero may not complete an attack above the net, FIVB 19.3.1.2: doing so is a fault, which is "Net / foul"). PASS. `plausiblePlayerIds(…, 'ourError', 'attack')`.
+67. **Error types are optional and only belong to "our error"**; an older tag without a type is "unspecified". PASS. `pointTags.ts` `isValidPointTag`, `setLastErrorType`; import checks in `exportSchema.ts`.
+
 ### Summary of non-PASS checks
 
-- **FAIL**: none. (Fixed in v5: 20 and 21 by the formation, 23 by judging the setter spot, 35 by the point-tag player check.)
+- **FAIL**: none. (Fixed in v5: 20 and 21 by the formation, 23 by judging the setter spot, 35 by the point-tag player check. v6 adds checks 63–67, all PASS.)
 - **NOT MODELLED**: 11 (4-2 rotation naming), 12 (overlap / positional faults), 17 (4-2 / 6-6 / 6-3 templates), 32 (second libero), 33 (rally between libero replacements), 34 (libero playing as a regular player in another set), 36 (libero serve, US rules), 40 (exceptional substitution), 41 (configurable sub limit), 50 (changing ends), 51 (time-outs), 52 (best of three).
+
+---
+
+## 7. Errors and faults (v6 error types)
+
+What the app's optional error types for "Our error" mean, and the rules behind the plausibility checks (§6, 63–67). The types follow the usual scouting categories (serve, reception, attack, block, set) plus one for referee faults that aren't a skill error.
+
+| Type       | Covers                                                                                                                                                                                   | Who can make it (app check)                   | Rule                           |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------ |
+| Serve      | Serve into the net, out, or a service fault (foot fault, 8 s, wrong toss)                                                                                                                | Our server, only on our serve                 | FIVB 12.4, 12.6                |
+| Reception  | The serve isn't kept in play by our reception (shanked pass, ball drops)                                                                                                                 | Anyone on court, only when they served        | FIVB 6.1 (rally lost)          |
+| Attack     | Attack hit out or into the net, or blocked down for their point                                                                                                                          | Anyone on court but the libero                | FIVB 13, 19.3.1.2              |
+| Block      | Block touch out ("tool" by the opponent counts as their kill), blocking fault (reaching beyond the net, back-row player or libero blocking)                                              | Front-row players (2, 3, 4), never the libero | FIVB 14.3, 14.6                |
+| Set        | Bad set that loses the rally, or a ball-handling fault by the setter (double contact / catch on the set)                                                                                 | Anyone on court                               | FIVB 9.2.2, 9.2.3              |
+| Net / foul | Referee faults that aren't one of the skills above: net touch, crossing the centre line, four hits, positional / rotational fault, other ball-handling faults, a libero's illegal attack | Anyone on court                               | FIVB 7.5, 7.7, 9.3, 11.3, 11.4 |
+| Other      | Anything else (e.g. a dig / defence error, two players leaving the ball)                                                                                                                 | Anyone on court                               | —                              |
+
+Notes:
+
+- The app stores rotational positions only (§1), so positional faults are never detected automatically; the coach can still tag the lost rally as "Net / foul".
+- A dig / defence error has no own type (owner's choice of 7 types); use "Other".
+- No type means "unspecified". Rallies tagged before v6 stay valid and count as unspecified errors.

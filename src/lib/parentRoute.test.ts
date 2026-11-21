@@ -47,6 +47,17 @@ describe('parentRoute', () => {
     });
   });
 
+  it('v6: player detail goes back to the roster, performance to the match', () => {
+    expect(parentRoute('team/[teamId]/players/[playerId]', { teamId: 't1' }, lookup)).toEqual({
+      pathname: '/team/[teamId]',
+      params: { teamId: 't1' },
+    });
+    expect(parentRoute('team/[teamId]/players/[playerId]', {}, lookup)).toBe('/teams');
+    expect(parentRoute('match/[matchId]/performance', { matchId: 'm1', set: '2' }, lookup)).toEqual(
+      { pathname: '/match/[matchId]', params: { matchId: 'm1', set: '2' } },
+    );
+  });
+
   it('goes back from a preset or the team starters to that tab of the team', () => {
     const preset = { teamId: 't1', presetId: 'ps1' };
     expect(parentRoute('team/[teamId]/preset/[presetId]', preset, lookup)).toEqual({

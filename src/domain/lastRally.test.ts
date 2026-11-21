@@ -1,4 +1,4 @@
-import { lastRally, plausibleKinds, plausiblePlayerIds } from './lastRally';
+import { lastRally, plausibleErrorTypes, plausibleKinds, plausiblePlayerIds } from './lastRally';
 import type { Player, SetLineup } from './types';
 
 const player = (n: number): Player => ({
@@ -158,5 +158,69 @@ describe('plausiblePlayerIds (rules check #35)', () => {
       event: { ...receiving.event, kind: 'kill' as const, playerId: 'p5' },
     };
     expect(plausiblePlayerIds(other, 'block')).toEqual(['p2', 'p3', 'p4']);
+  });
+});
+
+describe('v7 error types (rules doc §7)', () => {
+  const lostReceiving = lastRally(
+    set({
+      weServeFirst: false,
+      liberoReplaces: ['p6'],
+      events: [{ type: 'point', winner: 'them' }],
+    }),
+    players,
+  )!;
+  const lostServing = lastRally(
+    set({ liberoReplaces: ['p5'], events: [{ type: 'point', winner: 'them' }] }),
+    players,
+  )!;
+
+  it('offers no serve error when they served and no reception error when we served', () => {
+    expect(plausibleErrorTypes(lostReceiving)).toEqual([
+      'reception',
+      'attack',
+      'block',
+      'set',
+      'netFault',
+      'other',
+    ]);
+    expect(plausibleErrorTypes(lostServing)).toEqual([
+      'serve',
+      'attack',
+      'block',
+      'set',
+      'netFault',
+      'other',
+    ]);
+  });
+
+  it('keeps an error type that is already set', () => {
+    const tagged = {
+      ...lostServing,
+      event: { ...lostServing.event, kind: 'ourError' as const, errorType: 'reception' as const },
+    };
+    expect(plausibleErrorTypes(tagged)).toContain('reception');
+  });
+
+  it('narrows the players by error type', () => {
+    expect(plausiblePlayerIds(lostServing, 'ourError', 'serve')).toEqual(['p1']);
+    expect(plausiblePlayerIds(lostReceiving, 'ourError', 'serve')).toEqual([]);
+    expect(plausiblePlayerIds(lostServing, 'ourError', 'block')).toEqual(['p2', 'p3', 'p4']);
+    expect(plausiblePlayerIds(lostReceiving, 'ourError', 'attack')).toEqual([
+      'p1',
+      'p2',
+      'p3',
+      'p4',
+      'p5',
+    ]);
+    expect(plausiblePlayerIds(lostReceiving, 'ourError', 'reception')).toEqual([
+      'p1',
+      'p2',
+      'p3',
+      'p4',
+      'p5',
+      'p7',
+    ]);
+    expect(plausiblePlayerIds(lostReceiving, 'ourError', null)).toHaveLength(6);
   });
 });

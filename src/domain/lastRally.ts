@@ -8,6 +8,11 @@
  * (docs/VOLLEYBALL_RULES.md §6 check #35): a block needs a front-row player, never the libero
  * (FIVB 14.6.2, 19.3.1.3); an ace is our server of that rally; a kill is anyone on court but the
  * libero (FIVB 19.3.1.2: no attack above the net); our error can be anyone on court.
+ *
+ * v7 error types (docs/VOLLEYBALL_RULES.md §7): a serve error only on our serve and only by our
+ * server; a reception error only when they served; a block error only by a front-row player who
+ * isn't the libero; an attack error by anyone on court but the libero; set / net / other errors
+ * by anyone on court.
  */
 import { applyLiberoSwaps } from './liberoSwap';
 import { replaySteps, type RallyStep } from './liveSet';
@@ -15,6 +20,8 @@ import { pointKindsFor } from './pointTags';
 import { FRONT_ROW_POSITIONS, serverPosition } from './rotation';
 import {
   COURT_POSITIONS,
+  ERROR_TYPES,
+  type ErrorType,
   type Player,
   type PointEvent,
   type PointKind,
@@ -67,22 +74,41 @@ export function plausibleKinds(
 }
 
 /**
+ * v7: the error types worth offering for "our error" on the rally: no serve error when they
+ * served, no reception error when we served. An error type already set stays in the list.
+ */
+export function plausibleErrorTypes(
+  rally: Pick<LastRally, 'event' | 'servingSide'>,
+): readonly ErrorType[] {
+  const impossible: ErrorType = rally.servingSide === 'us' ? 'reception' : 'serve';
+  return ERROR_TYPES.filter((type) => type !== impossible || rally.event.errorType === type);
+}
+
+/**
  * The players worth offering for a tag of `kind` on the rally (position order): block = front
  * row without the libero, ace = our server, kill = on court without the libero, our error =
- * anyone on court; none for a kind that names no player. A player already tagged with this kind
- * stays in the list (so an older, implausible tag can still be cleared).
+ * anyone on court — narrowed by the error type (v7): serve → our server, block → front row
+ * without the libero, attack → on court without the libero; none for a kind that names no
+ * player. A player already tagged with this kind stays in the list (so an older, implausible
+ * tag can still be cleared).
  */
 export function plausiblePlayerIds(
   rally: Pick<LastRally, 'event' | 'playerIds' | 'serverId' | 'frontRowIds' | 'liberoId'>,
   kind: PointKind,
+  errorType: ErrorType | null = null,
 ): string[] {
   const notLibero = (id: string) => id !== rally.liberoId;
+  const server = rally.serverId === null ? [] : [rally.serverId];
   let ids: string[];
   if (kind === 'block') ids = rally.frontRowIds.filter(notLibero);
-  else if (kind === 'ace') ids = rally.serverId === null ? [] : [rally.serverId];
+  else if (kind === 'ace') ids = server;
   else if (kind === 'kill') ids = rally.playerIds.filter(notLibero);
-  else if (kind === 'ourError') ids = [...rally.playerIds];
-  else ids = [];
+  else if (kind === 'ourError') {
+    if (errorType === 'serve') ids = server;
+    else if (errorType === 'block') ids = rally.frontRowIds.filter(notLibero);
+    else if (errorType === 'attack') ids = rally.playerIds.filter(notLibero);
+    else ids = [...rally.playerIds];
+  } else ids = [];
   const tagged = rally.event.kind === kind ? rally.event.playerId : undefined;
   if (tagged !== undefined && !ids.includes(tagged)) ids.push(tagged);
   return ids;

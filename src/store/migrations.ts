@@ -12,9 +12,12 @@
  * `liberoActive: true`.
  * v6 → v7: the per-player `roles` become a `formation` per set and preset (5-1 / 6-2, inferred
  * from where the setter stands; `upgradeLineupToFormation`).
+ * v7 → v8 (app 6.0): profiles and players may have a `photoId`, players a `description`, and
+ * "our error" tags an `errorType` — all optional, so no data changes. The photos themselves are
+ * stored under their own keys (`photoStore.ts`), not in this store.
  */
 import { upgradeLineupToFormation } from '@/domain/roles';
-export const STORE_VERSION = 7;
+export const STORE_VERSION = 8;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);

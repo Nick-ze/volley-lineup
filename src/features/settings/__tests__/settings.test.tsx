@@ -66,7 +66,7 @@ function otherData(): AppData {
   };
 }
 
-const fileText = (data: AppData) => serializeExport(buildExport(data));
+const fileText = (data: AppData) => serializeExport(buildExport({ ...data, photos: [] }));
 
 async function renderSettings() {
   await renderRouter(
@@ -120,7 +120,7 @@ describe('import', () => {
     ['broken JSON', '{"app": "volley-lineup",', 'This file is not valid JSON.'],
     [
       'a newer schema version',
-      JSON.stringify({ app: 'volley-lineup', schemaVersion: 7 }),
+      JSON.stringify({ app: 'volley-lineup', schemaVersion: 8 }),
       'different version',
     ],
   ])('shows an error for %s and changes nothing', async (_label, text, message) => {
@@ -138,7 +138,7 @@ describe('import', () => {
   it('refuses a conflicting merge and changes nothing', async () => {
     const { herren } = seed();
     const before = JSON.stringify(store());
-    const incoming = buildExport(selectAppData(store()), { teamId: herren.id });
+    const incoming = buildExport({ ...selectAppData(store()), photos: [] }, { teamId: herren.id });
     incoming.players = [{ ...incoming.players[0], id: 'new-id' }]; // another #7 in the team
     incoming.matches = [];
     mockPick.mockResolvedValue({ name: 'clash.json', text: serializeExport(incoming) });
@@ -189,6 +189,8 @@ describe('export', () => {
       players: 1,
       matches: 1,
       presets: 0,
+      photos: 0,
+      descriptions: 0,
     });
     expect(await screen.findByText(`Exported ${name}.`)).toBeTruthy();
   });
@@ -208,6 +210,8 @@ describe('export', () => {
       players: 1,
       matches: 1,
       presets: 0,
+      photos: 0,
+      descriptions: 0,
     });
   });
 

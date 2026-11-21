@@ -8,12 +8,14 @@
 import { z } from 'zod';
 
 import type {
+  ErrorType,
   ExportFile,
   FormationOrder,
   FormationSystem,
   LineupPreset,
   ManagerProfile,
   Match,
+  Photo,
   Player,
   PointKind,
   Position,
@@ -24,20 +26,27 @@ import type {
 import { isValidPointTag } from './pointTags';
 import { FORMATION_ORDERS, FORMATION_SYSTEMS, upgradeLineupToFormation } from './roles';
 import { validatePresetName } from './presets';
-import { ALL_POSITIONS } from './types';
+import {
+  isPhotoDataUri,
+  isValidDescription,
+  keepReferencedPhotos,
+  referencedPhotoIds,
+  withoutDescription,
+} from './photos';
+import { ALL_POSITIONS, ERROR_TYPES } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 6 as const;
+export const EXPORT_SCHEMA_VERSION = 7 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7];
 
 /**
- * The five persisted collections. Derived from `ExportFile` (the domain layer can't import the
- * store); it is structurally identical to the store's `AppData`.
+ * The persisted collections. Derived from `ExportFile` (the domain layer can't import the
+ * store): the store's `AppData` plus (v7) the photos, which live in their own storage.
  */
 export type TransferData = Pick<
   ExportFile,
-  'profiles' | 'teams' | 'players' | 'matches' | 'presets'
+  'profiles' | 'teams' | 'players' | 'matches' | 'presets' | 'photos'
 >;
 
 /* ------------------------------------------------------------------ schema */
@@ -62,6 +71,7 @@ const profileSchema = z.object({
   name: z.string(),
   color: z.string(),
   createdAt: z.string(),
+  photoId: id.optional(),
 });
 
 const teamSchema = z.object({
@@ -80,6 +90,14 @@ const playerSchema = z.object({
   number: z.number().int().nonnegative(),
   positions: z.array(positionSchema).min(1),
   active: z.boolean(),
+  photoId: id.optional(),
+  description: z.string().refine(isValidDescription).optional(),
+});
+
+/** v7: a picture referenced by a profile or player. */
+const photoSchema = z.object({
+  id,
+  dataUri: z.string().refine(isPhotoDataUri),
 });
 
 const slotsSchema = z.object({
@@ -118,6 +136,7 @@ const setLineupSchema = z.object({
         winner: z.enum(['us', 'them']),
         kind: z.enum(POINT_KINDS).optional(),
         playerId: id.optional(),
+        errorType: z.enum(ERROR_TYPES as [ErrorType, ...ErrorType[]]).optional(),
         at: z.string().optional(),
       }),
       z.object({ type: z.literal('sub'), outPlayerId: id, inPlayerId: id }),
@@ -158,6 +177,7 @@ export const exportFileSchema = z.object({
   players: z.array(playerSchema),
   matches: z.array(matchSchema),
   presets: z.array(presetSchema),
+  photos: z.array(photoSchema),
 });
 
 /*
@@ -174,6 +194,7 @@ export type SchemaMatchesTypes = [
   Assert<Same<z.infer<typeof setLineupSchema>['events'][number], SetEvent>>,
   Assert<Same<z.infer<typeof matchSchema>, Match>>,
   Assert<Same<z.infer<typeof presetSchema>, LineupPreset>>,
+  Assert<Same<z.infer<typeof photoSchema>, Photo>>,
   Assert<Same<z.infer<typeof exportFileSchema>, ExportFile>>,
 ];
 
@@ -184,32 +205,39 @@ export interface BuildExportOptions {
   teamId?: string;
   /** Timestamp to write into `exportedAt` (defaults to now). */
   now?: Date;
+  /**
+   * v7: keep the players' confidential descriptions (default false: they are left out). The UI
+   * only offers this while descriptions are unlocked.
+   */
+  includeDescriptions?: boolean;
 }
 
-/** Builds an export of everything, or of a single team when `teamId` is given. */
+/**
+ * Builds an export of everything, or of a single team when `teamId` is given. v7: the photos
+ * of the exported profiles and players go with it (orphans never); descriptions only with
+ * `includeDescriptions`.
+ */
 export function buildExport(data: TransferData, options: BuildExportOptions = {}): ExportFile {
   const exportedAt = (options.now ?? new Date()).toISOString();
   const base = { app: EXPORT_APP_ID, schemaVersion: EXPORT_SCHEMA_VERSION, exportedAt };
-  if (options.teamId === undefined) {
-    return {
-      ...base,
-      profiles: [...data.profiles],
-      teams: [...data.teams],
-      players: [...data.players],
-      matches: [...data.matches],
-      presets: [...data.presets],
-    };
-  }
   const teamId = options.teamId;
-  const teams = data.teams.filter((t) => t.id === teamId);
+  const teams = teamId === undefined ? [...data.teams] : data.teams.filter((t) => t.id === teamId);
   const profileIds = new Set(teams.map((t) => t.profileId));
+  const profiles =
+    teamId === undefined ? [...data.profiles] : data.profiles.filter((p) => profileIds.has(p.id));
+  const players = (
+    teamId === undefined ? [...data.players] : data.players.filter((p) => p.teamId === teamId)
+  ).map((p) => (options.includeDescriptions === true ? p : withoutDescription(p)));
+  const byTeam = <T extends { teamId: string }>(list: readonly T[]): T[] =>
+    teamId === undefined ? [...list] : list.filter((x) => x.teamId === teamId);
   return {
     ...base,
-    profiles: data.profiles.filter((p) => profileIds.has(p.id)),
+    profiles,
     teams,
-    players: data.players.filter((p) => p.teamId === teamId),
-    matches: data.matches.filter((m) => m.teamId === teamId),
-    presets: data.presets.filter((p) => p.teamId === teamId),
+    players,
+    matches: byTeam(data.matches),
+    presets: byTeam(data.presets),
+    photos: keepReferencedPhotos(data.photos, { profiles, players }),
   };
 }
 
@@ -252,6 +280,10 @@ export interface ImportSummary {
   players: number;
   matches: number;
   presets: number;
+  /** v7: pictures in the file. */
+  photos: number;
+  /** v7: players with a description in the file. */
+  descriptions: number;
 }
 
 export type ParseImportResult =
@@ -264,6 +296,8 @@ export function summarize(data: TransferData): ImportSummary {
     players: data.players.length,
     matches: data.matches.length,
     presets: data.presets.length,
+    photos: data.photos.length,
+    descriptions: data.players.filter((p) => p.description !== undefined).length,
   };
 }
 
@@ -285,12 +319,16 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  *   one) and a tagged player belongs to the match's team;
  * - presets (v3) follow the same lineup rules for their team, and a team has at most one
  *   'starters' preset; named presets have a valid name (≤ 40 characters, not blank) that is
- *   unique within the team, ignoring case.
+ *   unique within the team, ignoring case;
+ * - v7: every photo a profile or player refers to is in the file (photo ids unique); an error
+ *   type only on an "our error" tag (`isValidPointTag`).
  */
 export function isConsistent(data: TransferData): boolean {
-  const { profiles, teams, players, matches, presets } = data;
-  const lists = [profiles, teams, players, matches, presets];
+  const { profiles, teams, players, matches, presets, photos } = data;
+  const lists = [profiles, teams, players, matches, presets, photos];
   if (lists.some((list) => hasDuplicates(list.map((x) => x.id)))) return false;
+  const photoIds = new Set(photos.map((p) => p.id));
+  if (![...referencedPhotoIds(data)].every((photoId) => photoIds.has(photoId))) return false;
   const profileIds = new Set(profiles.map((p) => p.id));
   const teamIds = new Set(teams.map((t) => t.id));
   if (!teams.every((t) => profileIds.has(t.profileId))) return false;
@@ -388,14 +426,16 @@ function upgradeV5(raw: Record<string, unknown>): Record<string, unknown> {
 /**
  * Upgrades an older file step by step: v1 → v2 (sets), v2 → v3 (`presets: []`), v3 → v4 (no data
  * change: untagged points without timestamps stay valid), v4 → v5 (roles + libero on/off),
- * v5 → v6 (roles become a formation per lineup).
+ * v5 → v6 (roles become a formation per lineup), v6 → v7 (`photos: []`; photo ids,
+ * descriptions and error types are optional, so nothing else changes).
  */
 function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
   const v3 = v2.schemaVersion === 2 ? { presets: [], ...v2, schemaVersion: 3 } : v2;
   const v4 = v3.schemaVersion === 3 ? { ...v3, schemaVersion: 4 } : v3;
   const v5 = v4.schemaVersion === 4 ? upgradeV4(v4) : v4;
-  return v5.schemaVersion === 5 ? upgradeV5(v5) : v5;
+  const v6 = v5.schemaVersion === 5 ? upgradeV5(v5) : v5;
+  return v6.schemaVersion === 6 ? { photos: [], ...v6, schemaVersion: 7 } : v6;
 }
 
 /**
@@ -418,13 +458,15 @@ export function parseImport(jsonText: string): ParseImportResult {
   }
   const parsed = exportFileSchema.safeParse(upgradeToCurrent(raw));
   if (!parsed.success) return { ok: false, error: 'INVALID_SHAPE' };
-  // The store keeps sets ordered by set number; do the same for imported files.
+  // The store keeps sets ordered by set number; do the same for imported files. Photos no
+  // profile or player refers to are dropped (v7).
   const file: ExportFile = {
     ...parsed.data,
     matches: parsed.data.matches.map((m) => ({
       ...m,
       sets: [...m.sets].sort((a, b) => a.setNumber - b.setNumber),
     })),
+    photos: keepReferencedPhotos(parsed.data.photos, parsed.data),
   };
   if (!isConsistent(file)) return { ok: false, error: 'INCONSISTENT_REFERENCES' };
   return { ok: true, file, summary: summarize(file) };
@@ -440,6 +482,7 @@ export function replaceData(incoming: TransferData): TransferData {
     players: [...incoming.players],
     matches: [...incoming.matches],
     presets: [...incoming.presets],
+    photos: [...incoming.photos],
   };
 }
 
@@ -462,6 +505,11 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * team, they replace that team's existing starters (even under a different id). Nothing else is
  * deleted.
  *
+ * v7: a merge never deletes a picture or a description. An incoming player (or profile) without
+ * a `photoId` keeps the existing one's photo, and an incoming player without a description (a
+ * file exported without descriptions, or from before v6) keeps the existing description; when
+ * the file has one, it wins. Photos are merged by id; orphans are dropped.
+ *
  * If the combined data would be inconsistent (e.g. two different players with the same jersey
  * number in one team, an id that belongs to a different team in each data set, or two presets
  * of a team with the same name) the merge is refused with `MERGE_CONFLICT` (the user can choose
@@ -475,12 +523,42 @@ export function mergeData(existing: TransferData, incoming: TransferData): Merge
   const keptPresets = existing.presets.filter(
     (p) => p.kind !== 'starters' || (incomingStarters.get(p.teamId) ?? p.id) === p.id,
   );
+  const oldProfiles = new Map(existing.profiles.map((p) => [p.id, p]));
+  const oldPlayers = new Map(existing.players.map((p) => [p.id, p]));
+  const profiles = mergeById(
+    existing.profiles,
+    incoming.profiles.map((p) => keepPhoto(p, oldProfiles.get(p.id))),
+  );
+  const players = mergeById(
+    existing.players,
+    incoming.players.map((p) =>
+      keepDescription(keepPhoto(p, oldPlayers.get(p.id)), oldPlayers.get(p.id)),
+    ),
+  );
   const data: TransferData = {
-    profiles: mergeById(existing.profiles, incoming.profiles),
+    profiles,
     teams: mergeById(existing.teams, incoming.teams),
-    players: mergeById(existing.players, incoming.players),
+    players,
     matches: mergeById(existing.matches, incoming.matches),
     presets: mergeById(keptPresets, incoming.presets),
+    photos: keepReferencedPhotos(mergeById(existing.photos, incoming.photos), {
+      profiles,
+      players,
+    }),
   };
   return isConsistent(data) ? { ok: true, data } : { ok: false, error: 'MERGE_CONFLICT' };
+}
+
+/** v7 merge: the incoming item, keeping the existing photo when the incoming one has none. */
+function keepPhoto<T extends { photoId?: string }>(incoming: T, old: T | undefined): T {
+  return incoming.photoId === undefined && old?.photoId !== undefined
+    ? { ...incoming, photoId: old.photoId }
+    : incoming;
+}
+
+/** v7 merge: the incoming player, keeping the existing description when the file has none. */
+function keepDescription(incoming: Player, old: Player | undefined): Player {
+  return incoming.description === undefined && old?.description !== undefined
+    ? { ...incoming, description: old.description }
+    : incoming;
 }

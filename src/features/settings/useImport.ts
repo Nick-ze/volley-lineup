@@ -9,7 +9,7 @@ import {
 } from '@/domain/exportSchema';
 import type { ExportFile } from '@/domain/types';
 import { pickTextFile } from '@/lib/fileTransfer';
-import { selectAppData, useAppStore } from '@/store';
+import { putPhotos, replacePhotos, transferSnapshot, useAppStore } from '@/store';
 
 export type ImportError = ImportErrorCode | 'MERGE_CONFLICT' | 'READ_FAILED';
 export type ImportMode = 'merge' | 'replace';
@@ -53,17 +53,21 @@ export function useImport() {
   }, []);
 
   const apply = useCallback(
-    (mode: ImportMode) => {
+    async (mode: ImportMode) => {
       if (state.step !== 'preview') return;
       const store = useAppStore.getState();
+      // Photos first: they are pruned as soon as nobody refers to them (photoStore.ts).
       if (mode === 'replace') {
-        store.replaceAll(replaceData(state.file));
+        const data = replaceData(state.file);
+        await replacePhotos(data.photos);
+        store.replaceAll(data);
       } else {
-        const merged = mergeData(selectAppData(store), state.file);
+        const merged = mergeData(await transferSnapshot(), state.file);
         if (!merged.ok) {
           setState({ step: 'error', error: merged.error });
           return;
         }
+        await putPhotos(merged.data.photos);
         store.replaceAll(merged.data);
       }
       selectOnlyProfile();
