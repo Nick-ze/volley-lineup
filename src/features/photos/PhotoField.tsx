@@ -18,16 +18,19 @@ export interface PhotoFieldProps {
   onChange: (draft: PhotoDraft) => void;
   /** Shown without a picture (the avatar or the jersey number), at `FORM_PHOTO_SIZE`. */
   fallback: ReactNode;
+  /** True while a picked picture is being prepared: the form disables Save meanwhile. */
+  onBusyChange?: (busy: boolean) => void;
 }
 
 /** A form's picture: preview, Add / Change (camera or gallery) and Remove, saved on Save. */
-export function PhotoField({ photoId, draft, onChange, fallback }: PhotoFieldProps) {
+export function PhotoField({ photoId, draft, onChange, fallback, onBusyChange }: PhotoFieldProps) {
   const t = useT();
   const s = t.photos;
-  const picker = usePhotoPicker((uri) => onChange({ kind: 'new', uri }));
+  const picker = usePhotoPicker((uri) => onChange({ kind: 'new', uri }), onBusyChange);
   const hasPhoto = draftHasPhoto(draft, photoId);
-  const note =
-    picker.problem !== null
+  const note = picker.busy
+    ? s.processing
+    : picker.problem !== null
       ? s[picker.problem]
       : draft.kind === 'new'
         ? s.unsaved

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button, ToggleRow } from '@/components';
@@ -35,6 +36,8 @@ export function PlayerForm({
   const t = useT();
   const { form, set, errors, save, photo, setPhoto } = usePlayerForm(teamId, player);
   const { ask, dialogProps } = useConfirm();
+  // A picked picture is still being prepared: saving now would drop it.
+  const [photoBusy, setPhotoBusy] = useState(false);
   const s = t.roster.player;
 
   return (
@@ -65,6 +68,7 @@ export function PlayerForm({
         photoId={player?.photoId}
         draft={photo}
         onChange={setPhoto}
+        onBusyChange={setPhotoBusy}
         fallback={<NumberAvatar number={form.number} size={FORM_PHOTO_SIZE} />}
       />
       <PositionPicker
@@ -86,7 +90,7 @@ export function PlayerForm({
           />
         )}
         <Button label={t.common.cancel} variant="secondary" onPress={onDone} />
-        <Button label={t.common.save} onPress={() => save() && onDone()} />
+        <Button label={t.common.save} disabled={photoBusy} onPress={() => save() && onDone()} />
       </View>
       {player && onDelete && deleteBlocked ? (
         <Text style={formStyles.hint}>{s.deleteBlocked}</Text>

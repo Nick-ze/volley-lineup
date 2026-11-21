@@ -42,8 +42,11 @@ export function ProfileForm({
   const [color, setColor] = useState(initial?.color ?? profileColors[0]);
   const [errors, setErrors] = useState<FormErrors<ProfileFormField>>({});
   const [photo, setPhoto] = useState<PhotoDraft>(KEEP_PHOTO);
+  // A picked picture is still being prepared: saving now would drop it.
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const submit = () => {
+    if (photoBusy) return;
     const result = validateProfileForm({ name, color });
     setErrors(result.errors);
     if (result.ok) onSubmit(result.value, photo);
@@ -63,12 +66,13 @@ export function ProfileForm({
         photoId={photoId}
         draft={photo}
         onChange={setPhoto}
+        onBusyChange={setPhotoBusy}
         fallback={<LetterAvatar name={name} color={color} size={FORM_PHOTO_SIZE} />}
       />
       <ColorPicker value={color} onChange={setColor} />
       <View style={styles.actions}>
         <Button label={t.common.cancel} variant="secondary" onPress={onCancel} />
-        <Button label={submitLabel} onPress={submit} />
+        <Button label={submitLabel} onPress={submit} disabled={photoBusy} />
       </View>
     </View>
   );

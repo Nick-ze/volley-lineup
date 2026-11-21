@@ -3,13 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useAppStore, usePhotoUri } from '@/store';
-import { colors, fontSize, radius, spacing, touchTarget, typography } from '@/theme';
+import { colors, radius, spacing, touchTarget, typography } from '@/theme';
 
-import { Photo } from './Photo';
-import { PositionBadge } from './PositionBadge';
-
-/** Room between a chip's picture and its outer edge (the thick selection ring). */
-const PHOTO_INSET = 6;
+import { PlayerChipFace } from './PlayerChipFace';
 
 export interface PlayerChipProps {
   player: Player;
@@ -68,40 +64,16 @@ export function PlayerChip({
 
   const content = (
     <View style={styles.wrapper}>
-      <View
-        style={[
-          styles.circle,
-          { width: d, height: d, borderRadius: d / 2, borderColor: ringColor },
-          (selected || highlighted) && styles.ringThick,
-          lifted && styles.lifted,
-        ]}
-      >
-        {photoUri !== null ? (
-          <Photo photoId={player.photoId} uri={photoUri} size={d - PHOTO_INSET} fallback={null} />
-        ) : namesFirst ? (
-          <Text
-            style={[
-              styles.nameInCircle,
-              // Never below the caption size; narrower than the circle so text stays inside it.
-              {
-                fontSize: Math.max(fontSize.xs, Math.round(d * 0.2)),
-                maxWidth: Math.round(d * 0.8),
-              },
-            ]}
-            numberOfLines={2}
-            testID={testID ? `${testID}-name` : undefined}
-          >
-            {shortName}
-          </Text>
-        ) : (
-          <Text style={[styles.number, { fontSize: Math.round(d * 0.36) }]}>{player.number}</Text>
-        )}
-        {primary ? (
-          <View style={photoUri !== null && styles.badgeOnPhoto}>
-            <PositionBadge position={primary} />
-          </View>
-        ) : null}
-      </View>
+      <PlayerChipFace
+        player={player}
+        diameter={d}
+        photoUri={photoUri}
+        namesFirst={namesFirst}
+        ringColor={ringColor}
+        thickRing={selected || highlighted}
+        lifted={lifted}
+        testID={testID}
+      />
       {showName ? (
         <Text style={styles.name} numberOfLines={1}>
           {photoUri !== null
@@ -142,29 +114,6 @@ export function PlayerChip({
 
 const styles = StyleSheet.create({
   wrapper: { alignItems: 'center', gap: spacing.xxs },
-  circle: {
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xxs,
-  },
-  ringThick: { borderWidth: 3 },
-  badgeOnPhoto: { position: 'absolute', bottom: spacing.xxs },
-  lifted: {
-    transform: [{ scale: 1.15 }],
-    shadowColor: colors.highlight,
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  number: { ...typography.jersey, color: colors.text, lineHeight: undefined },
-  nameInCircle: {
-    ...typography.label,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: undefined,
-  },
   // Dark pill behind the name so it stays AA-readable on the orange court (white on orange ≈ 2.9:1).
   name: {
     ...typography.caption,

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import { resetStartupRedirect } from '@/features/roster/hooks/useStartupRedirect';
@@ -142,6 +142,33 @@ describe('player photos', () => {
     await press(t.common.cancel); // the form
     expect(store().players.find((p) => p.id === ana.id)?.photoId).toBeUndefined();
     expect(photos()).toEqual({});
+  });
+
+  it('disables Save while a picked picture is being prepared', async () => {
+    const team = seedTeam();
+    seedPlayer(team.id);
+    let finish: (dataUri: string) => void = () => undefined;
+    pick.mockReturnValue(
+      new Promise((resolve) => {
+        finish = (dataUri) => resolve({ status: 'picked', dataUri });
+      }),
+    );
+    await renderRouter('./app', { initialUrl: `/team/${team.id}` });
+    await fireEvent.press(await screen.findByTestId('player-7'));
+    await press(s.add);
+
+    expect(screen.getByText(s.processing)).toBeTruthy();
+    const save = screen.getByRole('button', { name: t.common.save });
+    expect(save).toBeDisabled();
+    expect(save.props['aria-disabled']).toBe(true);
+    await fireEvent.press(save);
+    expect(store().players[0].photoId).toBeUndefined();
+
+    await act(async () => finish(URI_A));
+    expect(await screen.findByText(s.unsaved)).toBeTruthy();
+    expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled();
+    await press(t.common.save);
+    expect(photos()).toEqual({ [store().players[0].photoId as string]: URI_A });
   });
 
   it('explains a refused permission and a picture that could not be loaded', async () => {

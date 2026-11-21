@@ -53,6 +53,18 @@ describe('profile photos', () => {
     expect(photoCount()).toBe(2);
   });
 
+  it('disables Create profile while a picked picture is being prepared', async () => {
+    pick.mockReturnValue(new Promise(() => undefined));
+    await renderRouter('./app', { initialUrl: '/' });
+    await fireEvent.changeText(screen.getByLabelText(t.roster.profiles.name), 'Coach');
+    await press(s.add);
+    expect(screen.getByText(s.processing)).toBeTruthy();
+    const create = screen.getByRole('button', { name: t.roster.profiles.create });
+    expect(create).toBeDisabled();
+    await fireEvent(screen.getByLabelText(t.roster.profiles.name), 'submitEditing');
+    expect(store().profiles).toEqual([]);
+  });
+
   it('changes and removes the photo in the Profile tab', async () => {
     const coach = store().addProfile({ name: 'Coach', color: '#FF6B00' });
     store().updateProfile(coach.id, { photoId: 'old' });
