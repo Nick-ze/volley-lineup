@@ -41,13 +41,16 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
           submitLabel={s.create}
           onCancel={() => setEditing(null)}
           onSubmit={(value) => {
-            addProfile(value);
+            const profile = addProfile(value);
             setEditing(null);
+            // Go straight into the new profile: creating it is never the end goal.
+            onSelect(profile.id);
           }}
         />
       )}
 
       {profiles.length === 0 && editing === null && <Text style={styles.empty}>{s.empty}</Text>}
+      {profiles.length > 0 && editing === null && <Text style={styles.empty}>{s.hint}</Text>}
 
       <View style={styles.list}>
         {profiles.map((p) =>

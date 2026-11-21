@@ -51,7 +51,7 @@ describe('roster flows', () => {
     await press(s.profiles.create);
     expect(store().profiles.map((p) => p.name)).toEqual(['Coach']);
 
-    await press(s.profiles.select('Coach'));
+    // Creating a profile opens it straight away.
     expect(screen).toHavePathname('/teams');
     expect(store().currentProfileId).toBe(store().profiles[0].id);
 
@@ -230,6 +230,10 @@ describe('roster flows', () => {
     await press(s.teams.switchProfile);
     expect(screen).toHavePathname('/');
     expect(screen.getByText(s.profiles.heading)).toBeTruthy();
+    // The picker tells the user how to continue, and tapping the profile opens it.
+    expect(screen.getByText(s.profiles.hint)).toBeTruthy();
+    await press(s.profiles.select('Coach'));
+    expect(screen).toHavePathname('/teams');
   });
 
   it('redirects /teams to the picker without a selected profile', async () => {

@@ -32,11 +32,20 @@ step 01-launch 20
 tap_label "Profile name" && sleep 1 && adb shell input text "Coach" && adb shell input keyevent 111
 step 02-typed 3
 tap_label "Create profile"
-step 03-created 4
-tap_label "Open profile Coach"
-step 04-opened 6
-tap_label "New team" || tap_label "Add team" || true
-step 05-team-form 4
+# Creating a profile should open its teams straight away.
+step 03-after-create 6
+tap_label "New team"
+step 04-team-form 4
+tap_label "Team name" && sleep 1 && adb shell input text "Herren" && adb shell input keyevent 111
+step 05-team-typed 3
+tap_label "Create team"
+step 06-team-created 4
+# Restart the app: with a saved profile it should land on Teams again.
+adb shell am force-stop "$PKG"
+adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null
+step 07-relaunch 15
+tap_label "Open team Herren" || true
+step 08-team 5
 
 echo "=== LOGCAT: ReactNativeJS / errors ==="
 adb logcat -d -s ReactNativeJS:V ReactNative:V AndroidRuntime:E '*:E' | grep -v -E 'chatty|Watchdog' | tail -150
