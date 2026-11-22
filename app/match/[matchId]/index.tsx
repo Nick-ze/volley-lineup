@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components';
+import { Button, SlideTransition } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { playedSetNumbers } from '@/domain/stats';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
@@ -126,13 +126,17 @@ export default function MatchScreen() {
               testID="open-performance"
             />
           </View>
-          <LineupBuilder
-            editor={editor}
-            previous={editor.previous}
-            actions={
-              <PresetApply key={`apply-${setNumber}`} editor={editor} teamId={match.teamId} />
-            }
-          />
+          {/* v8: another set's lineup slides in from the side of its tab (no swipe here: the
+              builder's court and bench are drag & drop areas). */}
+          <SlideTransition index={setNumber} clip={false}>
+            <LineupBuilder
+              editor={editor}
+              previous={editor.previous}
+              actions={
+                <PresetApply key={`apply-${setNumber}`} editor={editor} teamId={match.teamId} />
+              }
+            />
+          </SlideTransition>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -4,7 +4,7 @@ import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
 import type { LiveCourtView } from '@/domain/liveSet';
 import { isOffPosition } from '@/domain/roles';
 import type { Player, PlayerRoles } from '@/domain/types';
-import { ChipWithBadge, RoleRow } from '@/features/rotation/SpotTags';
+import { ChipWithBadge, RoleRow, SpotNumber } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
 import { makeStyles, spacing, typography } from '@/theme';
 
@@ -52,6 +52,9 @@ export function LiveCourt({
       showPositionNumbers={false}
       style={styles.court}
       slotStyle={slotStyle}
+      // v8: a side-out slides every player (with role and "*") to their new spot.
+      slotKeys={slots}
+      renderSlotStatic={({ position }) => <SpotNumber position={position} />}
       renderSlot={({ position }) => {
         const id = slots[position];
         const player = id ? playersById.get(id) : undefined;
@@ -73,9 +76,6 @@ export function LiveCourt({
           : '';
         return (
           <>
-            <Text style={styles.pos} importantForAccessibility="no" accessibilityElementsHidden>
-              {position}
-            </Text>
             <RoleRow
               role={replacedId ? 'L' : player ? role : null}
               offPosition={off}
@@ -124,13 +124,5 @@ const useStyles = makeStyles((theme) => ({
   back: { backgroundColor: theme.colors.overlay },
   // The role row takes the room of the default vertical padding (the court keeps its height).
   slot: { paddingVertical: spacing.xxs },
-  pos: {
-    position: 'absolute',
-    top: spacing.xs,
-    left: spacing.sm,
-    ...typography.label,
-    // On the blue / dark slot fills: white in both themes.
-    color: theme.colors.onSecondary,
-  },
   empty: { ...typography.subheading, color: theme.colors.onSecondary },
 }));

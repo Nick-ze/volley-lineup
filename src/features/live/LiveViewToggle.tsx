@@ -3,7 +3,10 @@ import { Pressable, Text } from 'react-native';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
-export type LiveView = 'live' | 'performance';
+/** The two views of live mode, in swipe order (v8: swipe left on Live → Performance). */
+export const LIVE_VIEWS = ['live', 'performance'] as const;
+
+export type LiveView = (typeof LIVE_VIEWS)[number];
 
 /**
  * v6.1: header button (top right) that switches live mode between the court (scoring, subs) and

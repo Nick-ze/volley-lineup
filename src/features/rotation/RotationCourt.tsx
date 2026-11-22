@@ -6,6 +6,7 @@ import type { CourtPosition, Player, Position } from '@/domain/types';
 import { makeStyles, spacing } from '@/theme';
 
 import { CourtSpot } from './CourtSpot';
+import { SpotNumber } from './SpotTags';
 import { COMPACT_COURT_MAX_WIDTH, COMPACT_SLOT_MIN_HEIGHT } from './layout';
 
 export interface RotationCourtProps {
@@ -46,6 +47,9 @@ export function RotationCourt({
       showPositionNumbers={false}
       style={compact ? styles.compactCourt : undefined}
       slotStyle={slotStyle}
+      // v8: a step of the rotation slides every player (with role and "*") to their new spot.
+      slotKeys={slots}
+      renderSlotStatic={({ position }) => <SpotNumber position={position} />}
       renderSlot={({ position, isFrontRow }) => {
         const playerId = slots[position];
         const player = playerId ? playersById.get(playerId) : undefined;

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
+import { SwipeTabs } from '@/components';
 import { matchPerformance, performanceRows } from '@/domain/performance';
 import { playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
@@ -77,28 +78,37 @@ export function MatchPerformance({
     <View style={styles.wrap} testID="performance">
       {heading}
       <SetSwitch sets={sets} value={setNumber} onChange={switchSet} />
-      {detail ? (
-        <PlayerPerformanceDetail
-          player={detail.player}
-          performance={detail.performance}
-          totalRallies={perf.rallies}
-          onBack={() => onParams({ set: setKey, player: undefined })}
-        />
-      ) : (
-        <>
-          <View style={styles.list}>
-            {rows.map(({ player, performance }) => (
-              <PerformanceCard
-                key={player.id}
-                player={player}
-                performance={performance}
-                onPress={() => onOpenPlayer({ set: setKey, player: player.id })}
-              />
-            ))}
-          </View>
-          <PerformanceLegend />
-        </>
-      )}
+      {/* v8: the switch's tabs in order (All sets last): the cards slide / swipe between them. */}
+      <SwipeTabs
+        tabs={[...sets, null]}
+        value={setNumber}
+        onChange={switchSet}
+        testID="perf-set-swipe"
+        contentStyle={styles.wrap}
+      >
+        {detail ? (
+          <PlayerPerformanceDetail
+            player={detail.player}
+            performance={detail.performance}
+            totalRallies={perf.rallies}
+            onBack={() => onParams({ set: setKey, player: undefined })}
+          />
+        ) : (
+          <>
+            <View style={styles.list}>
+              {rows.map(({ player, performance }) => (
+                <PerformanceCard
+                  key={player.id}
+                  player={player}
+                  performance={performance}
+                  onPress={() => onOpenPlayer({ set: setKey, player: player.id })}
+                />
+              ))}
+            </View>
+            <PerformanceLegend />
+          </>
+        )}
+      </SwipeTabs>
     </View>
   );
 }

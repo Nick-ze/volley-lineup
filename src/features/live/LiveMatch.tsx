@@ -1,5 +1,8 @@
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
+
+import { SlideTransition } from '@/components';
 
 import {
   decidingSetNumber,
@@ -11,6 +14,7 @@ import type { SetNumber } from '@/domain/types';
 import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
 import { useT } from '@/i18n';
+import { spacing } from '@/theme';
 
 import { tagDetail } from './format';
 import { LiveSetView } from './LiveSetView';
@@ -27,6 +31,8 @@ export interface LiveMatchProps {
   onEditLineup: (set: SetNumber) => void;
   /** Back to the match screen (from the match summary). */
   onBackToMatch: () => void;
+  /** v8: the set shown before this one (this is remounted per set): it slides in from that side. */
+  previousSet?: SetNumber | null;
 }
 
 /**
@@ -40,6 +46,7 @@ export function LiveMatch({
   onSelectSet,
   onEditLineup,
   onBackToMatch,
+  previousSet = null,
 }: LiveMatchProps) {
   const t = useT();
   const { live, row: tagRow } = usePointTagging(useLiveSet(matchId, setNumber));
@@ -69,7 +76,10 @@ export function LiveMatch({
     <>
       {title}
       {picker}
-      {content}
+      {/* v8: another set slides in from the side of its tab. */}
+      <SlideTransition index={setNumber} fromIndex={previousSet} contentStyle={styles.content}>
+        {content}
+      </SlideTransition>
     </>
   );
 
@@ -114,3 +124,6 @@ export function LiveMatch({
     />,
   );
 }
+
+// The screen's gap between its parts, also inside the slide.
+const styles = StyleSheet.create({ content: { gap: spacing.lg } });

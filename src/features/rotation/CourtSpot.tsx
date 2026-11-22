@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { PlayerChip } from '@/components';
 import type { CourtPosition, Player, Position } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { makeStyles, spacing, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
 import { ChipWithBadge, RoleRow } from './SpotTags';
@@ -103,9 +103,7 @@ export function CourtSpot({
 
   return (
     <>
-      <Text style={styles.posNumber} importantForAccessibility="no" accessibilityElementsHidden>
-        {position}
-      </Text>
+      {/* v8: the spot's number is drawn by RotationCourt (it stays put while players slide). */}
       <RoleRow
         role={shownRole}
         offPosition={!liberoFor && offPosition}
@@ -122,14 +120,6 @@ function describe(t: Strings, player: Player | undefined): string {
 }
 
 const useStyles = makeStyles((theme) => ({
-  posNumber: {
-    position: 'absolute',
-    top: spacing.xs,
-    left: spacing.sm,
-    ...typography.label,
-    // On the blue / dark slot fills: white in both themes.
-    color: theme.colors.onSecondary,
-  },
   empty: {
     borderWidth: 2,
     borderStyle: 'dashed',

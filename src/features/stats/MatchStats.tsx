@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { SwipeTabs } from '@/components';
 import { matchStats, playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
 import { useListStyles } from '@/features/roster/components/styles';
@@ -41,19 +42,29 @@ export function MatchStats({ match }: { match: Match }) {
     );
   }
   const { us, them } = stats.points;
+  // v8: the filter's tabs in order (All sets first): the tables slide / swipe between them.
+  const filters = [null, ...sets];
   return (
     <View style={styles.wrap} testID="match-stats">
       {heading}
       <SetFilter sets={sets} value={setNumber} onChange={setFilter} />
-      <Text
-        style={styles.points}
-        accessibilityLabel={t.stats.season.pointsLabel(us, them)}
-        testID="match-stats-points"
+      <SwipeTabs
+        tabs={filters}
+        value={setNumber}
+        onChange={setFilter}
+        testID="stats-set-swipe"
+        contentStyle={styles.wrap}
       >
-        {`${t.stats.season.points} ${t.stats.score(us, them)}`}
-      </Text>
-      <RotationTable stats={stats} />
-      <PlayerTable stats={stats} players={players} />
+        <Text
+          style={styles.points}
+          accessibilityLabel={t.stats.season.pointsLabel(us, them)}
+          testID="match-stats-points"
+        >
+          {`${t.stats.season.points} ${t.stats.score(us, them)}`}
+        </Text>
+        <RotationTable stats={stats} />
+        <PlayerTable stats={stats} players={players} />
+      </SwipeTabs>
     </View>
   );
 }

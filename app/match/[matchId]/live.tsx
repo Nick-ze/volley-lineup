@@ -1,15 +1,17 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { StyleSheet } from 'react-native';
 
-import { Screen } from '@/components';
+import { Screen, SwipeTabs } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { liveSetNumber } from '@/domain/matchFlow';
 import type { SetNumber } from '@/domain/types';
 import { LiveMatch } from '@/features/live/LiveMatch';
 import { LivePerformance } from '@/features/live/LivePerformance';
-import { LiveViewToggle, type LiveView } from '@/features/live/LiveViewToggle';
+import { LIVE_VIEWS, LiveViewToggle, type LiveView } from '@/features/live/LiveViewToggle';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { useMatch } from '@/store';
+import { spacing } from '@/theme';
 
 /**
  * Live match mode for `?set=N`; without (or with an invalid) `?set` it opens the current set.
@@ -32,6 +34,9 @@ export default function LiveScreen() {
     [router, matchId],
   );
   useCorrectSetParam(set, setNumber, selectSet);
+  // v8: LiveMatch is remounted per set, so the set shown before is kept here for its slide.
+  const [shown, setShown] = useState({ set: setNumber, previous: null as SetNumber | null });
+  if (shown.set !== setNumber) setShown({ set: setNumber, previous: shown.set ?? null });
   return (
     <Screen>
       {match && (
@@ -39,19 +44,32 @@ export default function LiveScreen() {
           options={{ headerRight: () => <LiveViewToggle value={view} onChange={setView} /> }}
         />
       )}
-      {match && view === 'performance' ? (
-        <LivePerformance match={match} setNumber={setNumber} />
-      ) : (
-        /* Keyed by set: switching sets drops a half-finished substitution. */
-        <LiveMatch
-          key={setNumber}
-          matchId={matchId}
-          setNumber={setNumber}
-          onSelectSet={selectSet}
-          onEditLineup={editLineup}
-          onBackToMatch={backToMatch}
-        />
-      )}
+      {/* v8: Live ↔ Performance slides; a sideways swipe switches between them. */}
+      <SwipeTabs
+        tabs={LIVE_VIEWS}
+        value={view}
+        onChange={setView}
+        testID="live-view-swipe"
+        contentStyle={styles.content}
+      >
+        {match && view === 'performance' ? (
+          <LivePerformance match={match} setNumber={setNumber} />
+        ) : (
+          /* Keyed by set: switching sets drops a half-finished substitution. */
+          <LiveMatch
+            key={setNumber}
+            matchId={matchId}
+            setNumber={setNumber}
+            onSelectSet={selectSet}
+            onEditLineup={editLineup}
+            onBackToMatch={backToMatch}
+            previousSet={shown.previous}
+          />
+        )}
+      </SwipeTabs>
     </Screen>
   );
 }
+
+// The screen's gap between its parts, also inside the slide.
+const styles = StyleSheet.create({ content: { gap: spacing.lg } });

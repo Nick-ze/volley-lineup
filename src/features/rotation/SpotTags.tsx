@@ -29,6 +29,19 @@ export function RoleRow({ role, offPosition = false, testID }: RoleRowProps) {
   );
 }
 
+/**
+ * The spot's number at its top left (white on the blue / dark slot fills, in both themes). It
+ * belongs to the spot, so it stays put while a rotation slides the players (v8).
+ */
+export function SpotNumber({ position }: { position: number }) {
+  const styles = useStyles();
+  return (
+    <Text style={styles.posNumber} importantForAccessibility="no" accessibilityElementsHidden>
+      {position}
+    </Text>
+  );
+}
+
 export interface ChipWithBadgeProps {
   /** The chip (circle diameter `chipSize`). */
   children: ReactNode;
@@ -66,6 +79,13 @@ export function ChipWithBadge({ children, chipSize, text, kind, testID }: ChipWi
 }
 
 const useStyles = makeStyles((theme) => ({
+  posNumber: {
+    position: 'absolute',
+    top: spacing.xs,
+    left: spacing.sm,
+    ...typography.label,
+    color: theme.colors.onSecondary,
+  },
   roleRow: { minHeight: ROLE_ROW_HEIGHT, justifyContent: 'center', marginBottom: spacing.xxs },
   wrap: { alignItems: 'center' },
   // Wider than the chip so "L for #15" / "Aufschläger" stay on one line, centred on the chip.
