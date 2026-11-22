@@ -35,7 +35,11 @@ export function ListRow({
         accessibilityLabel={accessibilityLabel}
         onPress={onPress}
         testID={testID}
-        style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.main,
+          leading ? styles.mainWithLeading : null,
+          pressed && styles.pressed,
+        ]}
       >
         {leading}
         <View style={styles.text}>
