@@ -20,6 +20,9 @@ import { photos } from './en/photos';
 import { playerDetail } from './en/playerDetail';
 import { performance } from './en/performance';
 import { seasons } from './en/seasons';
+import { appearance } from './en/appearance';
+import { teamPhoto } from './en/teamPhoto';
+import { motion } from './en/motion';
 import type { Widen } from './types';
 
 export const en = {
@@ -102,6 +105,9 @@ export const en = {
   playerDetail,
   performance,
   seasons,
+  appearance,
+  teamPhoto,
+  motion,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */

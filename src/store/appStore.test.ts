@@ -309,10 +309,16 @@ describe('whole data', () => {
  * v7.0: every migration from before store v9 also runs the seasons step; for states without
  * teams it only adds empty `seasons` / `opponents` lists. Asserts that, and returns the rest.
  */
+/**
+ * The migrated state without what later steps add to every old state: the empty seasons /
+ * opponents (v9) and the v10 device settings (dark theme, platform font), which it checks.
+ */
 function withoutEmptySeasons(state: unknown): unknown {
-  const { seasons, opponents, ...rest } = state as Record<string, unknown>;
+  const { seasons, opponents, themeMode, dyslexiaFont, ...rest } = state as Record<string, unknown>;
   expect(seasons).toEqual([]);
   expect(opponents).toEqual([]);
+  expect(themeMode).toBe('dark');
+  expect(dyslexiaFont).toBe(false);
   return rest;
 }
 
@@ -530,7 +536,36 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(9); // v7.0: seasons / tournaments
+    expect(STORE_VERSION).toBe(10); // v8.0: theme and dyslexia font settings
+  });
+
+  it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
+    const v9 = {
+      teams: [{ id: 't1', profileId: 'p', name: 'Herren', createdAt: '2026-01-01' }],
+      matches: [],
+      seasons: [],
+      opponents: [],
+      language: 'de',
+      chipLabel: 'name',
+    };
+    expect(migrateStore(v9, 9)).toEqual({ ...v9, themeMode: 'dark', dyslexiaFont: false });
+    // a state that already has the settings keeps them
+    const v10 = { ...v9, themeMode: 'light', dyslexiaFont: true };
+    expect(migrateStore(v10, 9)).toEqual(v10);
+  });
+
+  it('remembers the theme and the dyslexia font, also after delete all', () => {
+    expect(store().themeMode).toBe('dark');
+    expect(store().dyslexiaFont).toBe(false);
+    store().setThemeMode('light');
+    store().setDyslexiaFont(true);
+    store().resetAll();
+    expect(store().themeMode).toBe('light');
+    expect(store().dyslexiaFont).toBe(true);
+    store().setThemeMode('system');
+    expect(store().themeMode).toBe('system');
+    store().setThemeMode('dark');
+    store().setDyslexiaFont(false);
   });
 
   it('remembers whether chips show names or numbers, also after delete all', () => {

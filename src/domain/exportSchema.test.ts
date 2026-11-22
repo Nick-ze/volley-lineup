@@ -165,7 +165,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 8,
+      schemaVersion: 9,
       exportedAt: NOW.toISOString(),
       ...data,
     });
@@ -284,7 +284,7 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([9, 0, '1', '2', '3', '4', '5', '6', '7', '8', undefined])(
+  it.each([10, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', undefined])(
     'schemaVersion %p',
     (version) => {
       expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
@@ -307,7 +307,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(8);
+    expect(result.file.schemaVersion).toBe(9);
     expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
   });
 
@@ -318,7 +318,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v2);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(8);
+    expect(result.file.schemaVersion).toBe(9);
     expect(result.file.presets).toEqual([]);
     expect(result.summary.presets).toBe(0);
     expect(result.file.matches).toEqual(fixture().matches);
@@ -338,7 +338,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v3);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file).toEqual({ ...v3, schemaVersion: 8 });
+    expect(result.file).toEqual({ ...v3, schemaVersion: 9 });
   });
 
   it('a current file without presets is rejected as INVALID_SHAPE', () => {
@@ -770,7 +770,7 @@ describe('v5 libero switch and v6 formations', () => {
       setterAt: 4,
     });
     expect('roles' in result.file.presets[1]).toBe(false);
-    expect(result.file.schemaVersion).toBe(8);
+    expect(result.file.schemaVersion).toBe(9);
   });
 
   it.each([
@@ -902,7 +902,7 @@ describe('v7 photos, descriptions and error types', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(8);
+    expect(result.file.schemaVersion).toBe(9);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1004,7 +1004,7 @@ describe('v8 seasons and opponents', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(8);
+    expect(result.file.schemaVersion).toBe(9);
     expect(result.file.seasons.map((x) => [x.id, x.teamId, x.name])).toEqual([
       ['season-t1', 't1', '2026/27'],
       ['season-t2', 't2', '2026'],
@@ -1108,5 +1108,80 @@ describe('v8 seasons and opponents', () => {
     const once = replaceData(first.file);
     const twice = mergeData(once, first.file);
     expect(twice.ok && twice.data).toEqual(once);
+  });
+});
+
+describe('v9 team pictures', () => {
+  const jpeg = (n: number) => `data:image/jpeg;base64,${'A'.repeat(n)}==`;
+  /** The fixture with a picture on each team and a player picture. */
+  function v9(): TransferData {
+    const data = fixture();
+    data.teams[0] = { ...data.teams[0], photoId: 'tp1' };
+    data.teams[1] = { ...data.teams[1], photoId: 'tp2' };
+    data.players[0] = { ...data.players[0], photoId: 'pp1' };
+    data.photos = [
+      { id: 'tp1', dataUri: jpeg(20) },
+      { id: 'tp2', dataUri: jpeg(24) },
+      { id: 'pp1', dataUri: jpeg(28) },
+    ];
+    return data;
+  }
+
+  it('round trip restores team pictures exactly', () => {
+    const data = v9();
+    const result = parseImport(exportText(data));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(9);
+    expect(replaceData(result.file)).toEqual(data);
+    expect(result.summary.photos).toBe(3);
+  });
+
+  it('a team export carries only that team picture', () => {
+    const file = buildExport(v9(), { teamId: 't1' });
+    expect(file.teams.map((t) => t.photoId)).toEqual(['tp1']);
+    expect(file.photos.map((p) => p.id)).toEqual(['tp1', 'pp1']);
+  });
+
+  it('leaves out a team photo id whose photo is missing', () => {
+    const data = v9();
+    data.photos = data.photos.filter((p) => p.id !== 'tp2');
+    const file = buildExport(data, { now: NOW });
+    expect(file.teams[1]).not.toHaveProperty('photoId');
+    expect(parseImport(serializeExport(file)).ok).toBe(true);
+  });
+
+  it('upgrades a v8 file (teams without pictures) without loss', () => {
+    const raw = JSON.parse(exportText(fixture()));
+    raw.schemaVersion = 8;
+    const result = parseObject(raw);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(9);
+    expect(replaceData(result.file)).toEqual(fixture());
+  });
+
+  it('rejects a team picture missing from the file', () => {
+    const raw = JSON.parse(exportText(v9()));
+    raw.photos = raw.photos.filter((p: { id: string }) => p.id !== 'tp1');
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
+
+  it('rejects a non-string team photo id', () => {
+    const raw = JSON.parse(exportText(v9()));
+    raw.teams[0].photoId = 7;
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it('merge keeps a team picture the file lacks; a picture in the file wins', () => {
+    const existing = v9();
+    const incoming = fixture();
+    incoming.teams[1] = { ...incoming.teams[1], photoId: 'tp9' };
+    incoming.photos = [{ id: 'tp9', dataUri: jpeg(12) }];
+    const result = mergeData(existing, buildExport(incoming));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.teams.map((t) => t.photoId)).toEqual(['tp1', 'tp9']);
+    expect(result.data.photos.map((p) => p.id)).toEqual(['tp1', 'pp1', 'tp9']);
   });
 });

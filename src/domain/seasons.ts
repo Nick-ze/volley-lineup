@@ -6,7 +6,7 @@
  * season's opponents. `Match.opponent` keeps the opponent's name (it is renamed with them).
  */
 import { getMatchState } from './matchState';
-import { isValidIsoDate } from './roster';
+import { parseDateInput } from './dates';
 import type { Match, Opponent, Season, SeasonKind } from './types';
 
 export const SEASON_KINDS: readonly SeasonKind[] = ['season', 'tournament'] as const;
@@ -151,11 +151,12 @@ export function validateSeasonForm(
   ) {
     errors.name = 'DUPLICATE';
   }
-  const startDate = input.startDate.trim();
-  const endDate = input.endDate.trim();
-  if (startDate !== '' && !isValidIsoDate(startDate)) errors.startDate = 'INVALID_DATE';
-  if (endDate !== '' && !isValidIsoDate(endDate)) errors.endDate = 'INVALID_DATE';
-  else if (endDate !== '' && startDate !== '' && !errors.startDate && endDate < startDate) {
+  // v8: dd.mm.yy, dd.mm.yyyy or ISO; stored as ISO.
+  const startDate = toIso(input.startDate);
+  const endDate = toIso(input.endDate);
+  if (startDate === null) errors.startDate = 'INVALID_DATE';
+  if (endDate === null) errors.endDate = 'INVALID_DATE';
+  else if (endDate !== '' && startDate !== null && startDate !== '' && endDate < startDate) {
     errors.endDate = 'END_BEFORE_START';
   }
   const location = input.location.trim();
@@ -166,14 +167,19 @@ export function validateSeasonForm(
     value: {
       name,
       kind: input.kind,
-      ...(startDate === '' ? {} : { startDate }),
-      ...(endDate === '' ? {} : { endDate }),
+      ...(startDate === '' || startDate === null ? {} : { startDate }),
+      ...(endDate === '' || endDate === null ? {} : { endDate }),
       ...(location === '' ? {} : { location }),
     },
   };
 }
 
 export type OpponentNameError = 'REQUIRED' | 'TOO_LONG' | 'DUPLICATE';
+
+/** A typed optional date as ISO: `''` when blank, `null` when invalid. */
+function toIso(text: string): string | null {
+  return text.trim() === '' ? '' : parseDateInput(text);
+}
 
 /** Validates an opponent name within a season (unique ignoring case / accents). */
 export function validateOpponentName(

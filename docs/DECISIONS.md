@@ -338,3 +338,17 @@ Newest at the bottom. Format: **Decision** — why.
 - Match row labels start with the visible text ("vs X, date: open the match"; DE "Löschen: Spiel gegen X").
 
 183. **The team's old free-text season is no longer shown or edited** (team header, team list, team form). An existing value stays in the data; it named the upgraded season.
+
+## v8 — Look & feel
+
+### Foundation (orchestrator)
+
+184. **Theme setting: Dark / Light / System, default Dark** (owner's choice). Existing users keep today's look after the store v9 → v10 upgrade. "System" follows the device (`useColorScheme`) and falls back to dark when the device says nothing; `app.json` `userInterfaceStyle` is now `automatic` so the native side reports it.
+185. **Dyslexia font: OpenDyslexic** (SIL Open Font License, free to bundle). Dyslexie is commercial and the owner had no files or licence; the font files can be swapped later behind the same family names (`src/theme/fonts.ts`).
+186. **Theme pattern**: `ThemeProvider` (props `mode`, `dyslexiaFont`; wired from the store in `app/_layout.tsx`, so `src/theme` doesn't import the store), `useTheme()` and `makeStyles((theme) => ({…}))` at module level returning a `useStyles()` hook. Styles are built once per theme (four themes, cached). The static `colors` / `positionColors` exports stay as deprecated aliases of the dark palette until the theme-conversion PR removes their last uses.
+187. **The dyslexia font goes in through the styles**: `makeStyles` gives every style with `fontSize` / `fontWeight` / `lineHeight` / `letterSpacing` the font family; weights ≥ 600 use the bold family and drop `fontWeight` (custom fonts carry the weight in the family). A style with its own `fontFamily` is left alone.
+188. **New colour tokens**: `primaryText` (orange for text / icons on the background — the plain orange fails AA on white, so light mode uses a dark orange `#A84300`) and `onCourt`. Light palette: white background, `#F3F3F3` / `#E8E8E8` surfaces, `#111` text, `#555` muted text; the libero badge becomes light grey. AA for all text tokens on all three backgrounds and for the badges is a unit test (`src/theme/theme.test.ts`).
+189. **Date input**: `parseDateInput` accepts `d.m.yy`, `dd.mm.yy`, `d.m.yyyy`, `dd.mm.yyyy` and ISO (`YYYY-MM-DD`), with spaces around it; no other separators. Invalid calendar days (31.02.) and 4-digit years before 1900 (typos like "0026") are rejected. `validateNewMatch` and `validateSeasonForm` parse with it and store ISO. `formatDate` returns an unparseable stored value unchanged so it stays visible.
+190. **Short player names**: the first name; the last name's initial with a dot when a teammate has the same first name (compared ignoring case, accents and spaces); the whole last name when the initials clash too; the last name when there is no first name. Two players with the very same full name stay the same (the jersey number next to them tells them apart). Computed per team (`shortNames`), never stored.
+191. **Team pictures are merged like player pictures** (#150): an incoming team without a `photoId` keeps the existing team's picture; a picture in the file wins. A team export carries only that team's picture.
+192. **App icon colours**: the owner's black ball on the app orange `#FF6B00` (owner's choice) for the icon, adaptive icon background and splash; the monochrome icon is the ball's shape.

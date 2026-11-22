@@ -39,10 +39,11 @@ describe('referenced photos', () => {
   const data = {
     profiles: [{ photoId: 'a' }, {}],
     players: [{ photoId: 'b' }, { photoId: 'a' }, {}],
+    teams: [{}, { photoId: 'c' }],
   };
 
-  it('collects the ids profiles and players refer to', () => {
-    expect([...referencedPhotoIds(data)]).toEqual(['a', 'b']);
+  it('collects the ids profiles, players and teams refer to', () => {
+    expect([...referencedPhotoIds(data)]).toEqual(['a', 'b', 'c']);
   });
 
   it('drops orphan photos and keeps the order', () => {
@@ -50,8 +51,9 @@ describe('referenced photos', () => {
       { id: 'b', dataUri: jpeg },
       { id: 'x', dataUri: jpeg },
       { id: 'a', dataUri: jpeg },
+      { id: 'c', dataUri: jpeg },
     ];
-    expect(keepReferencedPhotos(photos, data).map((p) => p.id)).toEqual(['b', 'a']);
+    expect(keepReferencedPhotos(photos, data).map((p) => p.id)).toEqual(['b', 'a', 'c']);
   });
 });
 

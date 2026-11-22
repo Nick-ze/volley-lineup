@@ -5,7 +5,7 @@
  * season, a new one is named in the form. Pure: errors are codes, nothing is stored here.
  */
 import type { FieldErrorCode } from './roster';
-import { isValidIsoDate } from './roster';
+import { parseDateInput } from './dates';
 import {
   findOpponentByName,
   foldName,
@@ -106,9 +106,10 @@ export function validateNewMatch(input: NewMatchInput, ctx: NewMatchContext): Ne
   const seasonId = typeof season !== 'string' && season.kind === 'existing' ? season.id : null;
   const opponent = opponentRef(input, ctx, seasonId);
   if (typeof opponent === 'string') errors.opponent = opponent;
-  const date = input.date.trim();
-  if (!isValidIsoDate(date)) errors.date = 'invalidDate';
-  if (typeof season === 'string' || typeof opponent === 'string' || errors.date) {
+  // v8: dd.mm.yy, dd.mm.yyyy or ISO; stored as ISO.
+  const date = parseDateInput(input.date);
+  if (date === null) errors.date = 'invalidDate';
+  if (typeof season === 'string' || typeof opponent === 'string' || date === null) {
     return { ok: false, errors };
   }
   return { ok: true, value: { season, opponent, date, home: input.home }, errors };

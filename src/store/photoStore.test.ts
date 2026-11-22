@@ -122,3 +122,28 @@ it('clears photo ids whose photo is missing once both stores have loaded', async
   await whenPhotosLoaded();
   expect(useAppStore.getState().profiles[0]?.photoId).toBeUndefined();
 });
+
+it('keeps a team picture while the team uses it and prunes it afterwards (v8)', async () => {
+  await whenPhotosLoaded();
+  const store = useAppStore.getState();
+  const profile = store.addProfile({ name: 'Coach', color: '#FF6B00' });
+  const team = store.addTeam({ profileId: profile.id, name: 'Herren' });
+  await setPhoto('t1', uri('TTTT'));
+  useAppStore.getState().updateTeam(team.id, { photoId: 't1' });
+  await prunePhotos();
+  expect(usePhotoStore.getState().photos).toEqual({ t1: uri('TTTT') });
+  expect((await transferSnapshot()).photos.map((p) => p.id)).toEqual(['t1']);
+  useAppStore.getState().updateTeam(team.id, { photoId: undefined });
+  await prunePhotos();
+  expect(usePhotoStore.getState().photos).toEqual({});
+});
+
+it('clears a team photo id whose photo is missing (v8)', async () => {
+  await whenPhotosLoaded();
+  const store = useAppStore.getState();
+  const profile = store.addProfile({ name: 'Coach', color: '#FF6B00' });
+  const team = store.addTeam({ profileId: profile.id, name: 'Herren' });
+  useAppStore.getState().updateTeam(team.id, { photoId: 'ghost' });
+  await prunePhotos();
+  expect(useAppStore.getState().teams[0]?.photoId).toBeUndefined();
+});

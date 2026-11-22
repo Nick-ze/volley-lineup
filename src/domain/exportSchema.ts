@@ -40,9 +40,9 @@ import {
 import { ALL_POSITIONS, ERROR_TYPES } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 8 as const;
+export const EXPORT_SCHEMA_VERSION = 9 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 /**
  * The persisted collections. Derived from `ExportFile` (the domain layer can't import the
@@ -84,6 +84,7 @@ const teamSchema = z.object({
   name: z.string(),
   season: z.string().optional(),
   createdAt: z.string(),
+  photoId: id.optional(),
 });
 
 const playerSchema = z.object({
@@ -243,20 +244,22 @@ export interface BuildExportOptions {
 
 /**
  * Builds an export of everything, or of a single team when `teamId` is given. v7: the photos
- * of the exported profiles and players go with it (orphans never); descriptions only with
+ * of the exported profiles, players and (v9) teams go with it (orphans never); descriptions only with
  * `includeDescriptions`.
  */
 export function buildExport(data: TransferData, options: BuildExportOptions = {}): ExportFile {
   const exportedAt = (options.now ?? new Date()).toISOString();
   const base = { app: EXPORT_APP_ID, schemaVersion: EXPORT_SCHEMA_VERSION, exportedAt };
   const teamId = options.teamId;
-  const teams = teamId === undefined ? [...data.teams] : data.teams.filter((t) => t.id === teamId);
-  const profileIds = new Set(teams.map((t) => t.profileId));
-  const profiles =
-    teamId === undefined ? [...data.profiles] : data.profiles.filter((p) => profileIds.has(p.id));
   // A photo id whose photo is missing (e.g. a storage write failed) is left out, so the file
   // always imports (v6 QA).
   const photoIds = new Set(data.photos.map((p) => p.id));
+  const teams = (
+    teamId === undefined ? [...data.teams] : data.teams.filter((t) => t.id === teamId)
+  ).map((t) => withoutDanglingPhoto(t, photoIds));
+  const profileIds = new Set(teams.map((t) => t.profileId));
+  const profiles =
+    teamId === undefined ? [...data.profiles] : data.profiles.filter((p) => profileIds.has(p.id));
   const players = (
     teamId === undefined ? [...data.players] : data.players.filter((p) => p.teamId === teamId)
   ).map((p) =>
@@ -276,7 +279,7 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
     players,
     matches: byTeam(data.matches),
     presets: byTeam(data.presets),
-    photos: keepReferencedPhotos(data.photos, { profiles, players }),
+    photos: keepReferencedPhotos(data.photos, { profiles, players, teams }),
     seasons,
     opponents: data.opponents.filter((o) => seasonIds.has(o.seasonId)),
   };
@@ -364,7 +367,7 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - presets (v3) follow the same lineup rules for their team, and a team has at most one
  *   'starters' preset; named presets have a valid name (≤ 40 characters, not blank) that is
  *   unique within the team, ignoring case;
- * - v7: every photo a profile or player refers to is in the file (photo ids unique); an error
+ * - v7: every photo a profile, player or (v9) team refers to is in the file (photo ids unique); an error
  *   type only on an "our error" tag (`isValidPointTag`);
  * - v8: every season's team exists, every opponent's season exists, and every match is in a
  *   season of its own team and plays an opponent of that season; season names are unique
@@ -492,7 +495,9 @@ function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown>
   const v5 = v4.schemaVersion === 4 ? upgradeV4(v4) : v4;
   const v6 = v5.schemaVersion === 5 ? upgradeV5(v5) : v5;
   const v7 = v6.schemaVersion === 6 ? { photos: [], ...v6, schemaVersion: 7 } : v6;
-  return v7.schemaVersion === 7 ? { ...upgradeToSeasons(v7), schemaVersion: 8 } : v7;
+  const v8 = v7.schemaVersion === 7 ? { ...upgradeToSeasons(v7), schemaVersion: 8 } : v7;
+  // v8 → v9: teams may have a `photoId` (optional), so nothing changes.
+  return v8.schemaVersion === 8 ? { ...v8, schemaVersion: 9 } : v8;
 }
 
 /**
@@ -567,7 +572,7 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * v7 (v8 file): an incoming season or opponent with the name of an existing one (same team /
  * season, ignoring case and accents) is matched to it first (`alignIncomingByName`).
  *
- * v7: a merge never deletes a picture or a description. An incoming player (or profile) without
+ * v7: a merge never deletes a picture or a description. An incoming player (or profile, or v9 team) without
  * a `photoId` keeps the existing one's photo, and an incoming player without a description (a
  * file exported without descriptions, or from before v6) keeps the existing description; when
  * the file has one, it wins. Photos are merged by id; orphans are dropped.
@@ -589,6 +594,11 @@ export function mergeData(existing: TransferData, file: TransferData): MergeResu
   );
   const oldProfiles = new Map(existing.profiles.map((p) => [p.id, p]));
   const oldPlayers = new Map(existing.players.map((p) => [p.id, p]));
+  const oldTeams = new Map(existing.teams.map((t) => [t.id, t]));
+  const teams = mergeById(
+    existing.teams,
+    incoming.teams.map((t) => keepPhoto(t, oldTeams.get(t.id))),
+  );
   const profiles = mergeById(
     existing.profiles,
     incoming.profiles.map((p) => keepPhoto(p, oldProfiles.get(p.id))),
@@ -601,13 +611,14 @@ export function mergeData(existing: TransferData, file: TransferData): MergeResu
   );
   const data: TransferData = {
     profiles,
-    teams: mergeById(existing.teams, incoming.teams),
+    teams,
     players,
     matches: mergeById(existing.matches, incoming.matches),
     presets: mergeById(keptPresets, incoming.presets),
     photos: keepReferencedPhotos(mergeById(existing.photos, incoming.photos), {
       profiles,
       players,
+      teams,
     }),
     seasons: mergeById(existing.seasons, incoming.seasons),
     opponents: mergeById(existing.opponents, incoming.opponents),

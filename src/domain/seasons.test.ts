@@ -214,12 +214,21 @@ describe('validateSeasonForm', () => {
     expect(errors({ name: 'Cup' })).toBeNull();
   });
 
+  it('stores Swiss dates (dd.mm.yy, dd.mm.yyyy) as ISO (v8)', () => {
+    const r = validateSeasonForm(input({ startDate: ' 1.9.26 ', endDate: '30.06.2027' }), [], 't1');
+    expect(r).toMatchObject({
+      ok: true,
+      value: { startDate: '2026-09-01', endDate: '2027-06-30' },
+    });
+  });
+
   it('checks dates and the place', () => {
     const errors = (over: Partial<SeasonFormInput>) => {
       const r = validateSeasonForm(input(over), seasons, 't1');
       return r.ok ? null : r.errors;
     };
-    expect(errors({ startDate: '2026-02-30', endDate: '1.1.2026' })).toEqual({
+    // v8: '1.1.2026' is a valid Swiss date now; '1/1/2026' is still no date.
+    expect(errors({ startDate: '2026-02-30', endDate: '1/1/2026' })).toEqual({
       startDate: 'INVALID_DATE',
       endDate: 'INVALID_DATE',
     });
@@ -230,6 +239,13 @@ describe('validateSeasonForm', () => {
       startDate: 'INVALID_DATE',
     });
     expect(errors({ endDate: '2026-06-01' })).toBeNull();
+    expect(errors({ startDate: '02.06.26', endDate: '1.6.2026' })).toEqual({
+      endDate: 'END_BEFORE_START',
+    });
+    expect(errors({ startDate: 'x', endDate: '31.02.26' })).toEqual({
+      startDate: 'INVALID_DATE',
+      endDate: 'INVALID_DATE',
+    });
     expect(errors({ location: 'x'.repeat(81) })).toEqual({ location: 'TOO_LONG' });
   });
 });
