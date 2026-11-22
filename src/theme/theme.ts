@@ -33,8 +33,9 @@ export function resolveScheme(
   mode: ThemeMode,
   system: ColorScheme | null | undefined,
 ): ColorScheme {
-  if (mode !== 'system') return mode;
-  return system === 'light' ? 'light' : 'dark';
+  if (mode === 'dark' || mode === 'light') return mode;
+  // 'system' — and any corrupt stored value, which falls back like an unknown device setting.
+  return mode === 'system' && system === 'light' ? 'light' : 'dark';
 }
 
 const build = (scheme: ColorScheme, dyslexiaFont: boolean): Theme => ({

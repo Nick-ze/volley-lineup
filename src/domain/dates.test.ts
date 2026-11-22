@@ -64,6 +64,12 @@ describe('parseDateInput', () => {
     expect(parseDateInput('2026-13-01')).toBeNull();
   });
 
+  it('rejects 4-digit years before 1900 (typos like 0026)', () => {
+    expect(parseDateInput('22.11.0026')).toBeNull();
+    expect(parseDateInput('0026-11-22')).toBeNull();
+    expect(parseDateInput('01.01.1900')).toBe('1900-01-01');
+  });
+
   it('accepts 29 February in a leap year', () => {
     expect(parseDateInput('29.02.28')).toBe('2028-02-29');
   });

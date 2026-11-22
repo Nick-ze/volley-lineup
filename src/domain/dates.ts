@@ -6,9 +6,12 @@
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-/** True when year / month / day form a real calendar date (no 31.02.). */
+/** Years a date field accepts (4-digit years below 1900 are typos like "0026"). */
+const MIN_YEAR = 1900;
+
+/** True when year / month / day form a real calendar date (no 31.02.) from 1900 on. */
 function isRealDate(year: number, month: number, day: number): boolean {
-  if (month < 1 || month > 12 || day < 1) return false;
+  if (year < MIN_YEAR || month < 1 || month > 12 || day < 1) return false;
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   return day <= daysInMonth;
 }
@@ -51,7 +54,7 @@ export function parseDateInput(text: string): string | null {
   const yearText = swiss[3] as string;
   const year = yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText);
   if (!isRealDate(year, month, day)) return null;
-  return `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
+  return `${year}-${pad2(month)}-${pad2(day)}`;
 }
 
 /** The local calendar day of `now` as ISO `YYYY-MM-DD`. */
