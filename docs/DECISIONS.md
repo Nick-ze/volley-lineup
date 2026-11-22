@@ -381,3 +381,10 @@ Newest at the bottom. Format: **Decision** — why.
 207. **Rotation slides**: a ghost layer above the court (260 ms, ease-in-out), inert and hidden from accessibility, slides copies of the players (with role tag, "*" and name) while the real spots stay tappable. Only rotation-like changes slide (`courtMotion.ts`); drops, swaps, substitutions and libero swaps are instant. Next-set setup shows no court ("On court: …" text), so nothing slides there.
 208. **Reduce motion**: Reanimated `useReducedMotion()` (`prefers-reduced-motion` on web) turns every slide off; it is read once at app start, so a changed OS setting applies after a restart / reload.
 209. **"System" on the web without an OS preference** shows the light theme (react-native-web reports `light` then); on phones the OS always reports a scheme. Amends #184's "dark when the device says nothing", which now applies only when `useColorScheme` returns nothing.
+
+### QA fixes (orchestrator, PR #62)
+
+210. **App tab bar slides only show the old and new tab**: resting tabs are hidden (`TAB_SCENE_OPACITY`), so jumping Teams ↔ Settings never flashes Profile.
+211. **The whole live tag rows are `NoTabSwipe` areas** (kinds row and player row), so a swipe starting on "Kill" or "✕" never switches to Performance.
+212. **Live screen fits 390×844 again in sets ≥ 2** (also with the dyslexia font): while "Who serves first" is shown, the point buttons are 64 px tall (88 otherwise), and the live column / set-tab / controls gaps are one step smaller. Fixes a v7 gap against #126.
+213. **Small layout fixes**: with the dyslexia font the live header's Live / Performance button uses a smaller label so the title isn't clipped; team list rows with a picture let the name use the row (actions wrap below on phones); date fields allow 16 characters so a pasted date with spaces works; the web `theme-color` follows the theme; the appearance hint reads "Uses OpenDyslexic for all text."
