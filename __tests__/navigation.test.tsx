@@ -29,16 +29,20 @@ describe('header back after a deep link (no history)', () => {
       home: true,
     });
     useAppStore.setState({ hydrated: true });
-    ids = { team: team.id, match: match.id };
+    ids = { team: team.id, match: match.id, season: match.seasonId };
   });
-  let ids = { team: '', match: '' };
+  let ids = { team: '', match: '', season: '' };
 
-  it('goes from rotation to the match, then to the team', async () => {
+  // v7: a match goes back to its season, the season to the team's seasons (Matches tab).
+  it('goes from rotation to the match, then to its season, then to the team', async () => {
     await renderRouter('./app', { initialUrl: `/match/${ids.match}/rotation?set=1` });
     await fireEvent.press(await screen.findByTestId('header-back'));
     expect(screen).toHavePathname(`/match/${ids.match}`);
     await fireEvent.press(await screen.findByTestId('header-back'));
+    expect(screen).toHavePathname(`/team/${ids.team}/season/${ids.season}`);
+    await fireEvent.press(await screen.findByTestId('header-back'));
     expect(screen).toHavePathname(`/team/${ids.team}`);
+    expect(screen).toHaveSearchParams({ teamId: ids.team, tab: 'matches' });
   });
 
   it('a deep link to a team has a back button to the Teams tab', async () => {

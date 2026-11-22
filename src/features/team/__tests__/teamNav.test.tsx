@@ -32,7 +32,8 @@ describe('team nav bar', () => {
     expect(screen).toHaveSearchParams({ teamId: 'team1', tab: 'matches' });
     expect(tab(nav.matches)).toBeSelected();
     expect(tab(nav.roster)).not.toBeSelected();
-    expect(screen.getByText(t.roster.matches.empty)).toBeTruthy();
+    // v7: the Matches tab lists the team's seasons (matches live inside a season).
+    expect(screen.getByText(t.seasons.list.empty)).toBeTruthy();
 
     await fireEvent.press(tab(nav.presets));
     expect(screen).toHaveSearchParams({ teamId: 'team1', tab: 'presets' });

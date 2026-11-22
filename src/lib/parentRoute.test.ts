@@ -47,13 +47,34 @@ describe('parentRoute', () => {
     });
   });
 
-  it("v7: a season and the season form go back to the team's seasons (matches tab)", () => {
-    for (const route of ['team/[teamId]/season/[seasonId]', 'team/[teamId]/season-new']) {
-      expect(parentRoute(route, { teamId: 't1', seasonId: 's1' }, lookup)).toEqual({
+  it("v7: a season and a new season go back to the team's seasons (matches tab)", () => {
+    expect(
+      parentRoute('team/[teamId]/season/[seasonId]', { teamId: 't1', seasonId: 's1' }, lookup),
+    ).toEqual({ pathname: '/team/[teamId]', params: { teamId: 't1', tab: 'matches' } });
+    for (const route of ['team/[teamId]/season-new', 'team/[teamId]/match-new']) {
+      expect(parentRoute(route, { teamId: 't1' }, lookup)).toEqual({
         pathname: '/team/[teamId]',
         params: { teamId: 't1', tab: 'matches' },
       });
     }
+  });
+
+  it('v7: editing a season, a new match in a season and a match go back to the season', () => {
+    const season = {
+      pathname: '/team/[teamId]/season/[seasonId]',
+      params: { teamId: 't1', seasonId: 's1' },
+    };
+    for (const route of ['team/[teamId]/season-new', 'team/[teamId]/match-new']) {
+      expect(parentRoute(route, { teamId: 't1', seasonId: 's1' }, lookup)).toEqual(season);
+    }
+    const seasonOf = (id: string) => (id === 'm1' ? 's1' : undefined);
+    expect(parentRoute('match/[matchId]/index', { matchId: 'm1' }, lookup, seasonOf)).toEqual(
+      season,
+    );
+    // A match whose season can't be found still goes back to its team.
+    expect(
+      parentRoute('match/[matchId]/index', { matchId: 'm1' }, lookup, () => undefined),
+    ).toEqual({ pathname: '/team/[teamId]', params: { teamId: 't1', tab: 'matches' } });
   });
 
   it('v6: player detail goes back to the roster, performance to the match', () => {
