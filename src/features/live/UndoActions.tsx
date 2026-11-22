@@ -46,15 +46,18 @@ export function UndoActions({
         variant="secondary"
         disabled={!last && acrossSet === null}
         onPress={onUndo}
-        style={styles.grow}
+        style={styles.undo}
         testID="undo"
       />
-      <ResetLiveData disabled={!last} onReset={onReset} />
+      <ResetLiveData disabled={!last} onReset={onReset} style={styles.reset} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm },
-  grow: { flex: 1 },
+  // Undo keeps its whole label ("Rückgängig", also with the wide dyslexia font); Reset takes
+  // the rest and wraps onto two lines when it has to.
+  undo: { flexGrow: 1, flexShrink: 0 },
+  reset: { flexShrink: 1, minWidth: 0 },
 });

@@ -67,7 +67,10 @@ const useStyles = makeStyles((theme) => ({
   libero: { alignItems: 'center', gap: spacing.xs },
   caption: { ...typography.label, color: theme.colors.textMuted },
   muted: { ...typography.body, color: theme.colors.textMuted },
+  // v8: long texts (German, dyslexia font) wrap inside the pill instead of leaving the card.
   serve: {
+    maxWidth: '100%',
+    flexShrink: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.round,
@@ -75,6 +78,6 @@ const useStyles = makeStyles((theme) => ({
     borderColor: theme.colors.border,
   },
   serveUs: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
-  serveText: { ...typography.label, color: theme.colors.text },
+  serveText: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
   serveTextUs: { color: theme.colors.onHighlight },
 }));

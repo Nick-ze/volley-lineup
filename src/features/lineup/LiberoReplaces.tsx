@@ -108,8 +108,9 @@ const useStyles = makeStyles((theme) => ({
   },
   section: { gap: spacing.sm },
   greyed: { opacity: 0.4 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  titles: { flex: 1, gap: spacing.xxs },
+  // The suggest button moves under the titles when both don't fit (German, dyslexia font).
+  header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
+  titles: { flexGrow: 1, flexShrink: 1, flexBasis: touchTarget * 4, gap: spacing.xxs },
   title: { ...typography.label, color: theme.colors.text },
   hint: { ...typography.caption, color: theme.colors.textMuted },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

@@ -78,13 +78,26 @@ function scaled(text: TextStyle, fonts: ThemeFonts): Pick<TextStyle, 'fontSize' 
 }
 
 /**
+ * A font size computed at render time (e.g. from a chip's diameter), sized like `makeStyles`
+ * sizes its styles: with the dyslexia font scaled and with a matching line height, so the
+ * inline size and the line height never disagree. With the platform font: `{ fontSize }`.
+ */
+export function inlineFontSize(
+  size: number,
+  fonts: ThemeFonts,
+): Pick<TextStyle, 'fontSize' | 'lineHeight'> {
+  return fonts.regular === undefined ? { fontSize: size } : scaled({ fontSize: size }, fonts);
+}
+
+/**
  * Gives every text style the theme's font family. A style counts as a text style when it sets
  * a font size, weight, line height or letter spacing. Bold styles (weight ≥ 600) get the bold
  * family and lose their `fontWeight` (custom fonts carry the weight in the family; a weight on
- * top would make some platforms fake-bold it or miss the font). Sizes and line heights are
- * multiplied by `fonts.scale` (the dyslexia font is drawn smaller) and sized text without a line
- * height gets `fonts.lineHeight`. With the platform font
- * (`fonts.regular` undefined) the styles are returned unchanged.
+ * top would make some platforms fake-bold it or miss the font). Font sizes are multiplied by
+ * `fonts.scale` (the dyslexia font is drawn smaller); sized text without a line height gets
+ * `fonts.lineHeight` times its new size, and a style's own line height is kept unscaled. Sizes
+ * computed at render time use `inlineFontSize`. With the platform font (`fonts.regular`
+ * undefined) the styles are returned unchanged.
  */
 export function withFontFamily<T extends Record<string, object>>(styles: T, fonts: ThemeFonts): T {
   if (fonts.regular === undefined) return styles;

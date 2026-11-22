@@ -64,6 +64,10 @@ const useStyles = makeStyles((theme) => ({
   },
   active: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
   pressed: { opacity: 0.8 },
-  label: { ...typography.label, color: theme.colors.text },
+  label: {
+    ...typography.label,
+    color: theme.colors.text,
+    ...(theme.dyslexiaFont ? { letterSpacing: -0.7 } : {}),
+  },
   activeLabel: { color: theme.colors.onHighlight },
 }));

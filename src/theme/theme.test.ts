@@ -1,6 +1,6 @@
 import { darkColors, darkPositionColors, lightColors, lightPositionColors } from './colors';
 import { dyslexiaFonts, systemFonts } from './fonts';
-import { defaultTheme, getTheme, resolveScheme, withFontFamily } from './theme';
+import { defaultTheme, getTheme, inlineFontSize, resolveScheme, withFontFamily } from './theme';
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
 function luminance(hex: string): number {
@@ -126,5 +126,15 @@ describe('withFontFamily', () => {
   it('keeps a style’s own line height and scales only its font size', () => {
     const out = withFontFamily({ cell: { fontSize: 20, lineHeight: 32 } }, dyslexiaFonts);
     expect(out.cell).toEqual({ fontSize: 17, lineHeight: 32, fontFamily: 'OpenDyslexic-Regular' });
+  });
+});
+
+describe('inlineFontSize', () => {
+  it('keeps a render-time size with the platform font', () => {
+    expect(inlineFontSize(20, systemFonts)).toEqual({ fontSize: 20 });
+  });
+
+  it('scales it like makeStyles with the dyslexia font, with a matching line height', () => {
+    expect(inlineFontSize(20, dyslexiaFonts)).toEqual({ fontSize: 17, lineHeight: 24 });
   });
 });

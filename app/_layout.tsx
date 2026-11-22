@@ -42,14 +42,16 @@ function ThemedRoot() {
   const styles = useStyles();
   const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
-  // v8: the bundled dyslexia font; the spinner stays until it loaded or failed (never forever).
+  // v8: the bundled dyslexia font loads in the background; only with the font on does the
+  // spinner wait for it (until loaded, failed or timed out — never forever).
   const fontsReady = useAppFonts();
+  const ready = hydrated && (!theme.dyslexiaFont || fontsReady);
 
   return (
     <SafeAreaProvider style={styles.root}>
       <ThemeProvider value={navigationTheme(theme)}>
         <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
-        {hydrated && fontsReady ? (
+        {ready ? (
           <Stack
             screenOptions={({ route }) => ({
               headerStyle: { backgroundColor: colors.surface },

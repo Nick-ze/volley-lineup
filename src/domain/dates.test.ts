@@ -1,4 +1,12 @@
-import { formatDate, formatOptionalDate, parseDateInput, todayInput, todayIso } from './dates';
+import {
+  formatDate,
+  formatDateInput,
+  formatOptionalDate,
+  formatTimestampDate,
+  parseDateInput,
+  todayInput,
+  todayIso,
+} from './dates';
 
 describe('formatDate', () => {
   it('shows an ISO date as dd.mm.yy', () => {
@@ -97,5 +105,33 @@ describe('today', () => {
     expect(todayIso(now)).toBe('2026-11-22');
     expect(todayInput(now)).toBe('22.11.26');
     expect(todayIso(new Date(2027, 0, 3))).toBe('2027-01-03');
+  });
+});
+
+describe('formatDateInput', () => {
+  it('shows 20yy dates as dd.mm.yy and other centuries with four digits', () => {
+    expect(formatDateInput('2026-09-01')).toBe('01.09.26');
+    expect(formatDateInput('1999-12-31')).toBe('31.12.1999');
+    expect(formatDateInput('2100-01-01')).toBe('01.01.2100');
+    for (const iso of ['2026-09-01', '1999-12-31', '2100-01-01']) {
+      expect(parseDateInput(formatDateInput(iso))).toBe(iso);
+    }
+  });
+
+  it('gives an empty field for no date and keeps a bad stored value', () => {
+    expect(formatDateInput(undefined)).toBe('');
+    expect(formatDateInput('')).toBe('');
+    expect(formatDateInput('soon')).toBe('soon');
+  });
+});
+
+describe('formatTimestampDate', () => {
+  it('uses the local day of the timestamp', () => {
+    expect(formatTimestampDate(new Date(2026, 10, 21, 23, 30).toISOString())).toBe('21.11.26');
+    expect(formatTimestampDate(new Date(2026, 10, 22, 0, 15).toISOString())).toBe('22.11.26');
+  });
+
+  it('falls back to formatDate for a value that is not a timestamp', () => {
+    expect(formatTimestampDate('not a date')).toBe('not a date');
   });
 });

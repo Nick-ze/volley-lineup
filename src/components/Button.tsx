@@ -85,5 +85,6 @@ const useStyles = makeStyles(() => ({
   compact: { paddingHorizontal: spacing.md },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.4 },
-  label: { ...typography.label, fontSize: typography.body.fontSize },
+  // Centred also when a narrow button wraps its label onto two lines.
+  label: { ...typography.label, fontSize: typography.body.fontSize, textAlign: 'center' },
 }));

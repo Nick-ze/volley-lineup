@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { formatDate } from '@/domain/dates';
+import { formatTimestampDate } from '@/domain/dates';
 import { useT, type Strings } from '@/i18n';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
@@ -31,7 +31,7 @@ export function ImportSection() {
         <View style={styles.preview} testID="import-preview">
           <Text style={styles.previewTitle}>{t.transfer.import.previewTitle(state.fileName)}</Text>
           <Text style={styles.muted} testID="import-exported-on">
-            {t.transfer.import.exportedOn(formatDate(state.file.exportedAt))}
+            {t.transfer.import.exportedOn(formatTimestampDate(state.file.exportedAt))}
           </Text>
           <Text style={styles.summary}>{t.transfer.import.summary(state.summary)}</Text>
           {state.summary.descriptions > 0 ? (

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { formatOptionalDate, todayInput } from '@/domain/dates';
+import { formatDateInput, todayInput } from '@/domain/dates';
 import {
   SEASON_KINDS,
   validateSeasonForm,
@@ -42,9 +42,9 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
   const [name, setName] = useState(season?.name ?? '');
   const [kind, setKind] = useState(season?.kind ?? 'season');
   const [startDate, setStartDate] = useState(() =>
-    season ? formatOptionalDate(season.startDate) : todayInput(new Date()),
+    season ? formatDateInput(season.startDate) : todayInput(new Date()),
   );
-  const [endDate, setEndDate] = useState(formatOptionalDate(season?.endDate));
+  const [endDate, setEndDate] = useState(formatDateInput(season?.endDate));
   const [location, setLocation] = useState(season?.location ?? '');
   const [errors, setErrors] = useState<Partial<Record<SeasonFormField, SeasonFormError>>>({});
   const err = (f: SeasonFormField) => seasonErrorText(t, errors[f], 'season');
