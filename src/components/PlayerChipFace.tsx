@@ -11,6 +11,8 @@ const PHOTO_INSET = 2 * borderWidth.thick;
 
 export interface PlayerChipFaceProps {
   player: Player;
+  /** v8: the short name shown with names on ("Anna", "Anna M."). */
+  name: string;
   /** Diameter in px (already at least the touch target). */
   diameter: number;
   /** The player's picture to show, or null for the number / name. */
@@ -27,6 +29,7 @@ export interface PlayerChipFaceProps {
 /** The round part of a `PlayerChip`: photo, number or name, and the primary position badge. */
 export function PlayerChipFace({
   player,
+  name,
   diameter: d,
   photoUri,
   namesFirst,
@@ -61,7 +64,7 @@ export function PlayerChipFace({
           numberOfLines={2}
           testID={testID ? `${testID}-name` : undefined}
         >
-          {player.lastName || player.firstName}
+          {name}
         </Text>
       ) : (
         <Text style={[styles.number, { fontSize: Math.round(d * 0.36) }]}>{player.number}</Text>

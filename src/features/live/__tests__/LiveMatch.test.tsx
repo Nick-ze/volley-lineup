@@ -7,8 +7,9 @@ import { useAppStore } from '@/store';
 const player = (n: number, lastName: string, positions: Position[]): Player => ({
   id: `p${n}`,
   teamId: 'team1',
-  firstName: lastName.slice(0, 1),
-  lastName,
+  // v8: names are shown first name first, so the distinct word is the first name.
+  firstName: lastName,
+  lastName: lastName.slice(0, 1),
   number: n,
   positions,
   active: true,
@@ -84,7 +85,7 @@ describe('live match mode', () => {
     expect([1, 2, 3, 4, 5, 6].map(numberAt)).toEqual([2, 3, 4, 5, 6, 1]);
     expect(
       screen.getByLabelText(
-        /^Position 1: Number 2, O Outside, Outside Hitter, plays Outside Hitter, serving$/,
+        /^Position 1: Number 2, Outside O, Outside Hitter, plays Outside Hitter, serving$/,
       ),
     );
 

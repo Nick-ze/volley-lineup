@@ -1,6 +1,7 @@
 import { useCallback, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { setServeFirst } from '@/domain/lineupEditing';
 import type { SetLineup } from '@/domain/types';
 import { useT } from '@/i18n';
@@ -61,7 +62,7 @@ export function LineupBuilder({
   const hint = (
     <Text style={styles.hint} accessibilityLiveRegion="polite">
       {selected
-        ? t.lineup.selected(`${selected.number} ${selected.firstName} ${selected.lastName}`)
+        ? t.lineup.selected(`${selected.number} ${fullName(selected)}`)
         : locked
           ? t.live.lineupLocked
           : t.lineup.instructions}

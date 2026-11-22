@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
@@ -38,9 +39,7 @@ export function LiberoSlot({
           selected={selectedId === libero.id}
           onPress={() => pressPlayer(libero.id)}
           size={compact ? COMPACT_CHIP_SIZE : undefined}
-          accessibilityLabel={t.lineup.liberoSlotLabel(
-            `${libero.number} ${libero.firstName} ${libero.lastName}`,
-          )}
+          accessibilityLabel={t.lineup.liberoSlotLabel(`${libero.number} ${fullName(libero)}`)}
           testID="libero-player"
         />
       ) : (
