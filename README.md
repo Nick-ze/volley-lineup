@@ -160,6 +160,19 @@ New in **v7 — Seasons & tournaments**:
 
 Your existing matches move into one season per team automatically (named after the team's season, e.g. "2026/27"). Files exported by v7 (schema version 8) can't be opened by older versions.
 
+New in **v8 — Look & feel**:
+
+- **Light / dark mode** — Profile → Appearance: Dark (as before), Light, or System (follows your phone).
+- **Dyslexia-friendly font** — Profile → Appearance: all text in OpenDyslexic.
+- **Swiss dates** — every date shows as dd.mm.yy (22.11.26); date fields accept 22.11.26, 22.11.2026 or 2026-11-22.
+- **Player cards** — the roster is a grid of cards with photo (or number), name, positions and active / injured.
+- **First name first** — players are called by their first name ("#7 Anna"); the last name's initial is added when two players share a first name.
+- **Team pictures** — give a team a photo; it shows in the team list, the team header and the season boxes.
+- **Smooth transitions** — tabs slide in from the side you chose, a sideways swipe changes tabs, and players slide to their new spots when the lineup rotates (off when your device asks for reduced motion).
+- **New app icon**.
+
+Your data opens automatically; files exported by v8 (schema version 9, with team pictures) can't be opened by older versions.
+
 Data and files from v5 open automatically; files exported by v6 (schema version 7, with photos) can't be opened by older versions.
 
 ## Export / import
@@ -193,6 +206,7 @@ src/store/         Zustand store + persistence
 src/components/    Shared UI (Court, PlayerChip, Button, …)
 src/features/      Feature components (roster, lineup, rotation, settings)
 src/lib/           Platform helpers (.web.ts / .native.ts)
-src/theme/         Colours, spacing, typography
+src/theme/         Light / dark colours, ThemeProvider + makeStyles, fonts, spacing, typography
+scripts/           generate-icons.py (rebuilds assets/images from assets/source/app-icon-source.png)
 src/i18n/          All user-facing strings
 ```

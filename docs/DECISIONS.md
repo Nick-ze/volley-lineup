@@ -352,3 +352,39 @@ Newest at the bottom. Format: **Decision** — why.
 190. **Short player names**: the first name; the last name's initial with a dot when a teammate has the same first name (compared ignoring case, accents and spaces); the whole last name when the initials clash too; the last name when there is no first name. Two players with the very same full name stay the same (the jersey number next to them tells them apart). Computed per team (`shortNames`), never stored.
 191. **Team pictures are merged like player pictures** (#150): an incoming team without a `photoId` keeps the existing team's picture; a picture in the file wins. A team export carries only that team's picture.
 192. **App icon colours**: the owner's black ball on the app orange `#FF6B00` (owner's choice) for the icon, adaptive icon background and splash; the monochrome icon is the ball's shape.
+193. **The source icon's ball panels are transparent**, so on the orange background they show orange (the black outline and splash stay black). The icon was kept true to the owner's image; a white-filled ball would be a redesign.
+
+### Theme conversion (PR #58)
+
+194. **Style factories take `theme`** (not `t`, which is the translation object). Shared style modules export hooks (`useFormStyles`, `useListStyles`, `useChipStyles`, `useStatsTableStyles`, `useZoneStyles`); non-React helpers take colours as parameters (`variantColors(colors)`, `decorativeSwitchProps(thumbColor)`).
+195. **The court looks the same in both themes**: text and marks on the orange court use `onCourt`, text on the blue / dark slot fills `onSecondary`, the libero tag the libero badge colours. In light mode position badges get a 1 px `border` edge (same size); selection and drop outlines off the court use `primaryText` / `highlightText` so they reach 3:1 on white.
+196. **Navigation theme**: expo-router's `DarkTheme` / `DefaultTheme` with our colours; with the dyslexia font on it passes the OpenDyslexic families as navigation fonts so headers and tab labels follow. The StatusBar follows the scheme. The native root background (`app.json` `backgroundColor`) stays dark — it only shows behind views.
+
+### Roster cards, team pictures, first names (PR #59)
+
+197. **Roster grid**: cards at least 180 px wide, 2–5 columns from the measured width (`rosterGrid.ts`), 8 px gap, 88 px picture or jersey number. Cards show the full name (first name first, 2 lines); court / bench chips, live "#7 Anna" refs, the libero picker and the stats table head use the short name; dialogs, labels, titles and the print sheet use the full name.
+198. **Card toggle**: a `switch` with the visible text "Active" / "Injured"; the card and toggle labels start with their visible text (closes the v6 label gap for roster toggles). Tapping the toggle never opens the player.
+199. **Team initial colour** comes from a hash of the team id (`teamAvatar.ts`), so it survives a rename; in the create form, before the team has an id, the preview colour can differ. The team picture shows in the team list, the team screen header and the season boxes — not in the season screen header.
+
+### Dates, icon, dyslexia font, Profile appearance (PR #60)
+
+200. **OpenDyslexic is drawn at 0.85× size with a 1.4× line height** (a style's own line height is kept) so screens fit at 375 px; layout tweaks that the wider font needs (set tabs, team nav letter spacing, two match links per row, wider stats columns, Undo / Reset row, libero header, serve pill) apply only when the font is on. Inline font sizes go through `inlineFontSize()`.
+201. **Fonts load at start only when needed**: the app waits for the OpenDyslexic files only when the font is on, at most 3 s, then continues with the platform font.
+202. **Date fields**: a new match and a new season's start date start as today (dd.mm.yy); a season's end date starts empty. Editing shows stored dates as dd.mm.yy, or dd.mm.yyyy outside 2000–2099 so a re-save never changes the century (`formatDateInput`). The import preview's "Exported on" is the local day of the export timestamp.
+203. **Icon generation**: `scripts/generate-icons.py` (Pillow, LANCZOS) builds every icon from `assets/source/app-icon-source.png`; the adaptive foreground and monochrome keep every visible pixel inside the Android 66/108 safe-zone circle. The splash image is 200 px wide on orange.
+
+### Transitions, swipe, rotation slides (PR #61)
+
+204. **One swipe per screen**: the outermost tab set swipes (team nav, season tabs, Live ↔ Performance, match stats / performance set filter when outermost, app tab bar); nested tab sets only slide. No tab swipe in the lineup builder (drag & drop area) or the rotation viewer (its own swipe steps rotations).
+205. **Slide and swipe values**: slides start 25 % of the width beside their place (max 96 px, 64 px on the app tab bar), 220 ms ease-out, fading in from 0.3. A swipe activates at 24 px sideways and needs 64 px or a 600 px/s flick; no wrap-around. On web the swipe area uses `touch-action: pan-y` (vertical scrolling stays native) and keeps the context menu; text selection is off on it so a mouse swipe doesn't select text.
+206. **`NoTabSwipe` areas**: stats tables, the tag player row and text fields — a touch that begins there never changes the tab.
+207. **Rotation slides**: a ghost layer above the court (260 ms, ease-in-out), inert and hidden from accessibility, slides copies of the players (with role tag, "*" and name) while the real spots stay tappable. Only rotation-like changes slide (`courtMotion.ts`); drops, swaps, substitutions and libero swaps are instant. Next-set setup shows no court ("On court: …" text), so nothing slides there.
+208. **Reduce motion**: Reanimated `useReducedMotion()` (`prefers-reduced-motion` on web) turns every slide off; it is read once at app start, so a changed OS setting applies after a restart / reload.
+209. **"System" on the web without an OS preference** shows the light theme (react-native-web reports `light` then); on phones the OS always reports a scheme. Amends #184's "dark when the device says nothing", which now applies only when `useColorScheme` returns nothing.
+
+### QA fixes (orchestrator, PR #62)
+
+210. **App tab bar slides only show the old and new tab**: resting tabs are hidden (`TAB_SCENE_OPACITY`), so jumping Teams ↔ Settings never flashes Profile.
+211. **The whole live tag rows are `NoTabSwipe` areas** (kinds row and player row), so a swipe starting on "Kill" or "✕" never switches to Performance.
+212. **Live screen fits 390×844 again in sets ≥ 2** (also with the dyslexia font): while "Who serves first" is shown, the point buttons are 64 px tall (88 otherwise), and the live column / set-tab / controls gaps are one step smaller. Fixes a v7 gap against #126.
+213. **Small layout fixes**: with the dyslexia font the live header's Live / Performance button uses a smaller label so the title isn't clipped; team list rows with a picture let the name use the row (actions wrap below on phones); date fields allow 16 characters so a pasted date with spaces works; the web `theme-color` follows the theme; the appearance hint reads "Uses OpenDyslexic for all text."
