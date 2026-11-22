@@ -7,8 +7,9 @@ import { useAppStore } from '@/store';
 const player = (n: number, lastName: string, positions: Position[]): Player => ({
   id: `p${n}`,
   teamId: 'team1',
-  firstName: lastName.slice(0, 1),
-  lastName,
+  // v8: names are shown first name first, so the distinct word is the first name.
+  firstName: lastName,
+  lastName: lastName.slice(0, 1),
   number: n,
   positions,
   active: true,

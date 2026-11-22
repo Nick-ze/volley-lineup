@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
@@ -85,9 +86,7 @@ export function PlayerForm({
             variant="danger"
             disabled={deleteBlocked}
             accessibilityHint={deleteBlocked ? s.deleteBlocked : undefined}
-            onPress={() =>
-              ask(t.roster.confirm.deletePlayer(`${player.firstName} ${player.lastName}`), onDelete)
-            }
+            onPress={() => ask(t.roster.confirm.deletePlayer(fullName(player)), onDelete)}
           />
         )}
         <Button label={t.common.cancel} variant="secondary" onPress={onDone} />

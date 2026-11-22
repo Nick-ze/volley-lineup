@@ -1,3 +1,4 @@
+import { fullName, numberAndName } from '@/domain/playerNames';
 import { playerStatRows, type PlayerStats, type Stats } from '@/domain/stats';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
@@ -39,8 +40,9 @@ export function PlayerTable({ stats, players, testID = 'player-table' }: PlayerT
   }));
   const rows = playerStatRows(stats, players).map(({ player, stats: line }) => ({
     key: player.id,
-    head: `#${player.number} ${player.firstName}`,
-    headLabel: `#${player.number} ${player.firstName} ${player.lastName}`.trim(),
+    // v8: "#7 Anna" ("Anna M." when a teammate is also called Anna); the label has the full name.
+    head: numberAndName(player, players),
+    headLabel: `#${player.number} ${fullName(player)}`.trim(),
     cells: COLUMNS.map(([key]) => String(line[key])),
   }));
   return (

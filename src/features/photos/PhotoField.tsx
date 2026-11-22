@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button, Photo } from '@/components';
-import { useT } from '@/i18n';
+import { useT, type Strings } from '@/i18n';
 import { makeStyles, spacing, typography } from '@/theme';
 
 import { draftHasPhoto, type PhotoDraft } from './photoDraft';
@@ -20,13 +20,24 @@ export interface PhotoFieldProps {
   fallback: ReactNode;
   /** True while a picked picture is being prepared: the form disables Save meanwhile. */
   onBusyChange?: (busy: boolean) => void;
+  /** v8: other wording (the team picture's "Add team picture"…); default: the photo strings. */
+  labels?: Partial<Pick<Strings['photos'], PhotoLabel>>;
 }
 
+type PhotoLabel = 'add' | 'change' | 'remove' | 'addHint' | 'unsaved' | 'removed';
+
 /** A form's picture: preview, Add / Change (camera or gallery) and Remove, saved on Save. */
-export function PhotoField({ photoId, draft, onChange, fallback, onBusyChange }: PhotoFieldProps) {
+export function PhotoField({
+  photoId,
+  draft,
+  onChange,
+  fallback,
+  onBusyChange,
+  labels,
+}: PhotoFieldProps) {
   const styles = useStyles();
   const t = useT();
-  const s = t.photos;
+  const s = { ...t.photos, ...labels };
   const picker = usePhotoPicker((uri) => onChange({ kind: 'new', uri }), onBusyChange);
   const hasPhoto = draftHasPhoto(draft, photoId);
   const note = picker.busy

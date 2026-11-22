@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, Text } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { formationRotation, isOffPosition, spotRoles } from '@/domain/roles';
 import {
   COURT_POSITIONS,
@@ -36,7 +37,7 @@ export function startersCardLabel(
       return roleName ? `${t.rotation.emptySummary} (${roleName})` : t.rotation.emptySummary;
     const p = playersById.get(id);
     if (!p) return t.rotation.unknownPlayer;
-    const summary = t.rotation.playerSummary(p.number, `${p.firstName} ${p.lastName}`.trim());
+    const summary = t.rotation.playerSummary(p.number, fullName(p));
     return role
       ? `${summary}, ${t.roles.spotRole(t.positions[role], isOffPosition(p, role))}`
       : summary;

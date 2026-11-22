@@ -7,11 +7,14 @@ export function NumberAvatar({
   number,
   size = touchTarget,
   inactive = false,
+  large = false,
 }: {
   /** The number as shown (may be empty in a new player's form). */
   number: number | string;
   size?: number;
   inactive?: boolean;
+  /** v8, roster cards: the number scales with the circle. */
+  large?: boolean;
 }) {
   const styles = useStyles();
   return (
@@ -24,7 +27,15 @@ export function NumberAvatar({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Text style={[styles.text, inactive && styles.textInactive]}>{number}</Text>
+      <Text
+        style={[
+          styles.text,
+          large && { fontSize: Math.round(size * 0.4) },
+          inactive && styles.textInactive,
+        ]}
+      >
+        {number}
+      </Text>
     </View>
   );
 }

@@ -1,10 +1,11 @@
 import { errorBreakdown, type PlayerPerformance } from '@/domain/performance';
+import { fullName } from '@/domain/playerNames';
 import type { Player } from '@/domain/types';
 import type { Strings } from '@/i18n';
 
-/** "#7 Ann Smith". */
+/** "#7 Anna Smith" (first name first; the card truncates the end when space is short). */
 export function performanceRef(t: Strings, p: Player): string {
-  return t.performance.playerRef(p.number, `${p.firstName} ${p.lastName}`.trim());
+  return t.performance.playerRef(p.number, fullName(p));
 }
 
 /** A rate (0–1) as a whole percentage, or "–" when it can't be computed. */

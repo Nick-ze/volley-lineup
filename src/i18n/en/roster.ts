@@ -56,12 +56,12 @@ export const roster = {
     addPlayer: 'Add player',
     active: 'Active',
     inactive: 'Injured',
+    /** v8: the card's toggle; starts with its visible text ("Active" / "Injured"). */
     toggleActive: (name: string, active: boolean) =>
-      active
-        ? `${name} is active. Mark as injured or inactive`
-        : `${name} is injured. Mark as active`,
-    rowLabel: (number: number, name: string, positions: string, active: boolean) =>
-      `Number ${number}, ${name}, ${positions}${active ? '' : ', injured or inactive'}`,
+      active ? `Active: ${name}. Mark as injured or inactive` : `Injured: ${name}. Mark as active`,
+    /** v8: a player card (starts with the name shown on it). */
+    cardLabel: (name: string, number: number, positions: string, active: boolean) =>
+      `${name}, number ${number}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', injured or inactive'}. Open details`,
   },
   player: {
     addTitle: 'Add player',

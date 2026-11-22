@@ -12,11 +12,12 @@ import { useAppStore, usePhotoStore } from '@/store';
 const URI = 'data:image/jpeg;base64,AAAA';
 const hidden = { includeHiddenElements: true };
 
-const player = (n: number, last: string, photoId?: string): Player => ({
+// v8: chips show the first name, so the distinct word is the first name.
+const player = (n: number, first: string, photoId?: string): Player => ({
   id: `p${n}`,
   teamId: 'team1',
-  firstName: 'P',
-  lastName: last,
+  firstName: first,
+  lastName: 'P',
   number: n,
   positions: ['OH'],
   active: true,

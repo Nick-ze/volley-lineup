@@ -38,7 +38,8 @@ describe('PlayerChip', () => {
   it('shows number, name and primary position badge', async () => {
     await render(<PlayerChip player={player} />);
     expect(screen.getByText('7')).toBeTruthy();
-    expect(screen.getByText('Ace')).toBeTruthy();
+    // v8: first name first (was the last name, "Ace").
+    expect(screen.getByText('Ana')).toBeTruthy();
     expect(screen.getByText('S')).toBeTruthy();
     expect(screen.getByLabelText('Number 7, Ana Ace, Setter')).toBeTruthy();
   });
@@ -53,7 +54,8 @@ describe('PlayerChip', () => {
     useAppStore.getState().setChipLabel('name');
     try {
       await render(<PlayerChip player={player} testID="chip" />);
-      expect(screen.getByTestId('chip-name').props.children).toBe('Ace');
+      // v8: first name first (was the last name, "Ace").
+      expect(screen.getByTestId('chip-name').props.children).toBe('Ana');
       expect(screen.getByText('#7')).toBeTruthy();
       expect(screen.queryByText('7')).toBeNull();
       // the spoken label is the same in both modes
@@ -72,6 +74,55 @@ describe('PlayerChip', () => {
     } finally {
       useAppStore.getState().setChipLabel('number');
     }
+  });
+});
+
+describe('PlayerChip names (v8: first name first)', () => {
+  const anna = (id: string, lastName: string, number: number): Player => ({
+    ...player,
+    id,
+    firstName: 'Anna',
+    lastName,
+    number,
+  });
+
+  beforeEach(() => {
+    useAppStore.getState().resetAll();
+    useAppStore.getState().setChipLabel('name');
+  });
+  afterEach(() => useAppStore.getState().setChipLabel('number'));
+
+  it('shows the last name when there is no first name', async () => {
+    await render(<PlayerChip player={{ ...player, firstName: '' }} testID="chip" />);
+    expect(screen.getByTestId('chip-name').props.children).toBe('Ace');
+  });
+
+  it('tells teammates with the same first name apart ("Anna M." / "Anna H.")', async () => {
+    const team = useAppStore.getState().addTeam({ profileId: 'pr', name: 'T' });
+    const add = (lastName: string, number: number) =>
+      useAppStore.getState().addPlayer({
+        teamId: team.id,
+        firstName: 'Anna',
+        lastName,
+        number,
+        positions: ['OH'],
+        active: true,
+      });
+    const meier = add('Meier', 1);
+    const huber = add('Huber', 2);
+    await render(
+      <>
+        <PlayerChip player={meier} testID="a" />
+        <PlayerChip player={huber} testID="b" />
+        <PlayerChip player={anna('x', 'Other', 3)} testID="c" />
+      </>,
+    );
+    expect(screen.getByTestId('a-name').props.children).toBe('Anna M.');
+    expect(screen.getByTestId('b-name').props.children).toBe('Anna H.');
+    // A player of another team isn't compared with this team's Annas.
+    expect(screen.getByTestId('c-name').props.children).toBe('Anna');
+    // The spoken label keeps the full name.
+    expect(screen.getByLabelText('Number 1, Anna Meier, Outside Hitter')).toBeTruthy();
   });
 });
 

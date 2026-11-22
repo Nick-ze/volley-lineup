@@ -13,6 +13,7 @@
 import { printColors as c, printLayout as l } from '../theme/print';
 import { formatDate } from './dates';
 import { getMatchState, type MatchState } from './matchState';
+import { fullName } from './playerNames';
 import { isOffPosition, roleOf, spotRole } from './roles';
 import type { CourtPosition, Match, Player, SetLineup, Team } from './types';
 
@@ -114,8 +115,9 @@ export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
 }
 
+/** v8: "Anna Meier", first name first. */
 export function playerName(player: Player): string {
-  return `${player.firstName} ${player.lastName}`.trim();
+  return fullName(player);
 }
 
 function playerCell(player: Player | undefined, id: string | null, labels: LineupSheetLabels) {
