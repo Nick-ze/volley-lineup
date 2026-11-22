@@ -13,6 +13,17 @@ export const SLIDE_MAX_DISTANCE = 96;
 export const SLIDE_FALLBACK_DISTANCE = 64;
 /** Opacity new content starts at (it fades in while it slides). */
 export const SLIDE_START_OPACITY = 0.3;
+/** App tab bar: progress (|p| < 1) past which a scene counts as moving rather than resting. */
+const SCENE_MOVING_EDGE = 0.99;
+/**
+ * v8 QA: opacity of an app tab scene by its progress (-1 left of the focused tab, 0 focused,
+ * 1 right). Scenes resting at ±1 are hidden, so a tab skipped by a jump (Settings → Teams) never
+ * shows through the two moving scenes, which fade between `SLIDE_START_OPACITY` and 1 as before.
+ */
+export const TAB_SCENE_OPACITY = {
+  inputRange: [-1, -SCENE_MOVING_EDGE, 0, SCENE_MOVING_EDGE, 1],
+  outputRange: [0, SLIDE_START_OPACITY, 1, SLIDE_START_OPACITY, 0],
+};
 
 /** Horizontal movement (px) before the tab swipe takes over; vertical movement beyond fails it. */
 export const TAB_SWIPE_ACTIVATION = 24;

@@ -7,11 +7,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SwipeTabs } from '@/components';
-import {
-  SLIDE_DURATION_MS,
-  SLIDE_FALLBACK_DISTANCE,
-  SLIDE_START_OPACITY,
-} from '@/domain/tabMotion';
+import { SLIDE_DURATION_MS, SLIDE_FALLBACK_DISTANCE, TAB_SCENE_OPACITY } from '@/domain/tabMotion';
 
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { useT } from '@/i18n';
@@ -51,16 +47,14 @@ type AppTab = (typeof APP_TABS)[number];
 
 /**
  * v8: the chosen tab slides in from its side (the bar's `shift` animation: screens right of the
- * focused one sit at progress 1, left ones at -1) while the old one fades out.
+ * focused one sit at progress 1, left ones at -1) while the old one fades out. Scenes resting at
+ * ±1 are hidden (v8 QA), so a skipped middle tab never shows through the slide.
  */
 const slideScenes: NonNullable<BottomTabNavigationOptions['sceneStyleInterpolator']> = ({
   current,
 }) => ({
   sceneStyle: {
-    opacity: current.progress.interpolate({
-      inputRange: [-1, 0, 1],
-      outputRange: [SLIDE_START_OPACITY, 1, SLIDE_START_OPACITY],
-    }),
+    opacity: current.progress.interpolate(TAB_SCENE_OPACITY),
     transform: [
       {
         translateX: current.progress.interpolate({
