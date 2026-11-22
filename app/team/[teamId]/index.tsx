@@ -35,7 +35,7 @@ export default function TeamScreen() {
     <Screen
       footer={<TeamNavBar value={tab} onChange={(next) => router.setParams({ tab: next })} />}
     >
-      <Stack.Screen options={{ title: t.roster.team.title(team.name, team.season) }} />
+      <Stack.Screen options={{ title: team.name }} />
       {tab === 'roster' ? (
         <RosterTab
           teamId={id}

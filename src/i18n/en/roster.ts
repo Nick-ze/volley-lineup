@@ -85,7 +85,7 @@ export const roster = {
     home: 'Home',
     away: 'Away',
     vs: (opponent: string) => `vs ${opponent}`,
-    open: (opponent: string, date: string) => `Open match against ${opponent} on ${date}`,
+    open: (opponent: string, date: string) => `vs ${opponent}, ${date}: open the match`,
     delete: (opponent: string) => `Delete match against ${opponent}`,
     /** v6.2: search field. */
     search: 'Search matches',

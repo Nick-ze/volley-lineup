@@ -523,10 +523,10 @@ Pure logic: `src/domain/seasons.ts` (`upgradeToSeasons`, `validateSeasonForm`, `
 
 ## 30. v7 acceptance checklist
 
-- [ ] Seasons and tournaments can be created, edited and deleted. The team's Matches tab lists them as boxes with their record; a season screen shows its matches (with search), opponents and stats.
-- [ ] A new match is created inside a season; the opponent is picked from the season's teams or added by typing a new name.
-- [ ] Opponents can be added, renamed (their matches follow) and deleted when they have no matches. The record per opponent is correct (tests with literal numbers).
-- [ ] The Stats tab and the season screen show stats for one season (or all seasons).
-- [ ] Old data (store v8) and v1–v7 export files open without loss: one season per team with all its matches and opponents. Export / import round trip restores exactly.
-- [ ] Phone layout 375 px, EN + DE.
-- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%.
+- [x] Seasons and tournaments can be created, edited and deleted. The team's Matches tab lists them as boxes with their record; a season screen shows its matches (with search), opponents and stats.
+- [x] A new match is created inside a season; the opponent is picked from the season's teams or added by typing a new name.
+- [x] Opponents can be added, renamed (their matches follow) and deleted when they have no matches. The record per opponent is correct (tests with literal numbers).
+- [x] The Stats tab and the season screen show stats for one season (or all seasons).
+- [x] Old data (store v8) and v1–v7 export files open without loss: one season per team with all its matches and opponents. Export / import round trip restores exactly. — _web (localStorage) upgrade from store v8 and v1 / v5 / v7 files checked in a browser; Android AsyncStorage covered by unit tests only._
+- [x] Phone layout 375 px, EN + DE. — _verified in a browser (Playwright); not yet on a real phone._
+- [x] Lint, typecheck and tests pass in CI; src/domain at 100%.

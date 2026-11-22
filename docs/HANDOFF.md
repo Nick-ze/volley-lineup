@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-22, after releasing **v6.2.0**.
+Last updated: 2026-11-22, after releasing **v7.0.0**.
 
 ---
 
@@ -23,10 +23,11 @@ Last updated: 2026-11-22, after releasing **v6.2.0**.
 | v6.0.0  | Players & performance: profile / player photos, player detail screen with season + per-match stats, confidential descriptions (biometric / PIN unlock), performance view per set / match, error types on "our error", data model v7        | `v6.0.0` |
 | v6.1.0  | Performance inside live mode: header button Performance / Live (overview of every player for the current set or all sets, player detail)                                                                                                   | `v6.1.0` |
 | v6.2.0  | Performance list best → worst, match search by opponent / date, partly filled team starters                                                                                                                                                | `v6.2.0` |
+| v7.0.0  | Seasons & tournaments: season boxes, season screen (matches · opponents with records · stats), opponent picker for new matches, Stats season switcher, data model v8                                                                       | `v7.0.0` |
 
-- `main` is green (CI), **919 tests**, `src/domain` at 100% coverage.
-- Current versions: app **6.2.0** (`app.json` + `package.json`, must match), store **8**, export `schemaVersion` **7** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
-- Last decision number in `docs/DECISIONS.md`: **#170**. Continue at #171.
+- `main` is green (CI), **990 tests**, `src/domain` at 100% coverage.
+- Current versions: app **7.0.0** (`app.json` + `package.json`, must match), store **9**, export `schemaVersion` **8** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
+- Last decision number in `docs/DECISIONS.md`: **#183**. Continue at #184.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -47,6 +48,7 @@ Last updated: 2026-11-22, after releasing **v6.2.0**.
 - Stats ideas not built: per-rotation totals row, charts/trends over the season, CSV export of stats, opponent-side stats.
 - Tagging: more kinds (e.g. dig / serve error), tags for points before v3 can't be added afterwards (only the last rally is taggable).
 - v6 follow-ups: a 2-column performance grid on wide screens; photos on the print sheet or court chips (deliberately left out, #163); a "dig / defence" error type (owner chose 7 types, it's "Other" now); per-error-type columns in the Stats tab; a storage-full message for photos.
+- v7 follow-ups (QA nits, not done): a new match's date defaults to today even inside a dated tournament; matches on the same date list oldest-created first; the new-match form's season chooser / "new season in the form" paths are only reachable without `?seasonId` (no UI link does that now); performance / player detail have no season filter (player detail sums all seasons).
 - Cloud sync / real accounts (explicitly out of scope so far — needs a backend; see DECISIONS #55).
 - Whatever the owner asks for next — ask them if the request is ambiguous (e.g. "presets" was interpreted in DECISIONS #80–85).
 
@@ -56,8 +58,8 @@ Last updated: 2026-11-22, after releasing **v6.2.0**.
 
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
-3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6).
-4. `docs/DECISIONS.md` — every choice made so far (#1–170). Skim headings; read the ones touching your task.
+3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7).
+4. `docs/DECISIONS.md` — every choice made so far (#1–183). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Written for v3; for v4/v5 the data model notes are outdated (read HANDOFF §3 and PLAN §19–24 instead).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
 7. `README.md` — user-facing features, install, release steps.
@@ -72,6 +74,7 @@ Last updated: 2026-11-22, after releasing **v6.2.0**.
 - **Data model v4**: point events `{ type: 'point', winner, kind?, playerId?, at? }` (tags + ISO timestamp); subs unchanged. Nothing about results is stored.
 - **Data model v6** (app 5.0): sets and presets have a `formation` (`{ system: '5-1'|'6-2', order: 'outside'|'middle', setterAt }`, `src/domain/roles.ts`) that fixes every court spot's role (pairs 1–4, 2–5, 3–6 always match; locked in played sets) and `liberoActive`. Players play their spot's role; rotating turns the formation with them; placements / formation changes onto unlisted roles ask first (`placementCheck.ts`, `formationChange.ts`). The live replay tracks roles (substitutes inherit), the setter rotation and whom the libero currently replaces (`RallyStep` / `LiveState`). Every libero swap goes through those (or `activeLiberoReplaces` outside live play). Courts draw roles with `RoleTag` and the "*" with `OffPositionMark` (top right of the spot).
 - **Data model v7** (app 6.0): `photoId?` on profiles / players, `description?` on players (confidential), `errorType?` on "our error" tags (`ErrorType`: serve · reception · attack · block · set · netFault · other), `ExportFile.photos: Photo[]`. Pure logic: `photos.ts` (data URI / description rules), `photoCrop.ts`, `performance.ts` (rallies on court with libero swap, ±, net points, rating, error rates — DECISIONS #152), `errorTagging.ts` (`chooseLastErrorType`, the tagged player always fits the type), `pointTags.setLastErrorType`, `lastRally.plausibleErrorTypes`.
+- **Seasons (v7, data model v8)**: `Season` (season / tournament, dates, place) and `Opponent` (per season) collections; every `Match` has `seasonId` + `opponentId` (+ `opponent` name kept in sync). `src/domain/seasons.ts` (upgrade, validation, records, `alignIncomingByName` for merges), `matchForm.ts`, `statsSeason.ts`. Routes `/team/[teamId]/season/[seasonId]?tab=matches|opponents|stats`, `/team/[teamId]/season-new?seasonId=` (modal), `/team/[teamId]/match-new?seasonId=`. UI in `src/features/seasons/`, `src/features/matchForm/`. Team's Matches tab = season boxes; the team's old `season` text is hidden in the UI.
 - **Photos** (`src/store/photoStore.ts`): one AsyncStorage key per photo (`volley-lineup-photo:<id>`, data URI ≤ 256 px JPEG), NOT in the main store; orphans pruned and dangling `photoId`s cleared automatically on profile / player changes; `transferSnapshot()` for export, `replacePhotos` / `putPhotos` for import. `<Photo photoId size fallback>` component. Picking: `src/lib/pickPhoto*.ts` (expo-image-picker + expo-image-manipulator), UI in `src/features/photos/`.
 - **Descriptions**: unlock state in an in-memory store (`src/features/descriptions/descriptionLock.ts`, never persisted), unlock via `src/lib/unlock*.ts` (expo-local-authentication on phones, a confirmation dialog on web / without a device lock), auto-lock on background / hidden tab. Exported only when "Include descriptions" is ticked while unlocked.
 - **Store** (`src/store/`): one `useAppStore` (profiles, teams, players, matches, presets, currentProfileId, language). Version 8 with migrations v1→…→v8 in `migrations.ts` (v3→v4 changes nothing; v4→v5 adds `chipLabel: 'number'`; v5→v6 adds `roles: {}` + `liberoActive: true` to sets and presets; v6→v7 turns per-player `roles` into a `formation`; v7→v8 changes nothing — the v6.0 fields are optional). Device settings (not exported): `language`, `chipLabel` (`PlayerChip` shows names when `'name'`). List selectors are hooks with `useShallow` (Zustand v5 loops otherwise).
@@ -134,6 +137,8 @@ Small requests (layout tweaks) are faster done yourself; still use a branch + PR
 - **Photo store order**: save a photo (`setPhoto`, in memory at once) before pointing a profile / player at it — the prune deletes unreferenced photos and clears `photoId`s without a photo on every profile / player change. Tests must seed `usePhotoStore` before `updatePlayer({ photoId })`.
 - **Live screen height**: anything added to the live screen must keep the court + Substitution visible at 390×844 (DECISIONS #75, #126); the tag row is one sideways-scrolling 44 px line for that reason (#164).
 - **Agents and PR footers**: workers kept writing `_Generated by Claude Code_` footers — give them the exact footer and check it before merging.
+- **Ids in URL params**: upgraded opponent ids contain "%" (`encodeURIComponent`); expo-router decodes params twice on web, so don't put such ids in URLs (#177).
+- **Test helper** `seasonRefs(teamId, name)` (`src/store/testSeason.ts`) creates a real season + opponent for `addMatch` in tests.
 - **Label in name** (WCAG 2.5.3): an `accessibilityLabel` must start with the button's visible text — reviewers check this.
 
 ---

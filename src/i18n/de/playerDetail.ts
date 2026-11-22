@@ -16,7 +16,7 @@ export const playerDetail: Strings['playerDetail'] = {
     `Nummer ${number}, ${name}, ${positions}, ${status}`,
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),
   season: {
-    heading: 'Saison',
+    heading: 'Alle Saisons',
     empty:
       'Noch keine Sätze gespielt. Die Statistik erscheint, sobald dieser Spieler im Live-Modus auf dem Feld steht.',
     setsStarted: 'Sätze in der Startsechs',

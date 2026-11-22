@@ -151,6 +151,15 @@ New in **v6 — Players & performance**:
 - **Performance during the match** (v6.1) — in live mode, the **Performance** button at the top right shows every player's overview for the current set (or all sets); tap a player for their detail, then **Live** to go back to the court.
 - **v6.2** — the performance list shows the best player first and the worst last; **search matches** by opponent or date (e.g. "Rivals", "21.11." or "2026-11"); **team starters can be partly filled** (e.g. only your 3 regulars) — new matches start with them and you pick the rest in the match before the game.
 
+New in **v7 — Seasons & tournaments**:
+
+- **Season boxes** — the team's Matches tab now shows your seasons and tournaments as boxes (name, dates, place, record). Create one with **New season / tournament**.
+- **Matches live inside a season** — open a season for its matches (with search), its **Opponents** (the teams you play, with your record against each: won–lost, sets, upcoming) and its **Stats**.
+- **Pick or add the opponent** — a new match offers the season's teams as buttons; type a new name and it's added to the season.
+- **Stats per season** — the Stats tab can switch between seasons or show all of them.
+
+Your existing matches move into one season per team automatically (named after the team's season, e.g. "2026/27"). Files exported by v7 (schema version 8) can't be opened by older versions.
+
 Data and files from v5 open automatically; files exported by v6 (schema version 7, with photos) can't be opened by older versions.
 
 ## Export / import

@@ -19,6 +19,15 @@ export function foldName(name: string): string {
   return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
+/**
+ * An opponent / season name as stored by the upgrade: trimmed, inner spaces collapsed, at most
+ * `max` characters; an empty name becomes "?" (v7 QA: no blank rows).
+ */
+export function cleanName(name: string, max = MAX_OPPONENT_NAME_LENGTH): string {
+  const clean = name.trim().replace(/\s+/g, ' ').slice(0, max).trim();
+  return clean === '' ? '?' : clean;
+}
+
 /* ------------------------------------------------------------------ migration */
 
 /** The season id an upgraded team's old matches go into (deterministic). */
@@ -53,8 +62,8 @@ function upgradeSeasonName(team: Rec, matches: readonly Rec[]): string {
 /**
  * Upgrades persisted data (store or export file) without seasons: every team gets one season
  * (`upgradeSeasonId`) holding all its matches; every distinct opponent name (compared with
- * `foldName`, first spelling kept) becomes an opponent of that season; matches get `seasonId`
- * and `opponentId` and keep their opponent text. Data that already has seasons, or anything
+ * `foldName`, first spelling kept, `cleanName`) becomes an opponent of that season; matches get
+ * `seasonId` and `opponentId`, and their opponent text becomes that opponent's name. Data that already has seasons, or anything
  * malformed, is passed through for the schema to judge. Deterministic: the same data always
  * upgrades to the same ids (so old files merge cleanly).
  */
@@ -64,7 +73,8 @@ export function upgradeToSeasons(data: Rec): Rec {
   const matches = Array.isArray(data.matches) ? data.matches : [];
   const seasons: Season[] = [];
   const opponents: Opponent[] = [];
-  const opponentIds = new Set<string>();
+  /** opponent id → the name it keeps (the first spelling, cleaned) */
+  const opponentNames = new Map<string, string>();
   for (const team of teams) {
     const teamId = str(team.id);
     if (teamId === undefined) continue;
@@ -81,9 +91,9 @@ export function upgradeToSeasons(data: Rec): Rec {
     for (const m of own) {
       const name = str(m.opponent) ?? '';
       const id = upgradeOpponentId(seasonId, name);
-      if (opponentIds.has(id)) continue;
-      opponentIds.add(id);
-      opponents.push({ id, seasonId, name: name.trim(), createdAt });
+      if (opponentNames.has(id)) continue;
+      opponentNames.set(id, cleanName(name));
+      opponents.push({ id, seasonId, name: cleanName(name), createdAt });
     }
   }
   // A malformed match list is passed through as it is (the schema / store judges it).
@@ -94,7 +104,9 @@ export function upgradeToSeasons(data: Rec): Rec {
           return m;
         }
         const seasonId = upgradeSeasonId(m.teamId);
-        return { ...m, seasonId, opponentId: upgradeOpponentId(seasonId, str(m.opponent) ?? '') };
+        const opponentId = upgradeOpponentId(seasonId, str(m.opponent) ?? '');
+        // v7 QA: the match shows its opponent's name (one spelling per team everywhere).
+        return { ...m, seasonId, opponentId, opponent: opponentNames.get(opponentId) };
       });
   return { ...data, seasons, opponents, matches: upgraded };
 }
@@ -262,4 +274,65 @@ export function opponentRecords(
     }
     return record;
   });
+}
+
+/* ------------------------------------------------------------------ merge */
+
+type SeasonData = { seasons: Season[]; opponents: Opponent[]; matches: Match[] };
+
+/**
+ * v7 QA: before an import is merged, an incoming season with the name of an existing season of
+ * the same team (and an incoming opponent with the name of an existing opponent of the same
+ * season) becomes that existing one — ignoring case and accents, ids that already match are
+ * left to the merge by id. The incoming matches are moved over (and take the existing
+ * opponent's name), so a merge never creates two "Rivals" or two "2026/27".
+ */
+export function alignIncomingByName<T extends SeasonData>(
+  existing: Pick<SeasonData, 'seasons' | 'opponents'>,
+  incoming: T,
+): T {
+  const existingSeasonIds = new Set(existing.seasons.map((x) => x.id));
+  const seasonMap = new Map<string, string>();
+  for (const season of incoming.seasons) {
+    if (existingSeasonIds.has(season.id)) continue;
+    const same = existing.seasons.find(
+      (x) => x.teamId === season.teamId && foldName(x.name) === foldName(season.name),
+    );
+    if (same) seasonMap.set(season.id, same.id);
+  }
+  const existingOpponentIds = new Set(existing.opponents.map((o) => o.id));
+  const opponentMap = new Map<string, Opponent>();
+  const movedOpponents = incoming.opponents.map((o) => ({
+    ...o,
+    seasonId: seasonMap.get(o.seasonId) ?? o.seasonId,
+  }));
+  for (const opponent of movedOpponents) {
+    if (existingOpponentIds.has(opponent.id)) continue;
+    const same = existing.opponents.find(
+      (x) => x.seasonId === opponent.seasonId && foldName(x.name) === foldName(opponent.name),
+    );
+    if (same) opponentMap.set(opponent.id, same);
+  }
+  return {
+    ...incoming,
+    seasons: incoming.seasons.filter((x) => !seasonMap.has(x.id)),
+    opponents: movedOpponents.filter((o) => !opponentMap.has(o.id)),
+    matches: incoming.matches.map((m) => {
+      const opponent = opponentMap.get(m.opponentId);
+      return {
+        ...m,
+        seasonId: seasonMap.get(m.seasonId) ?? m.seasonId,
+        ...(opponent ? { opponentId: opponent.id, opponent: opponent.name } : {}),
+      };
+    }),
+  };
+}
+
+/** True when no team has two seasons and no season two opponents of the same name. */
+export function namesAreUnique(data: Pick<SeasonData, 'seasons' | 'opponents'>): boolean {
+  const unique = (keys: string[]) => new Set(keys).size === keys.length;
+  return (
+    unique(data.seasons.map((x) => `${x.teamId}\u0000${foldName(x.name)}`)) &&
+    unique(data.opponents.map((o) => `${o.seasonId}\u0000${foldName(o.name)}`))
+  );
 }

@@ -21,11 +21,14 @@ export interface TeamFormProps {
   onCancel: () => void;
 }
 
-/** Create / edit a team (name + optional season). */
+/**
+ * Create / edit a team (name). v7: seasons are their own boxes now, so the old free-text season
+ * isn't shown any more; an existing value is kept as it is (it named the upgraded season).
+ */
 export function TeamForm({ initial, submitLabel, onSubmit, onCancel }: TeamFormProps) {
   const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
-  const [season, setSeason] = useState(initial?.season ?? '');
+  const [season] = useState(initial?.season ?? '');
   const [errors, setErrors] = useState<FormErrors<TeamFormField>>({});
 
   const submit = () => {
@@ -42,13 +45,6 @@ export function TeamForm({ initial, submitLabel, onSubmit, onCancel }: TeamFormP
         onChangeText={setName}
         error={errorText(t, errors.name)}
         autoFocus
-      />
-      <TextField
-        label={t.roster.teams.season}
-        value={season}
-        onChangeText={setSeason}
-        placeholder={t.roster.teams.seasonPlaceholder}
-        error={errorText(t, errors.season)}
         onSubmitEditing={submit}
       />
       <View style={styles.actions}>

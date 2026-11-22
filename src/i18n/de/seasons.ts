@@ -6,7 +6,7 @@ export const seasons: Strings['seasons'] = {
   kind: { season: 'Saison', tournament: 'Turnier' },
   list: {
     empty: 'Noch keine Saison. Leg eine Saison oder ein Turnier an, um Spiele hinzuzufügen.',
-    newSeason: 'Neue Saison',
+    newSeason: 'Neue Saison / Turnier',
     matchCount: (n: number) => (n === 1 ? '1 Spiel' : `${n} Spiele`),
     record: (won: number, lost: number) => `${won}–${lost}`,
     open: (summary: string) => `${summary}. Öffnen`,
@@ -14,8 +14,8 @@ export const seasons: Strings['seasons'] = {
   dates: (start?: string, end?: string) =>
     start && end ? `${start} – ${end}` : start ? `ab ${start}` : end ? `bis ${end}` : '',
   form: {
-    newTitle: 'Neue Saison',
-    editTitle: 'Saison bearbeiten',
+    newTitle: 'Neue Saison / Turnier',
+    editTitle: 'Saison / Turnier bearbeiten',
     name: 'Name',
     namePlaceholder: 'z. B. 2026/27 oder Sommer-Cup',
     kind: 'Art',
@@ -24,7 +24,7 @@ export const seasons: Strings['seasons'] = {
     datePlaceholder: 'JJJJ-MM-TT',
     location: 'Ort (optional)',
     create: 'Anlegen',
-    delete: 'Saison löschen',
+    delete: 'Löschen',
     confirmDelete: (name: string, matches: number) =>
       matches === 0
         ? `Saison „${name}“ löschen?`

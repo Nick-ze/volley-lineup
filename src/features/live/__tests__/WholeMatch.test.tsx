@@ -315,9 +315,9 @@ describe('whole-match live mode', () => {
     expect(screen.getAllByText('2026-11-20 · Home')).toHaveLength(5);
     // Screen readers hear the result too.
     expect(
-      screen.getByLabelText('Open match against Lions on 2026-11-20. Result: 1:3 lost'),
+      screen.getByLabelText('vs Lions, 2026-11-20: open the match. Result: 1:3 lost'),
     ).toBeTruthy();
-    expect(screen.getByLabelText('Open match against Owls on 2026-11-20')).toBeTruthy();
+    expect(screen.getByLabelText('vs Owls, 2026-11-20: open the match')).toBeTruthy();
   });
 
   it('shows the result line in the match header', async () => {
