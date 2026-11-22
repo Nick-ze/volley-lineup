@@ -9,6 +9,7 @@ import { HeaderBack } from '@/components/HeaderBack';
 import { HeaderTitle } from '@/components/HeaderTitle';
 import { useT } from '@/i18n';
 import { setDocumentLanguage } from '@/lib/documentLanguage';
+import { useAppFonts } from '@/lib/fonts';
 import { parentRoute } from '@/lib/parentRoute';
 import { useAppStore } from '@/store';
 import { makeStyles, ThemeProvider as AppThemeProvider, useTheme } from '@/theme';
@@ -41,12 +42,14 @@ function ThemedRoot() {
   const styles = useStyles();
   const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
+  // v8: the bundled dyslexia font; the spinner stays until it loaded or failed (never forever).
+  const fontsReady = useAppFonts();
 
   return (
     <SafeAreaProvider style={styles.root}>
       <ThemeProvider value={navigationTheme(theme)}>
         <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
-        {hydrated ? (
+        {hydrated && fontsReady ? (
           <Stack
             screenOptions={({ route }) => ({
               headerStyle: { backgroundColor: colors.surface },
