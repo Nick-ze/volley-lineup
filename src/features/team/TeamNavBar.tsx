@@ -106,5 +106,11 @@ const useStyles = makeStyles((theme) => ({
   },
   pressed: { opacity: 0.8 },
   // Five items share 375 px: the label may shrink a little rather than be cut off.
-  label: { ...typography.label, fontSize: fontSize.xs, paddingHorizontal: spacing.xxs },
+  // v8: the wide dyslexia font is set a little tighter so "Startsechs" fits too.
+  label: {
+    ...typography.label,
+    fontSize: fontSize.xs,
+    paddingHorizontal: theme.dyslexiaFont ? 0 : spacing.xxs,
+    ...(theme.dyslexiaFont ? { letterSpacing: -0.7 } : {}),
+  },
 }));

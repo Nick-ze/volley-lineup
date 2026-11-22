@@ -1,6 +1,7 @@
 import { Text } from 'react-native';
 
 import { Button } from '@/components';
+import { formatDate } from '@/domain/dates';
 import type { Match } from '@/domain/types';
 import { matchResultLabel } from '@/features/live/matchResult';
 import { ListRow } from '@/features/roster/components/ListRow';
@@ -18,11 +19,12 @@ export function MatchRow({ match: m, onOpen, onDelete }: MatchRowProps) {
   const t = useT();
   const s = t.roster.matches;
   const result = matchResultLabel(t, m);
-  const open = s.open(m.opponent, m.date);
+  const date = formatDate(m.date);
+  const open = s.open(m.opponent, date);
   return (
     <ListRow
       title={s.vs(m.opponent)}
-      subtitle={<MatchSubtitle text={`${m.date} · ${m.home ? s.home : s.away}`} result={result} />}
+      subtitle={<MatchSubtitle text={`${date} · ${m.home ? s.home : s.away}`} result={result} />}
       onPress={onOpen}
       accessibilityLabel={result ? `${open}. ${t.match.resultLabel(result)}` : open}
       actions={

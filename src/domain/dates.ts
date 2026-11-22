@@ -66,3 +66,22 @@ export function todayIso(now: Date): string {
 export function todayInput(now: Date): string {
   return formatDate(todayIso(now));
 }
+
+/**
+ * A stored ISO date for a date field: `dd.mm.yy` for 2000–2099 (2-digit years mean 20yy), else
+ * `dd.mm.yyyy`, so saving the field again never changes the century. `''` for no date; a value
+ * that isn't an ISO date is returned unchanged.
+ */
+export function formatDateInput(iso: string | undefined): string {
+  if (iso === undefined || iso === '') return '';
+  const match = ISO.exec(iso);
+  if (!match) return iso;
+  const [, year, month, day] = match as unknown as [string, string, string, string];
+  return year.startsWith('20') ? `${day}.${month}.${year.slice(2)}` : `${day}.${month}.${year}`;
+}
+
+/** The local calendar day of an ISO timestamp as `dd.mm.yy` (unparseable: `formatDate` of it). */
+export function formatTimestampDate(timestamp: string): string {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? formatDate(timestamp) : formatDate(todayIso(date));
+}

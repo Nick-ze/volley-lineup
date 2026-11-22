@@ -1,7 +1,15 @@
 import { Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
-import { borderWidth, fontSize, makeStyles, spacing, typography } from '@/theme';
+import {
+  borderWidth,
+  fontSize,
+  inlineFontSize,
+  makeStyles,
+  spacing,
+  typography,
+  useTheme,
+} from '@/theme';
 
 import { Photo } from './Photo';
 import { PositionBadge } from './PositionBadge';
@@ -39,6 +47,7 @@ export function PlayerChipFace({
   testID,
 }: PlayerChipFaceProps) {
   const styles = useStyles();
+  const { fonts } = useTheme();
   const primary = player.positions[0];
   return (
     <View
@@ -57,7 +66,7 @@ export function PlayerChipFace({
             styles.nameInCircle,
             // Never below the caption size; narrower than the circle so text stays inside it.
             {
-              fontSize: Math.max(fontSize.xs, Math.round(d * 0.2)),
+              ...inlineFontSize(Math.max(fontSize.xs, Math.round(d * 0.2)), fonts),
               maxWidth: Math.round(d * 0.8),
             },
           ]}
@@ -67,7 +76,9 @@ export function PlayerChipFace({
           {name}
         </Text>
       ) : (
-        <Text style={[styles.number, { fontSize: Math.round(d * 0.36) }]}>{player.number}</Text>
+        <Text style={[styles.number, inlineFontSize(Math.round(d * 0.36), fonts)]}>
+          {player.number}
+        </Text>
       )}
       {primary ? (
         <View style={photoUri !== null && styles.badgeOnPhoto}>

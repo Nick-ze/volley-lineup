@@ -2,7 +2,15 @@ import { Text, View } from 'react-native';
 
 import { teamAvatarColor, teamInitial } from '@/domain/teamAvatar';
 import type { Team } from '@/domain/types';
-import { makeStyles, onProfileColor, profileColors, radius, touchTarget } from '@/theme';
+import {
+  inlineFontSize,
+  makeStyles,
+  onProfileColor,
+  profileColors,
+  radius,
+  touchTarget,
+  useTheme,
+} from '@/theme';
 
 import { Photo } from './Photo';
 
@@ -18,6 +26,7 @@ export interface TeamAvatarProps {
  */
 export function TeamAvatar({ team, size = touchTarget }: TeamAvatarProps) {
   const styles = useStyles();
+  const { fonts } = useTheme();
   const fallback = (
     <View
       style={[
@@ -33,7 +42,7 @@ export function TeamAvatar({ team, size = touchTarget }: TeamAvatarProps) {
       importantForAccessibility="no-hide-descendants"
       testID="team-initial"
     >
-      <Text style={[styles.letter, { fontSize: Math.round(size * 0.45) }]}>
+      <Text style={[styles.letter, inlineFontSize(Math.round(size * 0.45), fonts)]}>
         {teamInitial(team.name)}
       </Text>
     </View>

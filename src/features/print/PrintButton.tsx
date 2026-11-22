@@ -10,14 +10,17 @@ import { usePrintSheet } from './usePrintSheet';
 
 export interface PrintButtonProps {
   matchId: string;
+  /** Layout of the wrapper (button + error line). */
   style?: StyleProp<ViewStyle>;
+  /** Style of the button itself (e.g. the match screen's link padding). */
+  buttonStyle?: StyleProp<ViewStyle>;
 }
 
 /**
  * "Print / PDF": web opens the print dialog, phones get a PDF in the share sheet. Once the match
  * has results, pressing it first asks "Lineups only" / "With results".
  */
-export function PrintButton({ matchId, style }: PrintButtonProps) {
+export function PrintButton({ matchId, style, buttonStyle }: PrintButtonProps) {
   const styles = useStyles();
   const t = useT();
   const { print, printing, failed, ready, hasResults } = usePrintSheet(matchId);
@@ -31,6 +34,7 @@ export function PrintButton({ matchId, style }: PrintButtonProps) {
         compact
         disabled={!ready || printing}
         onPress={() => (hasResults ? setChoosing(true) : void print())}
+        style={buttonStyle}
         testID="print-sheet"
       />
       {choosing ? (

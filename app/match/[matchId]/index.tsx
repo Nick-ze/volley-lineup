@@ -37,6 +37,10 @@ export default function MatchScreen() {
   );
 
   const link = [styles.link, wide ? styles.linkWide : styles.linkPhone];
+  // Print / PDF wraps its button in a View: the size goes on the wrapper, the padding on the
+  // button, so it lines up with the other links.
+  const printBox = [styles.link, wide ? styles.linkWide : styles.linkPhoneBox];
+  const printButton = wide ? undefined : styles.linkPhonePadding;
 
   if (!match) {
     return (
@@ -84,7 +88,7 @@ export default function MatchScreen() {
               }
               testID="open-starters"
             />
-            <PrintButton matchId={matchId} style={link} />
+            <PrintButton matchId={matchId} style={printBox} buttonStyle={printButton} />
             <Button
               label={t.live.open}
               accessibilityLabel={t.live.openLabel}
@@ -150,9 +154,15 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.md,
   },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  // Six links: one row on wide screens, two rows of three on phones.
+  // Six links: one row on wide screens, two rows of three on phones (v8: three rows of two with
+  // the wide dyslexia font, so "Aufstellungen" fits its button).
   link: { flexGrow: 1, minWidth: touchTarget },
   linkWide: { flexBasis: 0 },
-  linkPhone: { flexBasis: '30%', paddingHorizontal: spacing.sm },
+  linkPhone: {
+    flexBasis: theme.dyslexiaFont ? '40%' : '30%',
+    paddingHorizontal: spacing.sm,
+  },
+  linkPhoneBox: { flexBasis: theme.dyslexiaFont ? '40%' : '30%' },
+  linkPhonePadding: { paddingHorizontal: spacing.sm },
   notFound: { ...typography.body, color: theme.colors.textMuted, padding: spacing.lg },
 }));

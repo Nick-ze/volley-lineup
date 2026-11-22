@@ -70,7 +70,8 @@ function otherData(): AppData {
   };
 }
 
-const fileText = (data: AppData) => serializeExport(buildExport({ ...data, photos: [] }));
+const fileText = (data: AppData) =>
+  serializeExport(buildExport({ ...data, photos: [] }, { now: new Date('2026-11-21T12:00:00Z') }));
 
 async function renderSettings() {
   await renderRouter(
@@ -98,6 +99,8 @@ describe('import', () => {
       ),
     ).toBeTruthy();
     expect(screen.getByText('Ready to import backup.json')).toBeTruthy();
+    // v8: the export day as dd.mm.yy (the file keeps the ISO timestamp).
+    expect(screen.getByTestId('import-exported-on')).toHaveTextContent('Exported on 21.11.26');
 
     await fireEvent.press(screen.getByLabelText('Replace'));
     expect(selectAppData(store())).toEqual(otherData());

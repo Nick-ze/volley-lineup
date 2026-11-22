@@ -11,6 +11,7 @@
  * user text (names, team, opponent, season, labels) is HTML-escaped.
  */
 import { printColors as c, printLayout as l } from '../theme/print';
+import { formatDate } from './dates';
 import { getMatchState, type MatchState } from './matchState';
 import { fullName } from './playerNames';
 import { isOffPosition, roleOf, spotRole } from './roles';
@@ -299,7 +300,7 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
 
   const meta: [string, string][] = [
     [labels.opponent, match.opponent],
-    [labels.date, match.date],
+    [labels.date, formatDate(match.date)],
     [labels.venue, match.home ? labels.home : labels.away],
   ];
   if (team.season) meta.push([labels.season, team.season]);

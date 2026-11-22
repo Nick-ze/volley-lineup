@@ -118,16 +118,20 @@ describe('seasons list (team → Matches tab)', () => {
     await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
     expect(screen.getByText(s.list.empty)).toBeTruthy();
     await press(s.list.newSeason);
+    // v8: a new season starts today (dd.mm.yy); the end stays empty.
+    expect(screen.getByLabelText(s.form.startDate).props.value).toMatch(/^\d\d\.\d\d\.\d\d$/);
+    expect(screen.getByLabelText(s.form.endDate).props.value).toBe('');
 
-    await type(s.form.startDate, '2026-06-02');
-    await type(s.form.endDate, '2026-06-01');
+    // v8: dates are typed Swiss style (dd.mm.yyyy and dd.mm.yy) and stored as ISO.
+    await type(s.form.startDate, '02.06.2026');
+    await type(s.form.endDate, '1.6.26');
     await press(s.form.create);
     expect(screen.getByText(s.errors.required)).toBeTruthy();
     expect(screen.getByText(s.errors.endBeforeStart)).toBeTruthy();
     expect(store().seasons).toHaveLength(0);
 
     await type(s.form.name, 'Summer Cup');
-    await type(s.form.endDate, '2026-06-03');
+    await type(s.form.endDate, '03.06.26');
     await type(s.form.location, 'Munich');
     await fireEvent.press(screen.getByRole('radio', { name: s.kind.tournament }));
     await press(s.form.create);
@@ -144,7 +148,7 @@ describe('seasons list (team → Matches tab)', () => {
     // Creating opens the new season.
     expect(screen).toHavePathname(`/team/${team.id}/season/${season.id}`);
     expect(screen.getByTestId('season-name')).toHaveTextContent('Summer Cup');
-    expect(screen.getByText('2026-06-02 – 2026-06-03 · Munich')).toBeTruthy();
+    expect(screen.getByText('02.06.26 – 03.06.26 · Munich')).toBeTruthy();
     expect(screen.getByTestId('kind-tournament')).toHaveTextContent(s.kind.tournament);
   });
 
@@ -185,10 +189,10 @@ describe('seasons list (team → Matches tab)', () => {
     expect(ids).toHaveLength(3);
     const summaries = screen.getAllByTestId('season-summary').map((n) => n.props.children);
     expect(summaries).toEqual(['1 match · 1–0', '4 matches · 1–1', '0 matches']);
-    expect(screen.getByText('2025-09-01 – 2026-04-30 · Munich')).toBeTruthy();
-    expect(screen.getByText('from 2026-06-01')).toBeTruthy();
+    expect(screen.getByText('01.09.25 – 30.04.26 · Munich')).toBeTruthy();
+    expect(screen.getByText('from 01.06.26')).toBeTruthy();
 
-    await press('2025/26, Season, 2025-09-01 – 2026-04-30 · Munich, 4 matches · 1–1. Open');
+    await press('2025/26, Season, 01.09.25 – 30.04.26 · Munich, 4 matches · 1–1. Open');
     expect(screen).toHavePathname(`/team/${team.id}/season/${a.id}`);
     expect(screen.getByTestId('season-name')).toHaveTextContent('2025/26');
   });
@@ -204,6 +208,9 @@ describe('season screen', () => {
     expect(screen).toHavePathname(`/team/${team.id}/season-new`);
     expect(screen.getByLabelText(s.form.name).props.value).toBe('2025/26');
     expect(screen.getByLabelText(s.form.location).props.value).toBe('Munich');
+    // v8: stored ISO dates are shown as dd.mm.yy in the form.
+    expect(screen.getByLabelText(s.form.startDate).props.value).toBe('01.09.25');
+    expect(screen.getByLabelText(s.form.endDate).props.value).toBe('30.04.26');
 
     await type(s.form.name, 'Liga 25/26');
     await type(s.form.location, '');
@@ -219,7 +226,7 @@ describe('season screen', () => {
     });
     expect(screen).toHavePathname(`/team/${team.id}/season/${a.id}`);
     expect(screen.getByTestId('season-name')).toHaveTextContent('Liga 25/26');
-    expect(screen.getByText('from 2025-09-01')).toBeTruthy();
+    expect(screen.getByText('from 01.09.25')).toBeTruthy();
 
     await press(s.screen.editLabel('Liga 25/26'));
     await press(s.form.delete);
@@ -241,19 +248,24 @@ describe('season screen', () => {
     const a = seedSeasonA(team.id);
     seedSeasonB(team.id);
     await renderRouter('./app', { initialUrl: `/team/${team.id}/season/${a.id}` });
-    const dates = () => screen.queryAllByText(/^20\d\d-\d\d-\d\d · /).map((n) => n.props.children);
+    const dates = () => screen.queryAllByText(/^\d\d\.\d\d\.\d\d · /).map((n) => n.props.children);
     expect(dates()).toEqual([
-      '2026-01-01 · Home',
-      '2025-12-01 · Home',
-      '2025-11-01 · Home',
-      '2025-10-01 · Home',
+      '01.01.26 · Home',
+      '01.12.25 · Home',
+      '01.11.25 · Home',
+      '01.10.25 · Home',
     ]);
     expect(screen.queryByText('vs Owls')).toBeNull();
     await type(t.roster.matches.search, '1.11.');
-    expect(dates()).toEqual(['2025-11-01 · Home']);
+    expect(dates()).toEqual(['01.11.25 · Home']);
     expect(screen.getByTestId('match-search-status').props.children).toBe(
       t.roster.matches.resultCount(1, 4),
     );
+    // v8: the shown dd.mm.yy form and its day-month start both find the match.
+    await type(t.roster.matches.search, '01.12.');
+    expect(dates()).toEqual(['01.12.25 · Home']);
+    await type(t.roster.matches.search, '01.12.25');
+    expect(dates()).toEqual(['01.12.25 · Home']);
     await type(t.roster.matches.search, 'owls');
     expect(screen.getByText(t.roster.matches.noResults('owls'))).toBeTruthy();
 

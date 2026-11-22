@@ -1,6 +1,6 @@
 import { darkColors, darkPositionColors, lightColors, lightPositionColors } from './colors';
 import { dyslexiaFonts, systemFonts } from './fonts';
-import { defaultTheme, getTheme, resolveScheme, withFontFamily } from './theme';
+import { defaultTheme, getTheme, inlineFontSize, resolveScheme, withFontFamily } from './theme';
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
 function luminance(hex: string): number {
@@ -105,8 +105,15 @@ describe('withFontFamily', () => {
   it('gives text styles the dyslexia font, bold ones the bold family', () => {
     const out = withFontFamily(styles, dyslexiaFonts);
     expect(out.box).toEqual({ padding: 4 });
-    expect(out.body).toEqual({ fontSize: 15, color: 'red', fontFamily: 'OpenDyslexic-Regular' });
-    expect(out.title).toEqual({ fontSize: 22, fontFamily: 'OpenDyslexic-Bold' });
+    // v8 fit at 375 px: sizes × 0.85 (rounded), and a line height of 1.4 × the new size when the
+    // style has none (OpenDyslexic's own line is ~1.8×).
+    expect(out.body).toEqual({
+      fontSize: 13,
+      lineHeight: 18,
+      color: 'red',
+      fontFamily: 'OpenDyslexic-Regular',
+    });
+    expect(out.title).toEqual({ fontSize: 19, lineHeight: 27, fontFamily: 'OpenDyslexic-Bold' });
     expect(out.boldWord).toEqual({ fontFamily: 'OpenDyslexic-Bold' });
     expect(out.semi).toEqual({ fontFamily: 'OpenDyslexic-Bold' });
     expect(out.medium).toEqual({ fontFamily: 'OpenDyslexic-Regular' });
@@ -114,5 +121,20 @@ describe('withFontFamily', () => {
     expect(out.spaced).toEqual({ letterSpacing: 1, fontFamily: 'OpenDyslexic-Regular' });
     expect(out.tall).toEqual({ lineHeight: 20, fontFamily: 'OpenDyslexic-Regular' });
     expect(out.own).toEqual({ fontSize: 12, fontFamily: 'monospace' });
+  });
+
+  it('keeps a style’s own line height and scales only its font size', () => {
+    const out = withFontFamily({ cell: { fontSize: 20, lineHeight: 32 } }, dyslexiaFonts);
+    expect(out.cell).toEqual({ fontSize: 17, lineHeight: 32, fontFamily: 'OpenDyslexic-Regular' });
+  });
+});
+
+describe('inlineFontSize', () => {
+  it('keeps a render-time size with the platform font', () => {
+    expect(inlineFontSize(20, systemFonts)).toEqual({ fontSize: 20 });
+  });
+
+  it('scales it like makeStyles with the dyslexia font, with a matching line height', () => {
+    expect(inlineFontSize(20, dyslexiaFonts)).toEqual({ fontSize: 17, lineHeight: 24 });
   });
 });

@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
+import { todayInput } from '@/domain/dates';
 import type { Season } from '@/domain/types';
 import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
@@ -99,6 +100,19 @@ describe('new match form (v7.0)', () => {
     await create();
     expect(store().opponents).toHaveLength(3);
     expect(store().matches[0]).toMatchObject({ opponentId: 'o-munich', opponent: 'TSV München' });
+  });
+
+  it('v8: starts with today as dd.mm.yy and stores a typed Swiss date as ISO', async () => {
+    seedSeasons();
+    await open();
+    const field = await screen.findByLabelText(s.date);
+    expect(field.props.value).toBe(todayInput(new Date()));
+    expect(field.props.value).toMatch(/^\d\d\.\d\d\.\d\d$/);
+    expect(field.props.placeholder).toBe(t.appearance.dateHint);
+    await fireEvent.press(radio('Lions'));
+    await typeName(s.date, '21.11.26');
+    await create();
+    expect(store().matches[0]).toMatchObject({ date: '2026-11-21', opponent: 'Lions' });
   });
 
   it('shows the required errors', async () => {
