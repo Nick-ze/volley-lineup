@@ -39,6 +39,18 @@ describe('shortName', () => {
     expect(shortName(lea, [lea, lea2])).toBe('Léa M.');
   });
 
+  it('ignores repeated inner spaces', () => {
+    const a = p('a', 'Anna Lena', 'Meier');
+    const b = p('b', 'Anna  Lena', 'Huber');
+    expect(shortName(a, [a, b])).toBe('Anna Lena M.');
+  });
+
+  it('keeps an astral first letter whole in the initial', () => {
+    const a = p('a', 'Anna', '😀Meier');
+    const b = p('b', 'Anna', 'Huber');
+    expect(shortName(a, [a, b])).toBe('Anna 😀.');
+  });
+
   it('uses the whole last name when the initials clash too', () => {
     const anna2 = p('c', 'Anna', 'Müller');
     expect(shortName(anna, [anna, anna2])).toBe('Anna Meier');
@@ -47,6 +59,7 @@ describe('shortName', () => {
 
   it('keeps the first name alone when there is no last name to tell them apart', () => {
     const anna2 = p('c', 'Anna', '');
+    expect(shortName(anna, [anna, anna2])).toBe('Anna M.');
     expect(shortName(anna2, [anna, anna2])).toBe('Anna');
   });
 

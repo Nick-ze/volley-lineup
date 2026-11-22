@@ -24,7 +24,7 @@ describe.each([
 ] as const)('%s palette meets WCAG AA', (_name, c, badges) => {
   const backgrounds = [c.background, c.surface, c.surfaceRaised];
 
-  it.each(['text', 'textMuted', 'primaryText', 'secondaryText', 'error'] as const)(
+  it.each(['text', 'textMuted', 'primaryText', 'secondaryText', 'highlightText', 'error'] as const)(
     '%s on every background',
     (token) => {
       for (const bg of backgrounds) expect(contrast(c[token], bg)).toBeGreaterThanOrEqual(AA);
@@ -60,6 +60,10 @@ describe('resolveScheme', () => {
     expect(resolveScheme('system', 'dark')).toBe('dark');
     expect(resolveScheme('system', null)).toBe('dark');
     expect(resolveScheme('system', undefined)).toBe('dark');
+  });
+
+  it('treats an unknown stored mode as dark', () => {
+    expect(resolveScheme('purple' as never, 'light')).toBe('dark');
   });
 });
 

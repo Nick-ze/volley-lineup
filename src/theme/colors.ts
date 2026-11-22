@@ -14,6 +14,8 @@ export const darkColors = {
   onPrimary: '#0D0D0D', // text on orange (black passes AA; white does not)
   highlight: '#FFC72C', // volleyball yellow: server, selected set, drop targets
   onHighlight: '#0D0D0D',
+  /** v8: yellow for text / icons on the background (warnings, drop hints, "*"). */
+  highlightText: '#FFC72C',
   highlightGlow: 'rgba(255,199,44,0.45)', // translucent yellow fill: hovered drop target
   secondary: '#0057B8', // volleyball blue: front row, secondary fills
   secondaryText: '#3D8BFF', // blue for text/links on black
@@ -46,6 +48,7 @@ export const lightColors: ThemeColors = {
   onPrimary: '#0D0D0D',
   highlight: '#FFC72C',
   onHighlight: '#0D0D0D',
+  highlightText: '#7A5600',
   highlightGlow: 'rgba(255,199,44,0.55)',
   secondary: '#0057B8',
   secondaryText: '#0050A8',
