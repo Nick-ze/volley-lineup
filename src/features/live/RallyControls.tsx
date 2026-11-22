@@ -41,7 +41,7 @@ export function RallyControls({
       {weServeFirst !== null ? (
         <ServeToggle weServeFirst={weServeFirst} onChange={onServeChange} />
       ) : null}
-      <PointButtons opponent={opponent} onPoint={onPoint} />
+      <PointButtons opponent={opponent} onPoint={onPoint} compact={weServeFirst !== null} />
       {belowPointButtons}
       <UndoActions
         last={last}

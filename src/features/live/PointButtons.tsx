@@ -4,15 +4,21 @@ import type { Side } from '@/domain/types';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing } from '@/theme';
 
-import { POINT_BUTTON_FONT_SIZE, POINT_BUTTON_MIN_HEIGHT } from './layout';
+import {
+  POINT_BUTTON_COMPACT_MIN_HEIGHT,
+  POINT_BUTTON_FONT_SIZE,
+  POINT_BUTTON_MIN_HEIGHT,
+} from './layout';
 
 export interface PointButtonsProps {
   opponent: string;
   onPoint: (winner: Side) => void;
+  /** Lower buttons (still far above 44 px), used while the serve toggle is shown above them. */
+  compact?: boolean;
 }
 
 /** The two large rally buttons: orange "Point us", blue "Point them". */
-export function PointButtons({ opponent, onPoint }: PointButtonsProps) {
+export function PointButtons({ opponent, onPoint, compact = false }: PointButtonsProps) {
   const styles = useStyles();
   const t = useT();
   const button = (side: Side, label: string, a11y: string) => {
@@ -25,6 +31,7 @@ export function PointButtons({ opponent, onPoint }: PointButtonsProps) {
         testID={`point-${side}`}
         style={({ pressed }) => [
           styles.button,
+          compact && styles.compact,
           us ? styles.us : styles.them,
           pressed && styles.pressed,
         ]}
@@ -52,6 +59,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
+  compact: { minHeight: POINT_BUTTON_COMPACT_MIN_HEIGHT },
   us: { backgroundColor: theme.colors.primary },
   // White on volleyball blue #0057B8 ≈ 6.9:1 (AA).
   them: { backgroundColor: theme.colors.secondary },
