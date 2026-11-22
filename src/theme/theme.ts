@@ -65,10 +65,25 @@ const isBold = (weight: TextStyle['fontWeight']) =>
   weight === 'bold' || (weight !== undefined && weight !== 'normal' && Number(weight) >= 600);
 
 /**
+ * `fontSize` times `fonts.scale` (whole pixels); a style with a size but no line height gets
+ * `fonts.lineHeight` times its new size. A style's own line height stays (it often centres the
+ * text in a fixed-height box).
+ */
+function scaled(text: TextStyle, fonts: ThemeFonts): Pick<TextStyle, 'fontSize' | 'lineHeight'> {
+  if (typeof text.fontSize !== 'number') return {};
+  const fontSize = Math.round(text.fontSize * fonts.scale);
+  return text.lineHeight === undefined && fonts.lineHeight !== undefined
+    ? { fontSize, lineHeight: Math.round(fontSize * fonts.lineHeight) }
+    : { fontSize };
+}
+
+/**
  * Gives every text style the theme's font family. A style counts as a text style when it sets
  * a font size, weight, line height or letter spacing. Bold styles (weight ≥ 600) get the bold
  * family and lose their `fontWeight` (custom fonts carry the weight in the family; a weight on
- * top would make some platforms fake-bold it or miss the font). With the platform font
+ * top would make some platforms fake-bold it or miss the font). Sizes and line heights are
+ * multiplied by `fonts.scale` (the dyslexia font is drawn smaller) and sized text without a line
+ * height gets `fonts.lineHeight`. With the platform font
  * (`fonts.regular` undefined) the styles are returned unchanged.
  */
 export function withFontFamily<T extends Record<string, object>>(styles: T, fonts: ThemeFonts): T {
@@ -82,7 +97,11 @@ export function withFontFamily<T extends Record<string, object>>(styles: T, font
     }
     const bold = isBold(text.fontWeight);
     const { fontWeight: _weight, ...rest } = text;
-    out[name] = { ...rest, fontFamily: bold ? fonts.bold : fonts.regular };
+    out[name] = {
+      ...rest,
+      ...scaled(text, fonts),
+      fontFamily: bold ? fonts.bold : fonts.regular,
+    };
   }
   return out as T;
 }

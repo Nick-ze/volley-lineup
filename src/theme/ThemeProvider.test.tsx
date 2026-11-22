@@ -37,9 +37,11 @@ describe('ThemeProvider', () => {
       </ThemeProvider>,
     );
     expect(screen.getByText('light')).toBeTruthy();
+    // The dyslexia font is drawn at 0.85× with a 1.4× line height (fit at 375 px).
     expect(flat()).toEqual({
       color: lightColors.text,
-      fontSize: 15,
+      fontSize: 13,
+      lineHeight: 18,
       fontFamily: 'OpenDyslexic-Bold',
     });
   });

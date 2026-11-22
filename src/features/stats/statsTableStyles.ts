@@ -34,6 +34,7 @@ export const useStatsTableStyles = makeStyles((theme) => ({
   },
   headCell: { paddingHorizontal: spacing.sm, backgroundColor: theme.colors.surfaceRaised },
   header: { ...typography.label, color: theme.colors.textMuted, lineHeight: ROW_HEIGHT },
-  num: { width: CELL_WIDTH, textAlign: 'center' },
+  // v8: the wide dyslexia font needs wider columns ("100%").
+  num: { width: theme.dyslexiaFont ? CELL_WIDTH * 1.3 : CELL_WIDTH, textAlign: 'center' },
   legend: { ...typography.caption, color: theme.colors.textMuted },
 }));

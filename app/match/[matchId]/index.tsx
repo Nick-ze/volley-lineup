@@ -150,9 +150,13 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.md,
   },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  // Six links: one row on wide screens, two rows of three on phones.
+  // Six links: one row on wide screens, two rows of three on phones (v8: three rows of two with
+  // the wide dyslexia font, so "Aufstellungen" fits its button).
   link: { flexGrow: 1, minWidth: touchTarget },
   linkWide: { flexBasis: 0 },
-  linkPhone: { flexBasis: '30%', paddingHorizontal: spacing.sm },
+  linkPhone: {
+    flexBasis: theme.dyslexiaFont ? '40%' : '30%',
+    paddingHorizontal: spacing.sm,
+  },
   notFound: { ...typography.body, color: theme.colors.textMuted, padding: spacing.lg },
 }));
