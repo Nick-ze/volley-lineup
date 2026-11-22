@@ -6,6 +6,7 @@ import { t } from '@/i18n/en';
 import { STORAGE_KEY, useAppStore } from '@/store';
 
 import { resetStartupRedirect } from '../hooks/useStartupRedirect';
+import { seasonRefs } from '@/store/testSeason';
 
 const s = t.roster;
 const store = () => useAppStore.getState();
@@ -197,6 +198,7 @@ describe('roster flows', () => {
     });
     const match = store().addMatch({
       teamId: team.id,
+      ...seasonRefs(team.id, 'X'),
       opponent: 'X',
       date: '2026-11-21',
       home: true,
@@ -239,8 +241,20 @@ describe('roster flows', () => {
 
   it('lists matches newest first and deletes one after confirmation', async () => {
     const { team } = seedTeam();
-    store().addMatch({ teamId: team.id, opponent: 'Old', date: '2026-01-01', home: true });
-    store().addMatch({ teamId: team.id, opponent: 'New', date: '2026-10-01', home: false });
+    store().addMatch({
+      teamId: team.id,
+      ...seasonRefs(team.id, 'Old'),
+      opponent: 'Old',
+      date: '2026-01-01',
+      home: true,
+    });
+    store().addMatch({
+      teamId: team.id,
+      ...seasonRefs(team.id, 'New'),
+      opponent: 'New',
+      date: '2026-10-01',
+      home: false,
+    });
     await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
     const rows = screen.getAllByText(/^vs /).map((n) => n.props.children);
     expect(rows).toEqual(['vs New', 'vs Old']);
@@ -254,8 +268,20 @@ describe('roster flows', () => {
 
   it('v6.2: searches matches by opponent or date', async () => {
     const { team } = seedTeam();
-    store().addMatch({ teamId: team.id, opponent: 'TSV München', date: '2026-11-21', home: true });
-    store().addMatch({ teamId: team.id, opponent: 'Rivals', date: '2026-10-03', home: false });
+    store().addMatch({
+      teamId: team.id,
+      ...seasonRefs(team.id, 'TSV München'),
+      opponent: 'TSV München',
+      date: '2026-11-21',
+      home: true,
+    });
+    store().addMatch({
+      teamId: team.id,
+      ...seasonRefs(team.id, 'Rivals'),
+      opponent: 'Rivals',
+      date: '2026-10-03',
+      home: false,
+    });
     await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
     const rows = () => screen.queryAllByText(/^vs /).map((n) => n.props.children);
     expect(rows()).toHaveLength(2);

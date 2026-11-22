@@ -62,6 +62,8 @@ describe('lineup builder drag & drop', () => {
         {
           id: 'm1',
           teamId: 'team1',
+          seasonId: 's1',
+          opponentId: 'o1',
           opponent: 'R',
           date: '',
           home: true,

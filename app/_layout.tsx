@@ -80,6 +80,14 @@ export default function RootLayout() {
               />
               <Stack.Screen name="team/[teamId]/starters" options={{ title: t.nav.teamStarters }} />
               <Stack.Screen
+                name="team/[teamId]/season/[seasonId]"
+                options={{ title: t.nav.season }}
+              />
+              <Stack.Screen
+                name="team/[teamId]/season-new"
+                options={{ title: t.nav.newSeason, presentation: 'modal' }}
+              />
+              <Stack.Screen
                 name="team/[teamId]/players/[playerId]"
                 options={{ title: t.nav.playerDetail }}
               />

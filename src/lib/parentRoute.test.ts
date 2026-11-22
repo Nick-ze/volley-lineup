@@ -47,6 +47,15 @@ describe('parentRoute', () => {
     });
   });
 
+  it("v7: a season and the season form go back to the team's seasons (matches tab)", () => {
+    for (const route of ['team/[teamId]/season/[seasonId]', 'team/[teamId]/season-new']) {
+      expect(parentRoute(route, { teamId: 't1', seasonId: 's1' }, lookup)).toEqual({
+        pathname: '/team/[teamId]',
+        params: { teamId: 't1', tab: 'matches' },
+      });
+    }
+  });
+
   it('v6: player detail goes back to the roster, performance to the match', () => {
     expect(parentRoute('team/[teamId]/players/[playerId]', { teamId: 't1' }, lookup)).toEqual({
       pathname: '/team/[teamId]',

@@ -35,6 +35,8 @@ const set = (setNumber: SetLineup['setNumber'], over: Partial<SetLineup>): SetLi
 const match: Match = {
   id: 'm1',
   teamId: 'team1',
+  seasonId: 's1',
+  opponentId: 'o1',
   opponent: 'Rivals',
   date: '2026-11-01',
   home: true,

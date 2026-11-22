@@ -15,9 +15,13 @@
  * v7 → v8 (app 6.0): profiles and players may have a `photoId`, players a `description`, and
  * "our error" tags an `errorType` — all optional, so no data changes. The photos themselves are
  * stored under their own keys (`photoStore.ts`), not in this store.
+ * v8 → v9 (app 7.0): seasons / tournaments. Every team gets one season holding all its matches,
+ * every distinct opponent name becomes an opponent of it (`upgradeToSeasons`, the same step as
+ * for v7 export files); matches get `seasonId` + `opponentId`.
  */
 import { upgradeLineupToFormation } from '@/domain/roles';
-export const STORE_VERSION = 8;
+import { upgradeToSeasons } from '@/domain/seasons';
+export const STORE_VERSION = 9;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -73,5 +77,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion < 5 && isRec(state)) state = { chipLabel: 'number', ...state };
   if (fromVersion < 6 && isRec(state)) state = v5ToV6(state);
   if (fromVersion < 7 && isRec(state)) state = v6ToV7(state);
+  if (fromVersion < 9 && isRec(state)) state = upgradeToSeasons(state);
   return state;
 }

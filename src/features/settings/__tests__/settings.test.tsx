@@ -7,6 +7,7 @@ import { pickTextFile, saveTextFile } from '@/lib/fileTransfer';
 import { selectAppData, useAppStore, type AppData } from '@/store';
 
 import { SettingsScreen } from '../SettingsScreen';
+import { seasonRefs } from '@/store/testSeason';
 
 jest.mock('@/lib/fileTransfer', () => ({
   saveTextFile: jest.fn(() => Promise.resolve()),
@@ -34,6 +35,7 @@ function seed() {
   });
   const match = store().addMatch({
     teamId: herren.id,
+    ...seasonRefs(herren.id, 'Rivals'),
     opponent: 'Rivals',
     date: '2026-11-01',
     home: true,
@@ -63,6 +65,8 @@ function otherData(): AppData {
     })),
     matches: [],
     presets: [],
+    seasons: [],
+    opponents: [],
   };
 }
 
@@ -120,7 +124,7 @@ describe('import', () => {
     ['broken JSON', '{"app": "volley-lineup",', 'This file is not valid JSON.'],
     [
       'a newer schema version',
-      JSON.stringify({ app: 'volley-lineup', schemaVersion: 8 }),
+      JSON.stringify({ app: 'volley-lineup', schemaVersion: 9 }),
       'different version',
     ],
   ])('shows an error for %s and changes nothing', async (_label, text, message) => {
@@ -191,6 +195,7 @@ describe('export', () => {
       presets: 0,
       photos: 0,
       descriptions: 0,
+      seasons: 1,
     });
     expect(await screen.findByText(`Exported ${name}.`)).toBeTruthy();
   });
@@ -212,6 +217,7 @@ describe('export', () => {
       presets: 0,
       photos: 0,
       descriptions: 0,
+      seasons: 1,
     });
   });
 
@@ -296,6 +302,8 @@ describe('delete all and version', () => {
       players: [],
       matches: [],
       presets: [],
+      seasons: [],
+      opponents: [],
     });
     expect(screen.getByText('All data deleted.')).toBeTruthy();
     expect(store().currentProfileId).toBeNull();

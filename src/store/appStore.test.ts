@@ -15,6 +15,7 @@ import {
   selectStarters,
   selectTeamsForProfile,
 } from './selectors';
+import { seasonRefs } from './testSeason';
 
 const withPhotos = (data: AppData) => ({ ...data, photos: [] });
 
@@ -41,6 +42,7 @@ function seed() {
   });
   const match = store().addMatch({
     teamId: team.id,
+    ...seasonRefs(team.id, 'Rivals'),
     opponent: 'Rivals',
     date: '2026-11-01',
     home: true,
@@ -158,6 +160,7 @@ describe('matches', () => {
     const { team } = seed();
     const m = store().addMatch({
       teamId: team.id,
+      ...seasonRefs(team.id, 'X'),
       opponent: 'X',
       date: '2026-12-01',
       home: false,
@@ -302,6 +305,17 @@ describe('whole data', () => {
   });
 });
 
+/**
+ * v7.0: every migration from before store v9 also runs the seasons step; for states without
+ * teams it only adds empty `seasons` / `opponents` lists. Asserts that, and returns the rest.
+ */
+function withoutEmptySeasons(state: unknown): unknown {
+  const { seasons, opponents, ...rest } = state as Record<string, unknown>;
+  expect(seasons).toEqual([]);
+  expect(opponents).toEqual([]);
+  return rest;
+}
+
 describe('migrations', () => {
   it('passes current data through and rejects newer versions', () => {
     expect(migrateStore({ a: 1 }, STORE_VERSION)).toEqual({ a: 1 });
@@ -321,7 +335,7 @@ describe('migrations', () => {
         { id: 'm2' },
       ],
     };
-    expect(migrateStore(v1, 1)).toEqual({
+    expect(withoutEmptySeasons(migrateStore(v1, 1))).toEqual({
       chipLabel: 'number',
       presets: [],
       language: 'en',
@@ -348,7 +362,7 @@ describe('migrations', () => {
         { id: 'm2' },
       ],
     });
-    expect(migrateStore({ matches: 'x' }, 1)).toEqual({
+    expect(withoutEmptySeasons(migrateStore({ matches: 'x' }, 1))).toEqual({
       chipLabel: 'number',
       presets: [],
       language: 'en',
@@ -359,7 +373,7 @@ describe('migrations', () => {
 
   it('upgrades v2 data: the state gains an empty preset list', () => {
     const v2 = { profiles: [], matches: [], language: 'de' };
-    expect(migrateStore(v2, 2)).toEqual({
+    expect(withoutEmptySeasons(migrateStore(v2, 2))).toEqual({
       chipLabel: 'number',
       presets: [],
       profiles: [],
@@ -390,7 +404,7 @@ describe('migrations', () => {
     };
     // v3 → v4 changes nothing; v4 → v5 adds the chip setting; v5 → v6 the lineup defaults;
     // v6 → v7 passes this set (it has no slots) through, so its empty `roles` stay.
-    expect(migrateStore(v3, 3)).toEqual({
+    expect(withoutEmptySeasons(migrateStore(v3, 3))).toEqual({
       ...v3,
       chipLabel: 'number',
       matches: [
@@ -404,7 +418,7 @@ describe('migrations', () => {
 
   it('upgrades v4 data (v3.0 app): player chips keep showing numbers', () => {
     const v4 = { profiles: [], presets: [], matches: [], language: 'de' };
-    expect(migrateStore(v4, 4)).toEqual({ ...v4, chipLabel: 'number' });
+    expect(withoutEmptySeasons(migrateStore(v4, 4))).toEqual({ ...v4, chipLabel: 'number' });
     expect(migrateStore(null, 4)).toBeNull();
   });
 
@@ -416,7 +430,7 @@ describe('migrations', () => {
     };
     // v5 → v6 adds `roles: {}`; v6 → v7 turns it into the default formation where there are
     // slots (the preset) and passes the slot-less set through.
-    expect(migrateStore(v5, 5)).toEqual({
+    expect(withoutEmptySeasons(migrateStore(v5, 5))).toEqual({
       chipLabel: 'name',
       presets: [
         {
@@ -438,7 +452,7 @@ describe('migrations', () => {
       matches: [{ sets: [{ roles: { a: 'OH' }, liberoActive: false }] }],
       presets: 'x',
     };
-    expect(migrateStore(off, 5)).toEqual(off);
+    expect(withoutEmptySeasons(migrateStore(off, 5))).toEqual(off);
     expect(migrateStore(null, 5)).toBeNull();
   });
 
@@ -467,7 +481,7 @@ describe('migrations', () => {
       ],
       presets: [{ id: 'ps', slots, roles: { mb: 'OH' } }, 'junk'],
     };
-    expect(migrateStore(v6, 6)).toEqual({
+    expect(withoutEmptySeasons(migrateStore(v6, 6))).toEqual({
       players,
       matches: [
         {
@@ -504,9 +518,9 @@ describe('migrations', () => {
     });
     // malformed collections are passed through; without players only overrides count
     const odd = { players: 'x', matches: 'x', presets: { a: 1 } };
-    expect(migrateStore(odd, 6)).toEqual(odd);
+    expect(withoutEmptySeasons(migrateStore(odd, 6))).toEqual(odd);
     const noPlayers = { matches: [{ sets: [{ slots, roles: { oh: 'S' } }] }], presets: [] };
-    expect(migrateStore(noPlayers, 6)).toEqual({
+    expect(withoutEmptySeasons(migrateStore(noPlayers, 6))).toEqual({
       matches: [{ sets: [{ slots, formation: { system: '5-1', order: 'outside', setterAt: 6 } }] }],
       presets: [],
     });
@@ -514,9 +528,9 @@ describe('migrations', () => {
     const current = {
       matches: [{ sets: [{ slots, formation: { system: '6-2', order: 'outside', setterAt: 2 } }] }],
     };
-    expect(migrateStore(current, 6)).toEqual(current);
+    expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(8); // v6.0 bump: optional photo / description / error-type fields
+    expect(STORE_VERSION).toBe(9); // v7.0: seasons / tournaments
   });
 
   it('remembers whether chips show names or numbers, also after delete all', () => {
@@ -531,5 +545,99 @@ describe('migrations', () => {
     store().setLanguage('de');
     expect(store().language).toBe('de');
     store().setLanguage('en');
+  });
+});
+
+describe('v9 seasons and opponents', () => {
+  beforeEach(() => store().resetAll());
+
+  it('adds, edits and deletes a season with its opponents and matches', () => {
+    const team = store().addTeam({ profileId: 'p', name: 'Herren' });
+    const cup = store().addSeason({
+      teamId: team.id,
+      name: 'Cup',
+      kind: 'tournament',
+      location: 'Halle',
+    });
+    const rivals = store().addOpponent(cup.id, 'Rivals');
+    store().addMatch({
+      teamId: team.id,
+      seasonId: cup.id,
+      opponentId: rivals.id,
+      opponent: 'Rivals',
+      date: '2026-06-01',
+      home: true,
+    });
+    store().updateSeason(cup.id, {
+      name: 'Beach Cup',
+      kind: 'tournament',
+      startDate: '2026-06-01',
+    });
+    expect(store().seasons[0]).toEqual({
+      id: cup.id,
+      teamId: team.id,
+      createdAt: cup.createdAt,
+      name: 'Beach Cup',
+      kind: 'tournament',
+      startDate: '2026-06-01',
+    }); // location removed
+    store().deleteSeason(cup.id);
+    expect([store().seasons, store().opponents, store().matches]).toEqual([[], [], []]);
+  });
+
+  it('renames an opponent with its matches; deletes only an opponent without matches', () => {
+    const team = store().addTeam({ profileId: 'p', name: 'Herren' });
+    const s = store().addSeason({ teamId: team.id, name: '2026', kind: 'season' });
+    const a = store().addOpponent(s.id, 'Rivals');
+    const b = store().addOpponent(s.id, 'Unused');
+    store().addMatch({
+      teamId: team.id,
+      seasonId: s.id,
+      opponentId: a.id,
+      opponent: 'Rivals',
+      date: '2026-06-01',
+      home: true,
+    });
+    store().renameOpponent(a.id, 'Rivals 1');
+    expect(store().opponents[0]?.name).toBe('Rivals 1');
+    expect(store().matches[0]?.opponent).toBe('Rivals 1');
+    store().deleteOpponent(a.id);
+    expect(store().opponents).toHaveLength(2);
+    store().deleteOpponent(b.id);
+    expect(store().opponents.map((o) => o.id)).toEqual([a.id]);
+  });
+
+  it('deleting a team or profile removes its seasons and opponents', () => {
+    const profile = store().addProfile({ name: 'Coach', color: '#FF6B00' });
+    const t1 = store().addTeam({ profileId: profile.id, name: 'A' });
+    const t2 = store().addTeam({ profileId: 'other', name: 'B' });
+    const s1 = store().addSeason({ teamId: t1.id, name: '2026', kind: 'season' });
+    const s2 = store().addSeason({ teamId: t2.id, name: '2026', kind: 'season' });
+    store().addOpponent(s1.id, 'X');
+    store().addOpponent(s2.id, 'Y');
+    store().deleteTeam(t2.id);
+    expect(store().seasons.map((x) => x.id)).toEqual([s1.id]);
+    expect(store().opponents.map((o) => o.name)).toEqual(['X']);
+    store().deleteProfile(profile.id);
+    expect([store().seasons, store().opponents]).toEqual([[], []]);
+  });
+
+  it('migrates v8 data (v6.x app): one season per team, matches assigned', () => {
+    const v8 = {
+      teams: [
+        { id: 't1', profileId: 'p', name: 'Herren', season: '2026/27', createdAt: '2026-01-01' },
+      ],
+      matches: [
+        { id: 'm1', teamId: 't1', opponent: 'Rivals', date: '2026-11-01', home: true, sets: [] },
+      ],
+    };
+    const up = migrateStore(v8, 8) as { seasons: unknown[]; matches: Record<string, unknown>[] };
+    expect(up.seasons).toEqual([
+      { id: 'season-t1', teamId: 't1', name: '2026/27', kind: 'season', createdAt: '2026-01-01' },
+    ]);
+    expect(up.matches[0]).toMatchObject({
+      seasonId: 'season-t1',
+      opponentId: 'opp-season-t1-rivals',
+    });
   });
 });

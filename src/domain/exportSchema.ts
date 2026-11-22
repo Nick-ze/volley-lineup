@@ -15,10 +15,13 @@ import type {
   LineupPreset,
   ManagerProfile,
   Match,
+  Opponent,
   Photo,
   Player,
   PointKind,
   Position,
+  Season,
+  SeasonKind,
   SetEvent,
   SetLineup,
   Team,
@@ -26,6 +29,7 @@ import type {
 import { isValidPointTag } from './pointTags';
 import { FORMATION_ORDERS, FORMATION_SYSTEMS, upgradeLineupToFormation } from './roles';
 import { validatePresetName } from './presets';
+import { SEASON_KINDS, upgradeToSeasons } from './seasons';
 import {
   isPhotoDataUri,
   isValidDescription,
@@ -36,9 +40,9 @@ import {
 import { ALL_POSITIONS, ERROR_TYPES } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 7 as const;
+export const EXPORT_SCHEMA_VERSION = 8 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8];
 
 /**
  * The persisted collections. Derived from `ExportFile` (the domain layer can't import the
@@ -46,7 +50,7 @@ export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7
  */
 export type TransferData = Pick<
   ExportFile,
-  'profiles' | 'teams' | 'players' | 'matches' | 'presets' | 'photos'
+  'profiles' | 'teams' | 'players' | 'matches' | 'presets' | 'photos' | 'seasons' | 'opponents'
 >;
 
 /* ------------------------------------------------------------------ schema */
@@ -146,9 +150,30 @@ const setLineupSchema = z.object({
   liberoActive: z.boolean(),
 });
 
+/** v8: a season / tournament and an opponent team. */
+const seasonSchema = z.object({
+  id,
+  teamId: id,
+  name: z.string(),
+  kind: z.enum(SEASON_KINDS as [SeasonKind, ...SeasonKind[]]),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  location: z.string().optional(),
+  createdAt: z.string(),
+});
+
+const opponentSchema = z.object({
+  id,
+  seasonId: id,
+  name: z.string(),
+  createdAt: z.string(),
+});
+
 const matchSchema = z.object({
   id,
   teamId: id,
+  seasonId: id,
+  opponentId: id,
   opponent: z.string(),
   date: z.string(),
   home: z.boolean(),
@@ -178,6 +203,8 @@ export const exportFileSchema = z.object({
   matches: z.array(matchSchema),
   presets: z.array(presetSchema),
   photos: z.array(photoSchema),
+  seasons: z.array(seasonSchema),
+  opponents: z.array(opponentSchema),
 });
 
 /*
@@ -195,6 +222,8 @@ export type SchemaMatchesTypes = [
   Assert<Same<z.infer<typeof matchSchema>, Match>>,
   Assert<Same<z.infer<typeof presetSchema>, LineupPreset>>,
   Assert<Same<z.infer<typeof photoSchema>, Photo>>,
+  Assert<Same<z.infer<typeof seasonSchema>, Season>>,
+  Assert<Same<z.infer<typeof opponentSchema>, Opponent>>,
   Assert<Same<z.infer<typeof exportFileSchema>, ExportFile>>,
 ];
 
@@ -238,6 +267,8 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
   );
   const byTeam = <T extends { teamId: string }>(list: readonly T[]): T[] =>
     teamId === undefined ? [...list] : list.filter((x) => x.teamId === teamId);
+  const seasons = byTeam(data.seasons);
+  const seasonIds = new Set(seasons.map((x) => x.id));
   return {
     ...base,
     profiles: profiles.map((p) => withoutDanglingPhoto(p, photoIds)),
@@ -246,6 +277,8 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
     matches: byTeam(data.matches),
     presets: byTeam(data.presets),
     photos: keepReferencedPhotos(data.photos, { profiles, players }),
+    seasons,
+    opponents: data.opponents.filter((o) => seasonIds.has(o.seasonId)),
   };
 }
 
@@ -292,6 +325,8 @@ export interface ImportSummary {
   photos: number;
   /** v7: players with a description in the file. */
   descriptions: number;
+  /** v8: seasons / tournaments in the file. */
+  seasons: number;
 }
 
 export type ParseImportResult =
@@ -306,6 +341,7 @@ export function summarize(data: TransferData): ImportSummary {
     presets: data.presets.length,
     photos: data.photos.length,
     descriptions: data.players.filter((p) => p.description !== undefined).length,
+    seasons: data.seasons.length,
   };
 }
 
@@ -329,11 +365,13 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  *   'starters' preset; named presets have a valid name (≤ 40 characters, not blank) that is
  *   unique within the team, ignoring case;
  * - v7: every photo a profile or player refers to is in the file (photo ids unique); an error
- *   type only on an "our error" tag (`isValidPointTag`).
+ *   type only on an "our error" tag (`isValidPointTag`);
+ * - v8: every season's team exists, every opponent's season exists, and every match is in a
+ *   season of its own team and plays an opponent of that season.
  */
 export function isConsistent(data: TransferData): boolean {
-  const { profiles, teams, players, matches, presets, photos } = data;
-  const lists = [profiles, teams, players, matches, presets, photos];
+  const { profiles, teams, players, matches, presets, photos, seasons, opponents } = data;
+  const lists = [profiles, teams, players, matches, presets, photos, seasons, opponents];
   if (lists.some((list) => hasDuplicates(list.map((x) => x.id)))) return false;
   const photoIds = new Set(photos.map((p) => p.id));
   if (![...referencedPhotoIds(data)].every((photoId) => photoIds.has(photoId))) return false;
@@ -343,6 +381,13 @@ export function isConsistent(data: TransferData): boolean {
   if (!players.every((p) => teamIds.has(p.teamId))) return false;
   if (!matches.every((m) => teamIds.has(m.teamId))) return false;
   if (!presets.every((p) => teamIds.has(p.teamId))) return false;
+  if (!seasons.every((x) => teamIds.has(x.teamId))) return false;
+  const teamOfSeason = new Map(seasons.map((x) => [x.id, x.teamId]));
+  if (!opponents.every((o) => teamOfSeason.has(o.seasonId))) return false;
+  const seasonOfOpponent = new Map(opponents.map((o) => [o.id, o.seasonId]));
+  const inOwnSeason = (m: Match) =>
+    teamOfSeason.get(m.seasonId) === m.teamId && seasonOfOpponent.get(m.opponentId) === m.seasonId;
+  if (!matches.every(inOwnSeason)) return false;
   if (hasDuplicates(presets.filter((p) => p.kind === 'starters').map((p) => p.teamId))) {
     return false;
   }
@@ -435,7 +480,8 @@ function upgradeV5(raw: Record<string, unknown>): Record<string, unknown> {
  * Upgrades an older file step by step: v1 → v2 (sets), v2 → v3 (`presets: []`), v3 → v4 (no data
  * change: untagged points without timestamps stay valid), v4 → v5 (roles + libero on/off),
  * v5 → v6 (roles become a formation per lineup), v6 → v7 (`photos: []`; photo ids,
- * descriptions and error types are optional, so nothing else changes).
+ * descriptions and error types are optional, so nothing else changes), v7 → v8 (one season
+ * per team with its opponents, `upgradeToSeasons`).
  */
 function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
@@ -443,7 +489,8 @@ function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown>
   const v4 = v3.schemaVersion === 3 ? { ...v3, schemaVersion: 4 } : v3;
   const v5 = v4.schemaVersion === 4 ? upgradeV4(v4) : v4;
   const v6 = v5.schemaVersion === 5 ? upgradeV5(v5) : v5;
-  return v6.schemaVersion === 6 ? { photos: [], ...v6, schemaVersion: 7 } : v6;
+  const v7 = v6.schemaVersion === 6 ? { photos: [], ...v6, schemaVersion: 7 } : v6;
+  return v7.schemaVersion === 7 ? { ...upgradeToSeasons(v7), schemaVersion: 8 } : v7;
 }
 
 /**
@@ -491,6 +538,8 @@ export function replaceData(incoming: TransferData): TransferData {
     matches: [...incoming.matches],
     presets: [...incoming.presets],
     photos: [...incoming.photos],
+    seasons: [...incoming.seasons],
+    opponents: [...incoming.opponents],
   };
 }
 
@@ -553,6 +602,8 @@ export function mergeData(existing: TransferData, incoming: TransferData): Merge
       profiles,
       players,
     }),
+    seasons: mergeById(existing.seasons, incoming.seasons),
+    opponents: mergeById(existing.opponents, incoming.opponents),
   };
   return isConsistent(data) ? { ok: true, data } : { ok: false, error: 'MERGE_CONFLICT' };
 }

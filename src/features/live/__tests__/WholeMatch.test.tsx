@@ -68,6 +68,8 @@ function seed(sets: SetLineup[], extra: Partial<Match>[] = [], playerList = play
   const match = (over: Partial<Match>): Match => ({
     id: 'm1',
     teamId: 'team1',
+    seasonId: 's1',
+    opponentId: 'o1',
     opponent: 'Rivals',
     date: '2026-11-20',
     home: true,

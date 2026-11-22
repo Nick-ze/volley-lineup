@@ -96,6 +96,8 @@ const set2 = lineup({
 const match = (id: string, sets: SetLineup[]): Match => ({
   id,
   teamId: 't1',
+  seasonId: 's1',
+  opponentId: 'o1',
   opponent: id,
   date: '2026-11-21',
   home: true,

@@ -21,6 +21,8 @@ export function parentRoute(
     case 'team/[teamId]/players/[playerId]':
       return teamId ? { pathname: '/team/[teamId]', params: { teamId } } : '/teams';
     case 'team/[teamId]/match-new':
+    case 'team/[teamId]/season/[seasonId]':
+    case 'team/[teamId]/season-new':
       return teamId ? { pathname: '/team/[teamId]', params: { teamId, tab: 'matches' } } : '/teams';
     case 'team/[teamId]/preset/[presetId]':
       return teamId ? { pathname: '/team/[teamId]', params: { teamId, tab: 'presets' } } : '/teams';

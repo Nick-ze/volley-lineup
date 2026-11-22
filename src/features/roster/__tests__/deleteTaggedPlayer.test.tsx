@@ -3,6 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
+import { seasonRefs } from '@/store/testSeason';
 
 const store = () => useAppStore.getState();
 
@@ -28,6 +29,7 @@ it('blocks deleting a player who appears only in a point tag of a played set', a
   const tagged = add(2, 'Tagged');
   const match = store().addMatch({
     teamId: team.id,
+    ...seasonRefs(team.id, 'X'),
     opponent: 'X',
     date: '2026-11-21',
     home: true,

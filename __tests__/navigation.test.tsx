@@ -3,6 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
+import { seasonRefs } from '@/store/testSeason';
 
 describe('navigation shell', () => {
   it('renders the profile picker at /', async () => {
@@ -22,6 +23,7 @@ describe('header back after a deep link (no history)', () => {
     const team = s.addTeam({ profileId: profile.id, name: 'Herren 1' });
     const match = s.addMatch({
       teamId: team.id,
+      ...seasonRefs(team.id, 'Rivals'),
       opponent: 'Rivals',
       date: '2026-11-21',
       home: true,
