@@ -1,10 +1,13 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import type { LineupPreset, Match, Player, Team } from '@/domain/types';
+import type { LineupPreset, Match, Opponent, Player, Season, Team } from '@/domain/types';
 
 import { useAppStore } from './appStore';
 import {
+  selectMatchesForSeason,
   selectMatchesForTeam,
+  selectOpponentsForSeason,
+  selectSeasonsForTeam,
   selectPlayersForTeam,
   selectPresetsForTeam,
   selectStarters,
@@ -44,3 +47,18 @@ export const useStarters = (teamId: string | null | undefined): LineupPreset | u
 
 export const usePreset = (id: string | null | undefined): LineupPreset | undefined =>
   useAppStore((s) => s.presets.find((p) => p.id === id));
+
+/** v9: the team's seasons / tournaments, newest first. */
+export const useSeasonsForTeam = (teamId: string | null | undefined): Season[] =>
+  useAppStore(useShallow((s) => (teamId ? selectSeasonsForTeam(s, teamId) : [])));
+
+export const useSeason = (id: string | null | undefined): Season | undefined =>
+  useAppStore((s) => s.seasons.find((x) => x.id === id));
+
+/** v9: a season's opponents, by name. */
+export const useOpponentsForSeason = (seasonId: string | null | undefined): Opponent[] =>
+  useAppStore(useShallow((s) => (seasonId ? selectOpponentsForSeason(s, seasonId) : [])));
+
+/** v9: a season's matches, newest first. */
+export const useMatchesForSeason = (seasonId: string | null | undefined): Match[] =>
+  useAppStore(useShallow((s) => (seasonId ? selectMatchesForSeason(s, seasonId) : [])));

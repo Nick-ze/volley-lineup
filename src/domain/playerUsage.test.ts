@@ -12,6 +12,8 @@ const set = (extra: Partial<SetLineup> = {}): SetLineup => ({
 const match = (sets: SetLineup[]): Match => ({
   id: 'm',
   teamId: 't',
+  seasonId: 's1',
+  opponentId: 'o1',
   opponent: 'X',
   date: '2026-11-21',
   home: true,

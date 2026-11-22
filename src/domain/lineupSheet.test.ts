@@ -87,6 +87,8 @@ const full = (setNumber: SetLineup['setNumber'], weServeFirst: boolean): SetLine
 const match: Match = {
   id: 'm1',
   teamId: 't1',
+  seasonId: 's1',
+  opponentId: 'o1',
   opponent: 'Eagles',
   date: '2026-11-21',
   home: true,

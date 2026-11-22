@@ -6,7 +6,9 @@
  * v6 / app 5.0: roles belong to the court spots (a formation), not players, schemaVersion 6 —
  * PLAN §23; see docs/VOLLEYBALL_RULES.md;
  * v7 / app 6.0: photos for profiles and players, confidential player descriptions, an optional
- * error type on "our error" tags, schemaVersion 7 — PLAN §26).
+ * error type on "our error" tags, schemaVersion 7 — PLAN §26;
+ * v8 / app 7.0: seasons / tournaments with their opponent teams; every match belongs to one,
+ * schemaVersion 8 — PLAN §29).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -53,9 +55,38 @@ export interface Team {
   createdAt: string;
 }
 
+/** v8: a season (league) or a tournament of a team. Every match belongs to one. */
+export type SeasonKind = 'season' | 'tournament';
+
+export interface Season {
+  id: string;
+  teamId: string;
+  /** e.g. "2026/27" or "Beach Cup"; unique within the team (ignoring case). */
+  name: string;
+  kind: SeasonKind;
+  /** Optional ISO dates (YYYY-MM-DD) and place. */
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  createdAt: string;
+}
+
+/** v8: a team we play against in a season (unique name within the season, ignoring case). */
+export interface Opponent {
+  id: string;
+  seasonId: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface Match {
   id: string;
   teamId: string;
+  /** v8: the season / tournament the match belongs to. */
+  seasonId: string;
+  /** v8: the opposing team (an `Opponent` of the same season). */
+  opponentId: string;
+  /** The opponent's name as shown for the match (kept equal to the opponent's name on rename). */
   opponent: string;
   date: string;
   home: boolean;
@@ -161,7 +192,7 @@ export interface LineupPreset {
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 7;
+  schemaVersion: 8;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
@@ -170,6 +201,9 @@ export interface ExportFile {
   presets: LineupPreset[];
   /** v7: the pictures referenced by profiles and players. */
   photos: Photo[];
+  /** v8: seasons / tournaments and their opponent teams. */
+  seasons: Season[];
+  opponents: Opponent[];
 }
 
 /* ---- Derived helper types (not part of the persisted shape) ---- */

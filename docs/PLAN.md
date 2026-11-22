@@ -471,3 +471,62 @@ Pure logic: `src/domain/photos.ts` (data URI and description rules, referenced p
 - [x] The error type on "our error" is optional; old data and v1–v6 export files open without loss; export/import round trip restores exactly. — _v5.0 store (version 7) and v1 / v4 / v5 / v6 files checked in a browser; Android AsyncStorage upgrade covered by unit tests only._
 - [x] Phone layout 375 px, EN + DE. — _verified in a browser (Playwright, 375×812 / 390×844); not yet on a real phone._
 - [x] Lint, typecheck and tests pass in CI; src/domain at 100%.
+
+---
+
+# v7 plan — Seasons & tournaments
+
+Owner request after v6.2: a separate "season box". You create a season (or tournament), make the matches inside it, and add the teams you are going to play, so seasons and their opponents are easy to look through. Owner's choices: every match belongs to a season; opponents are picked from the season's list or typed (a new name is added); the season screen shows season stats, a record per opponent, and optional dates / place.
+
+## 28. v7 features
+
+1. **Seasons / tournaments per team**: name (unique in the team), kind (season or tournament), optional start / end date and place. The team's Matches tab becomes a list of season boxes (newest first) with "New season"; each box shows the name, kind, dates / place and the record (W–L, matches).
+2. **Season screen** (`/team/[teamId]/season/[seasonId]`) with three tabs:
+   - **Matches**: the season's matches with search (v6.2) and "New match".
+   - **Opponents**: the season's opponent teams with the record against each (played, W–L, in progress, upcoming, sets). Add, rename (renames their matches) or delete opponents (only without matches).
+   - **Stats**: the season's record and player stats.
+   - Edit and delete the season (deleting asks first and removes its matches).
+3. **New match in a season**: pick the opponent from the season's teams, or type a new name, which is added to the season.
+4. **Stats tab**: a season switcher (All seasons / each season).
+5. **Old data**: every team's existing matches go into one season named after the team's season text (e.g. "2026/27"), or else the years of its matches. Every distinct opponent name becomes an opponent of that season.
+
+## 29. v7 data model changes
+
+```ts
+type SeasonKind = 'season' | 'tournament';
+interface Season {
+  id;
+  teamId;
+  name;
+  kind;
+  startDate?;
+  endDate?;
+  location?;
+  createdAt;
+}
+interface Opponent {
+  id;
+  seasonId;
+  name;
+  createdAt;
+}
+interface Match {
+  /* … */ seasonId: string;
+  opponentId: string;
+  opponent: string;
+} // opponent = the name, kept in sync
+// ExportFile.schemaVersion 8: + seasons, opponents (v1–v7 files upgraded with `upgradeToSeasons`)
+// Store version 9 (same upgrade; deterministic ids `season-<teamId>`, `opp-<seasonId>-<folded name>`)
+```
+
+Pure logic: `src/domain/seasons.ts` (`upgradeToSeasons`, `validateSeasonForm`, `validateOpponentName`, `findOpponentByName`, `seasonsForTeam`, `opponentsForSeason`, `opponentRecords`, `opponentHasMatches`, `foldName`).
+
+## 30. v7 acceptance checklist
+
+- [ ] Seasons and tournaments can be created, edited and deleted. The team's Matches tab lists them as boxes with their record; a season screen shows its matches (with search), opponents and stats.
+- [ ] A new match is created inside a season; the opponent is picked from the season's teams or added by typing a new name.
+- [ ] Opponents can be added, renamed (their matches follow) and deleted when they have no matches. The record per opponent is correct (tests with literal numbers).
+- [ ] The Stats tab and the season screen show stats for one season (or all seasons).
+- [ ] Old data (store v8) and v1–v7 export files open without loss: one season per team with all its matches and opponents. Export / import round trip restores exactly.
+- [ ] Phone layout 375 px, EN + DE.
+- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%.

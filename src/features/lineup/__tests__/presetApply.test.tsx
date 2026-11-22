@@ -7,6 +7,7 @@ import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
 import { fullLineup, seedTeam } from '../../presets/__fixtures__/team';
+import { seasonRefs } from '@/store/testSeason';
 
 const store = () => useAppStore.getState();
 const s = t.presets.apply;
@@ -15,6 +16,7 @@ const set = (n: number) => store().matches[0].sets.find((x) => x.setNumber === n
 function addMatch(sets = [emptySetLineup(1)]) {
   return store().addMatch({
     teamId: 'team1',
+    ...seasonRefs('team1', 'Rivals'),
     opponent: 'Rivals',
     date: '2026-11-21',
     home: true,

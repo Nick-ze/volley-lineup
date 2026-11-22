@@ -19,6 +19,7 @@ import { transfer } from './en/transfer';
 import { photos } from './en/photos';
 import { playerDetail } from './en/playerDetail';
 import { performance } from './en/performance';
+import { seasons } from './en/seasons';
 import type { Widen } from './types';
 
 export const en = {
@@ -57,6 +58,8 @@ export const en = {
     matchStats: 'Match stats',
     playerDetail: 'Player',
     performance: 'Performance',
+    season: 'Season',
+    newSeason: 'New season',
     settings: 'Settings',
   },
   positions: {
@@ -98,6 +101,7 @@ export const en = {
   photos,
   playerDetail,
   performance,
+  seasons,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */

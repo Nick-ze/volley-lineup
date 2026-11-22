@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
-import type { LineupPreset, Match } from '@/domain/types';
+import type { LineupPreset, Match, Opponent, Season } from '@/domain/types';
 import { createId } from '@/lib/id';
 
 import { migrateStore, STORE_VERSION } from './migrations';
@@ -19,6 +19,8 @@ export const emptyData = (): AppData => ({
   players: [],
   matches: [],
   presets: [],
+  seasons: [],
+  opponents: [],
 });
 
 const initialState = (): AppState => ({
@@ -30,6 +32,18 @@ const initialState = (): AppState => ({
 });
 
 const now = () => new Date().toISOString();
+
+/** The seasons matching `drop` removed, with their opponents (their matches go with the team). */
+function withoutSeasonsOf(
+  s: Pick<AppData, 'seasons' | 'opponents'>,
+  drop: (season: Season) => boolean,
+): Pick<AppData, 'seasons' | 'opponents'> {
+  const gone = new Set(s.seasons.filter(drop).map((x) => x.id));
+  return {
+    seasons: s.seasons.filter((x) => !gone.has(x.id)),
+    opponents: s.opponents.filter((o) => !gone.has(o.seasonId)),
+  };
+}
 
 /** Removes every reference to a player (court, libero, libero replacements, subs) from a match. */
 function removePlayerFromMatch(match: Match, playerId: string): Match {
@@ -57,6 +71,7 @@ export const useAppStore = create<AppStore>()(
             players: s.players.filter((p) => !teamIds.has(p.teamId)),
             matches: s.matches.filter((m) => !teamIds.has(m.teamId)),
             presets: s.presets.filter((p) => !teamIds.has(p.teamId)),
+            ...withoutSeasonsOf(s, (x) => teamIds.has(x.teamId)),
             currentProfileId: s.currentProfileId === id ? null : s.currentProfileId,
           };
         }),
@@ -75,6 +90,7 @@ export const useAppStore = create<AppStore>()(
           players: s.players.filter((p) => p.teamId !== id),
           matches: s.matches.filter((m) => m.teamId !== id),
           presets: s.presets.filter((p) => p.teamId !== id),
+          ...withoutSeasonsOf(s, (x) => x.teamId === id),
         })),
 
       addPlayer: (input) => {
@@ -108,6 +124,40 @@ export const useAppStore = create<AppStore>()(
       updateMatch: (id, patch) =>
         set((s) => ({ matches: s.matches.map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
       deleteMatch: (id) => set((s) => ({ matches: s.matches.filter((m) => m.id !== id) })),
+      addSeason: (input) => {
+        const season: Season = { id: createId(), createdAt: now(), ...input };
+        set((s) => ({ seasons: [...s.seasons, season] }));
+        return season;
+      },
+      updateSeason: (id, value) =>
+        set((s) => ({
+          seasons: s.seasons.map((x) =>
+            x.id === id ? { id: x.id, teamId: x.teamId, createdAt: x.createdAt, ...value } : x,
+          ),
+        })),
+      deleteSeason: (id) =>
+        set((s) => ({
+          seasons: s.seasons.filter((x) => x.id !== id),
+          opponents: s.opponents.filter((o) => o.seasonId !== id),
+          matches: s.matches.filter((m) => m.seasonId !== id),
+        })),
+      addOpponent: (seasonId, name) => {
+        const opponent: Opponent = { id: createId(), seasonId, name, createdAt: now() };
+        set((s) => ({ opponents: [...s.opponents, opponent] }));
+        return opponent;
+      },
+      renameOpponent: (id, name) =>
+        set((s) => ({
+          opponents: s.opponents.map((o) => (o.id === id ? { ...o, name } : o)),
+          matches: s.matches.map((m) => (m.opponentId === id ? { ...m, opponent: name } : m)),
+        })),
+      deleteOpponent: (id) =>
+        set((s) =>
+          s.matches.some((m) => m.opponentId === id)
+            ? {}
+            : { opponents: s.opponents.filter((o) => o.id !== id) },
+        ),
+
       setLineup: (matchId, lineup) =>
         set((s) => ({
           matches: s.matches.map((m) => {
@@ -154,6 +204,8 @@ export const useAppStore = create<AppStore>()(
           players: data.players,
           matches: data.matches,
           presets: data.presets,
+          seasons: data.seasons,
+          opponents: data.opponents,
           currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
             ? s.currentProfileId
             : null,
@@ -174,6 +226,8 @@ export const useAppStore = create<AppStore>()(
         players: s.players,
         matches: s.matches,
         presets: s.presets,
+        seasons: s.seasons,
+        opponents: s.opponents,
         currentProfileId: s.currentProfileId,
         language: s.language,
         chipLabel: s.chipLabel,
@@ -193,5 +247,7 @@ export function selectAppData(s: AppData): AppData {
     players: s.players,
     matches: s.matches,
     presets: s.presets,
+    seasons: s.seasons,
+    opponents: s.opponents,
   };
 }

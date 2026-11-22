@@ -39,7 +39,16 @@ function seed(players: Player[] = roster) {
     teams: [{ id: 'team1', profileId: 'prof', name: 'Herren 1', createdAt: '' }],
     players,
     matches: [
-      { id: 'm1', teamId: 'team1', opponent: 'Rivals', date: '2026-11-20', home: true, sets: [] },
+      {
+        id: 'm1',
+        teamId: 'team1',
+        seasonId: 's1',
+        opponentId: 'o1',
+        opponent: 'Rivals',
+        date: '2026-11-20',
+        home: true,
+        sets: [],
+      },
     ],
     currentProfileId: 'prof',
   });

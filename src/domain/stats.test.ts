@@ -112,6 +112,8 @@ const set3 = lineup({ setNumber: 3 });
 const match1: Match = {
   id: 'm1',
   teamId: 't1',
+  seasonId: 's1',
+  opponentId: 'o1',
   opponent: 'A',
   date: '2026-10-01',
   home: true,
