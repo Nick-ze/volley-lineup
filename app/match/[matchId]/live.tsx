@@ -37,18 +37,23 @@ export default function LiveScreen() {
   // v8: LiveMatch is remounted per set, so the set shown before is kept here for its slide.
   const [shown, setShown] = useState({ set: setNumber, previous: null as SetNumber | null });
   if (shown.set !== setNumber) setShown({ set: setNumber, previous: shown.set ?? null });
+  // Back from Performance the court only slides in with the view, not as another set.
+  const changeView = (next: LiveView) => {
+    setView(next);
+    setShown((s) => (s.previous === null ? s : { ...s, previous: null }));
+  };
   return (
     <Screen>
       {match && (
         <Stack.Screen
-          options={{ headerRight: () => <LiveViewToggle value={view} onChange={setView} /> }}
+          options={{ headerRight: () => <LiveViewToggle value={view} onChange={changeView} /> }}
         />
       )}
       {/* v8: Live ↔ Performance slides; a sideways swipe switches between them. */}
       <SwipeTabs
         tabs={LIVE_VIEWS}
         value={view}
-        onChange={setView}
+        onChange={changeView}
         testID="live-view-swipe"
         contentStyle={styles.content}
       >

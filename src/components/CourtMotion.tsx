@@ -29,6 +29,7 @@ import {
   type SpotMoves,
 } from '@/domain/courtMotion';
 import { COURT_POSITIONS, type CourtPosition } from '@/domain/types';
+import { makeInert } from '@/lib/inert';
 
 /** Where each slot is inside the court's grid box (filled in by `onLayout`). */
 export interface CourtGeometry {
@@ -136,6 +137,7 @@ export function CourtGhosts({ motion, ...rest }: CourtGhostsProps) {
   if (!rects || rects.token !== token || Object.keys(moves).length === 0) return null;
   return (
     <View
+      ref={makeInert}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
       importantForAccessibility="no-hide-descendants"

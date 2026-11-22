@@ -17,6 +17,9 @@ interface TabSwipe {
   blockedRef: RefObject<boolean>;
 }
 
+type PanConfig = Parameters<typeof usePanGesture>[0];
+type NativeConfig = Parameters<typeof useNativeGesture>[0];
+
 /** The tab swipe of the nearest `SwipeTabs` (null outside one). */
 const TabSwipeContext = createContext<TabSwipe | null>(null);
 
@@ -65,6 +68,12 @@ export function SwipeTabs<T>(props: SwipeTabsProps<T>) {
 function SwipeArea<T>({ tabs, value, onChange, children, testID, size }: SwipeTabsProps<T>) {
   const blockedRef = useRef(false);
   const pan = usePanGesture({
+    // Web: vertical touch scrolling stays with the browser; the right-click menu keeps working.
+    // The detector's own `touchAction` prop doesn't reach a hook gesture's view; these web-only
+    // settings are accepted at runtime (gesture-handler's props white list) but are not in the
+    // config type, hence the `as PanConfig`.
+    touchAction: 'pan-y',
+    enableContextMenu: true,
     runOnJS: true,
     testID,
     activeOffsetX: [-OFFSET, OFFSET],
@@ -77,11 +86,10 @@ function SwipeArea<T>({ tabs, value, onChange, children, testID, size }: SwipeTa
     onFinalize: () => {
       blockedRef.current = false;
     },
-  });
+  } as PanConfig);
   return (
     <TabSwipeContext.Provider value={{ gesture: pan, blockedRef }}>
-      {/* Web: vertical touch scrolling stays with the browser. */}
-      <GestureDetector gesture={pan} touchAction="pan-y">
+      <GestureDetector gesture={pan}>
         <View collapsable={false} style={styles[size ?? 'grow']}>
           {children}
         </View>
@@ -118,6 +126,9 @@ function Blocker({
   // `block`: the tab swipe waits while this view scrolls (phones). The flag also covers a drag
   // that doesn't scroll (a mouse on web, a table that fits): the swipe may end, but is ignored.
   const native = useNativeGesture({
+    // Web: a table / text field keeps the browser's own scrolling and text selection.
+    touchAction: 'auto',
+    userSelect: 'auto',
     block: gesture,
     disallowInterruption: true,
     runOnJS: true,
@@ -125,12 +136,8 @@ function Blocker({
     onBegin: () => {
       blockedRef.current = true;
     },
-  });
-  return (
-    <GestureDetector gesture={native} touchAction="auto" userSelect="auto">
-      {children}
-    </GestureDetector>
-  );
+  } as NativeConfig);
+  return <GestureDetector gesture={native}>{children}</GestureDetector>;
 }
 
 const styles = StyleSheet.create({
