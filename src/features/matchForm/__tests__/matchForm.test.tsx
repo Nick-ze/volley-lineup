@@ -115,6 +115,18 @@ describe('new match form (v7.0)', () => {
     expect(store().matches[0]).toMatchObject({ date: '2026-11-21', opponent: 'Lions' });
   });
 
+  it('v8 QA: accepts a pasted date with spaces around it', async () => {
+    seedSeasons();
+    await open();
+    const pasted = ' 21.11.2026 ';
+    const field = await screen.findByLabelText(s.date);
+    expect(field.props.maxLength).toBeGreaterThanOrEqual(pasted.length);
+    await fireEvent.press(radio('Lions'));
+    await typeName(s.date, pasted);
+    await create();
+    expect(store().matches[0]).toMatchObject({ date: '2026-11-21', opponent: 'Lions' });
+  });
+
   it('shows the required errors', async () => {
     seedSeasons();
     await open();
