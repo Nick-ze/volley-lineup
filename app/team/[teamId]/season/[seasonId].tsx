@@ -41,7 +41,7 @@ export default function SeasonScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: t.roster.team.title(team.name, team.season) }} />
+      <Stack.Screen options={{ title: team.name }} />
       <SeasonHeader
         season={season}
         tab={tab}

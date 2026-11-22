@@ -50,6 +50,7 @@ export const seasons: Strings['seasons'] = {
   },
   matches: {
     empty: 'Noch keine Spiele in dieser Saison.',
+    emptyFor: (opponent: string) => `Noch keine Spiele gegen ${opponent}.`,
     filter: (opponent: string) => `gegen ${opponent} ✕`,
     filterLabel: (opponent: string) => `gegen ${opponent} ✕, Gegnerfilter entfernen`,
   },
@@ -58,7 +59,7 @@ export const seasons: Strings['seasons'] = {
     name: 'Name des Gegners',
     namePlaceholder: 'Teamname',
     add: 'Hinzufügen',
-    addLabel: 'Gegner hinzufügen',
+    addLabel: 'Hinzufügen: Gegner',
     record: (won: number, lost: number) => `${won}–${lost}`,
     played: (n: number) => `${n} gespielt`,
     upcoming: (n: number) => `${n} geplant`,

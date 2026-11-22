@@ -158,6 +158,19 @@ describe('seasons list (team → Matches tab)', () => {
     expect(store().seasons).toHaveLength(1);
   });
 
+  it('shows too-long and invalid-date errors', async () => {
+    const team = seedTeam();
+    await renderRouter('./app', { initialUrl: `/team/${team.id}/season-new` });
+    await type(s.form.name, 'x'.repeat(41));
+    await type(s.form.location, 'y'.repeat(81));
+    await type(s.form.startDate, '2026-02-30');
+    await type(s.form.endDate, '2026-13-01');
+    await press(s.form.create);
+    expect(screen.getAllByText(s.errors.tooLong)).toHaveLength(2); // name and place
+    expect(screen.getAllByText(s.errors.invalidDate)).toHaveLength(2); // start and end
+    expect(store().seasons).toHaveLength(0);
+  });
+
   it('shows the boxes newest first with their summary and opens a season', async () => {
     const team = seedTeam();
     const a = seedSeasonA(team.id);
@@ -318,6 +331,18 @@ describe('season screen', () => {
     await fireEvent.press(screen.getByLabelText(s.matches.filterLabel('Bears')));
     expect(screen.queryByTestId('opponent-filter')).toBeNull();
     expect(rows()).toHaveLength(5);
+  });
+
+  it('filtering by an opponent without matches says so', async () => {
+    const team = seedTeam();
+    const a = seedSeasonA(team.id);
+    await renderRouter('./app', { initialUrl: `/team/${team.id}/season/${a.id}?tab=opponents` });
+    const bears = findOpponentByName(store().opponents, a.id, 'Bears');
+    await fireEvent.press(screen.getByTestId(`opponent-${bears?.id}`));
+    expect(screen.getByText(s.matches.emptyFor('Bears'))).toBeTruthy();
+    expect(screen.queryByText(s.matches.empty)).toBeNull();
+    await press(s.matches.filterLabel('Bears'));
+    expect(screen.queryByText(s.matches.emptyFor('Bears'))).toBeNull();
   });
 
   it('the Stats tab shows only this season’s matches', async () => {

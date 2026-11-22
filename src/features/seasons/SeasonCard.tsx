@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     minHeight: touchTarget * 2,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: borderWidth.thin,
     borderColor: colors.border,
     borderLeftWidth: borderWidth.thick,
     borderLeftColor: colors.primary,

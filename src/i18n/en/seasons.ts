@@ -48,6 +48,7 @@ export const seasons = {
   },
   matches: {
     empty: 'No matches in this season yet.',
+    emptyFor: (opponent: string) => `No matches against ${opponent} yet.`,
     filter: (opponent: string) => `vs ${opponent} ✕`,
     filterLabel: (opponent: string) => `vs ${opponent} ✕, remove the opponent filter`,
   },

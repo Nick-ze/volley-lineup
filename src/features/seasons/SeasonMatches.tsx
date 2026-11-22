@@ -4,7 +4,6 @@ import { Text, View } from 'react-native';
 import { Button } from '@/components';
 import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
 import { TextField } from '@/features/roster/components/TextField';
 import { listStyles as styles } from '@/features/roster/components/styles';
@@ -48,10 +47,11 @@ export function SeasonMatches({
     <>
       <View style={styles.headerRow}>
         {opponent ? (
-          <ChoiceChip
+          <Button
             label={t.seasons.matches.filter(opponent.name)}
             accessibilityLabel={t.seasons.matches.filterLabel(opponent.name)}
-            selected
+            variant="secondary"
+            compact
             onPress={onClearOpponent}
             testID="opponent-filter"
           />
@@ -60,7 +60,11 @@ export function SeasonMatches({
         )}
         <Button label={s.newMatch} onPress={onNewMatch} compact />
       </View>
-      {matches.length === 0 && <Text style={styles.empty}>{t.seasons.matches.empty}</Text>}
+      {matches.length === 0 && (
+        <Text style={styles.empty}>
+          {opponent ? t.seasons.matches.emptyFor(opponent.name) : t.seasons.matches.empty}
+        </Text>
+      )}
       {matches.length > 0 && (
         <TextField
           label={s.search}
