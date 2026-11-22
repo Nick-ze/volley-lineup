@@ -27,7 +27,7 @@ Last updated: 2026-11-22, after releasing **v7.0.0**.
 
 - `main` is green (CI), **990 tests**, `src/domain` at 100% coverage.
 - Current versions: app **7.0.0** (`app.json` + `package.json`, must match), store **9**, export `schemaVersion` **8** (the store-only `chipLabel` setting isn't exported; photos live outside the store but are exported).
-- Last decision number in `docs/DECISIONS.md`: **#208**. Continue at #209.
+- Last decision number in `docs/DECISIONS.md`: **#209**. Continue at #210.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps

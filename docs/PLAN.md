@@ -545,7 +545,9 @@ Pure logic: `src/domain/seasons.ts` (`upgradeToSeasons`, `validateSeasonForm`, `
 ## 32. v8 data model
 
 ```ts
-interface Team { /* … */ photoId?: string } // v9 export / app 8.0: the team's picture
+interface Team {
+  /* … */ photoId?: string;
+} // v9 export / app 8.0: the team's picture
 // AppState (store v10, device settings — not exported, kept on "Delete all data")
 themeMode: 'dark' | 'light' | 'system'; // default 'dark'
 dyslexiaFont: boolean; // default false
@@ -557,13 +559,13 @@ Store v9 → v10 adds `themeMode: 'dark'` and `dyslexiaFont: false`. The photo s
 
 ## 33. v8 acceptance checklist
 
-- [ ] All dates show as dd.mm.yy (EN + DE); date fields accept dd.mm.yy / dd.mm.yyyy / ISO; storage and exports stay ISO (tests).
-- [ ] Tab switches slide in the right direction; a horizontal swipe changes tabs; drag & drop, tables, the tag row and text fields still work; reduce motion turns the slides off.
-- [ ] Rotating (builder, next-set setup, rotation viewer, live side-out) slides every player to their new spot.
-- [ ] The new icon is used for the app icon, adaptive icon, splash and favicon (checked in the APK workflow and web build).
-- [ ] The roster shows player cards (photo or number, name, positions, active / injured), 2 columns at 375 px.
-- [ ] A light / dark toggle in the Profile tab switches the whole app, persists, and meets AA contrast in both themes.
-- [ ] A dyslexia-font toggle switches all text to the dyslexia font, persists, and layouts still fit at 375 px.
-- [ ] First names come first everywhere names are shown; duplicates are told apart (tests).
-- [ ] Teams can have a picture (add / change / remove), shown in the team list and header; old data and v1–v8 export files open without loss; round trip restores exactly.
-- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%.
+- [x] All dates show as dd.mm.yy (EN + DE); date fields accept dd.mm.yy / dd.mm.yyyy / ISO; storage and exports stay ISO (tests).
+- [x] Tab switches slide in the right direction; a horizontal swipe changes tabs; drag & drop, tables, the tag row and text fields still work; reduce motion turns the slides off. — _checked in a browser with mouse and touch emulation (Playwright); swipe feel not yet checked on a real phone. Reduce motion is read at app start (#208)._
+- [x] Rotating (builder, next-set setup, rotation viewer, live side-out) slides every player to their new spot. — _next-set setup shows no court (text only), so nothing slides there (#207)._
+- [x] The new icon is used for the app icon, adaptive icon, splash and favicon (checked in the APK workflow and web build). — _web favicon and `expo config` checked; the launcher icon on a real home screen is not yet checked._
+- [x] The roster shows player cards (photo or number, name, positions, active / injured), 2 columns at 375 px.
+- [x] A light / dark toggle in the Profile tab switches the whole app, persists, and meets AA contrast in both themes.
+- [x] A dyslexia-font toggle switches all text to the dyslexia font, persists, and layouts still fit at 375 px. — _browser only; native font rendering not yet checked on a phone._
+- [x] First names come first everywhere names are shown; duplicates are told apart (tests).
+- [x] Teams can have a picture (add / change / remove), shown in the team list and header; old data and v1–v8 export files open without loss; round trip restores exactly.
+- [x] Lint, typecheck and tests pass in CI; src/domain at 100%.
