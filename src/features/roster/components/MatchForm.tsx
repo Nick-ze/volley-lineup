@@ -8,7 +8,7 @@ import {
   type NewMatchErrors,
   type NewMatchValue,
 } from '@/domain/matchForm';
-import { toIsoDate } from '@/domain/roster';
+import { todayInput } from '@/domain/dates';
 import { OpponentPicker } from '@/features/matchForm/OpponentPicker';
 import { SeasonPicker } from '@/features/matchForm/SeasonPicker';
 import { useT } from '@/i18n';
@@ -29,7 +29,8 @@ export interface MatchFormProps {
 
 /**
  * v7.0: season (fixed, a choice of the team's seasons, or a new one), opponent (a chip of the
- * season's opponents or a typed name), date (YYYY-MM-DD, defaults to today) and home / away.
+ * season's opponents or a typed name), date (v8: dd.mm.yy, also dd.mm.yyyy / ISO; defaults to
+ * today) and home / away.
  */
 export function MatchForm({ teamId, seasonId, onSubmit, onCancel }: MatchFormProps) {
   const formStyles = useFormStyles();
@@ -41,7 +42,7 @@ export function MatchForm({ teamId, seasonId, onSubmit, onCancel }: MatchFormPro
   const opponents = useOpponentsForSeason(season);
   const [chip, setChip] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [date, setDate] = useState(() => toIsoDate(new Date()));
+  const [date, setDate] = useState(() => todayInput(new Date()));
   const [home, setHome] = useState(true);
   const [errors, setErrors] = useState<NewMatchErrors>({});
   const s = t.roster.matchForm;
@@ -94,6 +95,8 @@ export function MatchForm({ teamId, seasonId, onSubmit, onCancel }: MatchFormPro
         value={date}
         onChangeText={setDate}
         error={errorText(t, errors.date)}
+        placeholder={t.appearance.dateHint}
+        keyboardType="numbers-and-punctuation"
         maxLength={10}
       />
       <Text style={formStyles.sectionLabel}>{s.venue}</Text>

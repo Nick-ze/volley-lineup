@@ -6,7 +6,7 @@ export const roster = {
     notInteger: 'Enter a whole number.',
     outOfRange: 'Use a number from 0 to 99.',
     taken: 'This number is already used in this team.',
-    invalidDate: 'Enter a valid date as YYYY-MM-DD.',
+    invalidDate: 'Enter a valid date as dd.mm.yy.',
     duplicate: 'A position is selected twice.',
   },
   confirm: {
@@ -95,7 +95,7 @@ export const roster = {
   },
   matchForm: {
     opponent: 'Opponent',
-    date: 'Date (YYYY-MM-DD)',
+    date: 'Date',
     venue: 'Venue',
     create: 'Create match',
     /** v7.0: the season / tournament the match goes into. */

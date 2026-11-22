@@ -21,7 +21,6 @@ export const seasons: Strings['seasons'] = {
     kind: 'Art',
     startDate: 'Beginn (optional)',
     endDate: 'Ende (optional)',
-    datePlaceholder: 'JJJJ-MM-TT',
     location: 'Ort (optional)',
     create: 'Anlegen',
     delete: 'Löschen',
@@ -37,7 +36,7 @@ export const seasons: Strings['seasons'] = {
     tooLong: 'Das ist zu lang.',
     duplicateSeason: 'Dieses Team hat schon eine Saison mit diesem Namen.',
     duplicateOpponent: 'Diese Saison hat schon einen Gegner mit diesem Namen.',
-    invalidDate: 'Gib ein gültiges Datum als JJJJ-MM-TT ein.',
+    invalidDate: 'Gib ein gültiges Datum als tt.mm.jj ein.',
     endBeforeStart: 'Das Ende liegt vor dem Beginn.',
   },
   screen: {

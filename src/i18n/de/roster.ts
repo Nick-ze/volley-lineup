@@ -8,7 +8,7 @@ export const roster: Strings['roster'] = {
     notInteger: 'Gib eine ganze Zahl ein.',
     outOfRange: 'Verwende eine Zahl von 0 bis 99.',
     taken: 'Diese Nummer ist in diesem Team schon vergeben.',
-    invalidDate: 'Gib ein gültiges Datum im Format JJJJ-MM-TT ein.',
+    invalidDate: 'Gib ein gültiges Datum im Format tt.mm.jj ein.',
     duplicate: 'Eine Position ist doppelt ausgewählt.',
   },
   confirm: {
@@ -96,7 +96,7 @@ export const roster: Strings['roster'] = {
   },
   matchForm: {
     opponent: 'Gegner',
-    date: 'Datum (JJJJ-MM-TT)',
+    date: 'Datum',
     venue: 'Spielort',
     create: 'Spiel anlegen',
     season: 'Saison / Turnier',

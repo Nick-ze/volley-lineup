@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
+import { formatOptionalDate, todayInput } from '@/domain/dates';
 import {
   SEASON_KINDS,
   validateSeasonForm,
@@ -30,15 +31,20 @@ export interface SeasonFormProps {
   onDelete?: () => void;
 }
 
-/** Name, Season / Tournament, optional start / end date (YYYY-MM-DD) and place. */
+/**
+ * Name, Season / Tournament, optional start / end date and place. v8: dates show and are typed as
+ * dd.mm.yy (also dd.mm.yyyy / ISO); a new season starts today, the end stays empty.
+ */
 export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: SeasonFormProps) {
   const formStyles = useFormStyles();
   const t = useT();
   const s = t.seasons.form;
   const [name, setName] = useState(season?.name ?? '');
   const [kind, setKind] = useState(season?.kind ?? 'season');
-  const [startDate, setStartDate] = useState(season?.startDate ?? '');
-  const [endDate, setEndDate] = useState(season?.endDate ?? '');
+  const [startDate, setStartDate] = useState(() =>
+    season ? formatOptionalDate(season.startDate) : todayInput(new Date()),
+  );
+  const [endDate, setEndDate] = useState(formatOptionalDate(season?.endDate));
   const [location, setLocation] = useState(season?.location ?? '');
   const [errors, setErrors] = useState<Partial<Record<SeasonFormField, SeasonFormError>>>({});
   const err = (f: SeasonFormField) => seasonErrorText(t, errors[f], 'season');
@@ -79,7 +85,8 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
         label={s.startDate}
         value={startDate}
         onChangeText={setStartDate}
-        placeholder={s.datePlaceholder}
+        placeholder={t.appearance.dateHint}
+        keyboardType="numbers-and-punctuation"
         error={err('startDate')}
         maxLength={10}
       />
@@ -87,7 +94,8 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
         label={s.endDate}
         value={endDate}
         onChangeText={setEndDate}
-        placeholder={s.datePlaceholder}
+        placeholder={t.appearance.dateHint}
+        keyboardType="numbers-and-punctuation"
         error={err('endDate')}
         maxLength={10}
       />

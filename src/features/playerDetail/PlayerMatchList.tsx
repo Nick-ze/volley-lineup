@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 
+import { formatDate } from '@/domain/dates';
 import { plusMinus, type PlayerMatchLine } from '@/domain/performance';
 import { matchResultLabel } from '@/features/live/matchResult';
 import { ListRow } from '@/features/roster/components/ListRow';
@@ -37,7 +38,8 @@ export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
         };
         // v7.0: date · season · result (the season only when it is known).
         const seasonName = seasons.find((x) => x.id === match.seasonId)?.name;
-        const head = [match.date, seasonName, result]
+        const date = formatDate(match.date);
+        const head = [date, seasonName, result]
           .filter((x): x is string => !!x)
           .join(t.playerDetail.separator);
         return (
@@ -56,7 +58,7 @@ export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
             }
             onPress={() => onOpenMatch(match.id)}
             accessibilityLabel={[
-              s.open(match.opponent, match.date),
+              s.open(match.opponent, date),
               result ? t.match.resultLabel(result) : null,
               s.lineLabel(numbers),
             ]

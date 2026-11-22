@@ -146,7 +146,7 @@ describe('Player detail', () => {
     });
     await renderRouter('./app', { initialUrl: '/team/t1/players/p7' });
     expect(await screen.findByTestId('player-match-m1-head')).toHaveTextContent(
-      /^2026-11-01 · 2026\/27 · /,
+      /^01\.11\.26 · 2026\/27 · /,
     );
   });
 
