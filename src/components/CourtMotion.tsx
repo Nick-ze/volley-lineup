@@ -141,6 +141,7 @@ export function CourtGhosts({ motion, ...rest }: CourtGhostsProps) {
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden
       aria-hidden
+      testID="court-ghosts"
     >
       {rects.list.map((g) => (
         <Ghost key={`${token}-${g.to}`} ghost={g} {...rest} />

@@ -87,7 +87,11 @@ export function Court({
   const content = (position: CourtPosition) => [styles.content, slotParts(info(position)).padding];
 
   const row = (positions: readonly CourtPosition[], isFrontRow: boolean) => (
-    <View style={styles.row} onLayout={animated ? motion.onRowLayout(isFrontRow) : undefined}>
+    <View
+      style={styles.row}
+      onLayout={animated ? motion.onRowLayout(isFrontRow) : undefined}
+      testID={`court-row-${isFrontRow ? 'front' : 'back'}`}
+    >
       {positions.map((position) => {
         const slot = { position, isFrontRow };
         const parts = animated ? slotParts(slot) : null;

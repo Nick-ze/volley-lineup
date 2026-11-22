@@ -63,15 +63,17 @@ describe('stepTab', () => {
 
 describe('swipeTarget', () => {
   const tabs = ['roster', 'matches', 'stats'] as const;
-  it('returns the neighbouring tab or null', () => {
-    expect(swipeTarget(tabs, 'roster', -100, 0)).toBe('matches');
-    expect(swipeTarget(tabs, 'matches', 100, 0)).toBe('roster');
+  it('returns the index of the neighbouring tab or null', () => {
+    expect(swipeTarget(tabs, 'roster', -100, 0)).toBe(1);
+    expect(swipeTarget(tabs, 'matches', 100, 0)).toBe(0);
     expect(swipeTarget(tabs, 'stats', -100, 0)).toBeNull();
     expect(swipeTarget(tabs, 'roster', -10, 0)).toBeNull();
   });
 
   it('works with null entries (the "all sets" filter)', () => {
     expect(swipeTarget([null, 1, 2], null, -100, 0)).toBe(1);
-    expect(swipeTarget([1, 2, null], 2, -100, 0)).toBeNull();
+    expect(swipeTarget([null, 1, 2], 1, 100, 0)).toBe(0);
+    expect(swipeTarget([1, 2, null], 2, -100, 0)).toBe(2);
+    expect(swipeTarget([1, 2, null], null, -100, 0)).toBeNull();
   });
 });

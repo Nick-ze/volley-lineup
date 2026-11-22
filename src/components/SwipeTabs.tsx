@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useRef, type ReactNode, type RefObject } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import {
   GestureDetector,
@@ -11,8 +11,14 @@ import { TAB_SWIPE_ACTIVATION as OFFSET, swipeTarget } from '@/domain/tabMotion'
 
 import { SlideTransition } from './SlideTransition';
 
+interface TabSwipe {
+  gesture: PanGesture;
+  /** Set while the touch began in a `NoTabSwipe` area: that touch never changes the tab. */
+  blockedRef: RefObject<boolean>;
+}
+
 /** The tab swipe of the nearest `SwipeTabs` (null outside one). */
-const TabSwipeContext = createContext<PanGesture | null>(null);
+const TabSwipeContext = createContext<TabSwipe | null>(null);
 
 export interface SwipeTabsProps<T> {
   /** The tabs in their visual order (left to right). */
@@ -47,6 +53,7 @@ export function SwipeTabs<T>(props: SwipeTabsProps<T>) {
       index={index}
       style={[box, props.style]}
       contentStyle={[box, props.contentStyle]}
+      testID={`${props.testID}-slide`}
     >
       {props.children}
     </SlideTransition>
@@ -56,19 +63,23 @@ export function SwipeTabs<T>(props: SwipeTabsProps<T>) {
 }
 
 function SwipeArea<T>({ tabs, value, onChange, children, testID, size }: SwipeTabsProps<T>) {
+  const blockedRef = useRef(false);
   const pan = usePanGesture({
     runOnJS: true,
     testID,
     activeOffsetX: [-OFFSET, OFFSET],
     failOffsetY: [-OFFSET, OFFSET],
     onDeactivate: (e) => {
-      if (e.canceled) return;
+      if (e.canceled || blockedRef.current) return;
       const next = swipeTarget(tabs, value, e.translationX, e.velocityX);
-      if (next !== null) onChange(next);
+      if (next !== null) onChange(tabs[next] as T);
+    },
+    onFinalize: () => {
+      blockedRef.current = false;
     },
   });
   return (
-    <TabSwipeContext.Provider value={pan}>
+    <TabSwipeContext.Provider value={{ gesture: pan, blockedRef }}>
       {/* Web: vertical touch scrolling stays with the browser. */}
       <GestureDetector gesture={pan} touchAction="pan-y">
         <View collapsable={false} style={styles[size ?? 'grow']}>
@@ -81,17 +92,40 @@ function SwipeArea<T>({ tabs, value, onChange, children, testID, size }: SwipeTa
 
 /**
  * Wraps one native view that handles sideways drags itself (a horizontal ScrollView, a text
- * field): while it is touched the tab swipe waits for it, so scrolling a table or selecting
- * text never changes the tab. Outside a `SwipeTabs` it renders the child as it is.
+ * field): a touch that starts on it never changes the tab, so scrolling a table or selecting
+ * text works as before. Outside a `SwipeTabs` it renders the child as it is.
  */
-export function NoTabSwipe({ children }: { children: ReactNode }) {
+export function NoTabSwipe({ children, testID }: { children: ReactNode; testID?: string }) {
   const tabSwipe = useContext(TabSwipeContext);
   if (!tabSwipe) return children;
-  return <Blocker tabSwipe={tabSwipe}>{children}</Blocker>;
+  return (
+    <Blocker tabSwipe={tabSwipe} testID={testID}>
+      {children}
+    </Blocker>
+  );
 }
 
-function Blocker({ tabSwipe, children }: { tabSwipe: PanGesture; children: ReactNode }) {
-  const native = useNativeGesture({ block: tabSwipe, disallowInterruption: true });
+function Blocker({
+  tabSwipe,
+  children,
+  testID,
+}: {
+  tabSwipe: TabSwipe;
+  children: ReactNode;
+  testID?: string;
+}) {
+  const { gesture, blockedRef } = tabSwipe;
+  // `block`: the tab swipe waits while this view scrolls (phones). The flag also covers a drag
+  // that doesn't scroll (a mouse on web, a table that fits): the swipe may end, but is ignored.
+  const native = useNativeGesture({
+    block: gesture,
+    disallowInterruption: true,
+    runOnJS: true,
+    testID,
+    onBegin: () => {
+      blockedRef.current = true;
+    },
+  });
   return (
     <GestureDetector gesture={native} touchAction="auto" userSelect="auto">
       {children}

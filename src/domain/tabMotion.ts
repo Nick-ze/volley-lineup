@@ -59,13 +59,15 @@ export function stepTab(index: number, step: number, count: number): number | nu
   return next;
 }
 
-/** The tab a swipe on `current` leads to, or null (too short, or already at the end). */
+/**
+ * The index of the tab a swipe on `current` leads to, or null (too short, or already at the
+ * end). An index, not the tab itself, because a tab may be null ("All sets").
+ */
 export function swipeTarget<T>(
   tabs: readonly T[],
   current: T,
   translationX: number,
   velocityX: number,
-): T | null {
-  const next = stepTab(tabs.indexOf(current), swipeTabStep(translationX, velocityX), tabs.length);
-  return next === null ? null : (tabs[next] as T);
+): number | null {
+  return stepTab(tabs.indexOf(current), swipeTabStep(translationX, velocityX), tabs.length);
 }
