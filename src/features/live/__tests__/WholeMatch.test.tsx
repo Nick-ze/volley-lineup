@@ -313,12 +313,12 @@ describe('whole-match live mode', () => {
     // The result has its own (never truncated) line under date · home/away.
     const results = (await screen.findAllByTestId('match-row-result')).map((r) => r.props.children);
     expect(results.sort()).toEqual(['1:3 lost', '2:0 · in progress', '3:1 won', 'in progress']);
-    expect(screen.getAllByText('2026-11-20 · Home')).toHaveLength(5);
+    expect(screen.getAllByText('20.11.26 · Home')).toHaveLength(5);
     // Screen readers hear the result too.
     expect(
-      screen.getByLabelText('vs Lions, 2026-11-20: open the match. Result: 1:3 lost'),
+      screen.getByLabelText('vs Lions, 20.11.26: open the match. Result: 1:3 lost'),
     ).toBeTruthy();
-    expect(screen.getByLabelText('vs Owls, 2026-11-20: open the match')).toBeTruthy();
+    expect(screen.getByLabelText('vs Owls, 20.11.26: open the match')).toBeTruthy();
   });
 
   it('shows the result line in the match header', async () => {

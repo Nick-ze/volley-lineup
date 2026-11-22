@@ -139,7 +139,7 @@ describe('buildLineupSheetHtml', () => {
   it('shows team, opponent, date, venue and season in the header', () => {
     expect(html).toContain('<h1>Tigers</h1>');
     expect(html).toContain('<dt>Opponent</dt><dd>Eagles</dd>');
-    expect(html).toContain('<dt>Date</dt><dd>2026-11-21</dd>');
+    expect(html).toContain('<dt>Date</dt><dd>21.11.26</dd>');
     expect(html).toContain('<dt>Venue</dt><dd>Home</dd>');
     expect(html).toContain('<dt>Season</dt><dd>2026</dd>');
     const away = buildLineupSheetHtml({

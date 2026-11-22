@@ -24,6 +24,8 @@ export const transfer = {
     hint: 'Load a .json file exported from Volley Lineup.',
     pick: 'Import from file',
     previewTitle: (fileName: string) => `Ready to import ${fileName}`,
+    /** v8: the file's export day as dd.mm.yy. */
+    exportedOn: (date: string) => `Exported on ${date}`,
     summary: (s: {
       profiles: number;
       teams: number;

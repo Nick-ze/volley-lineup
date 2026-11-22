@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { makeStyles, radius, touchTarget, typography } from '@/theme';
+import { inlineFontSize, makeStyles, radius, touchTarget, typography, useTheme } from '@/theme';
 
 /** A player's picture fallback: the jersey number in a round badge (greyed when inactive). */
 export function NumberAvatar({
@@ -17,6 +17,7 @@ export function NumberAvatar({
   large?: boolean;
 }) {
   const styles = useStyles();
+  const { fonts } = useTheme();
   return (
     <View
       style={[
@@ -30,7 +31,7 @@ export function NumberAvatar({
       <Text
         style={[
           styles.text,
-          large && { fontSize: Math.round(size * 0.4) },
+          large && inlineFontSize(Math.round(size * 0.4), fonts),
           inactive && styles.textInactive,
         ]}
       >

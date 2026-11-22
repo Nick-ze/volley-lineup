@@ -1,11 +1,15 @@
+import { formatOptionalDate } from '@/domain/dates';
 import type { OpponentRecord } from '@/domain/seasons';
 import type { SeasonOverview } from '@/domain/stats';
 import type { Season } from '@/domain/types';
 import type { Strings } from '@/i18n';
 
-/** Dates and place of a season on one line ("2026-09-01 – 2027-04-30 · Munich"), or ''. */
+/** Dates and place of a season on one line ("01.09.26 – 30.04.27 · Munich"), or ''. */
 export function seasonWhenWhere(t: Strings, season: Season): string {
-  const dates = t.seasons.dates(season.startDate, season.endDate);
+  const dates = t.seasons.dates(
+    formatOptionalDate(season.startDate),
+    formatOptionalDate(season.endDate),
+  );
   return [dates, season.location ?? ''].filter((x) => x !== '').join(' · ');
 }
 

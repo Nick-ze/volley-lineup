@@ -7,6 +7,7 @@ export const appearance: Strings['appearance'] = {
   themeDark: 'Dunkel',
   themeLight: 'Hell',
   themeSystem: 'System',
+  themeOption: (name: string) => `${name} (Design)`,
   dyslexiaFont: 'Legasthenie-freundliche Schrift',
   dyslexiaFontHint: 'Alle Texte verwenden OpenDyslexic.',
   dateHint: 'tt.mm.jj',

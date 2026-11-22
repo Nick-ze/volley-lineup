@@ -19,7 +19,6 @@ export const seasons = {
     kind: 'Type',
     startDate: 'Start date (optional)',
     endDate: 'End date (optional)',
-    datePlaceholder: 'YYYY-MM-DD',
     location: 'Place (optional)',
     create: 'Create',
     delete: 'Delete',
@@ -35,7 +34,7 @@ export const seasons = {
     tooLong: 'This is too long.',
     duplicateSeason: 'This team already has a season with this name.',
     duplicateOpponent: 'This season already has an opponent with this name.',
-    invalidDate: 'Enter a valid date as YYYY-MM-DD.',
+    invalidDate: 'Enter a valid date as dd.mm.yy.',
     endBeforeStart: 'The end date is before the start date.',
   },
   screen: {

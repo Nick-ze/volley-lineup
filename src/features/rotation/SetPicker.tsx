@@ -44,12 +44,17 @@ export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
   );
 }
 
+// v8: the wide dyslexia font gets tighter tabs so five sets still fit one line at 375 px.
 const useStyles = makeStyles((theme) => ({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.dyslexiaFont ? spacing.xs : spacing.sm,
+  },
   tab: {
     minHeight: touchTarget,
     minWidth: touchTarget,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: theme.dyslexiaFont ? spacing.xs : spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -59,6 +64,10 @@ const useStyles = makeStyles((theme) => ({
   },
   active: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
   pressed: { opacity: 0.8 },
-  label: { ...typography.label, color: theme.colors.text },
+  label: {
+    ...typography.label,
+    color: theme.colors.text,
+    ...(theme.dyslexiaFont ? { letterSpacing: -0.7 } : {}),
+  },
   activeLabel: { color: theme.colors.onHighlight },
 }));

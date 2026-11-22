@@ -10,6 +10,7 @@ import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';
 import { makeStyles, typography } from '@/theme';
 
+import { AppearanceSection } from './AppearanceSection';
 import { ProfileCard } from './ProfileCard';
 import { useLeaveProfile } from './useLeaveProfile';
 
@@ -38,6 +39,7 @@ export function ProfileScreen() {
   return (
     <Screen testID="profile-screen">
       <ProfileCard profile={profile} />
+      <AppearanceSection />
       <Section title={t.profile.account} hint={t.profile.logoutHint}>
         <Button label={t.profile.logout} onPress={leave} testID="logout" />
         <Text style={styles.note}>{t.profile.logoutNote}</Text>
