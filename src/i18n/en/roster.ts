@@ -87,6 +87,11 @@ export const roster = {
     vs: (opponent: string) => `vs ${opponent}`,
     open: (opponent: string, date: string) => `Open match against ${opponent} on ${date}`,
     delete: (opponent: string) => `Delete match against ${opponent}`,
+    /** v6.2: search field. */
+    search: 'Search matches',
+    searchPlaceholder: 'Opponent or date, e.g. 21.11.',
+    noResults: (query: string) => `No matches for “${query}”.`,
+    resultCount: (shown: number, total: number) => `${shown} of ${total} matches`,
   },
   matchForm: {
     opponent: 'Opponent',

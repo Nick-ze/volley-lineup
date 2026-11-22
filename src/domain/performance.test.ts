@@ -1,6 +1,7 @@
 import { emptySetLineup } from './lineup';
 import {
   attackErrorRate,
+  compareByPerformance,
   combinePerformance,
   emptyPlayerPerformance,
   ERROR_CATEGORIES,
@@ -213,21 +214,40 @@ describe('setPerformance (scripted set with a sub and libero swaps)', () => {
     }
   });
 
-  it('rows: most rallies first, then by number', () => {
+  it('rows: best first, worst last (v6.2)', () => {
+    // ▲ p4 (net +2), p1 (net +1), p5 (no tags, +1) · ● p3 · ▼ p6 (net 0, −1), p8 (net 0, −2),
+    // p7 (net −1), p2 (net −2).
     expect(performanceRows(perf, [...players].reverse()).map((r) => r.player.id)).toEqual([
-      'p1',
-      'p2',
       'p4',
-      'p3',
-      'p7',
-      'p8',
+      'p1',
       'p5',
+      'p3',
       'p6',
+      'p8',
+      'p7',
+      'p2',
     ]);
     expect(performanceRows(perf, players.slice(0, 2)).map((r) => r.player.id)).toEqual([
       'p1',
       'p2',
     ]);
+  });
+
+  it('ranks by rating, then net points, plus/minus, rallies; nobody without rallies on top', () => {
+    const line = (over: Partial<PlayerPerformance>) => ({ ...emptyPlayerPerformance(), ...over });
+    const strong = line({ rallies: 10, won: 6, lost: 4, kills: 3 });
+    const sameNetBetterPm = line({ rallies: 10, won: 7, lost: 3, kills: 3 });
+    const sameButMoreRallies = line({ rallies: 12, won: 8, lost: 4, kills: 3 });
+    const bench = line({ subIn: 1 });
+    expect(compareByPerformance(sameNetBetterPm, strong)).toBeLessThan(0);
+    expect(compareByPerformance(sameButMoreRallies, sameNetBetterPm)).toBeLessThan(0);
+    expect(compareByPerformance(strong, bench)).toBeLessThan(0);
+    expect(compareByPerformance(strong, { ...strong })).toBe(0);
+    expect(compareByPerformance(bench, strong)).toBeGreaterThan(0);
+    expect(compareByPerformance(bench, { ...bench })).toBe(0);
+    // Equal lines: by jersey number.
+    const tied = { rallies: 0, players: { p2: strong, p1: { ...strong } } };
+    expect(performanceRows(tied, players).map((r) => r.player.id)).toEqual(['p1', 'p2']);
   });
 
   it('an empty court spot counts for nobody', () => {

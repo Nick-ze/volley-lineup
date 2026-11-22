@@ -99,7 +99,8 @@ describe('performance view', () => {
   it('shows every player of set 1 with literal numbers', async () => {
     await open('?set=1');
     expect(await screen.findByTestId('perf-set-1')).toBeSelected();
-    expect(order()).toEqual(['p1', 'p2', 'p3', 'p4', 'p7', 'p5', 'p8', 'p6']);
+    // v6.2: best first — ▲ by net, ±, rallies; ● tie by number; ▼ #6 (net 0), #1, #8 (net −1).
+    expect(order()).toEqual(['p2', 'p7', 'p5', 'p3', 'p4', 'p6', 'p1', 'p8']);
     expect(card('p1')).toEqual([
       '6 rallies · 3–3 (0)',
       'K 0 · A 0 · B 0 · E 1 · Net −1',
@@ -143,7 +144,8 @@ describe('performance view', () => {
     await open('?set=1');
     await fireEvent.press(await screen.findByTestId('perf-set-2'));
     // #8 didn't play set 2; #6 started but the libero covered every rally.
-    expect(order()).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p7', 'p6']);
+    // #2 (net −3) near the bottom, #6 without rallies last.
+    expect(order()).toEqual(['p1', 'p3', 'p4', 'p5', 'p7', 'p2', 'p6']);
     expect(card('p2')).toEqual([
       '4 rallies · 1–3 (−2)',
       'K 0 · A 0 · B 0 · E 3 · Net −3',
@@ -157,7 +159,8 @@ describe('performance view', () => {
 
     await fireEvent.press(screen.getByTestId('perf-set-all'));
     expect(screen.getByTestId('perf-set-all')).toBeSelected();
-    expect(order()).toEqual(['p1', 'p2', 'p3', 'p4', 'p7', 'p5', 'p8', 'p6']);
+    // Best first; #7 before #5 (same net and ±, more rallies); #2 (net −2) last.
+    expect(order()).toEqual(['p4', 'p7', 'p5', 'p6', 'p3', 'p8', 'p1', 'p2']);
     expect(card('p2')).toEqual([
       '10 rallies · 4–6 (−2)',
       'K 1 · A 0 · B 0 · E 3 · Net −2',

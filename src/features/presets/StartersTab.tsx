@@ -96,10 +96,7 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
         <RotationCourt slots={starters.slots} playersById={byId} spotRoles={roles} compact />
         <Text style={styles.libero}>{libero ? s.libero(playerName(libero)) : s.noLibero}</Text>
       </View>
-      <Text
-        style={[styles.status, (!complete || leftOut > 0) && styles.warn]}
-        testID="starters-status"
-      >
+      <Text style={[styles.status, leftOut > 0 && styles.warn]} testID="starters-status">
         {status}
       </Text>
     </View>

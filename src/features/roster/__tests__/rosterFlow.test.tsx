@@ -252,6 +252,29 @@ describe('roster flows', () => {
     expect(store().matches.map((m) => m.opponent)).toEqual(['New']);
   });
 
+  it('v6.2: searches matches by opponent or date', async () => {
+    const { team } = seedTeam();
+    store().addMatch({ teamId: team.id, opponent: 'TSV München', date: '2026-11-21', home: true });
+    store().addMatch({ teamId: team.id, opponent: 'Rivals', date: '2026-10-03', home: false });
+    await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
+    const rows = () => screen.queryAllByText(/^vs /).map((n) => n.props.children);
+    expect(rows()).toHaveLength(2);
+    expect(screen.queryByTestId('match-search-status')).toBeNull();
+
+    await type(s.matches.search, 'munchen');
+    expect(rows()).toEqual(['vs TSV München']);
+    expect(screen.getByTestId('match-search-status').props.children).toBe(
+      s.matches.resultCount(1, 2),
+    );
+    await type(s.matches.search, '3.10.');
+    expect(rows()).toEqual(['vs Rivals']);
+    await type(s.matches.search, 'nobody');
+    expect(rows()).toEqual([]);
+    expect(screen.getByText(s.matches.noResults('nobody'))).toBeTruthy();
+    await type(s.matches.search, '');
+    expect(rows()).toHaveLength(2);
+  });
+
   it('renames and deletes profiles and teams', async () => {
     const { profile } = seedTeam();
     await renderRouter('./app', { initialUrl: '/teams' });

@@ -4,6 +4,7 @@ import {
   emptyPresetLineup,
   filledCount,
   firstSetForNewMatch,
+  hasAnyPlayer,
   isPresetComplete,
   namedPresetsFor,
   nextPresetName,
@@ -163,10 +164,34 @@ describe('firstSetForNewMatch', () => {
     });
   });
 
-  it('starts empty without starters or with incomplete starters', () => {
+  it('starts empty without starters or with starters that have nobody', () => {
     expect(firstSetForNewMatch([], 't1', players)).toEqual(emptySetLineup(1));
-    const partial = preset({ kind: 'starters', slots: { ...preset().slots, 1: null } });
-    expect(firstSetForNewMatch([partial], 't1', players)).toEqual(emptySetLineup(1));
+    const nobody = preset({
+      kind: 'starters',
+      slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoId: null,
+      liberoReplaces: [],
+    });
+    expect(firstSetForNewMatch([nobody], 't1', players)).toEqual(emptySetLineup(1));
+  });
+
+  it('v6.2: uses partly filled starters; the empty spots are picked before the game', () => {
+    const three = preset({
+      kind: 'starters',
+      slots: { ...preset().slots, 4: null, 5: null, 6: null },
+      liberoReplaces: [],
+    });
+    const set1 = firstSetForNewMatch([three], 't1', players);
+    expect(set1.slots).toEqual({ ...three.slots });
+    expect(set1.liberoId).toBe('l');
+    expect(hasAnyPlayer(three)).toBe(true);
+    const onlyLibero = preset({
+      kind: 'starters',
+      slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoReplaces: [],
+    });
+    expect(hasAnyPlayer(onlyLibero)).toBe(true);
+    expect(firstSetForNewMatch([onlyLibero], 't1', players).liberoId).toBe('l');
   });
 });
 
