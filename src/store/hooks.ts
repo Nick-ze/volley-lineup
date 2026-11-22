@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
+import { shortName, shortNames } from '@/domain/playerNames';
 import type { LineupPreset, Match, Opponent, Player, Season, Team } from '@/domain/types';
 
 import { useAppStore } from './appStore';
@@ -24,6 +26,24 @@ export const useTeamsForProfile = (profileId: string | null | undefined): Team[]
 
 export const usePlayersForTeam = (teamId: string | null | undefined): Player[] =>
   useAppStore(useShallow((s) => (teamId ? selectPlayersForTeam(s, teamId) : [])));
+
+/**
+ * v8: a player's short name ("Anna", "Anna M." when a teammate is also called Anna), computed
+ * over the player's team. Returns a string, so no `useShallow` is needed.
+ */
+export const useShortName = (player: Pick<Player, 'id' | 'teamId' | 'firstName' | 'lastName'>) =>
+  useAppStore((s) =>
+    shortName(
+      player,
+      s.players.filter((p) => p.teamId === player.teamId),
+    ),
+  );
+
+/** v8: the short names of a team's players, by player id. */
+export function useShortNames(teamId: string | null | undefined): Map<string, string> {
+  const players = usePlayersForTeam(teamId);
+  return useMemo(() => shortNames(players), [players]);
+}
 
 export const useMatchesForTeam = (teamId: string | null | undefined): Match[] =>
   useAppStore(useShallow((s) => (teamId ? selectMatchesForTeam(s, teamId) : [])));

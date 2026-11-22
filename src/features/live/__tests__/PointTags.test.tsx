@@ -7,8 +7,9 @@ import { useAppStore } from '@/store';
 const player = (n: number, lastName: string, positions: Position[]): Player => ({
   id: `p${n}`,
   teamId: 'team1',
-  firstName: lastName.slice(0, 1),
-  lastName,
+  // v8: names are shown first name first, so the distinct word is the first name.
+  firstName: lastName,
+  lastName: lastName.slice(0, 1),
   number: n,
   positions,
   active: true,
@@ -139,7 +140,7 @@ describe('point tagging in live mode', () => {
     await press('point-them');
     await fireEvent.press(screen.getByRole('button', { name: 'Make a substitution' }));
     await press('live-court-2');
-    await fireEvent.press(screen.getByLabelText(/^Number 8, S Sub/));
+    await fireEvent.press(screen.getByLabelText(/^Number 8, Sub S/));
     expect(events()[1]).toEqual({ type: 'sub', outPlayerId: 'p2', inPlayerId: 'p8' });
     expect(row()).toBeNull();
   });

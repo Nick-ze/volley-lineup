@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { fullName, shortName } from '@/domain/playerNames';
 import { Button, ToggleRow } from '@/components';
 import { suggestLiberoReplaces } from '@/domain/liberoSwap';
 import { setLiberoReplaces, toggleLiberoReplace } from '@/domain/lineupEditing';
@@ -64,12 +65,12 @@ export function LiberoReplaces({ editor }: { editor: LineupDraft }) {
             <View style={styles.options} accessibilityLabel={s.groupLabel}>
               {starters.map((p) => {
                 const checked = set.liberoReplaces.includes(p.id);
-                const name = p.lastName || p.firstName;
+                const name = shortName(p, players);
                 return (
                   <Pressable
                     key={p.id}
                     accessibilityRole="checkbox"
-                    accessibilityLabel={s.optionLabel(p.number, `${p.firstName} ${p.lastName}`)}
+                    accessibilityLabel={s.optionLabel(p.number, fullName(p))}
                     accessibilityState={{ checked, disabled: out }}
                     aria-checked={checked}
                     aria-disabled={out}

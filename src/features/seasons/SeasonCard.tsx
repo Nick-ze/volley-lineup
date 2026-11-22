@@ -1,13 +1,18 @@
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { TeamAvatar } from '@/components';
 import { seasonOverview } from '@/domain/stats';
 import type { Match, Season } from '@/domain/types';
 import { useT } from '@/i18n';
+import { useTeam } from '@/store';
 import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { KindBadge } from './KindBadge';
 import { seasonSummary, seasonWhenWhere } from './seasonText';
+
+/** v8: diameter of the team picture on a season box. */
+const SEASON_TEAM_AVATAR = 32;
 
 export interface SeasonCardProps {
   season: Season;
@@ -20,6 +25,7 @@ export interface SeasonCardProps {
 export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
   const styles = useStyles();
   const t = useT();
+  const team = useTeam(season.teamId);
   const overview = useMemo(() => seasonOverview(matches), [matches]);
   const whenWhere = seasonWhenWhere(t, season);
   const summary = seasonSummary(t, matches.length, overview);
@@ -38,6 +44,7 @@ export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
       ]}
     >
       <View style={styles.top}>
+        {team ? <TeamAvatar team={team} size={SEASON_TEAM_AVATAR} /> : null}
         <Text style={styles.name} numberOfLines={2}>
           {season.name}
         </Text>
@@ -65,7 +72,7 @@ const useStyles = makeStyles((theme) => ({
   },
   tournament: { borderLeftColor: theme.colors.secondary },
   pressed: { opacity: 0.8 },
-  top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: { ...typography.subheading, color: theme.colors.text, flex: 1 },
   meta: { ...typography.label, color: theme.colors.textMuted },
   summary: { ...typography.body, color: theme.colors.text },

@@ -118,6 +118,11 @@ describe('playerName', () => {
     expect(playerName(players[0])).toBe('Anna Setter');
     expect(playerName(mk('z', 0, 'Solo', ''))).toBe('Solo');
   });
+
+  it('v8: puts the first name first, without stray spaces', () => {
+    expect(playerName(mk('y', 0, ' Anna ', ' Meier '))).toBe('Anna Meier');
+    expect(playerName(mk('x', 0, '', 'Meier'))).toBe('Meier');
+  });
 });
 
 describe('buildLineupSheetHtml', () => {

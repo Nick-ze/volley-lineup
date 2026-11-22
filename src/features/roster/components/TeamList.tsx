@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, TeamAvatar } from '@/components';
 import type { Team } from '@/domain/types';
+import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
 
@@ -14,7 +15,7 @@ import { TeamForm } from './TeamForm';
 
 type Editing = { mode: 'create' } | { mode: 'edit'; id: string } | null;
 
-/** The current profile's teams: create, edit (name/season), delete, open. */
+/** The current profile's teams: create, edit (name, v8: picture), delete, open. */
 export function TeamList({
   profileId,
   onOpen,
@@ -36,8 +37,10 @@ export function TeamList({
         <TeamForm
           submitLabel={s.create}
           onCancel={() => setEditing(null)}
-          onSubmit={(value) => {
-            addTeam({ profileId, ...value });
+          onSubmit={(value, photo) => {
+            const team = addTeam({ profileId, ...value });
+            // The photo is stored before the team points at it (photo store prune).
+            void applyPhotoDraft(photo, (photoId) => updateTeam(team.id, { photoId }));
             setEditing(null);
           }}
         />
@@ -53,10 +56,12 @@ export function TeamList({
             <TeamForm
               key={team.id}
               initial={team}
+              team={team}
               submitLabel={t.common.save}
               onCancel={() => setEditing(null)}
-              onSubmit={(value) => {
+              onSubmit={(value, photo) => {
                 updateTeam(team.id, value);
+                void applyPhotoDraft(photo, (photoId) => updateTeam(team.id, { photoId }));
                 setEditing(null);
               }}
             />
@@ -64,6 +69,8 @@ export function TeamList({
             <ListRow
               key={team.id}
               title={team.name}
+              leading={<TeamAvatar team={team} />}
+              testID={`team-${team.id}`}
               onPress={() => onOpen(team)}
               accessibilityLabel={s.open(team.name)}
               actions={
