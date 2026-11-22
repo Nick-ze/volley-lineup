@@ -109,10 +109,10 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: radius.round,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: theme.colors.onPrimary,
+    borderColor: theme.colors.onCourt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyArmed: { borderStyle: 'solid', backgroundColor: theme.colors.highlightGlow },
-  plus: { ...typography.heading, color: theme.colors.onPrimary },
+  plus: { ...typography.heading, color: theme.colors.onCourt },
 }));

@@ -60,7 +60,7 @@ export function TeamNavBar({ value, onChange }: TeamNavBarProps) {
     >
       {TEAM_TABS.map((tab) => {
         const selected = tab === value;
-        const tint = selected ? colors.primary : colors.textMuted;
+        const tint = selected ? colors.primaryText : colors.textMuted;
         const { label, a11y } = labels(t, tab);
         return (
           <Pressable

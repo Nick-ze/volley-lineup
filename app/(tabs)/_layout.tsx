@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { useT } from '@/i18n';
-import { fontSize, spacing, touchTarget, typography, useTheme } from '@/theme';
+import { fontSize, makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 /** Bar height above the bottom safe area: a 44 px target plus room for the label. */
 const TAB_BAR_HEIGHT = touchTarget + spacing.md;
@@ -42,6 +42,7 @@ function TabIcon({
  */
 export default function TabsLayout() {
   const { colors } = useTheme();
+  const styles = useStyles();
   const t = useT();
   const insets = useSafeAreaInsets();
   // Any tab counts as "past the picker": from now on `/` never auto-forwards (DECISIONS #28).
@@ -60,10 +61,10 @@ export default function TabsLayout() {
           // A custom height replaces the default, so the bottom safe area is added here.
           height: TAB_BAR_HEIGHT + insets.bottom,
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.primaryText,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarItemStyle: { minHeight: touchTarget },
-        tabBarLabelStyle: { ...typography.label, fontSize: fontSize.xs },
+        tabBarLabelStyle: styles.tabLabel,
       }}
     >
       <Tabs.Screen
@@ -101,3 +102,8 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+// A style hook, so the dyslexia font reaches the tab labels.
+const useStyles = makeStyles(() => ({
+  tabLabel: { ...typography.label, fontSize: fontSize.xs },
+}));

@@ -129,7 +129,8 @@ const useStyles = makeStyles((theme) => ({
     top: spacing.xs,
     left: spacing.sm,
     ...typography.label,
-    color: theme.colors.text,
+    // On the blue / dark slot fills: white in both themes.
+    color: theme.colors.onSecondary,
   },
-  empty: { ...typography.subheading, color: theme.colors.text },
+  empty: { ...typography.subheading, color: theme.colors.onSecondary },
 }));

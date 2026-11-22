@@ -110,7 +110,7 @@ function ThemedRoot() {
           </Stack>
         ) : (
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.primary} accessibilityLabel={t.common.loading} />
+            <ActivityIndicator color={colors.primaryText} accessibilityLabel={t.common.loading} />
           </View>
         )}
       </ThemeProvider>

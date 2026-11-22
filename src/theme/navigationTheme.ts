@@ -29,7 +29,8 @@ export function navigationTheme(theme: Theme): NavigationTheme {
     fonts,
     colors: {
       ...base.colors,
-      primary: colors.primary,
+      // React Navigation tints text and icons (e.g. the iOS back button) with `primary`.
+      primary: colors.primaryText,
       background: colors.background,
       card: colors.surface,
       text: colors.text,

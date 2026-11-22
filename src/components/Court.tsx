@@ -95,7 +95,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'flex-end',
     marginHorizontal: -spacing.sm,
   },
-  netLabel: { ...typography.caption, color: theme.colors.onPrimary, fontWeight: '700' },
+  netLabel: { ...typography.caption, color: theme.colors.onCourt, fontWeight: '700' },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   attackLine: { height: 2, backgroundColor: theme.colors.courtLine, opacity: 0.8 },
   slot: {
@@ -111,6 +111,6 @@ const useStyles = makeStyles((theme) => ({
     top: spacing.xs,
     left: spacing.sm,
     ...typography.label,
-    color: theme.colors.onPrimary,
+    color: theme.colors.onCourt,
   },
 }));

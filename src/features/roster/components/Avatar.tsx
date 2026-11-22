@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Photo } from '@/components';
-import { makeStyles, radius, touchTarget, typography } from '@/theme';
+import { makeStyles, onProfileColor, radius, touchTarget, typography } from '@/theme';
 
 /** Round coloured circle with the name's first letter (a profile without a photo). */
 export function LetterAvatar({
@@ -52,5 +52,5 @@ export function Avatar({
 const useStyles = makeStyles((theme) => ({
   circle: { borderRadius: radius.round, alignItems: 'center', justifyContent: 'center' },
   // All profile colours are light/bright enough for near-black text (AA).
-  letter: { ...typography.subheading, color: theme.colors.onPrimary },
+  letter: { ...typography.subheading, color: onProfileColor },
 }));

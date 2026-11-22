@@ -84,6 +84,7 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: spacing.xs,
     overflow: 'hidden',
   },
-  // Near-black on white, as before (white directly on the orange court fails AA).
-  libero: { color: theme.colors.onPrimary, backgroundColor: theme.colors.text },
+  // The libero badge's colours: near-black on white (light grey in light mode); white text
+  // directly on the orange court fails AA.
+  libero: { color: theme.positionColors.L.text, backgroundColor: theme.positionColors.L.bg },
 }));

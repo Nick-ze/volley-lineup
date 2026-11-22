@@ -34,8 +34,8 @@ const useStyles = makeStyles((theme) => ({
     ...typography.label,
     fontWeight: '800',
     color: theme.colors.highlight,
-    // Dark backing so the mark reads on the court colour (like RoleTag).
-    backgroundColor: theme.colors.background,
+    // Dark backing so the mark reads on the court colour, in both themes (yellow needs dark).
+    backgroundColor: theme.colors.onCourt,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
     overflow: 'hidden',
