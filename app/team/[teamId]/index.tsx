@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
-import { Screen } from '@/components';
+import { HeaderTitle, Screen, TeamAvatar } from '@/components';
 import { PresetsTab } from '@/features/presets/PresetsTab';
 import { StartersTab } from '@/features/presets/StartersTab';
 import { NotFound } from '@/features/roster/components/NotFound';
@@ -13,6 +13,9 @@ import { parseTeamTab } from '@/features/team/tabs';
 import { TeamNavBar } from '@/features/team/TeamNavBar';
 import { useT } from '@/i18n';
 import { useTeam } from '@/store';
+
+/** Diameter of the team picture in the header. */
+const TEAM_HEADER_AVATAR = 32;
 
 /**
  * `/team/[teamId]?tab=roster|matches|presets|starters|stats` — the team with a bottom nav bar
@@ -35,7 +38,17 @@ export default function TeamScreen() {
     <Screen
       footer={<TeamNavBar value={tab} onChange={(next) => router.setParams({ tab: next })} />}
     >
-      <Stack.Screen options={{ title: team.name }} />
+      <Stack.Screen
+        options={{
+          title: team.name,
+          // v8: the team picture (or initial) before the name.
+          headerTitle: () => (
+            <HeaderTitle leading={<TeamAvatar team={team} size={TEAM_HEADER_AVATAR} />}>
+              {team.name}
+            </HeaderTitle>
+          ),
+        }}
+      />
       {tab === 'roster' ? (
         <RosterTab
           teamId={id}
