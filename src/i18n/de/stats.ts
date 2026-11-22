@@ -24,6 +24,12 @@ export const stats: Strings['stats'] = {
     points: 'Punkte',
     pointsLabel: (us: number, them: number) => `Punkte: ${us} gewonnen, ${them} verloren`,
   },
+  seasonFilter: {
+    label: 'Statistik von',
+    all: 'Alle Saisons',
+    allLabel: 'Alle Saisons: Statistik aller Spiele',
+    empty: 'In dieser Saison wurde noch kein Spiel gespielt.',
+  },
   filter: {
     label: 'Statistik für',
     all: 'Alle Sätze',
