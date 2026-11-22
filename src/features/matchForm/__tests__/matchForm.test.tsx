@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import type { Season } from '@/domain/types';
@@ -143,6 +143,29 @@ describe('new match form (v7.0)', () => {
       expect.objectContaining({ seasonId: created.id, name: 'Rivals' }),
     ]);
     expect(store().matches[0]).toMatchObject({ seasonId: created.id, opponent: 'Rivals' });
+  });
+
+  it('a quick double press adds the new season and opponent only once', async () => {
+    seedTeam();
+    await open();
+    await typeName(s.seasonName, 'Liga');
+    await typeName(s.opponent, 'Rivals');
+    const button = screen.getByRole('button', { name: s.create });
+    await act(async () => {
+      await Promise.all([fireEvent.press(button), fireEvent.press(button)]);
+    });
+    expect(store().seasons).toHaveLength(1);
+    expect(store().opponents).toHaveLength(1);
+    expect(store().matches.every((m) => m.opponentId === store().opponents[0].id)).toBe(true);
+  });
+
+  it('names no season in the new-opponent hint while the new season name is blank', async () => {
+    seedTeam();
+    await open();
+    await typeName(s.opponent, 'Rivals');
+    expect(screen.getByText(s.willAdd('Rivals', String(new Date().getFullYear())))).toBeTruthy();
+    await typeName(s.seasonName, '  ');
+    expect(screen.queryByText(s.willAdd('Rivals', ''))).toBeNull();
   });
 
   it('is translated into German', async () => {

@@ -30,7 +30,15 @@ export function OpponentPicker(props: OpponentPickerProps) {
   const typed = name.trim();
   const match = opponents.find((o) => o.id === selectedId);
   // A typed name says whether it is one of the season's opponents (by its own spelling) or new.
-  const hint = typed === '' ? null : match ? s.existing(match.name) : s.willAdd(typed, seasonName);
+  // Nothing to name while a new season's name is blank (its own field shows "required").
+  const hint =
+    typed === ''
+      ? null
+      : match
+        ? s.existing(match.name)
+        : seasonName === ''
+          ? null
+          : s.willAdd(typed, seasonName);
 
   return (
     <View style={chipStyles.group}>

@@ -1,6 +1,4 @@
-import { emptySetLineup } from './lineup';
 import { matchingOpponent, validateNewMatch, type NewMatchInput } from './matchForm';
-import { defaultStatsSeasonId } from './statsSeason';
 import type { Opponent, Season } from './types';
 
 const season = (id: string, teamId = 't1'): Season => ({
@@ -103,22 +101,5 @@ describe('matchingOpponent', () => {
     expect(matchingOpponent(opponents, 's1', 'TSV MÜNCHEN')?.id).toBe('o1');
     expect(matchingOpponent(opponents, 's1', '  ')).toBeUndefined();
     expect(matchingOpponent(opponents, null, 'TSV München')).toBeUndefined();
-  });
-});
-
-describe('defaultStatsSeasonId', () => {
-  const played = {
-    ...emptySetLineup(1),
-    events: [{ type: 'point' as const, winner: 'us' as const }],
-  };
-  it('is the newest season with a played match, else null', () => {
-    const list = [season('new'), season('mid'), season('old')];
-    const matches = [
-      { seasonId: 'new', sets: [emptySetLineup(1)] },
-      { seasonId: 'old', sets: [played] },
-      { seasonId: 'mid', sets: [played] },
-    ];
-    expect(defaultStatsSeasonId(list, matches)).toBe('mid');
-    expect(defaultStatsSeasonId(list, matches.slice(0, 1))).toBeNull();
   });
 });

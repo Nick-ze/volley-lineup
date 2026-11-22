@@ -52,7 +52,10 @@ export function StatsTab({ teamId }: { teamId: string }) {
         </Text>
       ) : (
         <>
-          <SeasonOverview overview={overview} />
+          <SeasonOverview
+            overview={overview}
+            heading={seasons.find((s) => s.id === seasonId)?.name ?? t.stats.seasonFilter.all}
+          />
           <RotationTable stats={stats} />
           <PlayerTable stats={stats} players={players} />
         </>

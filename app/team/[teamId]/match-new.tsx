@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Screen } from '@/components';
 import { firstSetForNewMatch } from '@/domain/presets';
+import { findOpponentByName, foldName, seasonsForTeam } from '@/domain/seasons';
 import { MatchForm } from '@/features/roster/components/MatchForm';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { useGoBack } from '@/features/roster/hooks/useGoBack';
@@ -35,15 +36,21 @@ export default function NewMatchScreen() {
           // Set 1 starts with the team's starters (v6.2: also partly filled ones).
           const players = selectPlayersForTeam(store, team.id);
           const first = firstSetForNewMatch(store.presets, team.id, players);
+          // Fresh state for every lookup: a quick second press must reuse what the first added.
           const inSeason =
             season.kind === 'existing'
               ? season.id
-              : store.addSeason({ teamId: team.id, name: season.name, kind: 'season' }).id;
+              : (
+                  seasonsForTeam(useAppStore.getState().seasons, team.id).find(
+                    (x) => foldName(x.name) === foldName(season.name),
+                  ) ?? store.addSeason({ teamId: team.id, name: season.name, kind: 'season' })
+                ).id;
           // The form only offers this season's opponents, so an existing one is always found.
           const opp =
             opponent.kind === 'new'
-              ? store.addOpponent(inSeason, opponent.name)
-              : store.opponents.find((o) => o.id === opponent.id);
+              ? (findOpponentByName(useAppStore.getState().opponents, inSeason, opponent.name) ??
+                store.addOpponent(inSeason, opponent.name))
+              : useAppStore.getState().opponents.find((o) => o.id === opponent.id);
           if (!opp) return;
           const match = store.addMatch({
             teamId: team.id,

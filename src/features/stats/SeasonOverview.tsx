@@ -25,15 +25,15 @@ function Tile({
   );
 }
 
-/** Season record (matches won–lost), sets and points won : lost. */
-export function SeasonOverview({ overview }: { overview: Overview }) {
+/** Season record (matches won–lost), sets and points won : lost. v7.0: optional heading. */
+export function SeasonOverview({ overview, heading }: { overview: Overview; heading?: string }) {
   const t = useT();
   const s = t.stats.season;
   const { won, lost, sets, points, inProgress } = overview;
   return (
     <View style={styles.wrap}>
       <Text style={listStyles.title} accessibilityRole="header">
-        {s.heading}
+        {heading ?? s.heading}
       </Text>
       <View style={styles.tiles}>
         <Tile

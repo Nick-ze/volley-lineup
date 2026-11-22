@@ -76,6 +76,7 @@ describe('Stats tab season switcher (v7.0)', () => {
     expect(tab(t.roster.seasonLabel('2026/27', 'Season'))).toBeSelected();
     expect(points(1, 3)).toBeTruthy();
     expect(screen.getByText(t.stats.season.inProgress(1))).toBeTruthy();
+    expect(screen.getByRole('header', { name: '2026/27' })).toBeTruthy();
 
     await fireEvent.press(tab(t.roster.seasonLabel('2025/26', 'Season')));
     expect(points(2, 1)).toBeTruthy();
@@ -83,6 +84,9 @@ describe('Stats tab season switcher (v7.0)', () => {
 
     await fireEvent.press(tab(t.stats.seasonFilter.allLabel));
     expect(points(3, 4)).toBeTruthy();
+    // All seasons: a neutral heading, not "Season".
+    expect(screen.getByRole('header', { name: t.stats.seasonFilter.all })).toBeTruthy();
+    expect(screen.queryByRole('header', { name: t.stats.season.heading })).toBeNull();
     expect(screen.getByText(t.stats.season.inProgress(2))).toBeTruthy();
 
     await fireEvent.press(tab('Cup · Tournament'));
