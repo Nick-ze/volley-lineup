@@ -36,6 +36,12 @@ export function formatOptionalDate(iso: string | undefined): string {
 }
 
 /**
+ * Max length of a date text field: the longest date (`dd.mm.yyyy`, 10) plus room for spaces
+ * around a pasted value, which `parseDateInput` ignores (v8 QA).
+ */
+export const DATE_INPUT_MAX_LENGTH = 16;
+
+/**
  * A typed date as ISO `YYYY-MM-DD`, or `null` when it isn't a real date. Accepts
  * `d.m.yy` / `dd.mm.yy` (20yy), `d.m.yyyy` / `dd.mm.yyyy` and `YYYY-MM-DD`; spaces around it
  * are ignored.

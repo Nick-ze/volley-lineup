@@ -9,6 +9,6 @@ export const appearance: Strings['appearance'] = {
   themeSystem: 'System',
   themeOption: (name: string) => `${name} (Design)`,
   dyslexiaFont: 'Legasthenie-freundliche Schrift',
-  dyslexiaFontHint: 'Alle Texte verwenden OpenDyslexic.',
+  dyslexiaFontHint: 'Verwendet OpenDyslexic für alle Texte.',
   dateHint: 'tt.mm.jj',
 };

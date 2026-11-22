@@ -5,6 +5,11 @@ import { touchTarget } from '@/theme';
 export const SCORE_FONT_SIZE = 64;
 /** Min height of the two big "Point us" / "Point them" buttons (well above the 44 px target). */
 export const POINT_BUTTON_MIN_HEIGHT = 88;
+/**
+ * v8 QA: their min height while "Who serves first" is shown above them (before a set's first
+ * rally), so the court and Substitution still fit at 390×844 (DECISIONS #126).
+ */
+export const POINT_BUTTON_COMPACT_MIN_HEIGHT = 64;
 /** Font size of the point button labels. */
 export const POINT_BUTTON_FONT_SIZE = 22;
 /** Player chip diameter on the live court. */

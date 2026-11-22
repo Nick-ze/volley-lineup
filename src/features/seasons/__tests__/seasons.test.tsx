@@ -152,6 +152,24 @@ describe('seasons list (team → Matches tab)', () => {
     expect(screen.getByTestId('kind-tournament')).toHaveTextContent(s.kind.tournament);
   });
 
+  it('v8 QA: accepts pasted dates with spaces around them', async () => {
+    const team = seedTeam();
+    await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
+    await press(s.list.newSeason);
+    const pasted = ' 21.11.2026 ';
+    expect(screen.getByLabelText(s.form.startDate).props.maxLength).toBeGreaterThanOrEqual(
+      pasted.length,
+    );
+    expect(screen.getByLabelText(s.form.endDate).props.maxLength).toBeGreaterThanOrEqual(
+      pasted.length,
+    );
+    await type(s.form.name, 'Winter');
+    await type(s.form.startDate, pasted);
+    await type(s.form.endDate, ' 22.11.2026 ');
+    await press(s.form.create);
+    expect(store().seasons[0]).toMatchObject({ startDate: '2026-11-21', endDate: '2026-11-22' });
+  });
+
   it('rejects a duplicate season name in the same team', async () => {
     const team = seedTeam();
     store().addSeason({ teamId: team.id, name: '2026/27', kind: 'season' });

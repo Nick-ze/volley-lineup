@@ -8,6 +8,6 @@ export const appearance = {
   /** Starts with the visible option text (label in name). */
   themeOption: (name: string) => `${name} theme`,
   dyslexiaFont: 'Dyslexia-friendly font',
-  dyslexiaFontHint: 'All text uses OpenDyslexic.',
+  dyslexiaFontHint: 'Uses OpenDyslexic for all text.',
   dateHint: 'dd.mm.yy',
 };

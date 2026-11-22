@@ -126,4 +126,5 @@ export function LiveMatch({
 }
 
 // The screen's gap between its parts, also inside the slide.
-const styles = StyleSheet.create({ content: { gap: spacing.lg } });
+// v8 QA: a medium gap keeps the court and Substitution within 390×844 (DECISIONS #126).
+const styles = StyleSheet.create({ content: { gap: spacing.md } });
