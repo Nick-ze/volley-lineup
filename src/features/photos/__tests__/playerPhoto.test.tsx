@@ -85,7 +85,8 @@ describe('player photos', () => {
     expect(photos()).toEqual({ [player.photoId as string]: URI_A });
 
     await screen.findByTestId('player-9');
-    expect(screen.getByTestId('player-9-photo-number', hidden)).toHaveTextContent('9');
+    // v8 roster cards: the number is always shown under the name, also with a photo.
+    expect(screen.getByTestId('player-9-number')).toHaveTextContent('#9');
     expect(screen.getAllByTestId('photo', hidden)).toHaveLength(1);
     // Saved under its own storage key.
     expect(await AsyncStorage.getItem(`${PHOTO_KEY_PREFIX}${player.photoId}`)).toBe(URI_A);
@@ -98,7 +99,7 @@ describe('player photos', () => {
     store().updatePlayer(ana.id, { photoId: 'old' });
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
     await screen.findByTestId('player-7');
-    expect(screen.getByTestId('player-7-photo-number', hidden)).toBeTruthy();
+    expect(screen.getByTestId('player-7-number')).toHaveTextContent('#7');
 
     // Change, choosing between camera and gallery where the camera exists.
     camera.mockReturnValue(true);
@@ -125,7 +126,8 @@ describe('player photos', () => {
     expect(photos()).toEqual({});
     await fireEvent.press(await screen.findByTestId('header-back'));
     await screen.findByTestId('player-7');
-    expect(screen.queryByTestId('player-7-photo-number', hidden)).toBeNull();
+    // The big jersey number replaces the photo; the number line stays.
+    expect(screen.getByTestId('player-7-number')).toHaveTextContent('#7');
     expect(screen.queryByTestId('photo', hidden)).toBeNull();
     expect(screen.getByTestId('player-7')).toHaveTextContent(/7/);
   });

@@ -2,7 +2,8 @@ import { Pressable, Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useAppStore, usePhotoUri } from '@/store';
+import { fullName } from '@/domain/playerNames';
+import { useAppStore, usePhotoUri, useShortName } from '@/store';
 import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import { PlayerChipFace } from './PlayerChipFace';
@@ -52,15 +53,12 @@ export function PlayerChip({
   // Settings → "Show names instead of numbers": the circle shows the name, the pill the number.
   const namesFirst = useAppStore((s) => s.chipLabel) === 'name';
   const d = Math.max(size, touchTarget);
-  const shortName = player.lastName || player.firstName;
+  // v8: first name first ("Anna"; "Anna M." when a teammate is also called Anna).
+  const shortName = useShortName(player);
   const primary = player.positions[0];
   const label =
     accessibilityLabel ??
-    t.player.chipLabel(
-      player.number,
-      `${player.firstName} ${player.lastName}`,
-      primary ? t.positions[primary] : '',
-    );
+    t.player.chipLabel(player.number, fullName(player), primary ? t.positions[primary] : '');
   const photoUri = usePhotoUri(showPhoto && showName ? player.photoId : undefined);
   // Text-strength tokens: same as primary / highlight in dark mode, ≥ 3:1 outlines in light mode.
   const ringColor = selected
@@ -73,6 +71,7 @@ export function PlayerChip({
     <View style={styles.wrapper}>
       <PlayerChipFace
         player={player}
+        name={shortName}
         diameter={d}
         photoUri={photoUri}
         namesFirst={namesFirst}

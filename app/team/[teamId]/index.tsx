@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
-import { Screen, SwipeTabs } from '@/components';
+import { HeaderTitle, Screen, SwipeTabs, TeamAvatar } from '@/components';
 import { PresetsTab } from '@/features/presets/PresetsTab';
 import { StartersTab } from '@/features/presets/StartersTab';
 import { NotFound } from '@/features/roster/components/NotFound';
@@ -13,6 +13,9 @@ import { parseTeamTab, TEAM_TABS, type TeamTab } from '@/features/team/tabs';
 import { TeamNavBar } from '@/features/team/TeamNavBar';
 import { useT } from '@/i18n';
 import { useTeam } from '@/store';
+
+/** Diameter of the team picture in the header. */
+const TEAM_HEADER_AVATAR = 32;
 
 /**
  * `/team/[teamId]?tab=roster|matches|presets|starters|stats` — the team with a bottom nav bar
@@ -34,7 +37,17 @@ export default function TeamScreen() {
   const selectTab = (next: TeamTab) => router.setParams({ tab: next });
   return (
     <Screen footer={<TeamNavBar value={tab} onChange={selectTab} />}>
-      <Stack.Screen options={{ title: team.name }} />
+      <Stack.Screen
+        options={{
+          title: team.name,
+          // v8: the team picture (or initial) before the name.
+          headerTitle: () => (
+            <HeaderTitle leading={<TeamAvatar team={team} size={TEAM_HEADER_AVATAR} />}>
+              {team.name}
+            </HeaderTitle>
+          ),
+        }}
+      />
       {/* v8: the tab slides in from its side; a sideways swipe changes the tab. */}
       <SwipeTabs tabs={TEAM_TABS} value={tab} onChange={selectTab} testID="team-tab-swipe">
         {tab === 'roster' ? (

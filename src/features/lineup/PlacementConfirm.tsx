@@ -1,5 +1,6 @@
 import { Modal, Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { Button } from '@/components';
 import { useT } from '@/i18n';
 import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
@@ -18,9 +19,7 @@ export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
   const { pending, pendingKind, playerById, confirmPending, cancelPending } = editor;
   const lines = (pending ?? []).map((p) => {
     const player = playerById(p.playerId);
-    const name = player
-      ? t.roles.playerRef(player.number, `${player.firstName} ${player.lastName}`.trim())
-      : '';
+    const name = player ? t.roles.playerRef(player.number, fullName(player)) : '';
     return s.notListed(name, t.positions[p.role]);
   });
 

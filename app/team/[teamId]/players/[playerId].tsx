@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
+import { fullName } from '@/domain/playerNames';
 import { Screen } from '@/components';
 import { PlayerDetail } from '@/features/playerDetail/PlayerDetail';
 import { NotFound } from '@/features/roster/components/NotFound';
@@ -37,7 +38,7 @@ export default function PlayerDetailScreen() {
 
   return (
     <Screen testID="player-detail">
-      <Stack.Screen options={{ title: `${player.firstName} ${player.lastName}` }} />
+      <Stack.Screen options={{ title: fullName(player) }} />
       <PlayerDetail
         player={player}
         onEdit={() => router.push(`/team/${team.id}/player?playerId=${player.id}`)}

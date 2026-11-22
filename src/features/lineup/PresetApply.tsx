@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { Button } from '@/components';
 import { applyPresetToSet, filledCount } from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
@@ -50,7 +51,7 @@ export function PresetApply({ editor, teamId }: PresetApplyProps) {
     if (outcome.skipped.length === 0) return s.applied(name);
     const who = outcome.skipped.map((id) => {
       const p = playerById(id);
-      return p ? `#${p.number} ${p.firstName} ${p.lastName}`.trim() : s.unknownPlayer;
+      return p ? `#${p.number} ${fullName(p)}`.trim() : s.unknownPlayer;
     });
     return s.skipped(name, who.join(', '));
   })();

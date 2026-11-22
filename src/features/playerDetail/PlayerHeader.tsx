@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { Button, Photo, PositionBadge } from '@/components';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
@@ -12,7 +13,7 @@ const HEADER_PHOTO_SIZE = 72;
 export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () => void }) {
   const styles = useStyles();
   const t = useT();
-  const name = `${player.firstName} ${player.lastName}`;
+  const name = fullName(player);
   const status = player.active ? t.roster.roster.active : t.roster.roster.inactive;
   const positions = player.positions.map((p) => t.positions[p]).join(t.playerDetail.listSeparator);
   return (

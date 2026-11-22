@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
+import { fullName } from '@/domain/playerNames';
 import { Button } from '@/components';
 import { emptySetLineup } from '@/domain/lineup';
 import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
@@ -20,7 +21,7 @@ export interface StartersTabProps {
 /** The compact court (max 340 px) plus the card padding. */
 const CARD_MAX_WIDTH = 360;
 
-const playerName = (p: Player) => `#${p.number} ${p.firstName} ${p.lastName}`.trim();
+const playerName = (p: Player) => `#${p.number} ${fullName(p)}`.trim();
 
 /** Screen-reader summary of the starters court: "Position 1: #7 Ana Ace, …". */
 function courtSummary(
