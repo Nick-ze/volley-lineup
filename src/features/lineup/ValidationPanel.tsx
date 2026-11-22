@@ -54,5 +54,5 @@ const useStyles = makeStyles((theme) => ({
   title: { ...typography.label, color: theme.colors.text },
   ok: { ...typography.body, color: theme.colors.textMuted },
   error: { ...typography.body, color: theme.colors.error },
-  warning: { ...typography.body, color: theme.colors.highlight },
+  warning: { ...typography.body, color: theme.colors.highlightText },
 }));

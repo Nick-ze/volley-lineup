@@ -49,7 +49,7 @@ export function Avatar({
   );
 }
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(() => ({
   circle: { borderRadius: radius.round, alignItems: 'center', justifyContent: 'center' },
   // All profile colours are light/bright enough for near-black text (AA).
   letter: { ...typography.subheading, color: onProfileColor },

@@ -80,6 +80,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  title: { ...typography.subheading, color: theme.colors.highlight, textAlign: 'center' },
+  title: { ...typography.subheading, color: theme.colors.highlightText, textAlign: 'center' },
   score: { ...typography.heading, color: theme.colors.text, textAlign: 'center' },
 }));

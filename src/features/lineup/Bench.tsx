@@ -101,5 +101,5 @@ const useStyles = makeStyles((theme) => ({
     borderWidth: 2,
     borderColor: theme.colors.highlight,
   },
-  dropText: { ...typography.label, color: theme.colors.highlight },
+  dropText: { ...typography.label, color: theme.colors.highlightText },
 }));

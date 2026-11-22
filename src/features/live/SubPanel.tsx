@@ -125,7 +125,7 @@ const useStyles = makeStyles((theme) => ({
   },
   count: { ...typography.subheading, color: theme.colors.text },
   over: { color: theme.colors.error },
-  prompt: { ...typography.body, color: theme.colors.highlight },
+  prompt: { ...typography.body, color: theme.colors.highlightText },
   title: { ...typography.label, color: theme.colors.textMuted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   muted: { ...typography.body, color: theme.colors.textMuted },

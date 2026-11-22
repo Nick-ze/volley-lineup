@@ -133,7 +133,7 @@ const useStyles = makeStyles((theme) => ({
   title: { ...typography.subheading, color: theme.colors.text },
   label: { ...typography.label, color: theme.colors.textMuted },
   text: { ...typography.body, color: theme.colors.text },
-  warn: { ...typography.body, color: theme.colors.highlight },
+  warn: { ...typography.body, color: theme.colors.highlightText },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   grow: { flexGrow: 1 },
 }));

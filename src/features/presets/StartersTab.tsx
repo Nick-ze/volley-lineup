@@ -120,5 +120,5 @@ const useStyles = makeStyles((theme) => ({
   },
   libero: { ...typography.body, color: theme.colors.text, textAlign: 'center' },
   status: { ...typography.body, color: theme.colors.textMuted },
-  warn: { color: theme.colors.highlight },
+  warn: { color: theme.colors.highlightText },
 }));

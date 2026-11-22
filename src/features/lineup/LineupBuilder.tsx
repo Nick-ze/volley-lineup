@@ -139,5 +139,5 @@ const useStyles = makeStyles((theme) => ({
   underCourt: { flexDirection: 'row', gap: spacing.md, alignItems: 'stretch' },
   controls: { flex: 1, gap: spacing.sm, justifyContent: 'center' },
   hint: { ...typography.body, color: theme.colors.textMuted },
-  locked: { ...typography.body, color: theme.colors.highlight },
+  locked: { ...typography.body, color: theme.colors.highlightText },
 }));

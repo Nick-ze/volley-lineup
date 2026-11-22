@@ -101,7 +101,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.highlight,
   },
   name: { ...typography.subheading, color: theme.colors.text, flexShrink: 1 },
-  serving: { color: theme.colors.highlight },
+  serving: { color: theme.colors.highlightText },
   score: { fontSize: SCORE_FONT_SIZE, fontWeight: '800', color: theme.colors.text },
   colon: { fontSize: SCORE_FONT_SIZE, fontWeight: '800', color: theme.colors.textMuted },
   infoRow: {
@@ -110,6 +110,6 @@ const useStyles = makeStyles((theme) => ({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  serveText: { ...typography.label, color: theme.colors.highlight },
+  serveText: { ...typography.label, color: theme.colors.highlightText },
   muted: { ...typography.label, color: theme.colors.textMuted },
 }));

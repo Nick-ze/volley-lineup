@@ -101,7 +101,7 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.md,
   },
   title: { ...typography.label, color: theme.colors.textMuted, textAlign: 'center' },
-  result: { ...typography.title, color: theme.colors.highlight, textAlign: 'center' },
+  result: { ...typography.title, color: theme.colors.highlightText, textAlign: 'center' },
   sets: { gap: spacing.xs },
   setRow: {
     flexDirection: 'row',
@@ -112,6 +112,6 @@ const useStyles = makeStyles((theme) => ({
   },
   setName: { ...typography.body, color: theme.colors.textMuted },
   setScore: { ...typography.subheading, color: theme.colors.text },
-  setWon: { color: theme.colors.highlight },
+  setWon: { color: theme.colors.highlightText },
   duration: { ...typography.body, color: theme.colors.textMuted, textAlign: 'center' },
 }));

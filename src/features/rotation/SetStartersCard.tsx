@@ -95,6 +95,6 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.surface,
   },
   pressed: { borderColor: theme.colors.highlight },
-  title: { ...typography.subheading, color: theme.colors.highlight },
+  title: { ...typography.subheading, color: theme.colors.highlightText },
   rotation: { ...typography.label, color: theme.colors.textMuted },
 }));

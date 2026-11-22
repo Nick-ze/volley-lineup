@@ -134,5 +134,5 @@ const useStyles = makeStyles((theme) => ({
   },
   hint: { ...typography.caption, color: theme.colors.textMuted },
   message: { ...typography.body, color: theme.colors.text },
-  warn: { color: theme.colors.highlight },
+  warn: { color: theme.colors.highlightText },
 }));
