@@ -76,5 +76,6 @@ export default function LiveScreen() {
   );
 }
 
-// The screen's gap between its parts, also inside the slide.
-const styles = StyleSheet.create({ content: { gap: spacing.lg } });
+// The screen's gap between its parts, also inside the slide (v8 QA: medium, so the court and
+// Substitution fit at 390×844, DECISIONS #126).
+const styles = StyleSheet.create({ content: { gap: spacing.md } });

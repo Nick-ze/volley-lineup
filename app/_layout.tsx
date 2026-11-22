@@ -11,6 +11,7 @@ import { useT } from '@/i18n';
 import { setDocumentLanguage } from '@/lib/documentLanguage';
 import { useAppFonts } from '@/lib/fonts';
 import { parentRoute } from '@/lib/parentRoute';
+import { setThemeColor } from '@/lib/themeColor';
 import { useAppStore } from '@/store';
 import { makeStyles, ThemeProvider as AppThemeProvider, useTheme } from '@/theme';
 import { navigationTheme } from '@/theme/navigationTheme';
@@ -46,6 +47,8 @@ function ThemedRoot() {
   // spinner wait for it (until loaded, failed or timed out — never forever).
   const fontsReady = useAppFonts();
   const ready = hydrated && (!theme.dyslexiaFont || fontsReady);
+  // v8 QA: the browser bar (web `<meta name="theme-color">`) follows light / dark.
+  useEffect(() => setThemeColor(colors.background), [colors.background]);
 
   return (
     <SafeAreaProvider style={styles.root}>

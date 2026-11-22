@@ -115,6 +115,26 @@ describe('live mode', () => {
     await swipe('live-view-swipe', 120);
     expect(screen.getByTestId('point-us')).toBeTruthy();
   });
+
+  it('keeps Live and the open tag row when a swipe starts on the tag row (v8 QA)', async () => {
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+    const swipeFromRow = async () => {
+      await act(() => fireGestureHandler(getByGestureTestId('point-tag-row-no-swipe'), [{}, {}]));
+      await swipe('live-view-swipe', -120);
+    };
+    await fireEvent.press(await screen.findByTestId('point-us'));
+    // The kinds row…
+    await swipeFromRow();
+    expect(screen.queryByTestId('performance')).toBeNull();
+    expect(screen.getByTestId('tag-close')).toBeTruthy();
+    // …and the player row (kind chip and ✕ included) block the Live ↔ Performance swipe.
+    await fireEvent.press(screen.getByTestId('tag-kill'));
+    expect(screen.getByTestId('tag-player-p2')).toBeTruthy();
+    await swipeFromRow();
+    expect(screen.queryByTestId('performance')).toBeNull();
+    expect(screen.getByTestId('tag-kill')).toBeTruthy();
+    expect(screen.getByTestId('tag-player-p2')).toBeTruthy();
+  });
 });
 
 describe('match stats set filter', () => {

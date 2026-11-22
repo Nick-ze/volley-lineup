@@ -1,5 +1,7 @@
 import {
   SLIDE_FALLBACK_DISTANCE,
+  SLIDE_START_OPACITY,
+  TAB_SCENE_OPACITY,
   SLIDE_MAX_DISTANCE,
   TAB_SWIPE_DISTANCE,
   TAB_SWIPE_VELOCITY,
@@ -75,5 +77,23 @@ describe('swipeTarget', () => {
     expect(swipeTarget([null, 1, 2], 1, 100, 0)).toBe(0);
     expect(swipeTarget([1, 2, null], 2, -100, 0)).toBe(2);
     expect(swipeTarget([1, 2, null], null, -100, 0)).toBeNull();
+  });
+});
+
+describe('TAB_SCENE_OPACITY', () => {
+  it('hides resting scenes and fades moving ones from the start opacity', () => {
+    const { inputRange, outputRange } = TAB_SCENE_OPACITY;
+    expect(inputRange).toHaveLength(outputRange.length);
+    // Increasing input, symmetric around the focused scene.
+    expect([...inputRange].sort((a, b) => a - b)).toEqual(inputRange);
+    expect(inputRange.map((x) => (x === 0 ? 0 : -x)).reverse()).toEqual(inputRange);
+    expect(outputRange).toEqual([...outputRange].reverse());
+    const at = (p: number) => outputRange[inputRange.indexOf(p)];
+    expect(at(-1)).toBe(0);
+    expect(at(1)).toBe(0);
+    expect(at(0)).toBe(1);
+    // Just off the edge a moving scene is at the start opacity.
+    expect(outputRange[1]).toBe(SLIDE_START_OPACITY);
+    expect(inputRange[1]).toBeGreaterThan(-1);
   });
 });

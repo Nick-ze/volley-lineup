@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { NoTabSwipe } from '@/components';
 import { plausibleKinds, type LastRally } from '@/domain/lastRally';
 import { kindTakesPlayer } from '@/domain/pointTags';
 import type { ErrorType, Player, PointKind } from '@/domain/types';
@@ -54,27 +55,32 @@ export function PointTagRow({ rally, playersById, onTag, onErrorType, onClose }:
     // An ace is served: suggest our server of that rally.
     else onTag(kind, kind === 'ace' ? rally.serverId : null);
   };
+  // v8 QA: a swipe that starts on the row never switches Live → Performance (the row would close).
   return (
-    <View
-      style={styles.row}
-      accessibilityLabel={t.tags.rowLabel(event.winner === 'us')}
-      testID="point-tag-row"
-    >
-      {plausibleKinds(rally).map((kind) => {
-        const name = t.tags.kindNames[kind];
-        return (
-          <TagChip
-            key={kind}
-            label={t.tags.kinds[kind]}
-            accessibilityLabel={kind === chosen ? t.tags.clearKind(name) : t.tags.chooseKind(name)}
-            selected={kind === chosen}
-            onPress={() => choose(kind)}
-            testID={`tag-${kind}`}
-          />
-        );
-      })}
-      {close}
-    </View>
+    <NoTabSwipe testID="point-tag-row-no-swipe">
+      <View
+        style={styles.row}
+        accessibilityLabel={t.tags.rowLabel(event.winner === 'us')}
+        testID="point-tag-row"
+      >
+        {plausibleKinds(rally).map((kind) => {
+          const name = t.tags.kindNames[kind];
+          return (
+            <TagChip
+              key={kind}
+              label={t.tags.kinds[kind]}
+              accessibilityLabel={
+                kind === chosen ? t.tags.clearKind(name) : t.tags.chooseKind(name)
+              }
+              selected={kind === chosen}
+              onPress={() => choose(kind)}
+              testID={`tag-${kind}`}
+            />
+          );
+        })}
+        {close}
+      </View>
+    </NoTabSwipe>
   );
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { formatDateInput, todayInput } from '@/domain/dates';
+import { DATE_INPUT_MAX_LENGTH, formatDateInput, todayInput } from '@/domain/dates';
 import {
   SEASON_KINDS,
   validateSeasonForm,
@@ -88,7 +88,7 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
         placeholder={t.appearance.dateHint}
         keyboardType="numbers-and-punctuation"
         error={err('startDate')}
-        maxLength={10}
+        maxLength={DATE_INPUT_MAX_LENGTH}
       />
       <TextField
         label={s.endDate}
@@ -97,7 +97,7 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
         placeholder={t.appearance.dateHint}
         keyboardType="numbers-and-punctuation"
         error={err('endDate')}
-        maxLength={10}
+        maxLength={DATE_INPUT_MAX_LENGTH}
       />
       <TextField
         label={s.location}

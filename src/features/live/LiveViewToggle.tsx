@@ -1,7 +1,7 @@
 import { Pressable, Text } from 'react-native';
 
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { fontSize, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** The two views of live mode, in swipe order (v8: swipe left on Live → Performance). */
 export const LIVE_VIEWS = ['live', 'performance'] as const;
@@ -52,5 +52,10 @@ const useStyles = makeStyles((theme) => ({
     borderColor: theme.colors.primary,
   },
   pressed: { opacity: 0.7 },
-  label: { ...typography.body, color: theme.colors.text },
+  // v8 QA: the wide dyslexia font gets a smaller label, so "Live · Set n" isn't clipped at 375 px.
+  label: {
+    ...typography.body,
+    ...(theme.dyslexiaFont ? { fontSize: fontSize.sm } : null),
+    color: theme.colors.text,
+  },
 }));

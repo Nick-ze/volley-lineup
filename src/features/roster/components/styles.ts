@@ -45,6 +45,9 @@ export const useListStyles = makeStyles((theme) => ({
     paddingVertical: spacing.sm,
     paddingLeft: spacing.md,
   },
+  // v8 QA: a row with a picture (team list) keeps the same room for the name, so at phone widths
+  // the actions wrap below instead of cutting the name short ("Volley …").
+  mainWithLeading: { flexBasis: listRowMainMinWidth + touchTarget + spacing.md },
   text: { flex: 1, gap: spacing.xxs },
   title: { ...typography.subheading, color: theme.colors.text },
   subtitle: { ...typography.label, color: theme.colors.textMuted },

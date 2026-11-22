@@ -8,7 +8,7 @@ import {
   type NewMatchErrors,
   type NewMatchValue,
 } from '@/domain/matchForm';
-import { todayInput } from '@/domain/dates';
+import { DATE_INPUT_MAX_LENGTH, todayInput } from '@/domain/dates';
 import { OpponentPicker } from '@/features/matchForm/OpponentPicker';
 import { SeasonPicker } from '@/features/matchForm/SeasonPicker';
 import { useT } from '@/i18n';
@@ -97,7 +97,7 @@ export function MatchForm({ teamId, seasonId, onSubmit, onCancel }: MatchFormPro
         error={errorText(t, errors.date)}
         placeholder={t.appearance.dateHint}
         keyboardType="numbers-and-punctuation"
-        maxLength={10}
+        maxLength={DATE_INPUT_MAX_LENGTH}
       />
       <Text style={formStyles.sectionLabel}>{s.venue}</Text>
       <View style={formStyles.actions} accessibilityRole="radiogroup" accessibilityLabel={s.venue}>

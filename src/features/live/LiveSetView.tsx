@@ -151,8 +151,9 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
   );
 }
 
+// v8 QA: small gaps, so the court and Substitution fit at 390×844 (DECISIONS #126).
 const styles = StyleSheet.create({
-  column: { gap: spacing.md },
+  column: { gap: spacing.sm },
   wide: { flexDirection: 'row', gap: spacing.xl, alignItems: 'flex-start' },
   controls: { width: CONTROLS_COLUMN_WIDTH },
   fill: { flex: 1 },

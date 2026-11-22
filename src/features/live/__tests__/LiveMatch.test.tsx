@@ -1,8 +1,13 @@
-import { fireEvent, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
+import { StyleSheet } from 'react-native';
 
 import type { Match, Player, Position, SetLineup } from '@/domain/types';
 import { useAppStore } from '@/store';
+import { fontSize } from '@/theme';
+import { dyslexiaFonts } from '@/theme/fonts';
+
+import { POINT_BUTTON_COMPACT_MIN_HEIGHT, POINT_BUTTON_MIN_HEIGHT } from '../layout';
 
 const player = (n: number, lastName: string, positions: Position[]): Player => ({
   id: `p${n}`,
@@ -108,6 +113,32 @@ describe('live match mode', () => {
     expect(score()).toBe('2:0');
     expect(screen.getByText('We serve · #2')).toBeTruthy();
     expect(storedEvents()).toHaveLength(2);
+  });
+
+  it('v8 QA: lower point buttons while "Who serves first" is shown (390×844 fit)', async () => {
+    const minHeight = () =>
+      StyleSheet.flatten(screen.getByTestId('point-us').props.style).minHeight as number;
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+    expect(await screen.findByTestId('serve-us')).toBeTruthy();
+    expect(minHeight()).toBe(POINT_BUTTON_COMPACT_MIN_HEIGHT);
+    expect(POINT_BUTTON_COMPACT_MIN_HEIGHT).toBeGreaterThanOrEqual(44);
+    await press('point-us');
+    expect(screen.queryByTestId('serve-us')).toBeNull();
+    expect(minHeight()).toBe(POINT_BUTTON_MIN_HEIGHT);
+  });
+
+  it('v8 QA: a smaller header button label with the dyslexia font (title not clipped)', async () => {
+    const labelSize = () =>
+      StyleSheet.flatten(
+        within(screen.getByTestId('live-view-performance')).getByText('Performance').props.style,
+      ).fontSize as number;
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+    expect(await screen.findByTestId('live-view-performance')).toBeTruthy();
+    expect(labelSize()).toBe(fontSize.md);
+    await act(() => useAppStore.getState().setDyslexiaFont(true));
+    // The dyslexia font scales every size; the label is one step smaller than body text.
+    expect(labelSize()).toBeCloseTo(fontSize.sm * dyslexiaFonts.scale, 0);
+    expect(labelSize()).toBeLessThan(fontSize.md * dyslexiaFonts.scale);
   });
 
   it('substitutes a court player for a bench player, counts subs and warns on re-entry', async () => {
