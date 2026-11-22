@@ -98,7 +98,20 @@ export const roster = {
     date: 'Date (YYYY-MM-DD)',
     venue: 'Venue',
     create: 'Create match',
+    /** v7.0: the season / tournament the match goes into. */
+    season: 'Season / tournament',
+    seasonName: 'Season name',
+    seasonNew: 'Your team has no season yet. It is created with this match.',
+    /** v7.0: the season's opponents as chips, plus a field for a new one. */
+    opponentChips: (season: string) => `Opponents in ${season}`,
+    newOpponent: 'Or a new opponent',
+    willAdd: (name: string, season: string) => `${name} is added to ${season}.`,
+    existing: (name: string) => `${name} is already in this season.`,
   },
+  /** v7.0: a season's name with its kind ("2026/27 · Season"). */
+  seasonKind: { season: 'Season', tournament: 'Tournament' },
+  seasonLine: (name: string, kind: string) => `${name} · ${kind}`,
+  seasonLabel: (name: string, kind: string) => `${name}, ${kind}`,
   teamNotFound: 'This team no longer exists.',
   backToTeams: 'Back to teams',
   backToTeam: 'Back to team',

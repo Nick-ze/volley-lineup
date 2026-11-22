@@ -114,7 +114,8 @@ describe('Stats tab', () => {
     useAppStore.getState().setLanguage('de');
     try {
       await renderRouter('./app', { initialUrl: '/team/team1?tab=stats' });
-      expect(await screen.findByText(de.stats.season.heading)).toBeTruthy();
+      // v7.0: the overview is headed by the season shown; this match's season isn't seeded.
+      expect(await screen.findByText(de.stats.seasonFilter.all)).toBeTruthy();
       expect(screen.getByText(de.stats.players.kills)).toBeTruthy();
       expect(cell('rotation-table', 'r1', 'sideOut')).toBe('50 %');
       expect(screen.getByTestId('rotation-table-note')).toHaveTextContent(

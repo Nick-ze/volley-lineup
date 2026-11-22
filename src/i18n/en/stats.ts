@@ -21,6 +21,13 @@ export const stats = {
     points: 'Points',
     pointsLabel: (us: number, them: number) => `Points: ${us} won, ${them} lost`,
   },
+  /** v7.0: the Stats tab's season switcher. */
+  seasonFilter: {
+    label: 'Show stats of',
+    all: 'All seasons',
+    allLabel: 'All seasons: stats of every match',
+    empty: 'No match of this season has been played yet.',
+  },
   filter: {
     label: 'Show stats for',
     all: 'All sets',

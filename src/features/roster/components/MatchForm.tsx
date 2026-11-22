@@ -3,13 +3,16 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import {
-  toIsoDate,
-  validateMatchForm,
-  type FormErrors,
-  type MatchFormField,
-  type MatchFormInput,
-} from '@/domain/roster';
+  matchingOpponent,
+  validateNewMatch,
+  type NewMatchErrors,
+  type NewMatchValue,
+} from '@/domain/matchForm';
+import { toIsoDate } from '@/domain/roster';
+import { OpponentPicker } from '@/features/matchForm/OpponentPicker';
+import { SeasonPicker } from '@/features/matchForm/SeasonPicker';
 import { useT } from '@/i18n';
+import { useOpponentsForSeason, useSeasonsForTeam } from '@/store';
 
 import { errorText } from '../errorText';
 import { ChoiceChip } from './ChoiceChip';
@@ -17,33 +20,73 @@ import { formStyles } from './styles';
 import { TextField } from './TextField';
 
 export interface MatchFormProps {
-  onSubmit: (value: MatchFormInput) => void;
+  teamId: string;
+  /** Opened from a season: the match goes into it (ignored when it isn't the team's). */
+  seasonId?: string;
+  onSubmit: (value: NewMatchValue) => void;
   onCancel: () => void;
 }
 
-/** Opponent, date (YYYY-MM-DD, defaults to today) and home / away. */
-export function MatchForm({ onSubmit, onCancel }: MatchFormProps) {
+/**
+ * v7.0: season (fixed, a choice of the team's seasons, or a new one), opponent (a chip of the
+ * season's opponents or a typed name), date (YYYY-MM-DD, defaults to today) and home / away.
+ */
+export function MatchForm({ teamId, seasonId, onSubmit, onCancel }: MatchFormProps) {
   const t = useT();
-  const [opponent, setOpponent] = useState('');
+  const seasons = useSeasonsForTeam(teamId);
+  const fixed = seasons.some((x) => x.id === seasonId);
+  const [season, setSeason] = useState(() => (fixed ? seasonId : seasons[0]?.id) ?? null);
+  const [newSeasonName, setNewSeasonName] = useState(() => String(new Date().getFullYear()));
+  const opponents = useOpponentsForSeason(season);
+  const [chip, setChip] = useState<string | null>(null);
+  const [name, setName] = useState('');
   const [date, setDate] = useState(() => toIsoDate(new Date()));
   const [home, setHome] = useState(true);
-  const [errors, setErrors] = useState<FormErrors<MatchFormField>>({});
+  const [errors, setErrors] = useState<NewMatchErrors>({});
   const s = t.roster.matchForm;
+  const selected =
+    matchingOpponent(opponents, season, name)?.id ?? (name.trim() === '' ? chip : null);
+  const seasonName = seasons.find((x) => x.id === season)?.name ?? newSeasonName.trim();
 
   const submit = () => {
-    const result = validateMatchForm({ opponent, date, home });
+    const input = {
+      seasonId: season,
+      newSeasonName,
+      opponentId: chip,
+      opponentName: name,
+      date,
+      home,
+    };
+    const result = validateNewMatch(input, { teamId, seasons, opponents });
     setErrors(result.errors);
     if (result.ok) onSubmit(result.value);
   };
 
   return (
     <View style={formStyles.card}>
-      <TextField
-        label={s.opponent}
-        value={opponent}
-        onChangeText={setOpponent}
+      <SeasonPicker
+        seasons={seasons}
+        fixed={fixed}
+        value={season}
+        onChange={(id) => {
+          setSeason(id);
+          setChip(null); // the other season's opponents are different teams
+        }}
+        newName={newSeasonName}
+        onNewName={setNewSeasonName}
+        error={errorText(t, errors.season)}
+      />
+      <OpponentPicker
+        opponents={opponents}
+        seasonName={seasonName}
+        selectedId={selected}
+        onSelect={(id) => {
+          setChip(id);
+          setName('');
+        }}
+        name={name}
+        onName={setName}
         error={errorText(t, errors.opponent)}
-        autoFocus
       />
       <TextField
         label={s.date}
