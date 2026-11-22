@@ -8,6 +8,7 @@ import { parseSetNumber } from '@/domain/lineupEditing';
 import { playedSetNumbers } from '@/domain/stats';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { MatchResultLine } from '@/features/live/MatchResultLine';
+import { MatchSeasonLine } from '@/features/matchForm/MatchSeasonLine';
 import { PresetApply } from '@/features/lineup/PresetApply';
 import { SetTabs } from '@/features/lineup/SetTabs';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
@@ -55,6 +56,7 @@ export default function MatchScreen() {
             onSelect={(n) => router.setParams({ set: String(n) })}
           />
           <MatchResultLine match={match} />
+          <MatchSeasonLine match={match} />
           <View style={styles.links}>
             <Button
               label={t.lineup.rotation}

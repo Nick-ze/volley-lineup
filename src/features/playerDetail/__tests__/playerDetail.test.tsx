@@ -140,6 +140,16 @@ describe('Player detail', () => {
     expect(screen).toHaveSearchParams({ matchId: 'm1', set: 'all', player: 'p7' });
   });
 
+  it('v7.0: each match line names its season', async () => {
+    useAppStore.setState({
+      seasons: [{ id: 's1', teamId: 't1', name: '2026/27', kind: 'season', createdAt: '' }],
+    });
+    await renderRouter('./app', { initialUrl: '/team/t1/players/p7' });
+    expect(await screen.findByTestId('player-match-m1-head')).toHaveTextContent(
+      /^2026-11-01 · 2026\/27 · /,
+    );
+  });
+
   it('a substitute: subs in, sets played but not started', async () => {
     await renderRouter('./app', { initialUrl: '/team/t1/players/p8' });
     expect(await screen.findByTestId('player-detail')).toBeTruthy();

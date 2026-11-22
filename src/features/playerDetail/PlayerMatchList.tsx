@@ -5,6 +5,7 @@ import { matchResultLabel } from '@/features/live/matchResult';
 import { ListRow } from '@/features/roster/components/ListRow';
 import { listStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
+import { useAppStore } from '@/store';
 
 export interface PlayerMatchListProps {
   lines: PlayerMatchLine[];
@@ -15,6 +16,7 @@ export interface PlayerMatchListProps {
 export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
   const t = useT();
   const s = t.playerDetail.matches;
+  const seasons = useAppStore((state) => state.seasons);
   return (
     <View style={listStyles.list} testID="player-matches">
       <Text style={listStyles.title} accessibilityRole="header">
@@ -32,14 +34,20 @@ export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
           blocks: p.blocks,
           errors: p.errors,
         };
-        const head = result ? `${match.date}${t.playerDetail.separator}${result}` : match.date;
+        // v7.0: date · season · result (the season only when it is known).
+        const seasonName = seasons.find((x) => x.id === match.seasonId)?.name;
+        const head = [match.date, seasonName, result]
+          .filter((x): x is string => !!x)
+          .join(t.playerDetail.separator);
         return (
           <ListRow
             key={match.id}
             title={s.vs(match.opponent)}
             subtitle={
               <>
-                <Text style={listStyles.subtitle}>{head}</Text>
+                <Text style={listStyles.subtitle} testID={`player-match-${match.id}-head`}>
+                  {head}
+                </Text>
                 <Text style={listStyles.subtitle} testID={`player-match-${match.id}-numbers`}>
                   {s.line(numbers)}
                 </Text>
