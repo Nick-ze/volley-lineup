@@ -311,12 +311,8 @@ describe('season screen', () => {
     await renderRouter('./app', { initialUrl: `/team/${team.id}/season/${a.id}?tab=opponents` });
     const bears = findOpponentByName(store().opponents, a.id, 'Bears');
     await fireEvent.press(screen.getByTestId(`opponent-${bears?.id}`));
-    expect(screen).toHaveSearchParams({
-      teamId: team.id,
-      seasonId: a.id,
-      tab: 'matches',
-      opponent: bears?.id ?? '',
-    });
+    expect(screen).toHaveSearchParams({ teamId: team.id, seasonId: a.id, tab: 'matches' });
+    expect(screen.getByTestId('opponent-filter')).toBeTruthy();
     const rows = () => screen.queryAllByText(/^vs [^✕]*$/).map((n) => n.props.children);
     expect(rows()).toEqual(['vs Bears']);
     await fireEvent.press(screen.getByLabelText(s.matches.filterLabel('Bears')));

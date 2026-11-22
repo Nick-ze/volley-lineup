@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { seasonOverview } from '@/domain/stats';
 import type { Match, Season } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { borderWidth, colors, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { KindBadge } from './KindBadge';
 import { seasonSummary, seasonWhenWhere } from './seasonText';
@@ -30,7 +30,11 @@ export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
       accessibilityLabel={t.seasons.list.open(spoken)}
       onPress={onPress}
       testID={`season-${season.id}`}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        season.kind === 'tournament' && styles.tournament,
+        pressed && styles.pressed,
+      ]}
     >
       <View style={styles.top}>
         <Text style={styles.name} numberOfLines={2}>
@@ -53,11 +57,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderLeftWidth: spacing.xs,
+    borderLeftWidth: borderWidth.thick,
     borderLeftColor: colors.primary,
     padding: spacing.lg,
     gap: spacing.xs,
   },
+  tournament: { borderLeftColor: colors.secondary },
   pressed: { opacity: 0.8 },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   name: { ...typography.subheading, color: colors.text, flex: 1 },
