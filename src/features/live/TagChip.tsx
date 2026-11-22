@@ -58,7 +58,7 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  highlighted: { borderColor: theme.colors.highlight, borderWidth: borderWidth.thick },
+  highlighted: { borderColor: theme.colors.highlightText, borderWidth: borderWidth.thick },
   selected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   pressed: { opacity: 0.8 },
   label: { ...typography.body, fontWeight: '600', color: theme.colors.text },

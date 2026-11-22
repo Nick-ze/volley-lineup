@@ -62,7 +62,12 @@ export function PlayerChip({
       primary ? t.positions[primary] : '',
     );
   const photoUri = usePhotoUri(showPhoto && showName ? player.photoId : undefined);
-  const ringColor = selected ? colors.primary : highlighted ? colors.highlight : colors.border;
+  // Text-strength tokens: same as primary / highlight in dark mode, ≥ 3:1 outlines in light mode.
+  const ringColor = selected
+    ? colors.primaryText
+    : highlighted
+      ? colors.highlightText
+      : colors.border;
 
   const content = (
     <View style={styles.wrapper}>

@@ -88,6 +88,6 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyArmed: { borderColor: theme.colors.highlight, borderStyle: 'solid' },
+  emptyArmed: { borderColor: theme.colors.highlightText, borderStyle: 'solid' },
   emptyText: { ...typography.caption, color: theme.colors.textMuted },
 }));

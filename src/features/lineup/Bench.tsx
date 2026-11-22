@@ -99,7 +99,7 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 2,
-    borderColor: theme.colors.highlight,
+    borderColor: theme.colors.highlightText,
   },
   dropText: { ...typography.label, color: theme.colors.highlightText },
 }));
