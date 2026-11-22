@@ -62,9 +62,14 @@ export function TagPlayerPicker({
     />
   );
   return (
-    <View style={styles.row} accessibilityLabel={t.tags.playersLabel(name)} testID="point-tag-row">
-      {/* v8: dragging the chips sideways scrolls them, never the Live ↔ Performance swipe. */}
-      <NoTabSwipe>
+    // v8: a drag anywhere on the row (chips, kind chip, ✕) scrolls the chips, never the
+    // Live ↔ Performance swipe, so the open tag row is never lost (v8 QA).
+    <NoTabSwipe testID="point-tag-row-no-swipe">
+      <View
+        style={styles.row}
+        accessibilityLabel={t.tags.playersLabel(name)}
+        testID="point-tag-row"
+      >
         <ScrollView
           horizontal
           style={styles.scroll}
@@ -94,9 +99,9 @@ export function TagPlayerPicker({
             );
           })}
         </ScrollView>
-      </NoTabSwipe>
-      {close}
-    </View>
+        {close}
+      </View>
+    </NoTabSwipe>
   );
 }
 
