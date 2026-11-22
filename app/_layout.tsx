@@ -28,6 +28,8 @@ const navTheme = {
 
 const teamIdOfMatch = (matchId: string) =>
   useAppStore.getState().matches.find((m) => m.id === matchId)?.teamId;
+const seasonIdOfMatch = (matchId: string) =>
+  useAppStore.getState().matches.find((m) => m.id === matchId)?.seasonId;
 
 export default function RootLayout() {
   const t = useT();
@@ -57,6 +59,7 @@ export default function RootLayout() {
                             route.name,
                             route.params as Record<string, unknown> | undefined,
                             teamIdOfMatch,
+                            seasonIdOfMatch,
                           )}
                         />
                       ),

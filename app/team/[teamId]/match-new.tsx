@@ -20,7 +20,9 @@ export default function NewMatchScreen() {
   const router = useRouter();
   const { teamId, seasonId } = useLocalSearchParams<{ teamId: string; seasonId?: string }>();
   const team = useTeam(teamId);
-  const goBack = useGoBack(`/team/${teamId}?tab=matches`);
+  const goBack = useGoBack(
+    seasonId ? `/team/${teamId}/season/${seasonId}` : `/team/${teamId}?tab=matches`,
+  );
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

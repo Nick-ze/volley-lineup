@@ -219,7 +219,14 @@ describe('roster flows', () => {
     const { team } = seedTeam();
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
     await fireEvent.press(screen.getByRole('tab', { name: s.team.matchesTab }));
-    expect(screen.getByText(s.matches.empty)).toBeTruthy();
+    // v7: matches live in a season — create one first; it opens straight away.
+    expect(screen.getByText(t.seasons.list.empty)).toBeTruthy();
+    await press(t.seasons.list.newSeason);
+    await type(t.seasons.form.name, '2026/27');
+    await press(t.seasons.form.create);
+    const season = store().seasons[0];
+    expect(screen).toHavePathname(`/team/${team.id}/season/${season.id}`);
+    expect(screen.getByText(t.seasons.matches.empty)).toBeTruthy();
     await press(s.matches.newMatch);
 
     await screen.findByLabelText(s.matchForm.opponent);
@@ -234,7 +241,12 @@ describe('roster flows', () => {
     await press(s.matchForm.create);
 
     const match = store().matches[0];
-    expect(match).toMatchObject({ opponent: 'Rivals', date: '2026-11-21', home: false });
+    expect(match).toMatchObject({
+      opponent: 'Rivals',
+      date: '2026-11-21',
+      home: false,
+      seasonId: season.id,
+    });
     expect(match.sets).toHaveLength(1);
     expect(screen).toHavePathname(`/match/${match.id}`);
   });
@@ -255,7 +267,9 @@ describe('roster flows', () => {
       date: '2026-10-01',
       home: false,
     });
-    await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
+    // v7: the match list (with search) is on the season screen.
+    const seasonId = store().matches[0].seasonId;
+    await renderRouter('./app', { initialUrl: `/team/${team.id}/season/${seasonId}` });
     const rows = screen.getAllByText(/^vs /).map((n) => n.props.children);
     expect(rows).toEqual(['vs New', 'vs Old']);
     await press(s.matches.delete('Old'));
@@ -282,7 +296,9 @@ describe('roster flows', () => {
       date: '2026-10-03',
       home: false,
     });
-    await renderRouter('./app', { initialUrl: `/team/${team.id}?tab=matches` });
+    // v7: the match list (with search) is on the season screen.
+    const seasonId = store().matches[0].seasonId;
+    await renderRouter('./app', { initialUrl: `/team/${team.id}/season/${seasonId}` });
     const rows = () => screen.queryAllByText(/^vs /).map((n) => n.props.children);
     expect(rows()).toHaveLength(2);
     expect(screen.queryByTestId('match-search-status')).toBeNull();

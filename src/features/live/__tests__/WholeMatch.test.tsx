@@ -302,7 +302,13 @@ describe('whole-match live mode', () => {
         { id: 'm5', opponent: 'Hawks', sets: [set(1, 3, 0)] },
       ],
     );
-    await renderRouter('./app', { initialUrl: '/team/team1?tab=matches' });
+    // v7: the match list is on the season screen (the seeded matches are in season s1).
+    useAppStore.setState({
+      seasons: [
+        { id: 's1', teamId: 'team1', name: '2026', kind: 'season', createdAt: '2026-01-01' },
+      ],
+    });
+    await renderRouter('./app', { initialUrl: '/team/team1/season/s1' });
     // The result has its own (never truncated) line under date · home/away.
     const results = (await screen.findAllByTestId('match-row-result')).map((r) => r.props.children);
     expect(results.sort()).toEqual(['1:3 lost', '2:0 · in progress', '3:1 won', 'in progress']);

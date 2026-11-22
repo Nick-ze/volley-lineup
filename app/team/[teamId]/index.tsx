@@ -4,9 +4,9 @@ import { useEffect } from 'react';
 import { Screen } from '@/components';
 import { PresetsTab } from '@/features/presets/PresetsTab';
 import { StartersTab } from '@/features/presets/StartersTab';
-import { MatchesTab } from '@/features/roster/components/MatchesTab';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { RosterTab } from '@/features/roster/components/RosterTab';
+import { SeasonsTab } from '@/features/seasons/SeasonsTab';
 import { StatsTab } from '@/features/stats/StatsTab';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { parseTeamTab } from '@/features/team/tabs';
@@ -16,7 +16,8 @@ import { useTeam } from '@/store';
 
 /**
  * `/team/[teamId]?tab=roster|matches|presets|starters|stats` — the team with a bottom nav bar
- * (Roster · Matches · Presets · Starters · Stats). Unknown tabs show the roster.
+ * (Roster · Matches · Presets · Starters · Stats). Unknown tabs show the roster. v7.0: the
+ * Matches tab lists the team's seasons / tournaments; their matches are inside each season.
  */
 export default function TeamScreen() {
   const t = useT();
@@ -43,10 +44,10 @@ export default function TeamScreen() {
         />
       ) : null}
       {tab === 'matches' ? (
-        <MatchesTab
+        <SeasonsTab
           teamId={id}
-          onNewMatch={() => router.push(`/team/${id}/match-new`)}
-          onOpenMatch={(matchId) => router.push(`/match/${matchId}`)}
+          onNewSeason={() => router.push(`/team/${id}/season-new`)}
+          onOpenSeason={(seasonId) => router.push(`/team/${id}/season/${seasonId}`)}
         />
       ) : null}
       {tab === 'presets' ? (
