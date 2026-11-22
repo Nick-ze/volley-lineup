@@ -60,10 +60,10 @@ export const roster: Strings['roster'] = {
     inactive: 'Verletzt',
     toggleActive: (name: string, active: boolean) =>
       active
-        ? `${name} ist aktiv. Als verletzt oder inaktiv markieren`
-        : `${name} ist verletzt. Als aktiv markieren`,
-    rowLabel: (number: number, name: string, positions: string, active: boolean) =>
-      `Nummer ${number}, ${name}, ${positions}${active ? '' : ', verletzt oder inaktiv'}`,
+        ? `Aktiv: ${name}. Als verletzt oder inaktiv markieren`
+        : `Verletzt: ${name}. Als aktiv markieren`,
+    cardLabel: (name: string, number: number, positions: string, active: boolean) =>
+      `${name}, Nummer ${number}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', verletzt oder inaktiv'}. Details öffnen`,
   },
   player: {
     addTitle: 'Spieler hinzufügen',

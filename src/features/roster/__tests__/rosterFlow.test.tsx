@@ -118,7 +118,10 @@ describe('roster flows', () => {
       active: true,
     });
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
-    await press(s.roster.toggleActive('Ana Ace', true));
+    // v8: the card's toggle is a switch.
+    await fireEvent.press(
+      screen.getByRole('switch', { name: s.roster.toggleActive('Ana Ace', true) }),
+    );
     expect(store().players[0].active).toBe(false);
 
     // v6: a row opens the player detail screen; its Edit button opens the editor.
