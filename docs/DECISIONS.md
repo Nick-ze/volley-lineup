@@ -315,3 +315,26 @@ Newest at the bottom. Format: **Decision** — why.
 173. **Names**: a season name is required, ≤ 40 characters and unique within the team; an opponent name is ≤ 60 and unique within the season. Both are compared ignoring case and accents. Dates are optional ISO dates with the end not before the start; the place is ≤ 80 characters. Deleting a season deletes its opponents and matches (the UI asks first); an opponent can only be deleted while it has no matches. Seasons are listed newest first (start date, else creation date).
 174. **Record per opponent** (`opponentRecords`): played = matches with at least one rally, split into won / lost / in progress; upcoming = not started; sets won : lost. Every opponent of the season is listed (also without matches), by name.
 175. **Version 7.0.0** (versionCode 70000): major, because the store and export formats change.
+
+### Seasons UI (PR #55)
+
+176. **Season boxes**: the team's Matches tab (label and `tab=matches` unchanged) lists the seasons as cards, newest first, two per row on wide screens. Each card shows the name, a kind badge (Season orange / Tournament blue edge and badge), dates ("from …", "until …", "… – …") and place, and "n matches · W–L" once a match has been played. The season screen (`/team/[teamId]/season/[seasonId]?tab=matches|opponents|stats`) shows the name, kind, dates and place, with Edit, and tabs Matches (the old match list + v6.2 search + New match) · Opponents · Stats (season overview, rotation and player tables of that season only). The header title is the team name.
+177. **Opponents tab**: each row shows the record ("1–1 · 3 played · 1 in progress · 1 upcoming · sets 4:3"), with inline Add and Rename. Delete is hidden while the opponent has matches (one hint line explains why) and asks first otherwise. Tapping an opponent shows only their matches. That filter is screen state with a "vs X ✕" button, not a URL parameter, because upgraded opponent ids contain "%" and the router decoded them twice. Back navigation: match → its season → the team's Matches tab (`parentRoute` with `seasonIdOfMatch`).
+
+### New match and stats (PR #54)
+
+178. **New match in a season**: opened from a season (`?seasonId=`), the form names that season. Without one it offers the team's seasons as chips (newest preselected); if the team has none, a "Season name" field prefilled with the year creates one. The opponent is a chip of the season's opponents or a typed name. A typed name equal to an existing one (ignoring case and accents) selects it ("TSV München is already in this season"); a new one is added ("X is added to …"). Saving re-reads the store, so two quick presses don't create two seasons or opponents. Validation: `src/domain/matchForm.ts`.
+179. **Stats tab season switcher** (shown once a team has two or more seasons): All seasons · each season, newest first. It opens on the newest season with a played match, else All seasons (`src/domain/statsSeason.ts`). The overview heading is the selected season's name or "All seasons". The match screen shows "2026/27 · Season" under the result, and each player-detail match line includes the season.
+
+### QA fixes (orchestrator)
+
+180. **One spelling per opponent** (amends #172): the upgrade now gives every old match its opponent's name (the first spelling, trimmed, inner spaces collapsed, ≤ 60 characters, "?" when empty). Old "tsv munchen" matches therefore show "TSV München", like the opponent list.
+181. **No duplicate names from an import**: season names must be unique within a team and opponent names within a season, also in files (`INCONSISTENT_REFERENCES` otherwise). A merge first matches an incoming season or opponent to an existing one with the same name (`alignIncomingByName`) and moves its matches over, so two devices that both created "Rivals" or "2026/27" end up with one.
+182. **Wording**:
+
+- The player detail's stats heading is "All seasons" (it adds up every season).
+- "New season / tournament", "Edit season / tournament".
+- The import preview counts seasons; "Delete all data" mentions seasons.
+- Match row labels start with the visible text ("vs X, date: open the match"; DE "Löschen: Spiel gegen X").
+
+183. **The team's old free-text season is no longer shown or edited** (team header, team list, team form). An existing value stays in the data; it named the upgraded season.

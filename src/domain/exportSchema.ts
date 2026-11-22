@@ -29,7 +29,7 @@ import type {
 import { isValidPointTag } from './pointTags';
 import { FORMATION_ORDERS, FORMATION_SYSTEMS, upgradeLineupToFormation } from './roles';
 import { validatePresetName } from './presets';
-import { SEASON_KINDS, upgradeToSeasons } from './seasons';
+import { alignIncomingByName, namesAreUnique, SEASON_KINDS, upgradeToSeasons } from './seasons';
 import {
   isPhotoDataUri,
   isValidDescription,
@@ -367,7 +367,8 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  * - v7: every photo a profile or player refers to is in the file (photo ids unique); an error
  *   type only on an "our error" tag (`isValidPointTag`);
  * - v8: every season's team exists, every opponent's season exists, and every match is in a
- *   season of its own team and plays an opponent of that season.
+ *   season of its own team and plays an opponent of that season; season names are unique
+ *   within a team and opponent names within a season (ignoring case and accents).
  */
 export function isConsistent(data: TransferData): boolean {
   const { profiles, teams, players, matches, presets, photos, seasons, opponents } = data;
@@ -388,6 +389,7 @@ export function isConsistent(data: TransferData): boolean {
   const inOwnSeason = (m: Match) =>
     teamOfSeason.get(m.seasonId) === m.teamId && seasonOfOpponent.get(m.opponentId) === m.seasonId;
   if (!matches.every(inOwnSeason)) return false;
+  if (!namesAreUnique(data)) return false;
   if (hasDuplicates(presets.filter((p) => p.kind === 'starters').map((p) => p.teamId))) {
     return false;
   }
@@ -562,6 +564,9 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * team, they replace that team's existing starters (even under a different id). Nothing else is
  * deleted.
  *
+ * v7 (v8 file): an incoming season or opponent with the name of an existing one (same team /
+ * season, ignoring case and accents) is matched to it first (`alignIncomingByName`).
+ *
  * v7: a merge never deletes a picture or a description. An incoming player (or profile) without
  * a `photoId` keeps the existing one's photo, and an incoming player without a description (a
  * file exported without descriptions, or from before v6) keeps the existing description; when
@@ -572,7 +577,9 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * of a team with the same name) the merge is refused with `MERGE_CONFLICT` (the user can choose
  * Replace instead); data is never silently dropped or renumbered.
  */
-export function mergeData(existing: TransferData, incoming: TransferData): MergeResult {
+export function mergeData(existing: TransferData, file: TransferData): MergeResult {
+  // v7 QA: same-named seasons / opponents of another device become the existing ones.
+  const incoming = alignIncomingByName(existing, file);
   // A team has one set of starters: incoming starters replace the existing ones of that team.
   const incomingStarters = new Map(
     incoming.presets.filter((p) => p.kind === 'starters').map((p) => [p.teamId, p.id]),

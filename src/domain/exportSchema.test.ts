@@ -1055,6 +1055,45 @@ describe('v8 seasons and opponents', () => {
     expect(parseObject(raw2)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
   });
 
+  it('v7 QA: rejects duplicate season or opponent names; a merge matches them by name', () => {
+    const dupSeason = fixture();
+    dupSeason.seasons.push({ ...(dupSeason.seasons[0] as Season), id: 's9', name: '2026/27 ' });
+    expect(isConsistent(dupSeason)).toBe(false);
+    const dupOpponent = fixture();
+    dupOpponent.opponents.push({
+      ...(dupOpponent.opponents[0] as Opponent),
+      id: 'o9',
+      name: 'RIVALS',
+    });
+    expect(isConsistent(dupOpponent)).toBe(false);
+    // Another device created "2026/27" / "rivals" with other ids.
+    const other = fixture();
+    other.seasons[0] = { ...(other.seasons[0] as Season), id: 'other-s' };
+    other.opponents[0] = {
+      ...(other.opponents[0] as Opponent),
+      id: 'other-o',
+      seasonId: 'other-s',
+      name: 'rivals',
+    };
+    other.matches[0] = {
+      ...(other.matches[0] as Match),
+      id: 'm7',
+      seasonId: 'other-s',
+      opponentId: 'other-o',
+      opponent: 'rivals',
+    };
+    const merged = mergeData(fixture(), buildExport(other));
+    expect(merged.ok).toBe(true);
+    if (!merged.ok) return;
+    expect(merged.data.seasons.map((x) => x.id)).toEqual(['s1', 's2']);
+    expect(merged.data.opponents.map((o) => o.id)).toEqual(['o1', 'o2']);
+    expect(merged.data.matches.find((x) => x.id === 'm7')).toMatchObject({
+      seasonId: 's1',
+      opponentId: 'o1',
+      opponent: 'Rivals',
+    });
+  });
+
   it('merging an old (v7) file of the same data on another device adds nothing twice', () => {
     const raw = JSON.parse(exportText(fixture()));
     delete raw.seasons;

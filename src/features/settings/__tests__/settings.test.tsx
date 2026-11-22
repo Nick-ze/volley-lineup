@@ -93,7 +93,9 @@ describe('import', () => {
 
     await fireEvent.press(screen.getByLabelText('Import from file'));
     expect(
-      await screen.findByText('1 team, 3 players, 0 matches, 0 saved lineups, 1 profile'),
+      await screen.findByText(
+        '1 team, 3 players, 0 matches, 0 seasons / tournaments, 0 saved lineups, 1 profile',
+      ),
     ).toBeTruthy();
     expect(screen.getByText('Ready to import backup.json')).toBeTruthy();
 
@@ -277,7 +279,7 @@ describe('delete all and version', () => {
     await renderSettings();
     expect(
       screen.getByText(
-        'Removes every profile, team, player, photo, match and saved lineup (presets and team starters) from this device.',
+        'Removes every profile, team, player, photo, season, match and saved lineup (presets and team starters) from this device.',
       ),
     ).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Delete all data'));

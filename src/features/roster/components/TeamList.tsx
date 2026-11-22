@@ -63,7 +63,6 @@ export function TeamList({
             <ListRow
               key={team.id}
               title={team.name}
-              subtitle={team.season}
               onPress={() => onOpen(team)}
               accessibilityLabel={s.open(team.name)}
               actions={

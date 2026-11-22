@@ -15,7 +15,7 @@ export const playerDetail = {
   /** "+3", "0", "−2" (plus/minus). */
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),
   season: {
-    heading: 'Season',
+    heading: 'All seasons',
     empty: 'No sets played yet. Stats appear once this player is on court in live mode.',
     setsStarted: 'Sets started',
     setsPlayed: 'Sets played',

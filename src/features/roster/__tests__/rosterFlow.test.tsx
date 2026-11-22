@@ -58,7 +58,6 @@ describe('roster flows', () => {
 
     await press(s.teams.new);
     await type(s.teams.name, 'Herren 1');
-    await type(s.teams.season, '2026/27');
     await press(s.teams.create);
     await press(s.teams.open('Herren 1'));
     expect(screen).toHavePathname(`/team/${store().teams[0].id}`);

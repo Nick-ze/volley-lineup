@@ -1,6 +1,9 @@
 import { emptySetLineup } from './lineup';
 import {
+  alignIncomingByName,
+  cleanName,
   findOpponentByName,
+  namesAreUnique,
   foldName,
   opponentHasMatches,
   opponentRecords,
@@ -112,7 +115,7 @@ describe('upgradeToSeasons (store v8 → v9, export v7 → v8)', () => {
     const matches = up.matches as Record<string, unknown>[];
     expect(matches.slice(0, 5).map((m) => [m.seasonId, m.opponentId, m.opponent])).toEqual([
       ['season-t1', 'opp-season-t1-tsv%20munchen', 'TSV München'],
-      ['season-t1', 'opp-season-t1-tsv%20munchen', 'tsv munchen '], // match text kept
+      ['season-t1', 'opp-season-t1-tsv%20munchen', 'TSV München'], // v7 QA: one spelling
       ['season-t1', 'opp-season-t1-rivals', 'Rivals'],
       ['season-t2', 'opp-season-t2-rivals', 'Rivals'],
       ['season-t2', 'opp-season-t2-cup', 'Cup'],
@@ -145,7 +148,7 @@ describe('upgradeToSeasons (store v8 → v9, export v7 → v8)', () => {
       { id: 'season-t1', teamId: 't1', name: '—', kind: 'season', createdAt: '' },
     ]);
     expect(odd.opponents).toEqual([
-      { id: 'opp-season-t1-', seasonId: 'season-t1', name: '', createdAt: '' },
+      { id: 'opp-season-t1-', seasonId: 'season-t1', name: '?', createdAt: '' },
     ]);
     // Matches all in one year: that year.
     const oneYear = upgradeToSeasons({
@@ -344,5 +347,84 @@ describe('opponentRecords', () => {
         setsLost: 0,
       },
     ]);
+  });
+});
+
+describe('v7 QA: clean names, merge by name, unique names', () => {
+  it('cleans names: trimmed, single spaces, clamped, "?" when empty', () => {
+    expect(cleanName('  TSV   München ')).toBe('TSV München');
+    expect(cleanName('   ')).toBe('?');
+    expect(cleanName('x'.repeat(70))).toHaveLength(60);
+    expect(cleanName('abc  def', 4)).toBe('abc');
+  });
+
+  const existing = {
+    seasons: [season('s1', { name: '2026/27' })],
+    opponents: [opponent('o1', 'Rivals')],
+  };
+  const m = (id: string, seasonId: string, opponentId: string, name: string): Match => ({
+    id,
+    teamId: 't1',
+    seasonId,
+    opponentId,
+    opponent: name,
+    date: '2026-11-01',
+    home: true,
+    sets: [],
+  });
+
+  it('maps same-named incoming seasons and opponents onto the existing ones', () => {
+    const incoming = {
+      seasons: [season('x1', { name: '2026/27 ' }), season('x2', { name: 'Cup' })],
+      opponents: [
+        opponent('y1', 'RIVALS', 'x1'),
+        opponent('y2', 'Neu', 'x1'),
+        opponent('y3', 'Rivals', 'x2'),
+      ],
+      matches: [
+        m('m1', 'x1', 'y1', 'RIVALS'),
+        m('m2', 'x1', 'y2', 'Neu'),
+        m('m3', 'x2', 'y3', 'Rivals'),
+      ],
+    };
+    const aligned = alignIncomingByName(existing, incoming);
+    expect(aligned.seasons.map((x) => x.id)).toEqual(['x2']);
+    expect(aligned.opponents.map((o) => [o.id, o.seasonId])).toEqual([
+      ['y2', 's1'],
+      ['y3', 'x2'],
+    ]);
+    expect(aligned.matches.map((x) => [x.seasonId, x.opponentId, x.opponent])).toEqual([
+      ['s1', 'o1', 'Rivals'],
+      ['s1', 'y2', 'Neu'],
+      ['x2', 'y3', 'Rivals'],
+    ]);
+  });
+
+  it('leaves equal ids to the merge by id', () => {
+    const incoming = {
+      seasons: existing.seasons,
+      opponents: existing.opponents,
+      matches: [m('m1', 's1', 'o1', 'Rivals')],
+    };
+    expect(alignIncomingByName(existing, incoming)).toEqual(incoming);
+  });
+
+  it('knows when names are unique', () => {
+    expect(namesAreUnique(existing)).toBe(true);
+    expect(
+      namesAreUnique({
+        ...existing,
+        seasons: [...existing.seasons, season('s9', { name: '2026/27' })],
+      }),
+    ).toBe(false);
+    expect(
+      namesAreUnique({ ...existing, opponents: [...existing.opponents, opponent('o9', 'rivals')] }),
+    ).toBe(false);
+    expect(
+      namesAreUnique({
+        ...existing,
+        opponents: [...existing.opponents, opponent('o9', 'rivals', 's2')],
+      }),
+    ).toBe(true);
   });
 });
