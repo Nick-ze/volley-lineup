@@ -98,7 +98,8 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.sm,
   },
   cardInactive: { borderColor: theme.colors.error },
-  main: { alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs },
+  // Grows so the toggles of a row line up at the bottom of equally tall cards.
+  main: { flexGrow: 1, alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs },
   pressed: { opacity: 0.8 },
   name: { ...typography.subheading, color: theme.colors.text, textAlign: 'center' },
   number: { ...typography.label, color: theme.colors.textMuted },
