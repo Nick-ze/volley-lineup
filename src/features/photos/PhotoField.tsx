@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Photo } from '@/components';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { draftHasPhoto, type PhotoDraft } from './photoDraft';
 import { usePhotoPicker } from './usePhotoPicker';
@@ -24,6 +24,7 @@ export interface PhotoFieldProps {
 
 /** A form's picture: preview, Add / Change (camera or gallery) and Remove, saved on Save. */
 export function PhotoField({ photoId, draft, onChange, fallback, onBusyChange }: PhotoFieldProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.photos;
   const picker = usePhotoPicker((uri) => onChange({ kind: 'new', uri }), onBusyChange);
@@ -100,10 +101,10 @@ export function PhotoField({ photoId, draft, onChange, fallback, onBusyChange }:
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   actions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  note: { ...typography.caption, color: colors.textMuted },
-  problem: { color: colors.error },
-});
+  note: { ...typography.caption, color: theme.colors.textMuted },
+  problem: { color: theme.colors.error },
+}));

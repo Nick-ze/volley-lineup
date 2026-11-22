@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Photo, PositionBadge } from '@/components';
 import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
 import { useT } from '@/i18n';
 import { usePhotoUri } from '@/store';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { ListRow } from './ListRow';
 
@@ -17,6 +17,7 @@ export interface PlayerRowProps {
 
 /** One roster line: photo (with a small number) or number, name, position badges and the active / injured toggle. */
 export function PlayerRow({ player, onPress, onToggleActive }: PlayerRowProps) {
+  const styles = useStyles();
   const t = useT();
   const name = `${player.firstName} ${player.lastName}`;
   const s = t.roster.roster;
@@ -62,7 +63,7 @@ export function PlayerRow({ player, onPress, onToggleActive }: PlayerRowProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   // The number stays visible on a photo: a small badge at the bottom right.
   numberTag: {
     position: 'absolute',
@@ -70,11 +71,11 @@ const styles = StyleSheet.create({
     bottom: -spacing.xs,
     ...typography.caption,
     fontWeight: typography.jersey.fontWeight,
-    color: colors.onPrimary,
-    backgroundColor: colors.primary,
+    color: theme.colors.onPrimary,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: spacing.xs,
     borderRadius: radius.sm,
     overflow: 'hidden',
   },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-});
+}));

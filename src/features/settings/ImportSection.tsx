@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { useT, type Strings } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { Section } from './Section';
 import { StatusMessage, type Status } from './StatusMessage';
@@ -20,6 +20,7 @@ function statusOf(t: Strings, state: ImportState): Status | null {
 
 /** Import: pick a file, preview what's in it, then merge, replace or cancel. */
 export function ImportSection() {
+  const styles = useStyles();
   const t = useT();
   const { state, pick, apply, cancel } = useImport();
 
@@ -54,15 +55,15 @@ export function ImportSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   preview: {
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  previewTitle: { ...typography.label, color: colors.textMuted },
-  summary: { ...typography.subheading, color: colors.text },
-  muted: { ...typography.body, color: colors.textMuted },
+  previewTitle: { ...typography.label, color: theme.colors.textMuted },
+  summary: { ...typography.subheading, color: theme.colors.text },
+  muted: { ...typography.body, color: theme.colors.textMuted },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
-});
+}));

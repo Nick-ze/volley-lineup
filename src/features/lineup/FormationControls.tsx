@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { changeFormation } from '@/domain/formationChange';
 import { FORMATION_ORDERS, FORMATION_PATTERNS, FORMATION_SYSTEMS } from '@/domain/roles';
 import type { FormationOrder, FormationSystem } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { Segmented } from './Segmented';
 import type { LineupDraft } from './useLineupDraft';
@@ -17,6 +17,7 @@ import type { LineupDraft } from './useLineupDraft';
  * moves with "Rotate". Disabled in played sets.
  */
 export function FormationControls({ editor }: { editor: LineupDraft }) {
+  const styles = useStyles();
   const t = useT();
   const s = t.lineup.formation;
   const { set, players, locked, propose } = editor;
@@ -64,10 +65,10 @@ export function FormationControls({ editor }: { editor: LineupDraft }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
   row: { flexDirection: 'row', gap: spacing.sm },
   system: { flex: 2 },
   order: { flex: 5 },
-  pattern: { ...typography.caption, color: colors.textMuted },
-});
+  pattern: { ...typography.caption, color: theme.colors.textMuted },
+}));

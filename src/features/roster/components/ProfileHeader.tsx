@@ -1,13 +1,14 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { ManagerProfile } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { Avatar } from './Avatar';
 
 /** "<Name>'s teams" heading with the avatar. Switching profile lives in the Profile tab. */
 export function ProfileHeader({ profile }: { profile: ManagerProfile }) {
+  const styles = useStyles();
   const t = useT();
   return (
     <View style={styles.who}>
@@ -19,7 +20,7 @@ export function ProfileHeader({ profile }: { profile: ManagerProfile }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   who: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexShrink: 1 },
-  heading: { ...typography.heading, color: colors.text, flexShrink: 1 },
-});
+  heading: { ...typography.heading, color: theme.colors.text, flexShrink: 1 },
+}));

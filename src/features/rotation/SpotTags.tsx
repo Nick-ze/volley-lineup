@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { OffPositionMark, RoleTag } from '@/components';
 import type { Position } from '@/domain/types';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { BADGE_OVERLAP, ROLE_ROW_HEIGHT } from './layout';
 
@@ -20,6 +20,7 @@ export interface RoleRowProps {
  * height so the chips of one court row line up. Shared by the rotation and live courts.
  */
 export function RoleRow({ role, offPosition = false, testID }: RoleRowProps) {
+  const styles = useStyles();
   return (
     <>
       {role && offPosition ? <OffPositionMark testID={`${testID}-off`} /> : null}
@@ -43,6 +44,7 @@ export interface ChipWithBadgeProps {
  * of the circle, so the spot doesn't grow. The badge is purely visual (the label says it).
  */
 export function ChipWithBadge({ children, chipSize, text, kind, testID }: ChipWithBadgeProps) {
+  const styles = useStyles();
   return (
     <View style={styles.wrap}>
       {children}
@@ -63,7 +65,7 @@ export function ChipWithBadge({ children, chipSize, text, kind, testID }: ChipWi
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   roleRow: { minHeight: ROLE_ROW_HEIGHT, justifyContent: 'center', marginBottom: spacing.xxs },
   wrap: { alignItems: 'center' },
   // Wider than the chip so "L for #15" / "Aufschläger" stay on one line, centred on the chip.
@@ -76,12 +78,12 @@ const styles = StyleSheet.create({
   badge: {
     ...typography.caption,
     fontWeight: '700',
-    color: colors.onHighlight,
-    backgroundColor: colors.highlight,
+    color: theme.colors.onHighlight,
+    backgroundColor: theme.colors.highlight,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
     overflow: 'hidden',
   },
   // Near-black on white, as before (white directly on the orange court fails AA).
-  libero: { color: colors.onPrimary, backgroundColor: colors.text },
-});
+  libero: { color: theme.colors.onPrimary, backgroundColor: theme.colors.text },
+}));

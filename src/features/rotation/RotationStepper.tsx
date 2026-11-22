@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { RotationNumber } from '@/domain/rotation';
 import { stepsByLabel } from '@/domain/formationSteps';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { COURT_MAX_WIDTH } from './layout';
 
@@ -26,6 +26,7 @@ export function RotationStepper({
   onNext,
   onSelect,
 }: RotationStepperProps) {
+  const styles = useStyles();
   const t = useT();
   const label = labels[step - 1];
   /** For a number that comes up twice (6-2): ", second time" etc.; '' otherwise. */
@@ -80,10 +81,10 @@ export function RotationStepper({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm, width: '100%', maxWidth: COURT_MAX_WIDTH, alignSelf: 'center' },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...typography.subheading, color: colors.text, flexShrink: 1, textAlign: 'center' },
+  title: { ...typography.subheading, color: theme.colors.text, flexShrink: 1, textAlign: 'center' },
   steps: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'space-between' },
   step: { flex: 1, paddingHorizontal: 0 },
-});
+}));

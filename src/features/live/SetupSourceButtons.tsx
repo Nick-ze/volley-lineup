@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { SetupSources } from '@/domain/matchFlow';
 import { presetFromSet, type PresetLineup } from '@/domain/presets';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 export interface SetupSourceButtonsProps {
   sources: SetupSources;
@@ -13,6 +13,7 @@ export interface SetupSourceButtonsProps {
 
 /** "Fill from": team starters, a copy of the previous set, each preset (or a hint if none). */
 export function SetupSourceButtons({ sources, onFill }: SetupSourceButtonsProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.setup;
   const { starters, presets, previous } = sources;
@@ -59,8 +60,8 @@ export function SetupSourceButtons({ sources, onFill }: SetupSourceButtonsProps)
   );
 }
 
-const styles = StyleSheet.create({
-  label: { ...typography.label, color: colors.textMuted },
-  text: { ...typography.body, color: colors.text },
+const useStyles = makeStyles((theme) => ({
+  label: { ...typography.label, color: theme.colors.textMuted },
+  text: { ...typography.body, color: theme.colors.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-});
+}));

@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { IncludeDescriptionsToggle } from '@/features/descriptions/IncludeDescriptionsToggle';
 import { useDescriptionLock } from '@/features/descriptions/descriptionLock';
 import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { Section } from './Section';
 import { StatusMessage } from './StatusMessage';
@@ -13,6 +13,7 @@ import { useExport } from './useExport';
 
 /** Export everything, or one team of the current profile; optionally with descriptions. */
 export function ExportSection() {
+  const styles = useStyles();
   const t = useT();
   const { exportData, status, busy } = useExport();
   const currentProfileId = useAppStore((s) => s.currentProfileId);
@@ -54,8 +55,8 @@ export function ExportSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   teams: { gap: spacing.sm },
-  heading: { ...typography.label, color: colors.textMuted },
-  muted: { ...typography.body, color: colors.textMuted },
-});
+  heading: { ...typography.label, color: theme.colors.textMuted },
+  muted: { ...typography.body, color: theme.colors.textMuted },
+}));

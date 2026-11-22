@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, PlayerChip } from '@/components';
 import { MAX_SUBS_PER_SET, type LiveWarningCode } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { playerDescription } from './format';
 import { BENCH_CHIP_SIZE, BENCH_ITEM_MAX_WIDTH } from './layout';
@@ -36,6 +36,7 @@ export function SubPanel({
   onPickIn,
   warningsFor,
 }: SubPanelProps) {
+  const styles = useStyles();
   const t = useT();
   const over = subsUsed > MAX_SUBS_PER_SET;
   return (
@@ -107,14 +108,14 @@ export function SubPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
     gap: spacing.sm,
     padding: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -122,12 +123,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  count: { ...typography.subheading, color: colors.text },
-  over: { color: colors.error },
-  prompt: { ...typography.body, color: colors.highlight },
-  title: { ...typography.label, color: colors.textMuted },
+  count: { ...typography.subheading, color: theme.colors.text },
+  over: { color: theme.colors.error },
+  prompt: { ...typography.body, color: theme.colors.highlight },
+  title: { ...typography.label, color: theme.colors.textMuted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  muted: { ...typography.body, color: colors.textMuted },
+  muted: { ...typography.body, color: theme.colors.textMuted },
   benchItem: { alignItems: 'center', maxWidth: BENCH_ITEM_MAX_WIDTH, gap: spacing.xxs },
-  chipWarning: { ...typography.caption, color: colors.error, textAlign: 'center' },
-});
+  chipWarning: { ...typography.caption, color: theme.colors.error, textAlign: 'center' },
+}));

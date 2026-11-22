@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { DescriptionLockBar } from './DescriptionLockBar';
 import { useDescriptionLock } from './descriptionLock';
@@ -14,6 +14,7 @@ const BOX_SIZE = 22;
  * while descriptions are unlocked; locking turns it off again (`descriptionLock.ts`).
  */
 export function IncludeDescriptionsToggle() {
+  const styles = useStyles();
   const t = useT();
   const s = t.transfer.export;
   const unlocked = useDescriptionLock((x) => x.unlocked);
@@ -47,7 +48,7 @@ export function IncludeDescriptionsToggle() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   row: { minHeight: touchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   pressed: { opacity: 0.8 },
@@ -57,12 +58,12 @@ const styles = StyleSheet.create({
     height: BOX_SIZE,
     borderRadius: radius.sm,
     borderWidth: 2,
-    borderColor: colors.textMuted,
+    borderColor: theme.colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
-  tick: { ...typography.label, color: colors.onPrimary },
-  label: { ...typography.body, color: colors.text, flex: 1 },
-  hint: { ...typography.caption, color: colors.textMuted },
-});
+  boxChecked: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  tick: { ...typography.label, color: theme.colors.onPrimary },
+  label: { ...typography.body, color: theme.colors.text, flex: 1 },
+  hint: { ...typography.caption, color: theme.colors.textMuted },
+}));

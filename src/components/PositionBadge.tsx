@@ -1,9 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { Position } from '@/domain/types';
-import { radius, spacing, typography, positionColors } from '@/theme';
+import { makeStyles, radius, spacing, typography, useTheme } from '@/theme';
 
 export function PositionBadge({ position }: { position: Position }) {
+  const { positionColors } = useTheme();
+  const styles = useStyles();
   const c = positionColors[position];
   return (
     <View style={[styles.badge, { backgroundColor: c.bg }]}>
@@ -12,7 +14,7 @@ export function PositionBadge({ position }: { position: Position }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   badge: {
     paddingHorizontal: spacing.xs,
     paddingVertical: 1,
@@ -21,4 +23,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: { ...typography.caption, fontWeight: '700' },
-});
+}));

@@ -1,8 +1,8 @@
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { useT } from '@/i18n';
-import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
+import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface PrintChoiceDialogProps {
   /** Called with the choice: `true` prints with the results section. */
@@ -12,6 +12,7 @@ export interface PrintChoiceDialogProps {
 
 /** In-app dialog "Lineups only" / "With results" (Alert.alert does nothing on web). Mount to show. */
 export function PrintChoiceDialog({ onChoose, onCancel }: PrintChoiceDialogProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.print.choice;
   return (
@@ -58,10 +59,10 @@ export function PrintChoiceDialog({ onChoose, onCancel }: PrintChoiceDialogProps
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
@@ -69,12 +70,12 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: dialogMaxWidth,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.md,
   },
-  title: { ...typography.subheading, color: colors.text },
-  body: { ...typography.body, color: colors.textMuted },
+  title: { ...typography.subheading, color: theme.colors.text },
+  body: { ...typography.body, color: theme.colors.textMuted },
   actions: { gap: spacing.sm },
-});
+}));

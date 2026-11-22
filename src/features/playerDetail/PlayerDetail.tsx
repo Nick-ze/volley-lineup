@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 import { playerSeason } from '@/domain/performance';
 import type { Player } from '@/domain/types';
 import { DescriptionSection } from '@/features/descriptions/DescriptionSection';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, usePlayersForTeam } from '@/store';
 
@@ -20,6 +20,7 @@ export interface PlayerDetailProps {
 
 /** Player detail (PLAN §25.2): header, season stats, matches, confidential description. */
 export function PlayerDetail({ player, onEdit, onOpenMatch }: PlayerDetailProps) {
+  const listStyles = useListStyles();
   const t = useT();
   const matches = useMatchesForTeam(player.teamId);
   const players = usePlayersForTeam(player.teamId);

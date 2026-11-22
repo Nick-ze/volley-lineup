@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { formationRotation, rotateStarters } from '@/domain/roles';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import type { LineupDraft } from './useLineupDraft';
 
@@ -13,6 +13,7 @@ import type { LineupDraft } from './useLineupDraft';
  * follows the formation's setter spot (also on an empty court). Disabled for played sets.
  */
 export function RotateButtons({ editor }: { editor: LineupDraft }) {
+  const styles = useStyles();
   const t = useT();
   const { set, locked, update } = editor;
   const s = t.lineup.rotate;
@@ -56,8 +57,8 @@ export function RotateButtons({ editor }: { editor: LineupDraft }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  setter: { ...typography.label, color: colors.text, textAlign: 'center', flexShrink: 1 },
+  setter: { ...typography.label, color: theme.colors.text, textAlign: 'center', flexShrink: 1 },
   grow: { flex: 1 },
-});
+}));

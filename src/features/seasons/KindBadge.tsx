@@ -1,11 +1,12 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import type { SeasonKind } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 /** "Season" / "Tournament" as a small pill (tournaments in blue, seasons in orange). */
 export function KindBadge({ kind }: { kind: SeasonKind }) {
+  const styles = useStyles();
   const t = useT();
   return (
     <Text
@@ -17,7 +18,7 @@ export function KindBadge({ kind }: { kind: SeasonKind }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   badge: {
     ...typography.caption,
     alignSelf: 'flex-start',
@@ -26,6 +27,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.round,
     overflow: 'hidden',
   },
-  season: { backgroundColor: colors.primary, color: colors.onPrimary },
-  tournament: { backgroundColor: colors.secondary, color: colors.onSecondary },
-});
+  season: { backgroundColor: theme.colors.primary, color: theme.colors.onPrimary },
+  tournament: { backgroundColor: theme.colors.secondary, color: theme.colors.onSecondary },
+}));

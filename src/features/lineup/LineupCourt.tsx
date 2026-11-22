@@ -1,15 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Court, RoleTag } from '@/components';
 import { spotRole } from '@/domain/roles';
 import type { CourtPosition } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { COMPACT_CHIP_SIZE, COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
 import { CourtPlayerSpot } from './CourtPlayerSpot';
 import { useDrag } from './drag/DragContext';
-import { zoneFeedback } from './drag/useDropZone';
+import { useZoneStyles, zoneFeedback } from './drag/useDropZone';
 import type { LineupDraft } from './useLineupDraft';
 
 /**
@@ -23,8 +23,10 @@ export function LineupCourt({
   editor: LineupDraft;
   compact?: boolean;
 }) {
+  const styles = useStyles();
   const t = useT();
   const drag = useDrag();
+  const zoneStyles = useZoneStyles();
   const { set, selectedId, playerById, pressTarget, validation } = editor;
   // Empty slots already look empty, so INCOMPLETE is only listed in the panel, not outlined.
   const errorPositions = new Set(
@@ -84,17 +86,17 @@ export function LineupCourt({
           styles.slot,
           compact && styles.compactSlot,
           errorPositions.has(position) && styles.error,
-          zoneFeedback(drag, `slot-${position}`).style,
+          zoneFeedback(drag, `slot-${position}`, zoneStyles).style,
         ]}
       />
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  slot: { borderWidth: 3, borderColor: colors.transparent },
+const useStyles = makeStyles((theme) => ({
+  slot: { borderWidth: 3, borderColor: theme.colors.transparent },
   compactSlot: { minHeight: COMPACT_SLOT_MIN_HEIGHT, paddingVertical: 0 },
-  error: { borderColor: colors.error, borderStyle: 'dashed' },
+  error: { borderColor: theme.colors.error, borderStyle: 'dashed' },
   emptySpot: { alignItems: 'center' },
   // Same height as a filled spot's role tag button, so tags and chips line up in a row.
   tagArea: {
@@ -107,10 +109,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.round,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.onPrimary,
+    borderColor: theme.colors.onPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyArmed: { borderStyle: 'solid', backgroundColor: colors.highlightGlow },
-  plus: { ...typography.heading, color: colors.onPrimary },
-});
+  emptyArmed: { borderStyle: 'solid', backgroundColor: theme.colors.highlightGlow },
+  plus: { ...typography.heading, color: theme.colors.onPrimary },
+}));

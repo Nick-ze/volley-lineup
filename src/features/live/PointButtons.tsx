@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { Side } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing } from '@/theme';
+import { makeStyles, radius, spacing } from '@/theme';
 
 import { POINT_BUTTON_FONT_SIZE, POINT_BUTTON_MIN_HEIGHT } from './layout';
 
@@ -13,6 +13,7 @@ export interface PointButtonsProps {
 
 /** The two large rally buttons: orange "Point us", blue "Point them". */
 export function PointButtons({ opponent, onPoint }: PointButtonsProps) {
+  const styles = useStyles();
   const t = useT();
   const button = (side: Side, label: string, a11y: string) => {
     const us = side === 'us';
@@ -41,7 +42,7 @@ export function PointButtons({ opponent, onPoint }: PointButtonsProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { flexDirection: 'row', gap: spacing.md },
   button: {
     flex: 1,
@@ -51,11 +52,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
-  us: { backgroundColor: colors.primary },
+  us: { backgroundColor: theme.colors.primary },
   // White on volleyball blue #0057B8 ≈ 6.9:1 (AA).
-  them: { backgroundColor: colors.secondary },
+  them: { backgroundColor: theme.colors.secondary },
   pressed: { opacity: 0.8 },
   label: { fontSize: POINT_BUTTON_FONT_SIZE, fontWeight: '800', textAlign: 'center' },
-  usLabel: { color: colors.onPrimary },
-  themLabel: { color: colors.onSecondary },
-});
+  usLabel: { color: theme.colors.onPrimary },
+  themLabel: { color: theme.colors.onSecondary },
+}));

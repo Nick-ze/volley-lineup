@@ -4,7 +4,7 @@ import { useT } from '@/i18n';
 import { touchTarget } from '@/theme';
 
 import { StatsNumbers } from './StatsNumbers';
-import { statsTableStyles as styles } from './statsTableStyles';
+import { useStatsTableStyles } from './statsTableStyles';
 
 export interface StatsColumn {
   key: string;
@@ -51,6 +51,7 @@ export function StatsTable({
   headWidth = touchTarget * 1.5,
   testID,
 }: StatsTableProps) {
+  const styles = useStatsTableStyles();
   const t = useT();
   const s = t.stats;
   const summary = (row: StatsRow) =>

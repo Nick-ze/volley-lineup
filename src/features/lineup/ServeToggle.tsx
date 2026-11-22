@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** Two-option switch: we serve first / opponent serves first. */
 export function ServeToggle({
@@ -13,6 +13,7 @@ export function ServeToggle({
   onChange(value: boolean): void;
   disabled?: boolean;
 }) {
+  const styles = useStyles();
   const t = useT();
   const option = (value: boolean, label: string, testID: string) => {
     const active = weServeFirst === value;
@@ -45,12 +46,12 @@ export function ServeToggle({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     flexDirection: 'row',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   option: {
@@ -59,9 +60,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
   },
-  active: { backgroundColor: colors.primary },
-  label: { ...typography.label, color: colors.text, textAlign: 'center' },
-  activeLabel: { color: colors.onPrimary },
-});
+  active: { backgroundColor: theme.colors.primary },
+  label: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
+  activeLabel: { color: theme.colors.onPrimary },
+}));

@@ -16,7 +16,7 @@ import { profileColors } from '@/theme';
 import { errorText } from '../errorText';
 import { LetterAvatar } from './Avatar';
 import { ColorPicker } from './ColorPicker';
-import { formStyles as styles } from './styles';
+import { useFormStyles } from './styles';
 import { TextField } from './TextField';
 
 export interface ProfileFormProps {
@@ -37,6 +37,7 @@ export function ProfileForm({
   onSubmit,
   onCancel,
 }: ProfileFormProps) {
+  const styles = useFormStyles();
   const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
   const [color, setColor] = useState(initial?.color ?? profileColors[0]);

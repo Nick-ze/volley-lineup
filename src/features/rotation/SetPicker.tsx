@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { SetNumber } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SetPickerProps {
   sets: readonly SetNumber[];
@@ -12,6 +12,7 @@ export interface SetPickerProps {
 
 /** Tabs for the sets that exist in the match. The selected set is yellow. */
 export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
+  const styles = useStyles();
   const t = useT();
   return (
     <View
@@ -43,7 +44,7 @@ export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tab: {
     minHeight: touchTarget,
@@ -51,13 +52,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  active: { backgroundColor: colors.highlight, borderColor: colors.highlight },
+  active: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
   pressed: { opacity: 0.8 },
-  label: { ...typography.label, color: colors.text },
-  activeLabel: { color: colors.onHighlight },
-});
+  label: { ...typography.label, color: theme.colors.text },
+  activeLabel: { color: theme.colors.onHighlight },
+}));

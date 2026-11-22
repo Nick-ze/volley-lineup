@@ -1,9 +1,10 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 /** A centred status line for missing data (match not found, no sets). */
 export function Message({ text }: { text: string }) {
+  const styles = useStyles();
   return (
     <Text style={styles.message} accessibilityRole="alert">
       {text}
@@ -11,6 +12,6 @@ export function Message({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  message: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
-});
+const useStyles = makeStyles((theme) => ({
+  message: { ...typography.body, color: theme.colors.textMuted, textAlign: 'center' },
+}));

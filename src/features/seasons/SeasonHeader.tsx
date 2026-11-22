@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { Season } from '@/domain/types';
 import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { KindBadge } from './KindBadge';
 import { SEASON_TABS, type SeasonTab } from './seasonTabs';
@@ -19,6 +19,7 @@ export interface SeasonHeaderProps {
 
 /** The season's name, kind, dates / place, Edit, and the Matches · Opponents · Stats tabs. */
 export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.seasons.screen;
   const whenWhere = seasonWhenWhere(t, season);
@@ -59,13 +60,13 @@ export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.md },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   titleBox: { flex: 1, gap: spacing.xs },
-  name: { ...typography.heading, color: colors.text },
+  name: { ...typography.heading, color: theme.colors.text },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
-  meta: { ...typography.label, color: colors.textMuted },
+  meta: { ...typography.label, color: theme.colors.textMuted },
   tabs: { flexDirection: 'row', gap: spacing.sm },
   tab: { flex: 1, paddingHorizontal: spacing.xs },
-});
+}));

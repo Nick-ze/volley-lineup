@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { Score } from '@/domain/liveSet';
 import type { SetNumber, Side } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface SetWonPanelProps {
   setNumber: SetNumber;
@@ -34,6 +34,7 @@ export function SetWonPanel({
   onUndo,
   tagDetail = null,
 }: SetWonPanelProps) {
+  const styles = useStyles();
   const t = useT();
   const us = winner === 'us';
   return (
@@ -70,15 +71,15 @@ export function SetWonPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: colors.highlight,
+    borderColor: theme.colors.highlight,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
   },
-  title: { ...typography.subheading, color: colors.highlight, textAlign: 'center' },
-  score: { ...typography.heading, color: colors.text, textAlign: 'center' },
-});
+  title: { ...typography.subheading, color: theme.colors.highlight, textAlign: 'center' },
+  score: { ...typography.heading, color: theme.colors.text, textAlign: 'center' },
+}));

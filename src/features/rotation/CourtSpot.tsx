@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { PlayerChip } from '@/components';
 import type { CourtPosition, Player, Position } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
 import { ChipWithBadge, RoleRow } from './SpotTags';
@@ -35,6 +35,7 @@ export function CourtSpot({
   role = null,
   offPosition = false,
 }: CourtSpotProps) {
+  const styles = useStyles();
   const t = useT();
   const row = isFrontRow ? t.rotation.frontRow : t.rotation.backRow;
   const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
@@ -120,21 +121,21 @@ function describe(t: Strings, player: Player | undefined): string {
   return t.rotation.playerSummary(player.number, `${player.firstName} ${player.lastName}`.trim());
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   posNumber: {
     position: 'absolute',
     top: spacing.xs,
     left: spacing.sm,
     ...typography.label,
-    color: colors.text,
+    color: theme.colors.text,
   },
   empty: {
     borderWidth: 2,
     borderStyle: 'dashed',
     // White passes AA on both the blue (front) and dark (back) slot fills.
-    borderColor: colors.text,
+    borderColor: theme.colors.text,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyText: { ...typography.subheading, color: colors.text },
-});
+  emptyText: { ...typography.subheading, color: theme.colors.text },
+}));

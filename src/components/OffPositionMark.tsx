@@ -1,6 +1,6 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface OffPositionMarkProps {
   testID?: string;
@@ -12,6 +12,7 @@ export interface OffPositionMarkProps {
  * the default in React Native). Purely visual — the spot's accessibility label says it in words.
  */
 export function OffPositionMark({ testID }: OffPositionMarkProps) {
+  const styles = useStyles();
   return (
     <Text
       style={styles.mark}
@@ -25,18 +26,18 @@ export function OffPositionMark({ testID }: OffPositionMarkProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   mark: {
     position: 'absolute',
     top: spacing.xxs,
     right: spacing.xs,
     ...typography.label,
     fontWeight: '800',
-    color: colors.highlight,
+    color: theme.colors.highlight,
     // Dark backing so the mark reads on the court colour (like RoleTag).
-    backgroundColor: colors.background,
+    backgroundColor: theme.colors.background,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
     overflow: 'hidden',
   },
-});
+}));

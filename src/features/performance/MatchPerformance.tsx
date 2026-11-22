@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { matchPerformance, performanceRows } from '@/domain/performance';
 import { playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
-import { spacing } from '@/theme';
+import { makeStyles, spacing } from '@/theme';
 
 import { PerformanceCard } from './PerformanceCard';
 import { PerformanceLegend } from './PerformanceLegend';
@@ -34,6 +34,8 @@ export function MatchPerformance({
   onParams,
   onOpenPlayer,
 }: MatchPerformanceProps) {
+  const listStyles = useListStyles();
+  const styles = useStyles();
   const t = useT();
   const players = usePlayersForTeam(match.teamId);
   const sets = useMemo(() => playedSetNumbers(match), [match]);
@@ -101,7 +103,7 @@ export function MatchPerformance({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   wrap: { gap: spacing.lg },
   list: { gap: spacing.sm },
-});
+}));

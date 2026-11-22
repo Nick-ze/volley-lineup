@@ -90,11 +90,3 @@ export const profileColors = [
 
 /** Text on a `profileColors` avatar (all pass AA with near-black). */
 export const onProfileColor = '#0D0D0D';
-
-/**
- * @deprecated v8: the static dark palette, kept only until every component reads the theme
- * (`useTheme` / `makeStyles`). Don't use it in new code.
- */
-export const colors = darkColors;
-/** @deprecated v8: use `useTheme().positionColors`. */
-export const positionColors = darkPositionColors;

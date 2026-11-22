@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 import type { Language } from '@/store/types';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { Section } from './Section';
 
@@ -11,6 +11,7 @@ const LANGUAGES: readonly Language[] = ['en', 'de'];
 
 /** English / Deutsch switch. The choice is persisted by the store and kept on "Delete all". */
 export function LanguageSection() {
+  const styles = useStyles();
   const t = useT();
   const language = useAppStore((s) => s.language);
   const setLanguage = useAppStore((s) => s.setLanguage);
@@ -41,12 +42,12 @@ export function LanguageSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     flexDirection: 'row',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   option: {
@@ -55,9 +56,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
   },
-  active: { backgroundColor: colors.primary },
-  label: { ...typography.label, color: colors.text, textAlign: 'center' },
-  activeLabel: { color: colors.onPrimary },
-});
+  active: { backgroundColor: theme.colors.primary },
+  label: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
+  activeLabel: { color: theme.colors.onPrimary },
+}));

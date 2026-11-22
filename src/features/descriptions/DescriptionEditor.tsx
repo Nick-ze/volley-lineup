@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components';
 import { MAX_DESCRIPTION_LENGTH, normalizeDescription } from '@/domain/photos';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 /** Lines of text the field shows before it scrolls. */
 const FIELD_LINES = 5;
@@ -16,6 +16,8 @@ const FIELD_LINES = 5;
  * Saving a blank text removes the description.
  */
 export function DescriptionEditor({ player }: { player: Player }) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const t = useT();
   const s = t.playerDetail.description;
   const [draft, setDraft] = useState(player.description ?? '');
@@ -60,18 +62,18 @@ export function DescriptionEditor({ player }: { player: Player }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
-  label: { ...typography.label, color: colors.textMuted },
+  label: { ...typography.label, color: theme.colors.textMuted },
   input: {
     ...typography.body,
     minHeight: touchTarget * 3,
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
   footer: {
     flexDirection: 'row',
@@ -79,6 +81,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  count: { ...typography.caption, color: colors.textMuted },
-  status: { ...typography.label, color: colors.textMuted },
-});
+  count: { ...typography.caption, color: theme.colors.textMuted },
+  status: { ...typography.label, color: theme.colors.textMuted },
+}));

@@ -8,7 +8,7 @@ import {
   type OpponentRecord,
 } from '@/domain/seasons';
 import { ListRow } from '@/features/roster/components/ListRow';
-import { formStyles, listStyles } from '@/features/roster/components/styles';
+import { useFormStyles, useListStyles } from '@/features/roster/components/styles';
 import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
@@ -26,6 +26,8 @@ export interface OpponentRowProps {
 
 /** One opponent of the season with its record; Rename inline, Delete when it has no matches. */
 export function OpponentRow({ record, deletable, onOpen, onDelete }: OpponentRowProps) {
+  const formStyles = useFormStyles();
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.seasons.opponents;
   const { opponent } = record;

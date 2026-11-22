@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export type LiveView = 'live' | 'performance';
 
@@ -17,6 +17,7 @@ export function LiveViewToggle({
   value: LiveView;
   onChange: (view: LiveView) => void;
 }) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.viewTabs;
   const target: LiveView = value === 'live' ? 'performance' : 'live';
@@ -36,7 +37,7 @@ export function LiveViewToggle({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   button: {
     minWidth: touchTarget,
     minHeight: touchTarget,
@@ -45,8 +46,8 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: theme.colors.primary,
   },
   pressed: { opacity: 0.7 },
-  label: { ...typography.body, color: colors.text },
-});
+  label: { ...typography.body, color: theme.colors.text },
+}));

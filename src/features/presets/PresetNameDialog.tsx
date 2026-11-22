@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { validatePresetName, type PresetNameError } from '@/domain/presets';
 import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
-import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
+import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface PresetNameDialogProps {
   teamId: string;
@@ -29,6 +29,7 @@ export function PresetNameDialog({
   onSubmit,
   onCancel,
 }: PresetNameDialogProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.presets.nameDialog;
   const [name, setName] = useState(initialName);
@@ -70,10 +71,10 @@ export function PresetNameDialog({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
@@ -81,11 +82,11 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: dialogMaxWidth,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.md,
   },
-  title: { ...typography.subheading, color: colors.text },
+  title: { ...typography.subheading, color: theme.colors.text },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-});
+}));

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,7 +8,7 @@ import type { SetLineup } from '@/domain/types';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { useLineupDraft } from '@/features/lineup/useLineupDraft';
 import { usePlayersForTeam } from '@/store';
-import { colors, maxContentWidth, spacing, typography } from '@/theme';
+import { makeStyles, maxContentWidth, spacing, typography } from '@/theme';
 
 export interface PresetLineupEditorProps {
   teamId: string;
@@ -31,6 +31,7 @@ export function PresetLineupEditor({
   hint,
   header,
 }: PresetLineupEditorProps) {
+  const styles = useStyles();
   const players = usePlayersForTeam(teamId);
   const set = useMemo(() => presetToDraft(lineup), [lineup]);
   const save = useCallback((next: SetLineup) => onSave(presetFromSet(next)), [onSave]);
@@ -49,8 +50,8 @@ export function PresetLineupEditor({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+const useStyles = makeStyles((theme) => ({
+  safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { flexGrow: 1 },
   inner: {
     width: '100%',
@@ -59,5 +60,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  hint: { ...typography.body, color: colors.textMuted },
-});
+  hint: { ...typography.body, color: theme.colors.textMuted },
+}));

@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { COMPACT_CHIP_SIZE, EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
@@ -16,6 +16,7 @@ export function LiberoSlot({
   editor: LineupDraft;
   compact?: boolean;
 }) {
+  const styles = useStyles();
   const t = useT();
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'libero' });
@@ -61,21 +62,21 @@ export function LiberoSlot({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
     alignItems: 'center',
     gap: spacing.xs,
     padding: spacing.sm,
     minWidth: LIBERO_BOX_MIN_WIDTH,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 3,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   // Phone layout: title beside the chip, so the row stays low.
   compactBox: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
-  error: { borderColor: colors.error },
-  title: { ...typography.label, color: colors.text },
+  error: { borderColor: theme.colors.error },
+  title: { ...typography.label, color: theme.colors.text },
   empty: {
     minWidth: EMPTY_SLOT_SIZE,
     minHeight: EMPTY_SLOT_SIZE,
@@ -83,10 +84,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.textMuted,
+    borderColor: theme.colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyArmed: { borderColor: colors.highlight, borderStyle: 'solid' },
-  emptyText: { ...typography.caption, color: colors.textMuted },
-});
+  emptyArmed: { borderColor: theme.colors.highlight, borderStyle: 'solid' },
+  emptyText: { ...typography.caption, color: theme.colors.textMuted },
+}));

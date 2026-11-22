@@ -5,7 +5,7 @@ import { useT } from '@/i18n';
 import { useAppStore, usePlayersForTeam } from '@/store';
 
 import { PlayerRow } from './PlayerRow';
-import { listStyles as styles } from './styles';
+import { useListStyles } from './styles';
 
 export interface RosterTabProps {
   teamId: string;
@@ -16,6 +16,7 @@ export interface RosterTabProps {
 
 /** Players sorted by jersey number, with quick active / injured toggle. */
 export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps) {
+  const styles = useListStyles();
   const t = useT();
   const players = usePlayersForTeam(teamId);
   const updatePlayer = useAppStore((s) => s.updatePlayer);

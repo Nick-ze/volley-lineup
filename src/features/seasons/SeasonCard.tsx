@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { seasonOverview } from '@/domain/stats';
 import type { Match, Season } from '@/domain/types';
 import { useT } from '@/i18n';
-import { borderWidth, colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { KindBadge } from './KindBadge';
 import { seasonSummary, seasonWhenWhere } from './seasonText';
@@ -18,6 +18,7 @@ export interface SeasonCardProps {
 
 /** A season "box": name, kind, dates / place and "5 matches · 3–1". */
 export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
+  const styles = useStyles();
   const t = useT();
   const overview = useMemo(() => seasonOverview(matches), [matches]);
   const whenWhere = seasonWhenWhere(t, season);
@@ -50,22 +51,22 @@ export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     minHeight: touchTarget * 2,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
     borderWidth: borderWidth.thin,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     borderLeftWidth: borderWidth.thick,
-    borderLeftColor: colors.primary,
+    borderLeftColor: theme.colors.primary,
     padding: spacing.lg,
     gap: spacing.xs,
   },
-  tournament: { borderLeftColor: colors.secondary },
+  tournament: { borderLeftColor: theme.colors.secondary },
   pressed: { opacity: 0.8 },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  name: { ...typography.subheading, color: colors.text, flex: 1 },
-  meta: { ...typography.label, color: colors.textMuted },
-  summary: { ...typography.body, color: colors.text },
-});
+  name: { ...typography.subheading, color: theme.colors.text, flex: 1 },
+  meta: { ...typography.label, color: theme.colors.textMuted },
+  summary: { ...typography.body, color: theme.colors.text },
+}));

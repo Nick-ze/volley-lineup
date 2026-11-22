@@ -1,14 +1,15 @@
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, spacing, touchTarget, typography } from '@/theme';
 
 /**
  * Header back button (≥ 44×44). Goes back when there is history; after a reload or deep link
  * (no history) it navigates to the screen's logical parent instead.
  */
 export function HeaderBack({ fallback }: { fallback: Href }) {
+  const styles = useStyles();
   const t = useT();
   const router = useRouter();
   const onPress = () => {
@@ -29,7 +30,7 @@ export function HeaderBack({ fallback }: { fallback: Href }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   button: {
     minWidth: touchTarget,
     minHeight: touchTarget,
@@ -38,5 +39,5 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   pressed: { opacity: 0.7 },
-  label: { ...typography.body, color: colors.text },
-});
+  label: { ...typography.body, color: theme.colors.text },
+}));

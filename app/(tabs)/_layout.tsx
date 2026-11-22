@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { useT } from '@/i18n';
-import { colors, fontSize, spacing, touchTarget, typography } from '@/theme';
+import { fontSize, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 /** Bar height above the bottom safe area: a 44 px target plus room for the label. */
 const TAB_BAR_HEIGHT = touchTarget + spacing.md;
@@ -30,6 +30,7 @@ function TabIcon({
   active: IconName;
   inactive: IconName;
 }) {
+  const { colors } = useTheme();
   // The tint is one of our theme colours (always a string); ColorValue also allows platform colours.
   const tint = typeof color === 'string' ? color : colors.textMuted;
   return <Ionicons name={focused ? active : inactive} size={size} color={tint} />;
@@ -40,6 +41,7 @@ function TabIcon({
  * (team, match, …) live in the root Stack and are pushed over the tabs, without a tab bar.
  */
 export default function TabsLayout() {
+  const { colors } = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   // Any tab counts as "past the picker": from now on `/` never auto-forwards (DECISIONS #28).

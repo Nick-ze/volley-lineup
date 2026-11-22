@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/domain/performance';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { DetailLine } from './DetailLine';
 import { breakdownText, percentText, performanceRef } from './format';
@@ -33,6 +33,7 @@ export function PlayerPerformanceDetail({
   totalRallies,
   onBack,
 }: PlayerPerformanceDetailProps) {
+  const styles = useStyles();
   const t = useT();
   const pt = t.performance;
   const ref = performanceRef(t, player);
@@ -109,9 +110,9 @@ export function PlayerPerformanceDetail({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.md },
   back: { alignSelf: 'flex-start' },
   head: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.md },
-  name: { ...typography.subheading, color: colors.text, flexShrink: 1 },
-});
+  name: { ...typography.subheading, color: theme.colors.text, flexShrink: 1 },
+}));

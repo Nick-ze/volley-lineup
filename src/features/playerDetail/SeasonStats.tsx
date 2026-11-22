@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { errorBreakdown, plusMinus, type PlayerSeason } from '@/domain/performance';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 interface TileData {
   id: string;
@@ -26,6 +26,7 @@ type CountKey =
   | 'errors';
 
 function Tile({ id, label, value, a11y }: TileData) {
+  const styles = useStyles();
   return (
     <View style={styles.tile} accessible accessibilityLabel={a11y} testID={`season-${id}`}>
       <Text style={styles.value} testID={`season-${id}-value`}>
@@ -38,6 +39,8 @@ function Tile({ id, label, value, a11y }: TileData) {
 
 /** The season totals as rows of three compact tiles (fits 375 px), plus the errors by type. */
 export function SeasonStats({ season }: { season: PlayerSeason }) {
+  const styles = useStyles();
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.playerDetail.season;
   const p = season.total;
@@ -96,7 +99,7 @@ export function SeasonStats({ season }: { season: PlayerSeason }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   row: { flexDirection: 'row', gap: spacing.sm },
   tile: {
@@ -105,15 +108,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  value: { ...typography.subheading, color: colors.text },
-  label: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
+  value: { ...typography.subheading, color: theme.colors.text },
+  label: { ...typography.caption, color: theme.colors.textMuted, textAlign: 'center' },
   // Two tiles wide, next to the Errors tile.
   breakdown: { flex: 2, justifyContent: 'center', padding: spacing.sm },
-  breakdownHeading: { ...typography.caption, color: colors.textMuted },
-  breakdownText: { ...typography.label, color: colors.text },
-});
+  breakdownHeading: { ...typography.caption, color: theme.colors.textMuted },
+  breakdownText: { ...typography.label, color: theme.colors.text },
+}));

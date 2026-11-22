@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { LIBERO_ROLE_GROUPS, liberoRoleState, toggleLiberoRole } from '@/domain/liberoRoles';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import type { LineupDraft } from './useLineupDraft';
 
@@ -11,6 +11,7 @@ import type { LineupDraft } from './useLineupDraft';
  * whom the libero replaces to (or removes) the starters playing that role. Several can be on.
  */
 export function LiberoRoleChips({ editor, disabled }: { editor: LineupDraft; disabled: boolean }) {
+  const styles = useStyles();
   const t = useT();
   const { set, players, update } = editor;
   const s = t.lineup.liberoRoles;
@@ -54,9 +55,9 @@ export function LiberoRoleChips({ editor, disabled }: { editor: LineupDraft; dis
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
-  title: { ...typography.caption, color: colors.textMuted },
+  title: { ...typography.caption, color: theme.colors.textMuted },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {
     minHeight: touchTarget,
@@ -64,14 +65,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checked: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.8 },
-  optionText: { ...typography.label, color: colors.text },
-  checkedText: { color: colors.onPrimary },
-});
+  optionText: { ...typography.label, color: theme.colors.text },
+  checkedText: { color: theme.colors.onPrimary },
+}));

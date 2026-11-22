@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface SectionProps {
   title: string;
@@ -12,6 +12,7 @@ export interface SectionProps {
 
 /** A titled card on the settings screen. */
 export function Section({ title, hint, children, tone = 'default' }: SectionProps) {
+  const styles = useStyles();
   return (
     <View style={[styles.card, tone === 'danger' && styles.danger]}>
       <Text style={styles.title} accessibilityRole="header">
@@ -23,16 +24,16 @@ export function Section({ title, hint, children, tone = 'default' }: SectionProp
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.md,
   },
-  danger: { borderColor: colors.error },
-  title: { ...typography.subheading, color: colors.text },
-  hint: { ...typography.body, color: colors.textMuted },
-});
+  danger: { borderColor: theme.colors.error },
+  title: { ...typography.subheading, color: theme.colors.text },
+  hint: { ...typography.body, color: theme.colors.textMuted },
+}));

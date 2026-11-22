@@ -1,6 +1,6 @@
-import { StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { Text, useWindowDimensions } from 'react-native';
 
-import { colors, touchTarget, typography } from '@/theme';
+import { makeStyles, touchTarget, typography } from '@/theme';
 
 /** Room the header keeps for the back button and its margins beside the title. */
 export const HEADER_SIDE_ROOM = touchTarget * 3;
@@ -11,6 +11,7 @@ export const HEADER_SIDE_ROOM = touchTarget * 3;
  * title limits its own width to the window minus the room for the back button.
  */
 export function HeaderTitle({ children }: { children: string }) {
+  const styles = useStyles();
   const { width } = useWindowDimensions();
   return (
     <Text
@@ -23,6 +24,6 @@ export function HeaderTitle({ children }: { children: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  title: { ...typography.subheading, color: colors.text },
-});
+const useStyles = makeStyles((theme) => ({
+  title: { ...typography.subheading, color: theme.colors.text },
+}));

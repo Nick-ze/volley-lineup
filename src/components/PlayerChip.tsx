@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useAppStore, usePhotoUri } from '@/store';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import { PlayerChipFace } from './PlayerChipFace';
 
@@ -46,6 +46,8 @@ export function PlayerChip({
   accessibilityHint,
   testID,
 }: PlayerChipProps) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const t = useT();
   // Settings → "Show names instead of numbers": the circle shows the name, the pill the number.
   const namesFirst = useAppStore((s) => s.chipLabel) === 'name';
@@ -112,16 +114,16 @@ export function PlayerChip({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrapper: { alignItems: 'center', gap: spacing.xxs },
   // Dark pill behind the name so it stays AA-readable on the orange court (white on orange ≈ 2.9:1).
   name: {
     ...typography.caption,
-    color: colors.text,
-    backgroundColor: colors.background,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.background,
     paddingHorizontal: spacing.xs,
     maxWidth: 88,
     borderRadius: radius.sm,
     overflow: 'hidden',
   },
-});
+}));

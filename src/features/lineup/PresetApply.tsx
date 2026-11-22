@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { applyPresetToSet, filledCount } from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
 import { useT } from '@/i18n';
 import { usePresetsForTeam, useStarters } from '@/store';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import type { LineupDraft } from './useLineupDraft';
 
@@ -26,6 +26,7 @@ type Outcome = { name: string | null; skipped: string[] } | null;
  * Remount (key by set number) to reset the message.
  */
 export function PresetApply({ editor, teamId }: PresetApplyProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.presets.apply;
   const { set, players, replace, locked, playerById } = editor;
@@ -119,19 +120,19 @@ export function PresetApply({ editor, teamId }: PresetApplyProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   grow: { flexGrow: 1 },
   box: {
     gap: spacing.sm,
     padding: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  hint: { ...typography.caption, color: colors.textMuted },
-  message: { ...typography.body, color: colors.text },
-  warn: { color: colors.highlight },
-});
+  hint: { ...typography.caption, color: theme.colors.textMuted },
+  message: { ...typography.body, color: theme.colors.text },
+  warn: { color: theme.colors.highlight },
+}));

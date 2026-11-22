@@ -4,7 +4,7 @@ import { Button } from '@/components';
 import type { Match } from '@/domain/types';
 import { matchResultLabel } from '@/features/live/matchResult';
 import { ListRow } from '@/features/roster/components/ListRow';
-import { listStyles as styles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 
 export interface MatchRowProps {
@@ -40,6 +40,7 @@ export function MatchRow({ match: m, onOpen, onDelete }: MatchRowProps) {
 
 /** Date · home/away on one line; the result (never truncated) on its own line below. */
 function MatchSubtitle({ text, result }: { text: string; result: string | null }) {
+  const styles = useListStyles();
   return (
     <>
       <Text style={styles.subtitle} numberOfLines={1}>

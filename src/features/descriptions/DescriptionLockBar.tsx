@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { UnlockDialog } from './UnlockDialog';
 import { useUnlockDescriptions } from './useUnlockDescriptions';
@@ -12,6 +12,7 @@ import { useUnlockDescriptions } from './useUnlockDescriptions';
  * Used on the player detail screen and in Settings → Export.
  */
 export function DescriptionLockBar() {
+  const styles = useStyles();
   const t = useT();
   const s = t.playerDetail.description;
   const { unlocked, busy, failed, requestUnlock, lock, confirmVisible, confirm, cancel } =
@@ -51,9 +52,9 @@ export function DescriptionLockBar() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  note: { ...typography.caption, color: colors.textMuted, flex: 1 },
-  failed: { ...typography.label, color: colors.error },
-});
+  note: { ...typography.caption, color: theme.colors.textMuted, flex: 1 },
+  failed: { ...typography.label, color: theme.colors.error },
+}));

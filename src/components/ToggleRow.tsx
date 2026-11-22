@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 
 import { decorativeSwitchProps } from '@/lib/switchProps';
-import { colors, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 export interface ToggleRowProps {
   label: string;
@@ -12,6 +12,8 @@ export interface ToggleRowProps {
 
 /** A labelled on/off switch. The whole row is the (≥ 44 px) control; the Switch is only visual. */
 export function ToggleRow({ label, value, onChange, testID }: ToggleRowProps) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="switch"
@@ -32,14 +34,14 @@ export function ToggleRow({ label, value, onChange, testID }: ToggleRowProps) {
           value={value}
           trackColor={{ false: colors.border, true: colors.primary }}
           thumbColor={colors.text}
-          {...decorativeSwitchProps}
+          {...decorativeSwitchProps(colors.text)}
         />
       </View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     minHeight: touchTarget,
     flexDirection: 'row',
@@ -48,5 +50,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   pressed: { opacity: 0.8 },
-  label: { ...typography.body, color: colors.text, flex: 1 },
-});
+  label: { ...typography.body, color: theme.colors.text, flex: 1 },
+}));

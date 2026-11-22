@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { activeLiberoReplaces, findLiberoSwap } from '@/domain/liberoSwap';
 import { formationLabels, stepSpotRoles } from '@/domain/formationSteps';
@@ -12,7 +12,7 @@ import {
 import type { Player, SetLineup } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { COURT_MAX_WIDTH, SIDE_PANEL_WIDTH } from './layout';
 import { LiberoSwapControl } from './LiberoSwapControl';
@@ -31,6 +31,7 @@ export interface RotationPanelProps {
  * (key by set number) to start again at the starting six.
  */
 export function RotationPanel({ set, playersById }: RotationPanelProps) {
+  const styles = useStyles();
   const t = useT();
   const isWide = useIsWide();
   const [step, setStep] = useState<RotationNumber>(1);
@@ -87,7 +88,7 @@ export function RotationPanel({ set, playersById }: RotationPanelProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.lg },
   body: { gap: spacing.lg },
   bodyWide: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' },
@@ -99,5 +100,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sideWide: { width: SIDE_PANEL_WIDTH },
-  hint: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
-});
+  hint: { ...typography.caption, color: theme.colors.textMuted, textAlign: 'center' },
+}));

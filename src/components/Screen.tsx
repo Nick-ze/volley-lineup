@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, maxContentWidth, spacing } from '@/theme';
+import { makeStyles, maxContentWidth, spacing } from '@/theme';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -15,6 +15,7 @@ export interface ScreenProps {
 
 /** Standard screen container: dark background, safe area, centred max width on desktop. */
 export function Screen({ children, scroll = true, footer, testID }: ScreenProps) {
+  const styles = useStyles();
   const inner = <View style={styles.inner}>{children}</View>;
   const edges = footer ? (['left', 'right'] as const) : (['bottom', 'left', 'right'] as const);
   return (
@@ -31,8 +32,8 @@ export function Screen({ children, scroll = true, footer, testID }: ScreenProps)
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+const useStyles = makeStyles((theme) => ({
+  safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { flexGrow: 1 },
   inner: {
     flex: 1,
@@ -42,4 +43,4 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-});
+}));

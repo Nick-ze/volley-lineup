@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
-import { borderWidth, colors, fontSize, spacing, typography } from '@/theme';
+import { borderWidth, fontSize, makeStyles, spacing, typography } from '@/theme';
 
 import { Photo } from './Photo';
 import { PositionBadge } from './PositionBadge';
@@ -35,6 +35,7 @@ export function PlayerChipFace({
   lifted,
   testID,
 }: PlayerChipFaceProps) {
+  const styles = useStyles();
   const primary = player.positions[0];
   return (
     <View
@@ -74,9 +75,9 @@ export function PlayerChipFace({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   circle: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -86,16 +87,16 @@ const styles = StyleSheet.create({
   badgeOnPhoto: { position: 'absolute', bottom: spacing.xxs },
   lifted: {
     transform: [{ scale: 1.15 }],
-    shadowColor: colors.highlight,
+    shadowColor: theme.colors.highlight,
     shadowOpacity: 0.6,
     shadowRadius: 8,
     elevation: 8,
   },
-  number: { ...typography.jersey, color: colors.text, lineHeight: undefined },
+  number: { ...typography.jersey, color: theme.colors.text, lineHeight: undefined },
   nameInCircle: {
     ...typography.label,
-    color: colors.text,
+    color: theme.colors.text,
     textAlign: 'center',
     lineHeight: undefined,
   },
-});
+}));

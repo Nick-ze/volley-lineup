@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useT } from '@/i18n';
 
 import type { StatsColumn, StatsRow } from './StatsTable';
-import { statsTableStyles as styles } from './statsTableStyles';
+import { useStatsTableStyles } from './statsTableStyles';
 
 export interface StatsNumbersProps {
   heading: string;
@@ -17,6 +17,7 @@ export interface StatsNumbersProps {
  * readers row by row — each row's sticky head cell speaks the whole row.
  */
 export function StatsNumbers({ heading, columns, rows, testID }: StatsNumbersProps) {
+  const styles = useStatsTableStyles();
   const t = useT();
   return (
     <ScrollView

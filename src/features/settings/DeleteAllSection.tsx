@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { Section } from './Section';
 import { StatusMessage } from './StatusMessage';
@@ -14,6 +14,7 @@ import { StatusMessage } from './StatusMessage';
  * `onDeleted` lets the screen clear other sections' messages (e.g. a finished export).
  */
 export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
+  const styles = useStyles();
   const t = useT();
   const resetAll = useAppStore((s) => s.resetAll);
   const [confirming, setConfirming] = useState(false);
@@ -56,16 +57,16 @@ export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   confirm: {
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.error,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.error,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  confirmTitle: { ...typography.subheading, color: colors.text },
-  body: { ...typography.body, color: colors.textMuted },
+  confirmTitle: { ...typography.subheading, color: theme.colors.text },
+  body: { ...typography.body, color: theme.colors.textMuted },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-});
+}));

@@ -10,7 +10,7 @@ import {
 } from '@/domain/seasons';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
 import { TextField } from '@/features/roster/components/TextField';
-import { formStyles, listStyles } from '@/features/roster/components/styles';
+import { useFormStyles, useListStyles } from '@/features/roster/components/styles';
 import { useConfirm } from '@/features/roster/hooks/useConfirm';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForSeason, useOpponentsForSeason } from '@/store';
@@ -26,6 +26,8 @@ export interface SeasonOpponentsProps {
 
 /** The season's opponent teams with the record against each; add, rename, delete (no matches). */
 export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsProps) {
+  const formStyles = useFormStyles();
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.seasons.opponents;
   const opponents = useOpponentsForSeason(seasonId);

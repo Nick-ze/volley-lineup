@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { colors, radius, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, touchTarget, typography } from '@/theme';
 
 /** A player's picture fallback: the jersey number in a round badge (greyed when inactive). */
 export function NumberAvatar({
@@ -13,6 +13,7 @@ export function NumberAvatar({
   size?: number;
   inactive?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <View
       style={[
@@ -28,18 +29,18 @@ export function NumberAvatar({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   circle: {
     borderRadius: radius.round,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  inactive: { backgroundColor: colors.surfaceRaised },
+  inactive: { backgroundColor: theme.colors.surfaceRaised },
   text: {
     ...typography.subheading,
     fontWeight: typography.jersey.fontWeight,
-    color: colors.onPrimary,
+    color: theme.colors.onPrimary,
   },
-  textInactive: { color: colors.textMuted },
-});
+  textInactive: { color: theme.colors.textMuted },
+}));

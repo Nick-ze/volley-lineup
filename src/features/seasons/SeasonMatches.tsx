@@ -6,7 +6,7 @@ import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
 import { TextField } from '@/features/roster/components/TextField';
-import { listStyles as styles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useConfirm } from '@/features/roster/hooks/useConfirm';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForSeason } from '@/store';
@@ -33,6 +33,7 @@ export function SeasonMatches({
   onNewMatch,
   onOpenMatch,
 }: SeasonMatchesProps) {
+  const styles = useListStyles();
   const t = useT();
   const all = useMatchesForSeason(seasonId);
   const deleteMatch = useAppStore((st) => st.deleteMatch);

@@ -1,12 +1,13 @@
 import { Stack, useRouter } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { Button, Screen } from '@/components';
 import { useT } from '@/i18n';
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 /** Shown for unknown URLs (e.g. a mistyped deep link). */
 export default function NotFoundScreen() {
+  const styles = useStyles();
   const t = useT();
   const router = useRouter();
   return (
@@ -20,6 +21,6 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: { ...typography.heading, color: colors.text },
-});
+const useStyles = makeStyles((theme) => ({
+  title: { ...typography.heading, color: theme.colors.text },
+}));

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { formationRotation, isOffPosition, spotRoles } from '@/domain/roles';
 import {
@@ -11,7 +11,7 @@ import {
   type SetNumber,
 } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { STARTERS_CARD_WIDTH } from './layout';
 import { RotationCourt } from './RotationCourt';
@@ -55,6 +55,7 @@ export function startersCardLabel(
  * setter spot) + libero + serve info for one set. Tapping opens its rotations.
  */
 export function SetStartersCard({ set, playersById, onOpen }: SetStartersCardProps) {
+  const styles = useStyles();
   const t = useT();
   const roles = useMemo(() => spotRoles(set.formation), [set.formation]);
   const rotation = formationRotation(set.formation);
@@ -82,7 +83,7 @@ export function SetStartersCard({ set, playersById, onOpen }: SetStartersCardPro
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     width: STARTERS_CARD_WIDTH,
     maxWidth: '100%',
@@ -90,10 +91,10 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
-  pressed: { borderColor: colors.highlight },
-  title: { ...typography.subheading, color: colors.highlight },
-  rotation: { ...typography.label, color: colors.textMuted },
-});
+  pressed: { borderColor: theme.colors.highlight },
+  title: { ...typography.subheading, color: theme.colors.highlight },
+  rotation: { ...typography.label, color: theme.colors.textMuted },
+}));

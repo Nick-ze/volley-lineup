@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Court, PlayerChip, type CourtSlotInfo } from '@/components';
 import type { LiveCourtView } from '@/domain/liveSet';
@@ -6,7 +6,7 @@ import { isOffPosition } from '@/domain/roles';
 import type { Player, PlayerRoles } from '@/domain/types';
 import { ChipWithBadge, RoleRow } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { playerDescription, playerRef } from './format';
 import { COURT_COLUMN_MAX_WIDTH, LIVE_CHIP_SIZE } from './layout';
@@ -39,6 +39,7 @@ export function LiveCourt({
   onPressPlayer,
   readOnly = false,
 }: LiveCourtProps) {
+  const styles = useStyles();
   const t = useT();
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
     isFrontRow ? styles.front : styles.back,
@@ -116,11 +117,11 @@ export function LiveCourt({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   court: { maxWidth: COURT_COLUMN_MAX_WIDTH },
   // White text on these fills passes AA (white directly on orange does not).
-  front: { backgroundColor: colors.secondary },
-  back: { backgroundColor: colors.overlay },
+  front: { backgroundColor: theme.colors.secondary },
+  back: { backgroundColor: theme.colors.overlay },
   // The role row takes the room of the default vertical padding (the court keeps its height).
   slot: { paddingVertical: spacing.xxs },
   pos: {
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     left: spacing.sm,
     ...typography.label,
-    color: colors.text,
+    color: theme.colors.text,
   },
-  empty: { ...typography.subheading, color: colors.text },
-});
+  empty: { ...typography.subheading, color: theme.colors.text },
+}));

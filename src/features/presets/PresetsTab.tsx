@@ -12,7 +12,7 @@ import {
 import type { LineupPreset } from '@/domain/types';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
 import { ListRow } from '@/features/roster/components/ListRow';
-import { listStyles as styles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useConfirm } from '@/features/roster/hooks/useConfirm';
 import { useT } from '@/i18n';
 import { useAppStore, usePresetsForTeam } from '@/store';
@@ -28,6 +28,7 @@ type Dialog = { mode: 'new' } | { mode: 'rename'; preset: LineupPreset } | null;
 
 /** The team's saved lineups: create (asks for a name, then opens it), rename, copy, delete. */
 export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
+  const styles = useListStyles();
   const t = useT();
   const s = t.presets.list;
   const presets = usePresetsForTeam(teamId);

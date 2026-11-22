@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { ManagerProfile } from '@/domain/types';
@@ -8,12 +8,13 @@ import { Avatar } from '@/features/roster/components/Avatar';
 import { ProfileForm } from '@/features/roster/components/ProfileForm';
 import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 const AVATAR_SIZE = 64;
 
 /** The current profile (avatar, name, team/player counts) with inline name / colour / photo editing. */
 export function ProfileCard({ profile }: { profile: ManagerProfile }) {
+  const styles = useStyles();
   const t = useT();
   const [editing, setEditing] = useState(false);
   const teams = useTeamsForProfile(profile.id);
@@ -66,10 +67,10 @@ export function ProfileCard({ profile }: { profile: ManagerProfile }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
@@ -77,6 +78,6 @@ const styles = StyleSheet.create({
   },
   who: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   text: { flexShrink: 1, gap: spacing.xs },
-  name: { ...typography.heading, color: colors.text },
-  caption: { ...typography.body, color: colors.textMuted },
-});
+  name: { ...typography.heading, color: theme.colors.text },
+  caption: { ...typography.body, color: theme.colors.textMuted },
+}));

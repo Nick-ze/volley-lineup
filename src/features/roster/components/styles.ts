@@ -1,27 +1,25 @@
-import { StyleSheet } from 'react-native';
-
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** Below this width for the name area, a row's action buttons wrap onto a second line. */
 const listRowMainMinWidth = 190;
 
 /** Styles shared by the roster feature's forms and list rows. */
-export const formStyles = StyleSheet.create({
+export const useFormStyles = makeStyles((theme) => ({
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     padding: spacing.lg,
     gap: spacing.md,
   },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, flexWrap: 'wrap' },
-  sectionLabel: { ...typography.label, color: colors.textMuted },
-  hint: { ...typography.caption, color: colors.textMuted },
+  sectionLabel: { ...typography.label, color: theme.colors.textMuted },
+  hint: { ...typography.caption, color: theme.colors.textMuted },
   grow: { flex: 1 },
-});
+}));
 
-export const listStyles = StyleSheet.create({
+export const useListStyles = makeStyles((theme) => ({
   list: { gap: spacing.sm },
   row: {
     flexDirection: 'row',
@@ -30,10 +28,10 @@ export const listStyles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     paddingRight: spacing.sm,
   },
   main: {
@@ -48,10 +46,10 @@ export const listStyles = StyleSheet.create({
     paddingLeft: spacing.md,
   },
   text: { flex: 1, gap: spacing.xxs },
-  title: { ...typography.subheading, color: colors.text },
-  subtitle: { ...typography.label, color: colors.textMuted },
-  empty: { ...typography.body, color: colors.textMuted },
-  heading: { ...typography.heading, color: colors.text },
+  title: { ...typography.subheading, color: theme.colors.text },
+  subtitle: { ...typography.label, color: theme.colors.textMuted },
+  empty: { ...typography.body, color: theme.colors.textMuted },
+  heading: { ...typography.heading, color: theme.colors.text },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -66,5 +64,5 @@ export const listStyles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xs,
   },
-  chevron: { ...typography.heading, color: colors.textMuted, paddingHorizontal: spacing.xs },
-});
+  chevron: { ...typography.heading, color: theme.colors.textMuted, paddingHorizontal: spacing.xs },
+}));

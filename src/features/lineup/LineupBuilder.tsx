@@ -1,11 +1,11 @@
 import { useCallback, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { setServeFirst } from '@/domain/lineupEditing';
 import type { SetLineup } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { Bench } from './Bench';
 import { CopyClearButtons } from './CopyClearButtons';
@@ -42,6 +42,7 @@ export function LineupBuilder({
   previous = null,
   actions,
 }: LineupBuilderProps) {
+  const styles = useStyles();
   const t = useT();
   const wide = useIsWide();
   const isMatch = variant === 'match';
@@ -129,7 +130,7 @@ export function LineupBuilder({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   layout: { gap: spacing.md },
   wide: { flexDirection: 'row', alignItems: 'stretch' },
   column: { gap: spacing.md },
@@ -137,6 +138,6 @@ const styles = StyleSheet.create({
   benchColumn: { flex: 2 },
   underCourt: { flexDirection: 'row', gap: spacing.md, alignItems: 'stretch' },
   controls: { flex: 1, gap: spacing.sm, justifyContent: 'center' },
-  hint: { ...typography.body, color: colors.textMuted },
-  locked: { ...typography.body, color: colors.highlight },
-});
+  hint: { ...typography.body, color: theme.colors.textMuted },
+  locked: { ...typography.body, color: theme.colors.highlight },
+}));
