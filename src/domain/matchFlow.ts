@@ -8,7 +8,7 @@
  */
 import { previousSet } from './lineupEditing';
 import { getMatchState, setWinner, type MatchState } from './matchState';
-import { isPresetComplete, namedPresetsFor, startersFor } from './presets';
+import { hasAnyPlayer, namedPresetsFor, startersFor } from './presets';
 import {
   COURT_POSITIONS,
   SET_NUMBERS,
@@ -114,7 +114,7 @@ export function undoTarget(match: Pick<Match, 'sets'>, setNumber: SetNumber): Se
 
 /** What the setup of a new set can fill it from. */
 export interface SetupSources {
-  /** The team's starters, only when all six positions are filled. */
+  /** The team's starters when they have anyone in them (v6.2: also partly filled). */
   starters: LineupPreset | null;
   /** The team's named presets, by name. */
   presets: LineupPreset[];
@@ -130,7 +130,7 @@ export function setupSources(
 ): SetupSources {
   const starters = startersFor(presets, match.teamId);
   return {
-    starters: starters && isPresetComplete(starters) ? starters : null,
+    starters: starters && hasAnyPlayer(starters) ? starters : null,
     presets: namedPresetsFor(presets, match.teamId),
     previous: previousSet(match.sets, setNumber),
   };

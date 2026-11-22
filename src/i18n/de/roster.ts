@@ -89,6 +89,10 @@ export const roster: Strings['roster'] = {
     vs: (opponent: string) => `gegen ${opponent}`,
     open: (opponent: string, date: string) => `Spiel gegen ${opponent} am ${date} öffnen`,
     delete: (opponent: string) => `Spiel gegen ${opponent} löschen`,
+    search: 'Spiele suchen',
+    searchPlaceholder: 'Gegner oder Datum, z. B. 21.11.',
+    noResults: (query: string) => `Keine Spiele für „${query}“.`,
+    resultCount: (shown: number, total: number) => `${shown} von ${total} Spielen`,
   },
   matchForm: {
     opponent: 'Gegner',

@@ -158,13 +158,19 @@ describe('setupSources', () => {
     expect(sources.previous).toBe(s2);
   });
 
-  it('leaves out incomplete or missing starters and a missing previous set', () => {
+  it('v6.2: offers partly filled starters; leaves out empty or missing ones and a missing previous set', () => {
     const partial = preset({ kind: 'starters', slots: { ...full, 2: null } });
     expect(setupSources(match([]), 1, [partial])).toEqual({
-      starters: null,
+      starters: partial,
       presets: [],
       previous: null,
     });
+    const nobody = preset({
+      kind: 'starters',
+      slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoId: null,
+    });
+    expect(setupSources(match([]), 1, [nobody]).starters).toBeNull();
     expect(setupSources(match([set(2)]), 1, []).starters).toBeNull();
   });
 });

@@ -240,9 +240,31 @@ export function errorBreakdown(
   }));
 }
 
+const RATING_ORDER: Record<Rating | 'none', number> = {
+  positive: 0,
+  even: 1,
+  negative: 2,
+  none: 3,
+};
+
 /**
- * Rows for the performance tab: every player with a line, most rallies on court first, then by
- * jersey number. Players no longer on the roster are left out.
+ * v6.2: best first. Compares by the rating (positive → even → negative → no rallies, so the
+ * badges never jump around), then net points, plus/minus and rallies on court (all higher
+ * first); negative when `a` ranks above `b`.
+ */
+export function compareByPerformance(a: PlayerPerformance, b: PlayerPerformance): number {
+  return (
+    RATING_ORDER[rating(a) ?? 'none'] - RATING_ORDER[rating(b) ?? 'none'] ||
+    netPoints(b) - netPoints(a) ||
+    plusMinus(b) - plusMinus(a) ||
+    b.rallies - a.rallies
+  );
+}
+
+/**
+ * Rows for the performance tab: every player with a line, best first and worst last
+ * (`compareByPerformance`), equal ones by jersey number. Players no longer on the roster are
+ * left out.
  */
 export function performanceRows(
   perf: Performance,
@@ -252,6 +274,7 @@ export function performanceRows(
     .filter((p) => perf.players[p.id] !== undefined)
     .map((p) => ({ player: p, performance: perf.players[p.id] as PlayerPerformance }))
     .sort(
-      (a, b) => b.performance.rallies - a.performance.rallies || a.player.number - b.player.number,
+      (a, b) =>
+        compareByPerformance(a.performance, b.performance) || a.player.number - b.player.number,
     );
 }

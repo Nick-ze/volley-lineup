@@ -62,7 +62,7 @@ export const presets = {
     edit: 'Edit starters',
     editLabel: 'Edit the team’s starters',
     incomplete: (filled: number) =>
-      `${filled} of 6 positions filled. Fill all six so new matches start with them.`,
+      `${filled} of 6 positions set. New matches start with them in set 1; pick the other players in the match before the game.`,
     complete: 'New matches start with this lineup in set 1.',
     leftOut: (n: number) =>
       n === 1

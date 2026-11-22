@@ -66,7 +66,7 @@ export const presets: Strings['presets'] = {
     edit: 'Startsechs bearbeiten',
     editLabel: 'Die Startsechs des Teams bearbeiten',
     incomplete: (filled: number) =>
-      `${filled} von 6 Positionen besetzt. Besetze alle sechs, damit neue Spiele damit beginnen.`,
+      `${filled} von 6 Positionen festgelegt. Neue Spiele beginnen in Satz 1 damit; die übrigen Spieler wählst du im Spiel vor dem Anpfiff.`,
     complete: 'Neue Spiele beginnen in Satz 1 mit dieser Aufstellung.',
     leftOut: (n: number) =>
       n === 1

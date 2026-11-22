@@ -98,6 +98,15 @@ export function applyPresetToSet(
   };
 }
 
+/**
+ * v6.2: true when the preset has anyone in it (a court player or the libero). Team starters
+ * are used as soon as they have someone: with only some spots set (e.g. 3 regulars), the rest
+ * is picked in the match before the game (live play still needs all six).
+ */
+export function hasAnyPlayer(preset: PresetLineup): boolean {
+  return preset.liberoId !== null || filledCount(preset) > 0;
+}
+
 /** True when all six court positions of the preset are filled. */
 export function isPresetComplete(preset: PresetLineup): boolean {
   return COURT_POSITIONS.every((p) => preset.slots[p] !== null);
@@ -124,8 +133,9 @@ export function namedPresetsFor(presets: readonly LineupPreset[], teamId: string
 }
 
 /**
- * Set 1 for a new match: pre-filled from the team's starters when they are complete, otherwise
- * empty. Always "we serve first" with no events.
+ * Set 1 for a new match: pre-filled from the team's starters (v6.2: also when only some spots
+ * are set — the rest stay empty to be picked before the game), otherwise empty. Always "we
+ * serve first" with no events.
  */
 export function firstSetForNewMatch(
   presets: readonly LineupPreset[],
@@ -134,7 +144,7 @@ export function firstSetForNewMatch(
 ): SetLineup {
   const empty = emptySetLineup(1);
   const starters = startersFor(presets, teamId);
-  if (!starters || !isPresetComplete(starters)) return empty;
+  if (!starters || !hasAnyPlayer(starters)) return empty;
   return applyPresetToSet(empty, starters, players).set;
 }
 

@@ -165,10 +165,19 @@ describe('new match', () => {
     expect(await screen.findByTestId('slot-player-1')).toBeTruthy();
   });
 
-  it('starts empty when the starters are incomplete', async () => {
+  it('v6.2: starts with partly filled starters; the empty spots are picked before the game', async () => {
+    const three = { ...fullLineup().slots, 4: null, 5: null, 6: null };
+    store().setStarters('team1', { ...fullLineup(), slots: three });
+    const match = await createMatch();
+    expect(match.sets[0]?.slots).toEqual(three);
+  });
+
+  it('starts empty when the starters have nobody in them', async () => {
     store().setStarters('team1', {
       ...fullLineup(),
-      slots: { ...fullLineup().slots, 2: null },
+      slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
+      liberoId: null,
+      liberoReplaces: [],
     });
     const match = await createMatch();
     expect(match.sets).toEqual([emptySetLineup(1)]);
