@@ -1,9 +1,9 @@
 import type { ComponentRef, ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type { CourtPosition } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 /** Front row is drawn nearest the net (top), back row below. Left→right as seen from behind our baseline. */
 export const FRONT_ROW: readonly CourtPosition[] = [4, 3, 2];
@@ -36,6 +36,7 @@ export function Court({
   style,
   testID,
 }: CourtProps) {
+  const styles = useStyles();
   const t = useT();
   const row = (positions: readonly CourtPosition[], isFrontRow: boolean) => (
     <View style={styles.row}>
@@ -73,12 +74,12 @@ export function Court({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   court: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: radius.md,
     borderWidth: 2,
-    borderColor: colors.courtLine,
+    borderColor: theme.colors.courtLine,
     padding: spacing.sm,
     paddingTop: 0,
     width: '100%',
@@ -89,14 +90,14 @@ const styles = StyleSheet.create({
   net: {
     height: 18,
     borderBottomWidth: 4,
-    borderBottomColor: colors.net,
+    borderBottomColor: theme.colors.net,
     alignItems: 'center',
     justifyContent: 'flex-end',
     marginHorizontal: -spacing.sm,
   },
-  netLabel: { ...typography.caption, color: colors.onPrimary, fontWeight: '700' },
+  netLabel: { ...typography.caption, color: theme.colors.onCourt, fontWeight: '700' },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
-  attackLine: { height: 2, backgroundColor: colors.courtLine, opacity: 0.8 },
+  attackLine: { height: 2, backgroundColor: theme.colors.courtLine, opacity: 0.8 },
   slot: {
     flex: 1,
     minHeight: 104,
@@ -110,6 +111,6 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     left: spacing.sm,
     ...typography.label,
-    color: colors.onPrimary,
+    color: theme.colors.onCourt,
   },
-});
+}));

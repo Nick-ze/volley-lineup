@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { SeasonOverview as Overview } from '@/domain/stats';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** One number with its caption, e.g. "Sets 3 : 3". */
 function Tile({
@@ -17,6 +17,7 @@ function Tile({
   a11y: string;
   testID: string;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.tile} accessible accessibilityLabel={a11y} testID={testID}>
       <Text style={styles.value}>{value}</Text>
@@ -27,6 +28,8 @@ function Tile({
 
 /** Season record (matches won–lost), sets and points won : lost. v7.0: optional heading. */
 export function SeasonOverview({ overview, heading }: { overview: Overview; heading?: string }) {
+  const styles = useStyles();
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.stats.season;
   const { won, lost, sets, points, inProgress } = overview;
@@ -60,7 +63,7 @@ export function SeasonOverview({ overview, heading }: { overview: Overview; head
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   tiles: { flexDirection: 'row', gap: spacing.sm },
   tile: {
@@ -68,12 +71,12 @@ const styles = StyleSheet.create({
     minHeight: touchTarget,
     alignItems: 'center',
     padding: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  value: { ...typography.subheading, color: colors.text },
-  label: { ...typography.caption, color: colors.textMuted },
-  note: { ...typography.caption, color: colors.textMuted },
-});
+  value: { ...typography.subheading, color: theme.colors.text },
+  label: { ...typography.caption, color: theme.colors.textMuted },
+  note: { ...typography.caption, color: theme.colors.textMuted },
+}));

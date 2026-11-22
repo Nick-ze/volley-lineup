@@ -1,9 +1,9 @@
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
+import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
 import type { PendingFormation } from './useSetupDraft';
@@ -27,6 +27,7 @@ export function FormationConfirm({
   onConfirm,
   onCancel,
 }: FormationConfirmProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.setup;
   const list = (change?.offPosition ?? [])
@@ -61,10 +62,10 @@ export function FormationConfirm({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
@@ -72,12 +73,12 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: dialogMaxWidth,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.md,
   },
-  title: { ...typography.subheading, color: colors.text },
-  message: { ...typography.body, color: colors.text },
+  title: { ...typography.subheading, color: theme.colors.text },
+  message: { ...typography.body, color: theme.colors.text },
   actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: spacing.sm },
-});
+}));

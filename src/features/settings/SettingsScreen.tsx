@@ -1,10 +1,10 @@
 import Constants from 'expo-constants';
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { Screen } from '@/components';
 import { useT } from '@/i18n';
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 import { DeleteAllSection } from './DeleteAllSection';
 import { DisplaySection } from './DisplaySection';
@@ -15,6 +15,7 @@ import { Section } from './Section';
 
 /** Settings tab: language, player chips, export, import, delete all data, app version. */
 export function SettingsScreen() {
+  const styles = useStyles();
   const t = useT();
   const version = Constants.expoConfig?.version ?? t.transfer.about.unknownVersion;
   // Bumped by "Delete all data": remounts export / import so their old messages disappear.
@@ -35,6 +36,6 @@ export function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  version: { ...typography.body, color: colors.textMuted },
-});
+const useStyles = makeStyles((theme) => ({
+  version: { ...typography.body, color: theme.colors.textMuted },
+}));

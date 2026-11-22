@@ -1,6 +1,6 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 export interface TextFieldProps extends Pick<
   TextInputProps,
@@ -16,6 +16,8 @@ export interface TextFieldProps extends Pick<
 
 /** Labelled text input with an inline error message. */
 export function TextField({ label, value, onChangeText, error, testID, ...rest }: TextFieldProps) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
@@ -38,19 +40,19 @@ export function TextField({ label, value, onChangeText, error, testID, ...rest }
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
-  label: { ...typography.label, color: colors.textMuted },
+  label: { ...typography.label, color: theme.colors.textMuted },
   input: {
     ...typography.body,
     minHeight: touchTarget,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
-  inputError: { borderColor: colors.error },
-  error: { ...typography.label, color: colors.error },
-});
+  inputError: { borderColor: theme.colors.error },
+  error: { ...typography.label, color: theme.colors.error },
+}));

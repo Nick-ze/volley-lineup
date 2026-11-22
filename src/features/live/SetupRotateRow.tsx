@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import type { RotateDirection } from '@/domain/roles';
 import type { RotationNumber } from '@/domain/rotation';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 export interface SetupRotateRowProps {
   /** Where the setter spot starts (`formationRotation` of the draft's formation). */
@@ -14,6 +14,7 @@ export interface SetupRotateRowProps {
 
 /** "Setter on n" + Rotate ↺ / ↻ (same order as the lineup builder) in the next-set setup (v4, before the set starts). */
 export function SetupRotateRow({ setterAt, onRotate }: SetupRotateRowProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.setup;
   return (
@@ -45,9 +46,9 @@ export function SetupRotateRow({ setterAt, onRotate }: SetupRotateRowProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
-  text: { ...typography.label, color: colors.textMuted },
+  text: { ...typography.label, color: theme.colors.textMuted },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   grow: { flexGrow: 1 },
-});
+}));

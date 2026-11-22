@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { seasonOverview, seasonStats } from '@/domain/stats';
 import { defaultStatsSeasonId } from '@/domain/statsSeason';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, usePlayersForTeam, useSeasonsForTeam } from '@/store';
-import { spacing } from '@/theme';
+import { makeStyles, spacing } from '@/theme';
 
 import { PlayerTable } from './PlayerTable';
 import { RotationTable } from './RotationTable';
@@ -19,6 +19,8 @@ import { SeasonOverview } from './SeasonOverview';
  * season with a played match).
  */
 export function StatsTab({ teamId }: { teamId: string }) {
+  const listStyles = useListStyles();
+  const styles = useStyles();
   const t = useT();
   const all = useMatchesForTeam(teamId);
   const seasons = useSeasonsForTeam(teamId);
@@ -64,6 +66,6 @@ export function StatsTab({ teamId }: { teamId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   wrap: { gap: spacing.lg },
-});
+}));

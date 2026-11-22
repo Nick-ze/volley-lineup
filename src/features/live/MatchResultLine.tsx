@@ -1,13 +1,14 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import type { Match } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 import { matchResultLabel } from './matchResult';
 
 /** A small "3:1 won" / "2:1 · in progress" line for the match header (nothing before play). */
 export function MatchResultLine({ match }: { match: Pick<Match, 'sets'> }) {
+  const styles = useStyles();
   const t = useT();
   const label = matchResultLabel(t, match);
   if (!label) return null;
@@ -18,6 +19,6 @@ export function MatchResultLine({ match }: { match: Pick<Match, 'sets'> }) {
   );
 }
 
-const styles = StyleSheet.create({
-  line: { ...typography.label, color: colors.textMuted },
-});
+const useStyles = makeStyles((theme) => ({
+  line: { ...typography.label, color: theme.colors.textMuted },
+}));

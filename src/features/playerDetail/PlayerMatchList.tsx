@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { plusMinus, type PlayerMatchLine } from '@/domain/performance';
 import { matchResultLabel } from '@/features/live/matchResult';
 import { ListRow } from '@/features/roster/components/ListRow';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 
@@ -14,6 +14,7 @@ export interface PlayerMatchListProps {
 
 /** One row per match the player appears in: opponent, date, result and the main numbers. */
 export function PlayerMatchList({ lines, onOpenMatch }: PlayerMatchListProps) {
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.playerDetail.matches;
   const seasons = useAppStore((state) => state.seasons);

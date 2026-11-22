@@ -11,7 +11,7 @@ import {
 import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
-import { formStyles as styles } from './styles';
+import { useFormStyles } from './styles';
 import { TextField } from './TextField';
 
 export interface TeamFormProps {
@@ -26,6 +26,7 @@ export interface TeamFormProps {
  * isn't shown any more; an existing value is kept as it is (it named the upgraded season).
  */
 export function TeamForm({ initial, submitLabel, onSubmit, onCancel }: TeamFormProps) {
+  const styles = useFormStyles();
   const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
   const [season] = useState(initial?.season ?? '');

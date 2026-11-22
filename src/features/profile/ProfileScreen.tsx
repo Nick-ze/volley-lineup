@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { Button, Screen } from '@/components';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
@@ -8,13 +8,14 @@ import { useConfirm } from '@/features/roster/hooks/useConfirm';
 import { Section } from '@/features/settings/Section';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 import { ProfileCard } from './ProfileCard';
 import { useLeaveProfile } from './useLeaveProfile';
 
 /** `/profile` tab: the current profile, edit it, log out (back to the picker), delete it. */
 export function ProfileScreen() {
+  const styles = useStyles();
   const t = useT();
   const profile = useAppStore(selectCurrentProfile);
   const leaveProfile = useLeaveProfile();
@@ -54,6 +55,6 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  note: { ...typography.caption, color: colors.textMuted },
-});
+const useStyles = makeStyles((theme) => ({
+  note: { ...typography.caption, color: theme.colors.textMuted },
+}));

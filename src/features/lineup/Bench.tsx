@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import { locatePlayer } from '@/domain/lineupEditing';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { BENCH_MIN_HEIGHT, COMPACT_CHIP_SIZE } from './constants';
 import { DraggablePlayer } from './drag/DraggablePlayer';
@@ -23,6 +23,7 @@ export function Bench({
   scrollable: boolean;
   compact?: boolean;
 }) {
+  const styles = useStyles();
   const t = useT();
   const { bench, set, selectedId, pressPlayer, pressTarget } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'bench' });
@@ -75,30 +76,30 @@ export function Bench({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
     gap: spacing.sm,
     padding: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 3,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   fill: { flex: 1, minHeight: BENCH_MIN_HEIGHT },
   compactBox: { padding: spacing.sm, gap: spacing.xs },
   compactGrid: { gap: spacing.sm, paddingVertical: 0 },
   scroll: { flex: 1 },
-  title: { ...typography.subheading, color: colors.text },
-  compactTitle: { ...typography.label, color: colors.text },
+  title: { ...typography.subheading, color: theme.colors.text },
+  compactTitle: { ...typography.label, color: theme.colors.text },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, paddingVertical: spacing.xs },
-  empty: { ...typography.body, color: colors.textMuted },
+  empty: { ...typography.body, color: theme.colors.textMuted },
   dropTarget: {
     minHeight: touchTarget,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 2,
-    borderColor: colors.highlight,
+    borderColor: theme.colors.highlightText,
   },
-  dropText: { ...typography.label, color: colors.highlight },
-});
+  dropText: { ...typography.label, color: theme.colors.highlightText },
+}));

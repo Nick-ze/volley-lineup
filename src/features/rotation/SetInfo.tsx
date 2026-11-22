@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { PlayerChip } from '@/components';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
 
@@ -17,6 +17,7 @@ export interface SetInfoProps {
 
 /** Libero + "we serve / receive first" — shown next to (wide) or under (phone) the court. */
 export function SetInfo({ libero, liberoId, weServeFirst, compact = false }: SetInfoProps) {
+  const styles = useStyles();
   const t = useT();
   const serveText = weServeFirst ? t.rotation.weServeFirst : t.rotation.weReceiveFirst;
   return (
@@ -47,14 +48,14 @@ export function SetInfo({ libero, liberoId, weServeFirst, compact = false }: Set
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: {
     gap: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     alignItems: 'center',
   },
   compact: {
@@ -64,16 +65,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   libero: { alignItems: 'center', gap: spacing.xs },
-  caption: { ...typography.label, color: colors.textMuted },
-  muted: { ...typography.body, color: colors.textMuted },
+  caption: { ...typography.label, color: theme.colors.textMuted },
+  muted: { ...typography.body, color: theme.colors.textMuted },
   serve: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.round,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  serveUs: { backgroundColor: colors.highlight, borderColor: colors.highlight },
-  serveText: { ...typography.label, color: colors.text },
-  serveTextUs: { color: colors.onHighlight },
-});
+  serveUs: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
+  serveText: { ...typography.label, color: theme.colors.text },
+  serveTextUs: { color: theme.colors.onHighlight },
+}));

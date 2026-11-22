@@ -1,11 +1,9 @@
-import { StyleSheet } from 'react-native';
-
 import { Court, type CourtSlotInfo } from '@/components';
 import type { LiberoSwap } from '@/domain/liberoSwap';
 import { isOffPosition } from '@/domain/roles';
 import { serverPosition, type Slots } from '@/domain/rotation';
 import type { CourtPosition, Player, Position } from '@/domain/types';
-import { colors, spacing } from '@/theme';
+import { makeStyles, spacing } from '@/theme';
 
 import { CourtSpot } from './CourtSpot';
 import { COMPACT_COURT_MAX_WIDTH, COMPACT_SLOT_MIN_HEIGHT } from './layout';
@@ -36,6 +34,7 @@ export function RotationCourt({
   liberoSwap = null,
   testID,
 }: RotationCourtProps) {
+  const styles = useStyles();
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
     isFrontRow ? styles.front : styles.back,
     styles.slot,
@@ -73,12 +72,12 @@ export function RotationCourt({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   // White text on these fills passes WCAG AA (white directly on orange #FF6B00 is ≈ 2.9:1).
-  front: { backgroundColor: colors.secondary },
-  back: { backgroundColor: colors.overlay },
+  front: { backgroundColor: theme.colors.secondary },
+  back: { backgroundColor: theme.colors.overlay },
   // The role row takes the room of the default vertical padding (the court keeps its height).
   slot: { paddingVertical: spacing.xxs },
   compactSlot: { minHeight: COMPACT_SLOT_MIN_HEIGHT },
   compactCourt: { maxWidth: COMPACT_COURT_MAX_WIDTH },
-});
+}));

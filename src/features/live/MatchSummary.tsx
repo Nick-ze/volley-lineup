@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { durationParts } from '@/domain/lineupSheet';
 import type { MatchState } from '@/domain/matchState';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface MatchSummaryProps {
   state: MatchState;
@@ -24,6 +24,7 @@ export function MatchSummary({
   onUndo,
   tagDetail = null,
 }: MatchSummaryProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.summary;
   const { us, them } = state.setsWon;
@@ -90,27 +91,27 @@ export function MatchSummary({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: colors.highlight,
+    borderColor: theme.colors.highlight,
     padding: spacing.lg,
     gap: spacing.md,
   },
-  title: { ...typography.label, color: colors.textMuted, textAlign: 'center' },
-  result: { ...typography.title, color: colors.highlight, textAlign: 'center' },
+  title: { ...typography.label, color: theme.colors.textMuted, textAlign: 'center' },
+  result: { ...typography.title, color: theme.colors.highlightText, textAlign: 'center' },
   sets: { gap: spacing.xs },
   setRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
-  setName: { ...typography.body, color: colors.textMuted },
-  setScore: { ...typography.subheading, color: colors.text },
-  setWon: { color: colors.highlight },
-  duration: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
-});
+  setName: { ...typography.body, color: theme.colors.textMuted },
+  setScore: { ...typography.subheading, color: theme.colors.text },
+  setWon: { color: theme.colors.highlightText },
+  duration: { ...typography.body, color: theme.colors.textMuted, textAlign: 'center' },
+}));

@@ -3,11 +3,11 @@ import { ScrollView, Text, View } from 'react-native';
 import { MAX_OPPONENT_NAME_LENGTH } from '@/domain/seasons';
 import type { Opponent } from '@/domain/types';
 import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
-import { formStyles } from '@/features/roster/components/styles';
+import { useFormStyles } from '@/features/roster/components/styles';
 import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 
-import { chipStyles } from './chipStyles';
+import { useChipStyles } from './chipStyles';
 
 export interface OpponentPickerProps {
   /** The season's opponents, by name. */
@@ -24,6 +24,8 @@ export interface OpponentPickerProps {
 
 /** The season's opponents as chips (they wrap, and scroll when many) plus a new-name field. */
 export function OpponentPicker(props: OpponentPickerProps) {
+  const chipStyles = useChipStyles();
+  const formStyles = useFormStyles();
   const { opponents, seasonName, selectedId, onSelect, name, onName, error } = props;
   const t = useT();
   const s = t.roster.matchForm;

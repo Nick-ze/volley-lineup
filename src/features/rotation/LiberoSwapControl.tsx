@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { SetLineup } from '@/domain/types';
 import { ToggleRow } from '@/components';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface LiberoSwapControlProps {
   set: SetLineup;
@@ -16,6 +16,7 @@ export interface LiberoSwapControlProps {
  * for the set (v4). Hidden without a libero.
  */
 export function LiberoSwapControl({ set, showSwaps, onChange }: LiberoSwapControlProps) {
+  const styles = useStyles();
   const t = useT();
   if (set.liberoId === null) return null;
   return (
@@ -38,14 +39,14 @@ export function LiberoSwapControl({ set, showSwaps, onChange }: LiberoSwapContro
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  hint: { ...typography.caption, color: colors.textMuted, paddingVertical: spacing.sm },
-});
+  hint: { ...typography.caption, color: theme.colors.textMuted, paddingVertical: spacing.sm },
+}));

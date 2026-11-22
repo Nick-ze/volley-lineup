@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { Position } from '@/domain/types';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface RoleTagProps {
   role: Position;
@@ -19,6 +19,7 @@ export interface RoleTagProps {
  * off-position role is marked separately with `OffPositionMark`.
  */
 export function RoleTag({ role, testID }: RoleTagProps) {
+  const styles = useStyles();
   return (
     <View
       style={styles.tag}
@@ -31,11 +32,11 @@ export function RoleTag({ role, testID }: RoleTagProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   tag: {
-    backgroundColor: colors.background,
+    backgroundColor: theme.colors.background,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
   },
-  text: { ...typography.caption, fontWeight: '700', color: colors.text },
-});
+  text: { ...typography.caption, fontWeight: '700', color: theme.colors.text },
+}));

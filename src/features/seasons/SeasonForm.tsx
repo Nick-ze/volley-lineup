@@ -11,7 +11,7 @@ import {
 } from '@/domain/seasons';
 import type { Season } from '@/domain/types';
 import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
-import { formStyles } from '@/features/roster/components/styles';
+import { useFormStyles } from '@/features/roster/components/styles';
 import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
@@ -32,6 +32,7 @@ export interface SeasonFormProps {
 
 /** Name, Season / Tournament, optional start / end date (YYYY-MM-DD) and place. */
 export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: SeasonFormProps) {
+  const formStyles = useFormStyles();
   const t = useT();
   const s = t.seasons.form;
   const [name, setName] = useState(season?.name ?? '');

@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { SET_NUMBERS, type SetNumber } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SetTabsProps {
   selected: SetNumber;
@@ -13,6 +13,7 @@ export interface SetTabsProps {
 
 /** Tabs for sets 1–5. The selected set is yellow. */
 export function SetTabs({ selected, existing, onSelect }: SetTabsProps) {
+  const styles = useStyles();
   const t = useT();
   return (
     <View style={styles.row} accessibilityRole="tablist" accessibilityLabel={t.lineup.setTabs}>
@@ -37,7 +38,7 @@ export function SetTabs({ selected, existing, onSelect }: SetTabsProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { flexDirection: 'row', gap: spacing.xs },
   tab: {
     flex: 1,
@@ -47,11 +48,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
-  existing: { borderStyle: 'solid', borderColor: colors.textMuted },
-  active: { backgroundColor: colors.highlight, borderColor: colors.highlight },
-  label: { ...typography.label, color: colors.text },
-  activeLabel: { color: colors.onHighlight },
-});
+  existing: { borderStyle: 'solid', borderColor: theme.colors.textMuted },
+  active: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
+  label: { ...typography.label, color: theme.colors.text },
+  activeLabel: { color: theme.colors.onHighlight },
+}));

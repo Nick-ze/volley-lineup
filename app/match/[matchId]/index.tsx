@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,13 +16,14 @@ import { PrintButton } from '@/features/print/PrintButton';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { useT } from '@/i18n';
 import { useIsWide } from '@/lib/useIsWide';
-import { colors, maxContentWidth, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, maxContentWidth, spacing, touchTarget, typography } from '@/theme';
 
 /**
  * Match screen: set tabs 1–5 + lineup builder for `?set=N`, links to rotation and starters.
  * Switching tabs only changes the URL; a set is stored once it is first edited.
  */
 export default function MatchScreen() {
+  const styles = useStyles();
   const t = useT();
   const wide = useIsWide();
   const params = useLocalSearchParams<{ matchId: string; set?: string }>();
@@ -138,8 +139,8 @@ export default function MatchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+const useStyles = makeStyles((theme) => ({
+  safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { flexGrow: 1 },
   inner: {
     width: '100%',
@@ -153,5 +154,5 @@ const styles = StyleSheet.create({
   link: { flexGrow: 1, minWidth: touchTarget },
   linkWide: { flexBasis: 0 },
   linkPhone: { flexBasis: '30%', paddingHorizontal: spacing.sm },
-  notFound: { ...typography.body, color: colors.textMuted, padding: spacing.lg },
-});
+  notFound: { ...typography.body, color: theme.colors.textMuted, padding: spacing.lg },
+}));

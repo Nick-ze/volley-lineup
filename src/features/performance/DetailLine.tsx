@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 export interface DetailLineProps {
   label: string;
@@ -13,6 +13,7 @@ export interface DetailLineProps {
 
 /** "Error rate ……… 12% (2 errors in 17 rallies)" with an optional explanation. */
 export function DetailLine({ label, value, hint, testID }: DetailLineProps) {
+  const styles = useStyles();
   const t = useT();
   return (
     <View style={styles.wrap}>
@@ -30,12 +31,12 @@ export function DetailLine({ label, value, hint, testID }: DetailLineProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: {
     gap: spacing.xxs,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   row: {
     flexDirection: 'row',
@@ -43,7 +44,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     columnGap: spacing.md,
   },
-  label: { ...typography.body, color: colors.textMuted },
-  value: { ...typography.body, fontWeight: '600', color: colors.text, flexShrink: 1 },
-  hint: { ...typography.caption, color: colors.textMuted },
-});
+  label: { ...typography.body, color: theme.colors.textMuted },
+  value: { ...typography.body, fontWeight: '600', color: theme.colors.text, flexShrink: 1 },
+  hint: { ...typography.caption, color: theme.colors.textMuted },
+}));

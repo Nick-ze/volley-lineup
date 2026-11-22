@@ -1,21 +1,24 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { Rating } from '@/domain/performance';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography, useTheme, type ThemeColors } from '@/theme';
 
-const tone = {
-  positive: colors.secondaryText,
-  even: colors.textMuted,
-  negative: colors.error,
-  none: colors.textMuted,
-} as const;
+const tone = (colors: ThemeColors) =>
+  ({
+    positive: colors.secondaryText,
+    even: colors.textMuted,
+    negative: colors.error,
+    none: colors.textMuted,
+  }) as const;
 
 /** The one-glance rating: a symbol and a word (never colour alone, DECISIONS #152). */
 export function RatingBadge({ rating, testID }: { rating: Rating | null; testID?: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const t = useT();
   const key = rating ?? 'none';
-  const color = tone[key];
+  const color = tone(colors)[key];
   return (
     <View style={[styles.badge, { borderColor: color }]}>
       <Text style={[styles.text, { color }]} numberOfLines={1} testID={testID}>
@@ -25,7 +28,7 @@ export function RatingBadge({ rating, testID }: { rating: Rating | null; testID?
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   badge: {
     borderWidth: 1,
     borderRadius: radius.round,
@@ -33,4 +36,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
   },
   text: { ...typography.label },
-});
+}));

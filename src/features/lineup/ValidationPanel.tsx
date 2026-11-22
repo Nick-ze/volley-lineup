@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { ValidationIssue, ValidationResult } from '@/domain/lineupValidation';
 import { useT, type Strings } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 function issueText<C extends string>(
   t: Strings,
@@ -15,6 +15,7 @@ function issueText<C extends string>(
 
 /** Errors (red) and warnings (yellow) for the current set. Warnings never block. */
 export function ValidationPanel({ result }: { result: ValidationResult }) {
+  const styles = useStyles();
   const t = useT();
   const { errors, warnings } = result;
   return (
@@ -41,17 +42,17 @@ export function ValidationPanel({ result }: { result: ValidationResult }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
     gap: spacing.xs,
     padding: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  title: { ...typography.label, color: colors.text },
-  ok: { ...typography.body, color: colors.textMuted },
-  error: { ...typography.body, color: colors.error },
-  warning: { ...typography.body, color: colors.highlight },
-});
+  title: { ...typography.label, color: theme.colors.text },
+  ok: { ...typography.body, color: theme.colors.textMuted },
+  error: { ...typography.body, color: theme.colors.error },
+  warning: { ...typography.body, color: theme.colors.highlightText },
+}));

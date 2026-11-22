@@ -16,7 +16,7 @@ import { useOpponentsForSeason, useSeasonsForTeam } from '@/store';
 
 import { errorText } from '../errorText';
 import { ChoiceChip } from './ChoiceChip';
-import { formStyles } from './styles';
+import { useFormStyles } from './styles';
 import { TextField } from './TextField';
 
 export interface MatchFormProps {
@@ -32,6 +32,7 @@ export interface MatchFormProps {
  * season's opponents or a typed name), date (YYYY-MM-DD, defaults to today) and home / away.
  */
 export function MatchForm({ teamId, seasonId, onSubmit, onCancel }: MatchFormProps) {
+  const formStyles = useFormStyles();
   const t = useT();
   const seasons = useSeasonsForTeam(teamId);
   const fixed = seasons.some((x) => x.id === seasonId);

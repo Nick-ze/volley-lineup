@@ -1,15 +1,16 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Photo, PositionBadge } from '@/components';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 /** Diameter of the header picture / number circle. */
 const HEADER_PHOTO_SIZE = 72;
 
 /** Photo (or jersey number), name, number, positions, status and the Edit button. */
 export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () => void }) {
+  const styles = useStyles();
   const t = useT();
   const name = `${player.firstName} ${player.lastName}`;
   const status = player.active ? t.roster.roster.active : t.roster.roster.inactive;
@@ -59,22 +60,22 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () =>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   number: {
     width: HEADER_PHOTO_SIZE,
     height: HEADER_PHOTO_SIZE,
     borderRadius: radius.round,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  numberText: { ...typography.jersey, color: colors.onPrimary },
+  numberText: { ...typography.jersey, color: theme.colors.onPrimary },
   text: { flex: 1, gap: spacing.xs },
-  name: { ...typography.subheading, color: colors.text },
-  meta: { ...typography.body, color: colors.textMuted },
-  active: { color: colors.textMuted },
-  injured: { color: colors.error },
+  name: { ...typography.subheading, color: theme.colors.text },
+  meta: { ...typography.body, color: theme.colors.textMuted },
+  active: { color: theme.colors.textMuted },
+  injured: { color: theme.colors.error },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-});
+}));

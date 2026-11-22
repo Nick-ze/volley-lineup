@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button, ToggleRow } from '@/components';
 import { suggestLiberoReplaces } from '@/domain/liberoSwap';
@@ -6,7 +6,7 @@ import { setLiberoReplaces, toggleLiberoReplace } from '@/domain/lineupEditing';
 import { setLiberoActive } from '@/domain/roles';
 import { COURT_POSITIONS } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { LiberoRoleChips } from './LiberoRoleChips';
 import type { LineupDraft } from './useLineupDraft';
@@ -16,6 +16,7 @@ import type { LineupDraft } from './useLineupDraft';
  * or by player which starters the libero comes in for in the back row.
  */
 export function LiberoReplaces({ editor }: { editor: LineupDraft }) {
+  const styles = useStyles();
   const t = useT();
   const { set, players, playerById, update } = editor;
   if (set.liberoId === null) return null;
@@ -95,21 +96,21 @@ export function LiberoReplaces({ editor }: { editor: LineupDraft }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
     gap: spacing.sm,
     padding: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   section: { gap: spacing.sm },
   greyed: { opacity: 0.4 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   titles: { flex: 1, gap: spacing.xxs },
-  title: { ...typography.label, color: colors.text },
-  hint: { ...typography.caption, color: colors.textMuted },
+  title: { ...typography.label, color: theme.colors.text },
+  hint: { ...typography.caption, color: theme.colors.textMuted },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {
     minHeight: touchTarget,
@@ -117,13 +118,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checked: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   pressed: { opacity: 0.8 },
-  optionText: { ...typography.label, color: colors.text },
-  checkedText: { color: colors.onPrimary },
-});
+  optionText: { ...typography.label, color: theme.colors.text },
+  checkedText: { color: theme.colors.onPrimary },
+}));

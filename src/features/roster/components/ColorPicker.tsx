@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
 import {
   borderWidth,
-  colors,
+  makeStyles,
   profileColors,
   radius,
   spacing,
@@ -18,6 +18,7 @@ export interface ColorPickerProps {
 
 /** Radio group of the profile avatar colours. */
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
+  const styles = useStyles();
   const t = useT();
   return (
     <View style={styles.wrap}>
@@ -41,16 +42,16 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
-  label: { ...typography.label, color: colors.textMuted },
+  label: { ...typography.label, color: theme.colors.textMuted },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   swatch: {
     width: touchTarget,
     height: touchTarget,
     borderRadius: radius.round,
     borderWidth: borderWidth.thick,
-    borderColor: colors.transparent,
+    borderColor: theme.colors.transparent,
   },
-  selected: { borderColor: colors.text },
-});
+  selected: { borderColor: theme.colors.text },
+}));

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { emptySetLineup } from '@/domain/lineup';
@@ -7,10 +7,10 @@ import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/preset
 import { isOffPosition, spotRoles } from '@/domain/roles';
 import { COURT_POSITIONS, type CourtPosition, type Player, type Position } from '@/domain/types';
 import { RotationCourt } from '@/features/rotation';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT, type Strings } from '@/i18n';
 import { usePlayersForTeam, useStarters } from '@/store';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface StartersTabProps {
   teamId: string;
@@ -42,6 +42,8 @@ function courtSummary(
 
 /** The team's starting six + libero on a compact court, with "Set / Edit starters". */
 export function StartersTab({ teamId, onEdit }: StartersTabProps) {
+  const styles = useStyles();
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.presets.starters;
   const starters = useStarters(teamId);
@@ -103,7 +105,7 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.md },
   card: {
     alignSelf: 'center',
@@ -113,10 +115,10 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
-  libero: { ...typography.body, color: colors.text, textAlign: 'center' },
-  status: { ...typography.body, color: colors.textMuted },
-  warn: { color: colors.highlight },
-});
+  libero: { ...typography.body, color: theme.colors.text, textAlign: 'center' },
+  status: { ...typography.body, color: theme.colors.textMuted },
+  warn: { color: theme.colors.highlightText },
+}));

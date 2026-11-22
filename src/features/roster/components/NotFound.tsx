@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { Button, Screen } from '@/components';
 import { useT } from '@/i18n';
 
-import { listStyles } from './styles';
+import { useListStyles } from './styles';
 
 /** Shown when a route points at a team / player that no longer exists. */
 export function NotFound({
@@ -15,6 +15,7 @@ export function NotFound({
   onBack: () => void;
   backLabel?: string;
 }) {
+  const listStyles = useListStyles();
   const t = useT();
   return (
     <Screen>

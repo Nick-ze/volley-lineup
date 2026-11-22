@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { netPoints, rating, type PlayerPerformance } from '@/domain/performance';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { performanceRef } from './format';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -17,6 +17,7 @@ export interface PerformanceCardProps {
 
 /** One player in the overview: rallies, won–lost (±), K / A / B vs E (net) and the rating. */
 export function PerformanceCard({ player, performance: p, onPress }: PerformanceCardProps) {
+  const styles = useStyles();
   const t = useT();
   const pt = t.performance;
   const ref = performanceRef(t, player);
@@ -58,16 +59,16 @@ export function PerformanceCard({ player, performance: p, onPress }: Performance
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   pressed: { opacity: 0.8 },
   main: { flex: 1, minWidth: 0, gap: spacing.xxs },
@@ -77,6 +78,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  name: { ...typography.body, fontWeight: '700', color: colors.text, flexShrink: 1 },
-  line: { ...typography.label, color: colors.textMuted },
-});
+  name: { ...typography.body, fontWeight: '700', color: theme.colors.text, flexShrink: 1 },
+  line: { ...typography.label, color: theme.colors.textMuted },
+}));

@@ -12,12 +12,13 @@ import { Avatar } from './Avatar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ListRow } from './ListRow';
 import { ProfileForm } from './ProfileForm';
-import { listStyles as styles } from './styles';
+import { useListStyles } from './styles';
 
 type Editing = { mode: 'create' } | { mode: 'edit'; profile: ManagerProfile } | null;
 
 /** Lists, creates, renames and deletes manager profiles. */
 export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => void }) {
+  const styles = useListStyles();
   const t = useT();
   const profiles = useAppStore((s) => s.profiles);
   const { addProfile, updateProfile, deleteProfile } = useAppStore.getState();

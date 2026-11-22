@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { matchStats, playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { PlayerTable } from './PlayerTable';
 import { RotationTable } from './RotationTable';
@@ -14,6 +14,8 @@ import { SetFilter } from './SetFilter';
 
 /** One match's rotation and player tables, for all sets or one played set. */
 export function MatchStats({ match }: { match: Match }) {
+  const listStyles = useListStyles();
+  const styles = useStyles();
   const t = useT();
   const players = usePlayersForTeam(match.teamId);
   const sets = useMemo(() => playedSetNumbers(match), [match]);
@@ -56,7 +58,7 @@ export function MatchStats({ match }: { match: Match }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.lg },
-  points: { ...typography.subheading, color: colors.text },
-});
+  points: { ...typography.subheading, color: theme.colors.text },
+}));

@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SegmentedOption<V extends string> {
   value: V;
@@ -31,6 +31,7 @@ export function Segmented<V extends string>({
   hint,
   style,
 }: SegmentedProps<V>) {
+  const styles = useStyles();
   return (
     <View
       style={[styles.row, disabled && styles.disabled, style]}
@@ -64,12 +65,12 @@ export function Segmented<V extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     flexDirection: 'row',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   disabled: { opacity: 0.6 },
@@ -81,9 +82,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xs,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
   },
-  active: { backgroundColor: colors.primary },
-  text: { ...typography.label, color: colors.text, textAlign: 'center' },
-  activeText: { color: colors.onPrimary },
-});
+  active: { backgroundColor: theme.colors.primary },
+  text: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
+  activeText: { color: theme.colors.onPrimary },
+}));

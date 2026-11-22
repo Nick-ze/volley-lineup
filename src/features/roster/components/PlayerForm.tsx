@@ -12,7 +12,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { usePlayerForm } from '../hooks/usePlayerForm';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PositionPicker } from './PositionPicker';
-import { formStyles } from './styles';
+import { useFormStyles } from './styles';
 import { TextField } from './TextField';
 
 export interface PlayerFormProps {
@@ -33,6 +33,7 @@ export function PlayerForm({
   onDelete,
   deleteBlocked = false,
 }: PlayerFormProps) {
+  const formStyles = useFormStyles();
   const t = useT();
   const { form, set, errors, save, photo, setPhoto } = usePlayerForm(teamId, player);
   const { ask, dialogProps } = useConfirm();

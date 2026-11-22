@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from '@/domain/roles';
 import type { Formation, FormationOrder } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SetupFormationRowProps {
   formation: Formation;
@@ -20,6 +20,7 @@ interface Option {
 
 /** One radio group of the formation (system or order), as a two-part switch. */
 function Choice({ label, options }: { label: string; options: Option[] }) {
+  const styles = useStyles();
   return (
     <View style={styles.group}>
       <Text style={styles.label}>{label}</Text>
@@ -49,6 +50,7 @@ function Choice({ label, options }: { label: string; options: Option[] }) {
  * the setter (outside / middle). The setter spot is kept; the rotate buttons move it.
  */
 export function SetupFormationRow({ formation, onChange }: SetupFormationRowProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.setup;
   const systems: Option[] = FORMATION_SYSTEMS.map((system) => ({
@@ -77,15 +79,15 @@ export function SetupFormationRow({ formation, onChange }: SetupFormationRowProp
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   group: { gap: spacing.xxs },
-  label: { ...typography.label, color: colors.textMuted },
+  label: { ...typography.label, color: theme.colors.textMuted },
   row: {
     flexDirection: 'row',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   option: {
@@ -94,9 +96,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
   },
-  active: { backgroundColor: colors.primary },
-  text: { ...typography.label, color: colors.text, textAlign: 'center' },
-  activeText: { color: colors.onPrimary },
-});
+  active: { backgroundColor: theme.colors.primary },
+  text: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
+  activeText: { color: theme.colors.onPrimary },
+}));

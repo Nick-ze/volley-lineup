@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import {
@@ -9,7 +9,7 @@ import {
   type TemplateSystem,
 } from '@/domain/templates';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import type { LineupDraft } from './useLineupDraft';
 
@@ -18,6 +18,7 @@ import type { LineupDraft } from './useLineupDraft';
  * which positions could not be filled. Remount (key by set number) to reset the message.
  */
 export function TemplateFill({ editor }: { editor: LineupDraft }) {
+  const styles = useStyles();
   const t = useT();
   const { set, players, update } = editor;
   const [open, setOpen] = useState(false);
@@ -106,19 +107,19 @@ export function TemplateFill({ editor }: { editor: LineupDraft }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   box: {
     gap: spacing.sm,
     padding: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   row: { flexDirection: 'row', gap: spacing.sm },
   grow: { flex: 1 },
-  hint: { ...typography.caption, color: colors.textMuted },
-  message: { ...typography.body, color: colors.text },
-  warn: { color: colors.highlight },
-});
+  hint: { ...typography.caption, color: theme.colors.textMuted },
+  message: { ...typography.body, color: theme.colors.text },
+  warn: { color: theme.colors.highlightText },
+}));

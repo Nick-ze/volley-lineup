@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, useSeasonsForTeam } from '@/store';
-import { spacing } from '@/theme';
+import { makeStyles, spacing } from '@/theme';
 import { useIsWide } from '@/lib/useIsWide';
 
 import { SeasonCard } from './SeasonCard';
@@ -20,6 +20,8 @@ export interface SeasonsTabProps {
  * inside a season; tapping a box opens the season screen.
  */
 export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProps) {
+  const listStyles = useListStyles();
+  const styles = useStyles();
   const t = useT();
   const seasons = useSeasonsForTeam(teamId);
   const matches = useMatchesForTeam(teamId);
@@ -51,9 +53,9 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   grid: { gap: spacing.md },
   gridWide: { flexDirection: 'row', flexWrap: 'wrap' },
   // Two boxes per row on wide screens (the gap is shared between them).
   cellWide: { flexBasis: '48%', flexGrow: 1, maxWidth: '50%' },
-});
+}));

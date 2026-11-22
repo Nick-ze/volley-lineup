@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { Player } from '@/domain/types';
-import { listStyles } from '@/features/roster/components/styles';
+import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { DescriptionEditor } from './DescriptionEditor';
 import { DescriptionLockBar } from './DescriptionLockBar';
@@ -11,6 +11,8 @@ import { useDescriptionLock } from './descriptionLock';
 
 /** The player detail's description card: locked → only "Show descriptions"; unlocked → editor. */
 export function DescriptionSection({ player }: { player: Player }) {
+  const styles = useStyles();
+  const listStyles = useListStyles();
   const t = useT();
   const s = t.playerDetail.description;
   const unlocked = useDescriptionLock((x) => x.unlocked);
@@ -26,14 +28,14 @@ export function DescriptionSection({ player }: { player: Player }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
-  hint: { ...typography.caption, color: colors.textMuted },
-});
+  hint: { ...typography.caption, color: theme.colors.textMuted },
+}));

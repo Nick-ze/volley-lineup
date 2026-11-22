@@ -9,7 +9,7 @@ import { useAppStore, useTeamsForProfile } from '@/store';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ListRow } from './ListRow';
-import { listStyles as styles } from './styles';
+import { useListStyles } from './styles';
 import { TeamForm } from './TeamForm';
 
 type Editing = { mode: 'create' } | { mode: 'edit'; id: string } | null;
@@ -22,6 +22,7 @@ export function TeamList({
   profileId: string;
   onOpen: (team: Team) => void;
 }) {
+  const styles = useListStyles();
   const t = useT();
   const teams = useTeamsForProfile(profileId);
   const { addTeam, updateTeam, deleteTeam } = useAppStore.getState();

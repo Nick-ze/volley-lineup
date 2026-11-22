@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { type StyleProp, Text, View, type ViewStyle } from 'react-native';
 
 import { Button } from '@/components';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { PrintChoiceDialog } from './PrintChoiceDialog';
 import { usePrintSheet } from './usePrintSheet';
@@ -18,6 +18,7 @@ export interface PrintButtonProps {
  * has results, pressing it first asks "Lineups only" / "With results".
  */
 export function PrintButton({ matchId, style }: PrintButtonProps) {
+  const styles = useStyles();
   const t = useT();
   const { print, printing, failed, ready, hasResults } = usePrintSheet(matchId);
   const [choosing, setChoosing] = useState(false);
@@ -50,7 +51,7 @@ export function PrintButton({ matchId, style }: PrintButtonProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.xs },
-  error: { ...typography.body, color: colors.error },
-});
+  error: { ...typography.body, color: theme.colors.error },
+}));

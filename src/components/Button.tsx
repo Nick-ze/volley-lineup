@@ -1,6 +1,14 @@
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import {
+  makeStyles,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+  useTheme,
+  type ThemeColors,
+} from '@/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -17,12 +25,14 @@ export interface ButtonProps {
   compact?: boolean;
 }
 
-const variantStyles: Record<ButtonVariant, { bg: string; fg: string; border: string }> = {
+const variantColors = (
+  colors: ThemeColors,
+): Record<ButtonVariant, { bg: string; fg: string; border: string }> => ({
   primary: { bg: colors.primary, fg: colors.onPrimary, border: colors.primary },
   secondary: { bg: colors.surface, fg: colors.text, border: colors.border },
   ghost: { bg: colors.transparent, fg: colors.secondaryText, border: colors.transparent },
   danger: { bg: colors.transparent, fg: colors.error, border: colors.error },
-};
+});
 
 export function Button({
   label,
@@ -35,7 +45,9 @@ export function Button({
   style,
   compact = false,
 }: ButtonProps) {
-  const v = variantStyles[variant];
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const v = variantColors(colors)[variant];
   return (
     <Pressable
       accessibilityRole="button"
@@ -60,7 +72,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   base: {
     minHeight: touchTarget,
     minWidth: touchTarget,
@@ -74,4 +86,4 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.4 },
   label: { ...typography.label, fontSize: typography.body.fontSize },
-});
+}));

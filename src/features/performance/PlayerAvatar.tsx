@@ -1,11 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Photo } from '@/components/Photo';
 import type { Player } from '@/domain/types';
-import { colors, radius, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, touchTarget, typography } from '@/theme';
 
 /** The player's photo, or their jersey number in a circle. Decorative (the row is labelled). */
 export function PlayerAvatar({ player, size = touchTarget }: { player: Player; size?: number }) {
+  const styles = useStyles();
   return (
     <Photo
       photoId={player.photoId}
@@ -24,14 +25,14 @@ export function PlayerAvatar({ player, size = touchTarget }: { player: Player; s
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   circle: {
     borderRadius: radius.round,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  number: { ...typography.subheading, color: colors.text },
-});
+  number: { ...typography.subheading, color: theme.colors.text },
+}));

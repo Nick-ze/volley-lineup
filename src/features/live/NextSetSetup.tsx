@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { filledCount } from '@/domain/presets';
@@ -7,7 +7,7 @@ import { COURT_POSITIONS, type Match, type SetLineup, type SetNumber } from '@/d
 import { ServeToggle } from '@/features/lineup/ServeToggle';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
 import { FormationConfirm } from './FormationConfirm';
@@ -41,6 +41,7 @@ export function NextSetSetup({
   undoSet,
   onUndo,
 }: NextSetSetupProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.live.setup;
   const players = usePlayersForTeam(match.teamId);
@@ -120,19 +121,19 @@ export function NextSetSetup({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   box: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     padding: spacing.md,
     gap: spacing.sm,
   },
-  title: { ...typography.subheading, color: colors.text },
-  label: { ...typography.label, color: colors.textMuted },
-  text: { ...typography.body, color: colors.text },
-  warn: { ...typography.body, color: colors.highlight },
+  title: { ...typography.subheading, color: theme.colors.text },
+  label: { ...typography.label, color: theme.colors.textMuted },
+  text: { ...typography.body, color: theme.colors.text },
+  warn: { ...typography.body, color: theme.colors.highlightText },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   grow: { flexGrow: 1 },
-});
+}));

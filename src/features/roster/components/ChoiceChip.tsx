@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface ChoiceChipProps {
   label: string;
@@ -23,6 +23,7 @@ export function ChoiceChip({
   style,
   testID,
 }: ChoiceChipProps) {
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole={role}
@@ -44,20 +45,20 @@ export function ChoiceChip({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   chip: {
     minHeight: touchTarget,
     minWidth: touchTarget,
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  selected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   pressed: { opacity: 0.8 },
-  label: { ...typography.label, color: colors.text },
-  labelSelected: { color: colors.onPrimary },
-});
+  label: { ...typography.label, color: theme.colors.text },
+  labelSelected: { color: theme.colors.onPrimary },
+}));

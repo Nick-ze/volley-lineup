@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
 
-import { listStyles as styles } from './styles';
+import { useListStyles } from './styles';
 
 export interface ListRowProps {
   title: string;
@@ -26,6 +26,7 @@ export function ListRow({
   accessibilityLabel,
   testID,
 }: ListRowProps) {
+  const styles = useListStyles();
   const t = useT();
   return (
     <View style={styles.row}>

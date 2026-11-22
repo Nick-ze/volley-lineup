@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { MAX_SUBS_PER_SET, type LiveState, type LiveWarning } from '@/domain/liveSet';
 import type { Player } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { playerRef } from './format';
 
@@ -28,6 +28,7 @@ function warningText(t: Strings, w: LiveWarning, playersById: Map<string, Player
 
 /** Set point (yellow) and substitution rule warnings (red outline). */
 export function LiveBanners({ state, opponent, playersById }: LiveBannersProps) {
+  const styles = useStyles();
   const t = useT();
   // A won set is shown by the set-won panel instead of a banner.
   const { setPoint: side, warnings } = state;
@@ -52,21 +53,21 @@ export function LiveBanners({ state, opponent, playersById }: LiveBannersProps) 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   setPoint: {
-    backgroundColor: colors.highlight,
+    backgroundColor: theme.colors.highlight,
     borderRadius: radius.md,
     padding: spacing.md,
   },
-  setPointText: { ...typography.subheading, color: colors.onHighlight, textAlign: 'center' },
+  setPointText: { ...typography.subheading, color: theme.colors.onHighlight, textAlign: 'center' },
   warnings: {
     borderWidth: 2,
-    borderColor: colors.error,
+    borderColor: theme.colors.error,
     borderRadius: radius.md,
     padding: spacing.md,
     gap: spacing.xs,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
   },
-  warningsTitle: { ...typography.label, color: colors.error },
-  warning: { ...typography.body, color: colors.text },
-});
+  warningsTitle: { ...typography.label, color: theme.colors.error },
+  warning: { ...typography.body, color: theme.colors.text },
+}));

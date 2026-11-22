@@ -1,12 +1,13 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { useT } from '@/i18n';
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 import { Screen } from './Screen';
 
 /** Temporary content for screens that a feature task has not built yet. */
 export function Placeholder({ title }: { title: string }) {
+  const styles = useStyles();
   const t = useT();
   return (
     <Screen>
@@ -18,7 +19,7 @@ export function Placeholder({ title }: { title: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  title: { ...typography.heading, color: colors.text },
-  body: { ...typography.body, color: colors.textMuted },
-});
+const useStyles = makeStyles((theme) => ({
+  title: { ...typography.heading, color: theme.colors.text },
+  body: { ...typography.body, color: theme.colors.textMuted },
+}));

@@ -1,12 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { makePrimaryPosition, togglePosition } from '@/domain/roster';
 import { ALL_POSITIONS, type Position } from '@/domain/types';
 import { useT } from '@/i18n';
-import { colors, spacing, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 import { ChoiceChip } from './ChoiceChip';
-import { formStyles } from './styles';
+import { useFormStyles } from './styles';
 
 export interface PositionPickerProps {
   value: Position[];
@@ -16,6 +16,8 @@ export interface PositionPickerProps {
 
 /** Multi-select of positions; the first selected is primary and can be changed. */
 export function PositionPicker({ value, onChange, error }: PositionPickerProps) {
+  const styles = useStyles();
+  const formStyles = useFormStyles();
   const t = useT();
   const s = t.roster.player;
   return (
@@ -58,8 +60,8 @@ export function PositionPicker({ value, onChange, error }: PositionPickerProps) 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
-  error: { ...typography.label, color: colors.error },
-});
+  error: { ...typography.label, color: theme.colors.error },
+}));

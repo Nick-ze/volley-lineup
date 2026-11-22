@@ -1,8 +1,8 @@
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { useT } from '@/i18n';
-import { colors, dialogMaxWidth, radius, spacing, typography } from '@/theme';
+import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface UnlockDialogProps {
   visible: boolean;
@@ -12,6 +12,7 @@ export interface UnlockDialogProps {
 
 /** The in-app confirmation used where the device has no biometrics / PIN (web, nothing set up). */
 export function UnlockDialog({ visible, onConfirm, onCancel }: UnlockDialogProps) {
+  const styles = useStyles();
   const t = useT();
   const s = t.playerDetail.description;
   return (
@@ -32,10 +33,10 @@ export function UnlockDialog({ visible, onConfirm, onCancel }: UnlockDialogProps
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
@@ -43,12 +44,12 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: dialogMaxWidth,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.md,
   },
-  title: { ...typography.subheading, color: colors.text },
-  message: { ...typography.body, color: colors.text },
+  title: { ...typography.subheading, color: theme.colors.text },
+  message: { ...typography.body, color: theme.colors.text },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-});
+}));

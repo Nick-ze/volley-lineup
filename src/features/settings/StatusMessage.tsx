@@ -1,6 +1,6 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 export interface Status {
   tone: 'success' | 'error';
@@ -9,6 +9,7 @@ export interface Status {
 
 /** A one-line result message that screen readers announce. */
 export function StatusMessage({ status, testID }: { status: Status | null; testID?: string }) {
+  const styles = useStyles();
   if (!status) return null;
   const isError = status.tone === 'error';
   return (
@@ -23,7 +24,7 @@ export function StatusMessage({ status, testID }: { status: Status | null; testI
   );
 }
 
-const styles = StyleSheet.create({
-  text: { ...typography.body, color: colors.text },
-  error: { color: colors.error },
-});
+const useStyles = makeStyles((theme) => ({
+  text: { ...typography.body, color: theme.colors.text },
+  error: { color: theme.colors.error },
+}));

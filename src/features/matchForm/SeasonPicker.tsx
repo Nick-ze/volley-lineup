@@ -2,11 +2,11 @@ import { Text, View } from 'react-native';
 
 import type { Season } from '@/domain/types';
 import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
-import { formStyles } from '@/features/roster/components/styles';
+import { useFormStyles } from '@/features/roster/components/styles';
 import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 
-import { chipStyles } from './chipStyles';
+import { useChipStyles } from './chipStyles';
 
 export interface SeasonPickerProps {
   /** The team's seasons, newest first. */
@@ -23,6 +23,8 @@ export interface SeasonPickerProps {
 
 /** Which season / tournament the new match goes into: fixed, a choice, or a new one. */
 export function SeasonPicker(props: SeasonPickerProps) {
+  const formStyles = useFormStyles();
+  const chipStyles = useChipStyles();
   const { seasons, fixed, value, onChange, newName, onNewName, error } = props;
   const t = useT();
   const s = t.roster.matchForm;

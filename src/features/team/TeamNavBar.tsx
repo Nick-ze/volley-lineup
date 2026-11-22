@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useT, type Strings } from '@/i18n';
-import { colors, fontSize, spacing, touchTarget, typography } from '@/theme';
+import { fontSize, makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import { TEAM_TABS, type TeamTab } from './tabs';
 
@@ -47,6 +47,8 @@ export interface TeamNavBarProps {
  * like the app's main tab bar (which is not shown on the team screen, so there is only one bar).
  */
 export function TeamNavBar({ value, onChange }: TeamNavBarProps) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const t = useT();
   const insets = useSafeAreaInsets();
   return (
@@ -58,7 +60,7 @@ export function TeamNavBar({ value, onChange }: TeamNavBarProps) {
     >
       {TEAM_TABS.map((tab) => {
         const selected = tab === value;
-        const tint = selected ? colors.primary : colors.textMuted;
+        const tint = selected ? colors.primaryText : colors.textMuted;
         const { label, a11y } = labels(t, tab);
         return (
           <Pressable
@@ -87,12 +89,12 @@ export function TeamNavBar({ value, onChange }: TeamNavBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   bar: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: theme.colors.border,
   },
   item: {
     flex: 1,
@@ -105,4 +107,4 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   // Five items share 375 px: the label may shrink a little rather than be cut off.
   label: { ...typography.label, fontSize: fontSize.xs, paddingHorizontal: spacing.xxs },
-});
+}));

@@ -1,39 +1,39 @@
 import { StyleSheet } from 'react-native';
 
-import { listStyles } from '@/features/roster/components/styles';
-import { colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** Row height and width of a numeric column. */
 const ROW_HEIGHT = spacing.xxl;
 const CELL_WIDTH = touchTarget;
 
 /** Styles shared by `StatsTable` and its scrolling `StatsNumbers` part. */
-export const statsTableStyles = StyleSheet.create({
+export const useStatsTableStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
-  heading: listStyles.title,
+  // Same as the roster list's title (`useListStyles().title`).
+  heading: { ...typography.subheading, color: theme.colors.text },
   // As wide as its columns, but never wider than the screen (then the numbers scroll).
   table: {
     flexDirection: 'row',
     alignSelf: 'flex-start',
     maxWidth: '100%',
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   scroller: { flexGrow: 0, flexShrink: 1 },
   row: { flexDirection: 'row' },
   cell: {
     ...typography.body,
-    color: colors.text,
+    color: theme.colors.text,
     height: ROW_HEIGHT,
     lineHeight: ROW_HEIGHT,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
-  headCell: { paddingHorizontal: spacing.sm, backgroundColor: colors.surfaceRaised },
-  header: { ...typography.label, color: colors.textMuted, lineHeight: ROW_HEIGHT },
+  headCell: { paddingHorizontal: spacing.sm, backgroundColor: theme.colors.surfaceRaised },
+  header: { ...typography.label, color: theme.colors.textMuted, lineHeight: ROW_HEIGHT },
   num: { width: CELL_WIDTH, textAlign: 'center' },
-  legend: { ...typography.caption, color: colors.textMuted },
-});
+  legend: { ...typography.caption, color: theme.colors.textMuted },
+}));

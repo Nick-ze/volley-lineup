@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
-import { borderWidth, colors, radius, spacing, touchTarget, typography } from '@/theme';
+import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface TagChipProps {
   label: string;
@@ -21,6 +21,7 @@ export function TagChip({
   onPress,
   testID,
 }: TagChipProps) {
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -45,21 +46,21 @@ export function TagChip({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   chip: {
     minHeight: touchTarget,
     minWidth: touchTarget,
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  highlighted: { borderColor: colors.highlight, borderWidth: borderWidth.thick },
-  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  highlighted: { borderColor: theme.colors.highlightText, borderWidth: borderWidth.thick },
+  selected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   pressed: { opacity: 0.8 },
-  label: { ...typography.body, fontWeight: '600', color: colors.text },
-  selectedLabel: { color: colors.onPrimary },
-});
+  label: { ...typography.body, fontWeight: '600', color: theme.colors.text },
+  selectedLabel: { color: theme.colors.onPrimary },
+}));

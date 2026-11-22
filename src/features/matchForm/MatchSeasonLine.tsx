@@ -1,12 +1,13 @@
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import type { Match } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useSeason } from '@/store';
-import { colors, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 /** v7.0: "2026/27 · Season" — the season / tournament a match belongs to (match header). */
 export function MatchSeasonLine({ match }: { match: Pick<Match, 'seasonId'> }) {
+  const styles = useStyles();
   const t = useT();
   const season = useSeason(match.seasonId);
   if (!season) return null;
@@ -17,6 +18,6 @@ export function MatchSeasonLine({ match }: { match: Pick<Match, 'seasonId'> }) {
   );
 }
 
-const styles = StyleSheet.create({
-  line: { ...typography.label, color: colors.textMuted },
-});
+const useStyles = makeStyles((theme) => ({
+  line: { ...typography.label, color: theme.colors.textMuted },
+}));
