@@ -1,5 +1,6 @@
 import { ScrollView, Text, View } from 'react-native';
 
+import { NoTabSwipe } from '@/components';
 import { useT } from '@/i18n';
 
 import type { StatsColumn, StatsRow } from './StatsTable';
@@ -20,37 +21,40 @@ export function StatsNumbers({ heading, columns, rows, testID }: StatsNumbersPro
   const styles = useStatsTableStyles();
   const t = useT();
   return (
-    <ScrollView
-      horizontal
-      style={styles.scroller}
-      accessibilityLabel={t.stats.tableScrollLabel(heading)}
-    >
-      <View>
-        <View style={styles.row}>
-          {columns.map((c) => (
-            <Text
-              key={c.key}
-              style={[styles.cell, styles.header, styles.num]}
-              accessibilityLabel={c.meaning}
-            >
-              {c.label}
-            </Text>
-          ))}
-        </View>
-        {rows.map((row) => (
-          <View key={row.key} style={styles.row} importantForAccessibility="no-hide-descendants">
-            {columns.map((c, i) => (
+    // v8: dragging the table sideways scrolls it, never the tab swipe around it.
+    <NoTabSwipe>
+      <ScrollView
+        horizontal
+        style={styles.scroller}
+        accessibilityLabel={t.stats.tableScrollLabel(heading)}
+      >
+        <View>
+          <View style={styles.row}>
+            {columns.map((c) => (
               <Text
                 key={c.key}
-                style={[styles.cell, styles.num]}
-                testID={`${testID}-${row.key}-${c.key}`}
+                style={[styles.cell, styles.header, styles.num]}
+                accessibilityLabel={c.meaning}
               >
-                {row.cells[i]}
+                {c.label}
               </Text>
             ))}
           </View>
-        ))}
-      </View>
-    </ScrollView>
+          {rows.map((row) => (
+            <View key={row.key} style={styles.row} importantForAccessibility="no-hide-descendants">
+              {columns.map((c, i) => (
+                <Text
+                  key={c.key}
+                  style={[styles.cell, styles.num]}
+                  testID={`${testID}-${row.key}-${c.key}`}
+                >
+                  {row.cells[i]}
+                </Text>
+              ))}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </NoTabSwipe>
   );
 }

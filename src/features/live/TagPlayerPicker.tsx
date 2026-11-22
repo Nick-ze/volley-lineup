@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { NoTabSwipe } from '@/components';
 import { plausiblePlayerIds, type LastRally } from '@/domain/lastRally';
 import { kindTakesErrorType } from '@/domain/pointTags';
 import type { ErrorType, Player, PointKind } from '@/domain/types';
@@ -62,35 +63,38 @@ export function TagPlayerPicker({
   );
   return (
     <View style={styles.row} accessibilityLabel={t.tags.playersLabel(name)} testID="point-tag-row">
-      <ScrollView
-        horizontal
-        style={styles.scroll}
-        contentContainerStyle={styles.chips}
-        keyboardShouldPersistTaps="handled"
-      >
-        {kindTakesErrorType(kind) ? (
-          <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
-        ) : (
-          kindChip
-        )}
-        {onCourt.map((p) => {
-          const selected = p.id === chosen;
-          const desc = playerDescription(t, p);
-          return (
-            <TagChip
-              key={p.id}
-              label={playerRef(t, playersById, p.id)}
-              accessibilityLabel={
-                selected ? t.tags.clearPlayer(desc) : t.tags.choosePlayer(desc, name)
-              }
-              selected={selected}
-              highlighted={served && p.id === rally.serverId}
-              onPress={() => onTag(kind, selected ? null : p.id)}
-              testID={`tag-player-${p.id}`}
-            />
-          );
-        })}
-      </ScrollView>
+      {/* v8: dragging the chips sideways scrolls them, never the Live ↔ Performance swipe. */}
+      <NoTabSwipe>
+        <ScrollView
+          horizontal
+          style={styles.scroll}
+          contentContainerStyle={styles.chips}
+          keyboardShouldPersistTaps="handled"
+        >
+          {kindTakesErrorType(kind) ? (
+            <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
+          ) : (
+            kindChip
+          )}
+          {onCourt.map((p) => {
+            const selected = p.id === chosen;
+            const desc = playerDescription(t, p);
+            return (
+              <TagChip
+                key={p.id}
+                label={playerRef(t, playersById, p.id)}
+                accessibilityLabel={
+                  selected ? t.tags.clearPlayer(desc) : t.tags.choosePlayer(desc, name)
+                }
+                selected={selected}
+                highlighted={served && p.id === rally.serverId}
+                onPress={() => onTag(kind, selected ? null : p.id)}
+                testID={`tag-player-${p.id}`}
+              />
+            );
+          })}
+        </ScrollView>
+      </NoTabSwipe>
       {close}
     </View>
   );

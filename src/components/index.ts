@@ -10,4 +10,6 @@ export * from './HeaderTitle';
 export * from './RoleTag';
 export * from './OffPositionMark';
 export * from './Photo';
+export * from './SlideTransition';
+export * from './SwipeTabs';
 export * from './TeamAvatar';

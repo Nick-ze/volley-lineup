@@ -1,13 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
-import { Screen } from '@/components';
+import { Screen, SwipeTabs } from '@/components';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { SeasonHeader } from '@/features/seasons/SeasonHeader';
 import { SeasonMatches } from '@/features/seasons/SeasonMatches';
 import { SeasonOpponents } from '@/features/seasons/SeasonOpponents';
 import { SeasonStats } from '@/features/seasons/SeasonStats';
-import { parseSeasonTab } from '@/features/seasons/seasonTabs';
+import { parseSeasonTab, SEASON_TABS, type SeasonTab } from '@/features/seasons/seasonTabs';
 import { useT } from '@/i18n';
 import { useOpponentsForSeason, useSeason, useTeam } from '@/store';
 
@@ -39,37 +39,41 @@ export default function SeasonScreen() {
       />
     );
 
+  const selectTab = (next: SeasonTab) => {
+    setOpponentId(null);
+    router.setParams({ tab: next });
+  };
   return (
     <Screen>
       <Stack.Screen options={{ title: team.name }} />
       <SeasonHeader
         season={season}
         tab={tab}
-        onTab={(next) => {
-          setOpponentId(null);
-          router.setParams({ tab: next });
-        }}
+        onTab={selectTab}
         onEdit={() => router.push(`/team/${team.id}/season-new?seasonId=${season.id}`)}
       />
-      {tab === 'matches' ? (
-        <SeasonMatches
-          seasonId={season.id}
-          opponent={opponent}
-          onClearOpponent={() => setOpponentId(null)}
-          onNewMatch={() => router.push(`/team/${team.id}/match-new?seasonId=${season.id}`)}
-          onOpenMatch={(matchId) => router.push(`/match/${matchId}`)}
-        />
-      ) : null}
-      {tab === 'opponents' ? (
-        <SeasonOpponents
-          seasonId={season.id}
-          onOpenOpponent={(id) => {
-            setOpponentId(id);
-            router.setParams({ tab: 'matches' });
-          }}
-        />
-      ) : null}
-      {tab === 'stats' ? <SeasonStats teamId={team.id} seasonId={season.id} /> : null}
+      {/* v8: the tab slides in from its side; a sideways swipe changes the tab. */}
+      <SwipeTabs tabs={SEASON_TABS} value={tab} onChange={selectTab} testID="season-tab-swipe">
+        {tab === 'matches' ? (
+          <SeasonMatches
+            seasonId={season.id}
+            opponent={opponent}
+            onClearOpponent={() => setOpponentId(null)}
+            onNewMatch={() => router.push(`/team/${team.id}/match-new?seasonId=${season.id}`)}
+            onOpenMatch={(matchId) => router.push(`/match/${matchId}`)}
+          />
+        ) : null}
+        {tab === 'opponents' ? (
+          <SeasonOpponents
+            seasonId={season.id}
+            onOpenOpponent={(id) => {
+              setOpponentId(id);
+              router.setParams({ tab: 'matches' });
+            }}
+          />
+        ) : null}
+        {tab === 'stats' ? <SeasonStats teamId={team.id} seasonId={season.id} /> : null}
+      </SwipeTabs>
     </Screen>
   );
 }

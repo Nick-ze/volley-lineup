@@ -1,8 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs } from 'expo-router/js-tabs';
-import { useEffect, type ComponentProps } from 'react';
+import { useRouter } from 'expo-router';
+import { Tabs, type BottomTabNavigationOptions } from 'expo-router/js-tabs';
+import { useEffect, type ComponentProps, type ReactElement } from 'react';
 import type { ColorValue } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { SwipeTabs } from '@/components';
+import {
+  SLIDE_DURATION_MS,
+  SLIDE_FALLBACK_DISTANCE,
+  SLIDE_START_OPACITY,
+} from '@/domain/tabMotion';
 
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { useT } from '@/i18n';
@@ -36,6 +45,52 @@ function TabIcon({
   return <Ionicons name={focused ? active : inactive} size={size} color={tint} />;
 }
 
+/** The tabs in bar order (v8: swipe left → the next one). */
+const APP_TABS = ['teams', 'profile', 'settings'] as const;
+type AppTab = (typeof APP_TABS)[number];
+
+/**
+ * v8: the chosen tab slides in from its side (the bar's `shift` animation: screens right of the
+ * focused one sit at progress 1, left ones at -1) while the old one fades out.
+ */
+const slideScenes: NonNullable<BottomTabNavigationOptions['sceneStyleInterpolator']> = ({
+  current,
+}) => ({
+  sceneStyle: {
+    opacity: current.progress.interpolate({
+      inputRange: [-1, 0, 1],
+      outputRange: [SLIDE_START_OPACITY, 1, SLIDE_START_OPACITY],
+    }),
+    transform: [
+      {
+        translateX: current.progress.interpolate({
+          inputRange: [-1, 0, 1],
+          outputRange: [-SLIDE_FALLBACK_DISTANCE, 0, SLIDE_FALLBACK_DISTANCE],
+        }),
+      },
+    ],
+  },
+});
+
+const isAppTab = (name: string): name is AppTab => (APP_TABS as readonly string[]).includes(name);
+
+/** v8: a sideways swipe on a tab screen goes to the neighbouring tab. */
+function TabSwipe({ name, children }: { name: string; children: ReactElement }) {
+  const router = useRouter();
+  if (!isAppTab(name)) return children;
+  return (
+    <SwipeTabs
+      tabs={APP_TABS}
+      value={name}
+      onChange={(next) => router.navigate(`/${next}`)}
+      testID={`app-tab-swipe-${name}`}
+      size="fill"
+    >
+      {children}
+    </SwipeTabs>
+  );
+}
+
 /**
  * Bottom tab bar for the three top-level screens (Teams, Profile, Settings). Detail screens
  * (team, match, …) live in the root Stack and are pushed over the tabs, without a tab bar.
@@ -45,12 +100,18 @@ export default function TabsLayout() {
   const styles = useStyles();
   const t = useT();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   // Any tab counts as "past the picker": from now on `/` never auto-forwards (DECISIONS #28).
   useEffect(markStartupHandled, []);
 
   return (
     <Tabs
+      screenLayout={({ route, children }) => <TabSwipe name={route.name}>{children}</TabSwipe>}
       screenOptions={{
+        // v8: slide between tabs; the OS "reduce motion" setting switches tabs instantly.
+        animation: reduceMotion ? 'none' : 'shift',
+        transitionSpec: { animation: 'timing', config: { duration: SLIDE_DURATION_MS } },
+        sceneStyleInterpolator: slideScenes,
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
         headerTitleStyle: { color: colors.text },

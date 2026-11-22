@@ -80,6 +80,9 @@ export function LineupCourt({
     <>
       <Court
         testID="lineup-court"
+        // v8: Rotate ↺ / ↻ slides every player (with role and "*") to their new spot; drops and
+        // swaps are not rotations and change at once.
+        slotKeys={set.slots}
         renderSlot={renderSlot}
         slotRef={(position, view) => drag.registerZone({ kind: 'slot', position }, view)}
         slotStyle={({ position }) => [

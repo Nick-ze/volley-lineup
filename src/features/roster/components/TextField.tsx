@@ -1,5 +1,6 @@
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
+import { NoTabSwipe } from '@/components';
 import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 export interface TextFieldProps extends Pick<
@@ -21,16 +22,19 @@ export function TextField({ label, value, onChangeText, error, testID, ...rest }
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        accessibilityHint={error}
-        value={value}
-        onChangeText={onChangeText}
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, error ? styles.inputError : null]}
-        testID={testID}
-        {...rest}
-      />
+      {/* v8: selecting text by dragging never swipes the tab. */}
+      <NoTabSwipe>
+        <TextInput
+          accessibilityLabel={label}
+          accessibilityHint={error}
+          value={value}
+          onChangeText={onChangeText}
+          placeholderTextColor={colors.textMuted}
+          style={[styles.input, error ? styles.inputError : null]}
+          testID={testID}
+          {...rest}
+        />
+      </NoTabSwipe>
       {error ? (
         <Text style={styles.error} accessibilityLiveRegion="polite" accessibilityRole="alert">
           {error}
