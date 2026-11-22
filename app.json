@@ -2,11 +2,11 @@
   "expo": {
     "name": "Volley Lineup",
     "slug": "volley-lineup",
-    "version": "7.0.0",
+    "version": "8.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "volleylineup",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#0D0D0D",
     "android": {
       "adaptiveIcon": {

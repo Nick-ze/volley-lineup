@@ -9,6 +9,7 @@ import type {
   Team,
 } from '@/domain/types';
 import type { PresetLineup } from '@/domain/presets';
+import type { ThemeMode } from '@/theme/theme';
 
 /** The persisted data. Bump STORE_VERSION and add a migration when this shape changes. */
 export interface AppData {
@@ -29,11 +30,18 @@ export type Language = 'en' | 'de';
 /** What the player chips show big (v3.1): the jersey number (default) or the name. */
 export type ChipLabel = 'number' | 'name';
 
+/** v8 (store v10): the app's colour theme. 'system' follows the device's light / dark mode. */
+export type { ThemeMode };
+
 export interface AppState extends AppData {
   currentProfileId: string | null;
   language: Language;
   /** v3.1 (store v5): a device setting like the language — not exported. */
   chipLabel: ChipLabel;
+  /** v8 (store v10): device settings like the language — kept on "Delete all data", not exported. */
+  themeMode: ThemeMode;
+  /** v8 (store v10): all text in the dyslexia-friendly font (OpenDyslexic). */
+  dyslexiaFont: boolean;
   /** True once persisted state has been loaded from storage. Not persisted. */
   hydrated: boolean;
 }
@@ -95,6 +103,8 @@ export interface AppActions {
   resetAll(): void;
   setLanguage(language: Language): void;
   setChipLabel(chipLabel: ChipLabel): void;
+  setThemeMode(themeMode: ThemeMode): void;
+  setDyslexiaFont(on: boolean): void;
   setHydrated(value: boolean): void;
 }
 

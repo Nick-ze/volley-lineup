@@ -6,7 +6,7 @@
  * URIs in their own storage (one key per photo, `src/store/photoStore.ts`), so the main store
  * stays small. Profiles and players only hold a `photoId`.
  */
-import type { ManagerProfile, Photo, Player } from './types';
+import type { ManagerProfile, Photo, Player, Team } from './types';
 
 /** Longest side of a stored picture, in px. */
 export const PHOTO_SIZE = 256;
@@ -31,9 +31,11 @@ export function isPhotoDataUri(value: string): boolean {
 export function referencedPhotoIds(data: {
   profiles: readonly Pick<ManagerProfile, 'photoId'>[];
   players: readonly Pick<Player, 'photoId'>[];
+  /** v8 (data model v9): team pictures. */
+  teams: readonly Pick<Team, 'photoId'>[];
 }): Set<string> {
   const ids = new Set<string>();
-  for (const x of [...data.profiles, ...data.players]) {
+  for (const x of [...data.profiles, ...data.players, ...data.teams]) {
     if (x.photoId !== undefined) ids.add(x.photoId);
   }
   return ids;

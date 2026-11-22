@@ -18,10 +18,12 @@
  * v8 → v9 (app 7.0): seasons / tournaments. Every team gets one season holding all its matches,
  * every distinct opponent name becomes an opponent of it (`upgradeToSeasons`, the same step as
  * for v7 export files); matches get `seasonId` + `opponentId`.
+ * v9 → v10 (app 8.0): device settings `themeMode: 'dark'` (the look so far) and
+ * `dyslexiaFont: false`; teams may have a `photoId` (optional, no data change).
  */
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
-export const STORE_VERSION = 9;
+export const STORE_VERSION = 10;
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -78,5 +80,7 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion < 6 && isRec(state)) state = v5ToV6(state);
   if (fromVersion < 7 && isRec(state)) state = v6ToV7(state);
   if (fromVersion < 9 && isRec(state)) state = upgradeToSeasons(state);
+  if (fromVersion < 10 && isRec(state))
+    state = { themeMode: 'dark', dyslexiaFont: false, ...state };
   return state;
 }

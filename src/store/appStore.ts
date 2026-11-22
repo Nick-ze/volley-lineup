@@ -28,6 +28,8 @@ const initialState = (): AppState => ({
   currentProfileId: null,
   language: 'en',
   chipLabel: 'number',
+  themeMode: 'dark',
+  dyslexiaFont: false,
   hydrated: false,
 });
 
@@ -214,6 +216,8 @@ export const useAppStore = create<AppStore>()(
       setHydrated: (value) => set({ hydrated: value }),
       setLanguage: (language) => set({ language }),
       setChipLabel: (chipLabel) => set({ chipLabel }),
+      setThemeMode: (themeMode) => set({ themeMode }),
+      setDyslexiaFont: (dyslexiaFont) => set({ dyslexiaFont }),
     }),
     {
       name: STORAGE_KEY,
@@ -231,6 +235,8 @@ export const useAppStore = create<AppStore>()(
         currentProfileId: s.currentProfileId,
         language: s.language,
         chipLabel: s.chipLabel,
+        themeMode: s.themeMode,
+        dyslexiaFont: s.dyslexiaFont,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);

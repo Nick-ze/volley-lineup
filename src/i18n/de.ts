@@ -19,6 +19,9 @@ import { photos } from './de/photos';
 import { playerDetail } from './de/playerDetail';
 import { performance } from './de/performance';
 import { seasons } from './de/seasons';
+import { appearance } from './de/appearance';
+import { teamPhoto } from './de/teamPhoto';
+import { motion } from './de/motion';
 import type { Strings } from './en';
 
 export const de: Strings = {
@@ -101,4 +104,7 @@ export const de: Strings = {
   playerDetail,
   performance,
   seasons,
+  appearance,
+  teamPhoto,
+  motion,
 };

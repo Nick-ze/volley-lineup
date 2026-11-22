@@ -60,6 +60,16 @@ describe('validateNewMatch', () => {
     });
   });
 
+  it('accepts dd.mm.yy and dd.mm.yyyy and stores ISO (v8)', () => {
+    const swiss = validateNewMatch(input({ opponentId: 'o1', date: ' 21.11.26 ' }), ctx);
+    expect(swiss.ok && swiss.value.date).toBe('2026-11-21');
+    const long = validateNewMatch(input({ opponentId: 'o1', date: '1.2.2027' }), ctx);
+    expect(long.ok && long.value.date).toBe('2027-02-01');
+    expect(validateNewMatch(input({ opponentId: 'o1', date: '30.02.27' }), ctx).errors).toEqual({
+      date: 'invalidDate',
+    });
+  });
+
   it('requires an opponent and a valid date', () => {
     expect(validateNewMatch(input({ opponentName: '   ', date: '2026-02-30' }), ctx)).toEqual({
       ok: false,

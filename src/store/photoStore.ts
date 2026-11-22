@@ -98,7 +98,7 @@ export function usePhotoUri(photoId: string | undefined): string | null {
 }
 
 /**
- * Deletes the photos no profile or player refers to, and (v6 QA) clears a `photoId` whose
+ * Deletes the photos no profile, player or (v8) team refers to, and (v6 QA) clears a `photoId` whose
  * photo is missing, e.g. after a failed storage write — only once both stores have loaded.
  */
 export async function prunePhotos(): Promise<void> {
@@ -108,6 +108,7 @@ export async function prunePhotos(): Promise<void> {
   const dangling = (x: { photoId?: string }) => x.photoId !== undefined && !(x.photoId in photos);
   for (const p of app.profiles.filter(dangling)) app.updateProfile(p.id, { photoId: undefined });
   for (const p of app.players.filter(dangling)) app.updatePlayer(p.id, { photoId: undefined });
+  for (const x of app.teams.filter(dangling)) app.updateTeam(x.id, { photoId: undefined });
   const keep = referencedPhotoIds(app);
   const orphans = Object.keys(photos).filter((id) => !keep.has(id));
   if (orphans.length === 0) return;
@@ -148,12 +149,13 @@ export function resetPhotoStoreForTests(): void {
   usePhotoStore.setState({ photos: {}, hydrated: false });
 }
 
-// Prune whenever the profiles or players change (e.g. a player deleted, a photo replaced, an
+// Prune whenever the profiles, players or (v8) teams change (e.g. a player deleted, a photo replaced, an
 // import, "Delete all data") and once the main store has loaded.
 useAppStore.subscribe((state, prev) => {
   if (
     state.profiles !== prev.profiles ||
     state.players !== prev.players ||
+    state.teams !== prev.teams ||
     state.hydrated !== prev.hydrated
   ) {
     void prunePhotos();

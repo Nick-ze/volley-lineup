@@ -53,6 +53,8 @@ export interface Team {
   name: string;
   season?: string;
   createdAt: string;
+  /** v9 (app 8.0): the team's picture (`Photo.id`); none = the team's initial. */
+  photoId?: string;
 }
 
 /** v8: a season (league) or a tournament of a team. Every match belongs to one. */
@@ -192,14 +194,14 @@ export interface LineupPreset {
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 8;
+  schemaVersion: 9;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
   players: Player[];
   matches: Match[];
   presets: LineupPreset[];
-  /** v7: the pictures referenced by profiles and players. */
+  /** v7: the pictures referenced by profiles and players (v9: and teams). */
   photos: Photo[];
   /** v8: seasons / tournaments and their opponent teams. */
   seasons: Season[];
