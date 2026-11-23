@@ -28,6 +28,7 @@
 import { findLiberoSwap } from './liberoSwap';
 import { replaySteps, type Score } from './liveSet';
 import { getMatchState } from './matchState';
+import { memoByIdentity, memoByIdentity2 } from './memo';
 import { ROTATION_NUMBERS, serverPosition, type RotationNumber } from './rotation';
 import {
   COURT_POSITIONS,
@@ -132,8 +133,10 @@ export function sideOutRate(line: Pick<RotationStats, 'received' | 'sideOuts'>):
   return line.received === 0 ? null : line.sideOuts / line.received;
 }
 
-/** The statistics of one set. */
-export function setStats(set: SetLineup, players: readonly Player[]): Stats {
+/** The statistics of one set. v8.3: cached per set and players array (shared: never mutate it). */
+export const setStats = memoByIdentity2(setStatsOf);
+
+function setStatsOf(set: SetLineup, players: readonly Player[]): Stats {
   const stats = emptyStats();
   const steps = replaySteps(set, players);
   if (!steps.some((s) => s.type === 'point')) return stats;
@@ -214,10 +217,19 @@ export function combineStats(list: readonly Stats[]): Stats {
   return total;
 }
 
-/** The match's sets that count for the result, in set order. */
-export function countedSets(match: Pick<Match, 'sets'>): SetLineup[] {
-  const numbers = new Set(getMatchState(match).sets.map((s) => s.setNumber));
-  return [...match.sets]
+/**
+ * The match's sets that count for the result, in set order. v8.3: cached per `match.sets` array
+ * (shared: never mutate it).
+ */
+export function countedSets(match: Pick<Match, 'sets'>): readonly SetLineup[] {
+  return countedOf(match.sets);
+}
+
+const countedOf = memoByIdentity(countedOfSets);
+
+function countedOfSets(sets: SetLineup[]): readonly SetLineup[] {
+  const numbers = new Set(getMatchState({ sets }).sets.map((s) => s.setNumber));
+  return [...sets]
     .filter((s) => numbers.has(s.setNumber))
     .sort((a, b) => a.setNumber - b.setNumber);
 }

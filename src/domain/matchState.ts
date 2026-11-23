@@ -7,6 +7,7 @@
  * set and match ends weren't enforced).
  */
 import { setWinnerOf, targetPoints, type Score } from './liveSet';
+import { memoByIdentity } from './memo';
 import { SET_NUMBERS, type Match, type SetLineup, type SetNumber, type Side } from './types';
 
 /** Sets needed to win a match (best of 5). */
@@ -52,8 +53,10 @@ export interface MatchState {
   durationMs: number | null;
 }
 
-/** The result of one set. */
-export function setResult(set: SetLineup): SetResult {
+/** The result of one set. v8.3: cached per set object (shared: never mutate it). */
+export const setResult = memoByIdentity(setResultOf);
+
+function setResultOf(set: SetLineup): SetResult {
   const score = setScore(set);
   const winner = setWinnerOf(score, targetPoints(set.setNumber));
   const started = score.us + score.them > 0;
@@ -72,9 +75,18 @@ export function durationOf(sets: readonly SetLineup[]): number | null {
   return Math.max(...times) - Math.min(...times);
 }
 
-/** The whole match's result, replayed from its sets' events. */
+/**
+ * The whole match's result, replayed from its sets' events. v8.3: cached per `match.sets` array,
+ * which an unchanged match keeps (shared: never mutate it).
+ */
 export function getMatchState(match: Pick<Match, 'sets'>): MatchState {
-  const ordered = [...match.sets].sort((a, b) => a.setNumber - b.setNumber);
+  return matchStateOf(match.sets);
+}
+
+const matchStateOf = memoByIdentity(matchStateOfSets);
+
+function matchStateOfSets(stored: readonly SetLineup[]): MatchState {
+  const ordered = [...stored].sort((a, b) => a.setNumber - b.setNumber);
   const setsWon: Score = { us: 0, them: 0 };
   const sets: SetResult[] = [];
   const counted: SetLineup[] = [];
