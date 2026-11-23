@@ -4,7 +4,7 @@ import { renderRouter } from 'expo-router/testing-library';
 import type { Player, SetLineup } from '@/domain/types';
 import { useAppStore } from '@/store';
 
-import { match, players, seedStore, set1 } from '../__fixtures__/seed';
+import { match, players, seedStore, set1 } from '@/test-utils/rotationSeed';
 
 const hidden = { includeHiddenElements: true };
 const title = () => screen.getByTestId('rotation-title');

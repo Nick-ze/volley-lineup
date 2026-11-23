@@ -2,7 +2,7 @@
  * Test helper (v7.0): the `seasonId` / `opponentId` for a new match of `teamId` against
  * `opponent` — the team's first season (created when there is none) and a new opponent.
  */
-import { useAppStore } from './appStore';
+import { useAppStore } from '@/store/appStore';
 
 export function seasonRefs(teamId: string, opponent: string) {
   const store = useAppStore.getState();

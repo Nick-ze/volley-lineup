@@ -5,7 +5,7 @@ import { resetStartupRedirect } from '@/features/roster/hooks/useStartupRedirect
 import { t } from '@/i18n/en';
 import { pickPhoto } from '@/lib/pickPhoto';
 import { useAppStore, usePhotoStore } from '@/store';
-import { seasonRefs } from '@/store/testSeason';
+import { seasonRefs } from '@/test-utils/seasonRefs';
 
 jest.mock('@/lib/pickPhoto', () => ({
   canTakePhoto: jest.fn(() => false),

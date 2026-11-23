@@ -3,7 +3,7 @@ import { fireEvent, screen, within } from '@testing-library/react-native';
 
 import { useAppStore } from '@/store';
 
-import { seedStore } from '../__fixtures__/seed';
+import { seedStore } from '@/test-utils/rotationSeed';
 
 describe('starters overview', () => {
   beforeEach(() => seedStore());

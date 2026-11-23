@@ -3,7 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { emptySetLineup } from '@/domain/lineup';
 import type { Player, SetLineup } from '@/domain/types';
-import { rosterPlayers } from '@/features/presets/__fixtures__/team';
+import { rosterPlayers } from '@/test-utils/presetsTeam';
 import { useAppStore } from '@/store';
 
 /** The fixture roster, with Olga (#2, OH) also listed as an opposite. */

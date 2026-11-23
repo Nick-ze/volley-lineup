@@ -7,7 +7,7 @@ import { pickTextFile, saveTextFile } from '@/lib/fileTransfer';
 import { selectAppData, useAppStore, type AppData } from '@/store';
 
 import { SettingsScreen } from '../SettingsScreen';
-import { seasonRefs } from '@/store/testSeason';
+import { seasonRefs } from '@/test-utils/seasonRefs';
 
 jest.mock('@/lib/fileTransfer', () => ({
   saveTextFile: jest.fn(() => Promise.resolve()),

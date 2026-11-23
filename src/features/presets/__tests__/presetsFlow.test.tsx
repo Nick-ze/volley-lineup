@@ -4,7 +4,7 @@ import { renderRouter } from 'expo-router/testing-library';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
-import { fullLineup, seedTeam } from '../__fixtures__/team';
+import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
 
 const store = () => useAppStore.getState();
 const s = t.presets;

@@ -4,7 +4,7 @@ import { renderRouter } from 'expo-router/testing-library';
 import { emptySetLineup } from '@/domain/lineup';
 import type { SetLineup } from '@/domain/types';
 
-import { match, seedStore, set1 } from '../__fixtures__/seed';
+import { match, seedStore, set1 } from '@/test-utils/rotationSeed';
 
 const hidden = { includeHiddenElements: true };
 const next = () => fireEvent.press(screen.getByRole('button', { name: 'Next rotation' }));

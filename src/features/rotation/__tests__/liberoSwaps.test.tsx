@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
-import { match, seedStore, set1 } from '../__fixtures__/seed';
+import { match, seedStore, set1 } from '@/test-utils/rotationSeed';
 
 const spot = (position: number) =>
   within(screen.getByTestId(`court-slot-${position}`)).getByTestId(`spot-${position}`);

@@ -4,7 +4,7 @@ import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-han
 
 import { useAppStore } from '@/store';
 
-import { seedStore } from '../__fixtures__/seed';
+import { seedStore } from '@/test-utils/rotationSeed';
 
 /** Jersey number shown at a court spot. */
 const numberAt = (position: number) =>
