@@ -171,6 +171,8 @@ New in **v8 — Look & feel**:
 - **Smooth transitions** — tabs slide in from the side you chose, a sideways swipe changes tabs, and players slide to their new spots when the lineup rotates (off when your device asks for reduced motion).
 - **New app icon**.
 
+New in **v8.1**: drag between tabs — the page follows your finger and the next tab slides in beside it; let go past a third (or flick) to switch, otherwise it springs back.
+
 Your data opens automatically; files exported by v8 (schema version 9, with team pictures) can't be opened by older versions.
 
 Data and files from v5 open automatically; files exported by v6 (schema version 7, with photos) can't be opened by older versions.
