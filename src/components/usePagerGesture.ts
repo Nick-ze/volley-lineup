@@ -3,6 +3,7 @@ import { cancelAnimation, useSharedValue } from 'react-native-reanimated';
 
 import {
   NO_PAGE,
+  TAB_SETTLE_MIN_MS,
   TAB_SWIPE_ACTIVATION as OFFSET,
   dragCommit,
   dragFromTab,
@@ -37,6 +38,8 @@ export function usePagerGesture(pager: Pager, count: number, testID: string): Pa
   const origin = useSharedValue(0);
   /** When the finger last moved (ms), to tell a flick from a pause before letting go. */
   const lastMove = useSharedValue(0);
+  /** This drag began while the last one was still going on to its tab (it may be queued). */
+  const waiting = useSharedValue(false);
   return usePanGesture({
     // Web: vertical touch scrolling stays with the browser; the right-click menu keeps working.
     // The detector's own `touchAction` prop doesn't reach a hook gesture's view; these web-only
@@ -49,11 +52,14 @@ export function usePagerGesture(pager: Pager, count: number, testID: string): Pa
     failOffsetY: [-OFFSET, OFFSET],
     onActivate: (e) => {
       tracking.set(false);
+      waiting.set(false);
       origin.set(e.translationX);
       if (blocked.value) return;
       // The card under the pointer must not open on release (web mouse).
       callReact(cancelPress);
+      if (busy.value) waiting.set(true);
       if (busy.value || aliasPage.value !== NO_PAGE) return;
+      queued.set(0);
       cancelAnimation(position);
       start.set(position.value);
       tracking.set(true);
@@ -70,9 +76,21 @@ export function usePagerGesture(pager: Pager, count: number, testID: string): Pa
       const velocity = releaseVelocity(e.velocityX, Date.now() - lastMove.value);
       const stopped = e.canceled || blocked.value;
       if (!tracking.value) {
-        // During a commit: queue a flick (or a long drag) for when the new tab is shown.
-        const offset = dragOffset(e.translationX, origin.value);
-        if (busy.value && !stopped) queued.set(dragCommit(offset, velocity, width.value, true));
+        // Begun during a commit: a flick (or a long drag) goes on once the new tab is shown —
+        // queued while it still isn't, at once if it already is (review: no lost flick).
+        if (!waiting.value || stopped) return;
+        waiting.set(false);
+        const step = dragCommit(
+          dragOffset(e.translationX, origin.value),
+          velocity,
+          width.value,
+          true,
+        );
+        if (busy.value) queued.set(step);
+        else {
+          const next = stepTab(current.value, step, count);
+          if (next !== null && aliasPage.value === NO_PAGE) settle(next, TAB_SETTLE_MIN_MS, true);
+        }
         return;
       }
       tracking.set(false);

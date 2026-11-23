@@ -93,12 +93,13 @@ describe('profile photos', () => {
 
     await fireEvent.press(screen.getByLabelText(t.profile.editLabel('Coach')));
     await press(s.remove);
+    // Unsaved: the Teams tab beside it still shows the stored photo, so only the Profile tab counts.
     expect(profileTabPhotoCount()).toBe(0);
     await press(t.common.save);
     expect(store().profiles[0].photoId).toBeUndefined();
     expect(photos()).toEqual({});
     expect(screen.getByTestId('profile-card')).toHaveTextContent(/C/);
-    expect(profileTabPhotoCount()).toBe(0);
+    expect(photoCount()).toBe(0);
   });
 
   it('the profile list shows photos and edits them', async () => {

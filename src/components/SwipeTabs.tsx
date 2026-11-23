@@ -25,16 +25,11 @@ export interface SwipeTabsProps<T> {
   renderTab: (tab: T) => ReactNode;
   /** Gesture test id (`getByGestureTestId`); unique per screen. */
   testID: string;
-  /**
-   * `grow` (default): content inside a page's ScrollView, at least as tall as the page.
-   * `fill`: a whole screen with its own ScrollView, exactly as tall as its parent.
-   */
-  size?: 'grow' | 'fill';
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   /**
    * v8.1: the parent's side padding, which the drag uses so pages slide out to the screen's
-   * edges (default: the `Screen` padding for `grow`, none for `fill`).
+   * edges (default: the `Screen` padding).
    */
   bleed?: number;
 }
@@ -56,12 +51,11 @@ export function SwipeTabs<T>(props: SwipeTabsProps<T>) {
 }
 
 function Slide<T>(props: SwipeTabsProps<T>) {
-  const box = styles[props.size ?? 'grow'];
   return (
     <SlideTransition
       index={props.tabs.indexOf(props.value)}
-      style={[box, props.style]}
-      contentStyle={[box, props.contentStyle]}
+      style={[styles.grow, props.style]}
+      contentStyle={[styles.grow, props.contentStyle]}
       testID={`${props.testID}-slide`}
     >
       {props.renderTab(props.value)}
@@ -87,8 +81,8 @@ function SwipeArea<T>(props: SwipeTabsProps<T>) {
         gesture={gesture}
         pages={pages}
         index={index}
-        style={[styles[props.size ?? 'grow'], props.style]}
-        bleed={props.bleed ?? (props.size === 'fill' ? 0 : spacing.lg)}
+        style={[styles.grow, props.style]}
+        bleed={props.bleed ?? spacing.lg}
         contentStyle={props.contentStyle}
         testID={testID}
       />
@@ -138,7 +132,5 @@ function Blocker({
   return <GestureDetector gesture={native}>{children}</GestureDetector>;
 }
 
-const styles = StyleSheet.create({
-  grow: { flexGrow: 1 },
-  fill: { flex: 1 },
-});
+// Content inside a page's ScrollView, at least as tall as the page.
+const styles = StyleSheet.create({ grow: { flexGrow: 1 } });

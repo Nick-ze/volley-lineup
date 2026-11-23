@@ -13,5 +13,6 @@ export * from './Photo';
 export * from './SlideTransition';
 export * from './SwipeTabs';
 export * from './PagerScene';
+export * from './VisibleScenes';
 export { useTabPager, type TabPager } from './useTabPager';
 export * from './TeamAvatar';

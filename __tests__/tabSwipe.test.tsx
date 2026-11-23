@@ -1,4 +1,5 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
@@ -189,6 +190,47 @@ describe('no remount on a tab change (v8.1.1)', () => {
     await fireEvent.press(screen.getByTestId('tab-teams'));
     expect(screen).toHavePathname('/teams');
     expect(screen.getByTestId('profile-card', hidden)).toBe(card);
+  });
+});
+
+/*
+ * v8.1.1 review: a page beside the shown one must be drawable, or a drag shows empty background
+ * and the page pops in on commit. Nothing around it may be `display: 'none'` or fully transparent
+ * (Jest runs as a phone, where react-native-screens hides inactive scenes that way). The page's
+ * own opacity is the pager's (0 only before it is measured), so the walk starts at its parent.
+ */
+describe('pages beside the shown one are drawable (v8.1.1)', () => {
+  const hidden = { includeHiddenElements: true };
+  type Host = ReturnType<typeof screen.getByTestId>;
+  const hiddenAncestor = (el: Host) => {
+    for (let node: Host | null = el.parent; node; node = node.parent) {
+      const style = StyleSheet.flatten(node.props.style as StyleProp<ViewStyle>) ?? {};
+      if (style.display === 'none' || style.opacity === 0) return node.props.testID ?? node.type;
+    }
+    return null;
+  };
+
+  it('app tab bar: the unfocused scenes are mounted and not hidden by the navigator', async () => {
+    await renderRouter('./app', { initialUrl: '/teams' });
+    await screen.findByTestId('app-tab-swipe-teams-pager');
+    for (const tab of ['profile', 'settings']) {
+      const pager = screen.getByTestId(`app-tab-swipe-${tab}-pager`, hidden);
+      expect(hiddenAncestor(pager)).toBeNull();
+    }
+    // Also after a tab change (the old focused scene).
+    await fireEvent.press(screen.getByTestId('tab-profile'));
+    await act(() => jest.runOnlyPendingTimers());
+    expect(hiddenAncestor(screen.getByTestId('app-tab-swipe-teams-pager', hidden))).toBeNull();
+  });
+
+  it('inner pagers: the neighbouring pages are mounted and not hidden', async () => {
+    await renderRouter('./app', { initialUrl: '/team/team1?tab=matches' });
+    await screen.findByTestId('team-tab-swipe-pager');
+    await act(() => jest.runOnlyPendingTimers());
+    for (const key of ['roster', 'presets']) {
+      const page = screen.getByTestId(`team-tab-swipe-page-${key}`, hidden);
+      expect(hiddenAncestor(page)).toBeNull();
+    }
   });
 });
 
