@@ -1,0 +1,381 @@
+{
+  "summary": {
+    "profiles": 2,
+    "teams": 2,
+    "players": 9,
+    "matches": 3,
+    "presets": 0,
+    "photos": 0,
+    "descriptions": 0,
+    "seasons": 2
+  },
+  "file": {
+    "app": "volley-lineup",
+    "schemaVersion": 9,
+    "exportedAt": "2026-11-20T10:00:00.000Z",
+    "profiles": [
+      {
+        "id": "pr1",
+        "name": "Coach Müller",
+        "color": "#FF6B00",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "pr2",
+        "name": "Other",
+        "color": "#3D8BFF",
+        "createdAt": "2026-01-02T00:00:00.000Z"
+      }
+    ],
+    "teams": [
+      {
+        "id": "t1",
+        "profileId": "pr1",
+        "name": "Herren 1 – Süd",
+        "season": "2026/27",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "t2",
+        "profileId": "pr2",
+        "name": "Damen",
+        "createdAt": "2026-01-03T00:00:00.000Z"
+      }
+    ],
+    "players": [
+      {
+        "id": "p1",
+        "teamId": "t1",
+        "firstName": "Anna",
+        "lastName": "Meier",
+        "number": 7,
+        "positions": [
+          "S",
+          "OPP"
+        ],
+        "active": true
+      },
+      {
+        "id": "p2",
+        "teamId": "t1",
+        "firstName": "Anna",
+        "lastName": "Müller",
+        "number": 3,
+        "positions": [
+          "OH"
+        ],
+        "active": true
+      },
+      {
+        "id": "p3",
+        "teamId": "t1",
+        "firstName": "Lea",
+        "lastName": "Schmid",
+        "number": 12,
+        "positions": [
+          "MB"
+        ],
+        "active": true
+      },
+      {
+        "id": "p4",
+        "teamId": "t1",
+        "firstName": "Mia",
+        "lastName": "Keller",
+        "number": 9,
+        "positions": [
+          "OPP"
+        ],
+        "active": true
+      },
+      {
+        "id": "p5",
+        "teamId": "t1",
+        "firstName": "Zoë",
+        "lastName": "Frei",
+        "number": 5,
+        "positions": [
+          "OH"
+        ],
+        "active": true
+      },
+      {
+        "id": "p6",
+        "teamId": "t1",
+        "firstName": "Nora",
+        "lastName": "Weber",
+        "number": 14,
+        "positions": [
+          "MB"
+        ],
+        "active": true
+      },
+      {
+        "id": "p7",
+        "teamId": "t1",
+        "firstName": "Lia",
+        "lastName": "Graf",
+        "number": 1,
+        "positions": [
+          "L"
+        ],
+        "active": true
+      },
+      {
+        "id": "p8",
+        "teamId": "t1",
+        "firstName": "Sara",
+        "lastName": "Bühler",
+        "number": 10,
+        "positions": [
+          "OH",
+          "MB"
+        ],
+        "active": false
+      },
+      {
+        "id": "p9",
+        "teamId": "t2",
+        "firstName": "Eva",
+        "lastName": "Huber",
+        "number": 7,
+        "positions": [
+          "S"
+        ],
+        "active": true
+      }
+    ],
+    "matches": [
+      {
+        "id": "m1",
+        "teamId": "t1",
+        "seasonId": "season-t1",
+        "opponentId": "opp-season-t1-rivals",
+        "opponent": "Rivals",
+        "date": "2026-11-01",
+        "home": true,
+        "sets": [
+          {
+            "setNumber": 1,
+            "slots": {
+              "1": "p1",
+              "2": "p2",
+              "3": "p3",
+              "4": "p4",
+              "5": "p5",
+              "6": "p6"
+            },
+            "liberoId": "p7",
+            "weServeFirst": true,
+            "liberoReplaces": [
+              "p3",
+              "p6"
+            ],
+            "events": [
+              {
+                "type": "point",
+                "winner": "us"
+              },
+              {
+                "type": "point",
+                "winner": "them"
+              },
+              {
+                "type": "point",
+                "winner": "us"
+              },
+              {
+                "type": "sub",
+                "outPlayerId": "p5",
+                "inPlayerId": "p8"
+              },
+              {
+                "type": "point",
+                "winner": "them"
+              },
+              {
+                "type": "point",
+                "winner": "them"
+              },
+              {
+                "type": "point",
+                "winner": "us"
+              },
+              {
+                "type": "point",
+                "winner": "us"
+              },
+              {
+                "type": "point",
+                "winner": "them"
+              },
+              {
+                "type": "point",
+                "winner": "us"
+              }
+            ],
+            "formation": {
+              "system": "5-1",
+              "order": "outside",
+              "setterAt": 1
+            },
+            "liberoActive": true
+          },
+          {
+            "setNumber": 2,
+            "slots": {
+              "1": "p8",
+              "2": "p1",
+              "3": "p2",
+              "4": "p3",
+              "5": "p4",
+              "6": "p5"
+            },
+            "liberoId": null,
+            "weServeFirst": false,
+            "liberoReplaces": [],
+            "events": [
+              {
+                "type": "point",
+                "winner": "them"
+              },
+              {
+                "type": "point",
+                "winner": "us"
+              }
+            ],
+            "formation": {
+              "system": "5-1",
+              "order": "outside",
+              "setterAt": 2
+            },
+            "liberoActive": true
+          },
+          {
+            "setNumber": 3,
+            "slots": {
+              "1": null,
+              "2": null,
+              "3": null,
+              "4": null,
+              "5": null,
+              "6": null
+            },
+            "liberoId": null,
+            "weServeFirst": true,
+            "liberoReplaces": [],
+            "events": [],
+            "formation": {
+              "system": "5-1",
+              "order": "outside",
+              "setterAt": 1
+            },
+            "liberoActive": true
+          }
+        ]
+      },
+      {
+        "id": "m2",
+        "teamId": "t1",
+        "seasonId": "season-t1",
+        "opponentId": "opp-season-t1-cup%20team",
+        "opponent": "Cup Team",
+        "date": "2026-12-05",
+        "home": false,
+        "sets": [
+          {
+            "setNumber": 1,
+            "slots": {
+              "1": "p1",
+              "2": null,
+              "3": null,
+              "4": null,
+              "5": null,
+              "6": null
+            },
+            "liberoId": null,
+            "weServeFirst": true,
+            "liberoReplaces": [],
+            "events": [],
+            "formation": {
+              "system": "5-1",
+              "order": "outside",
+              "setterAt": 1
+            },
+            "liberoActive": true
+          }
+        ]
+      },
+      {
+        "id": "m3",
+        "teamId": "t2",
+        "seasonId": "season-t2",
+        "opponentId": "opp-season-t2-x",
+        "opponent": "X",
+        "date": "2026-11-02",
+        "home": false,
+        "sets": [
+          {
+            "setNumber": 1,
+            "slots": {
+              "1": null,
+              "2": null,
+              "3": null,
+              "4": null,
+              "5": null,
+              "6": null
+            },
+            "liberoId": null,
+            "weServeFirst": true,
+            "liberoReplaces": [],
+            "events": [],
+            "formation": {
+              "system": "5-1",
+              "order": "outside",
+              "setterAt": 1
+            },
+            "liberoActive": true
+          }
+        ]
+      }
+    ],
+    "presets": [],
+    "photos": [],
+    "seasons": [
+      {
+        "id": "season-t1",
+        "teamId": "t1",
+        "name": "2026/27",
+        "kind": "season",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "season-t2",
+        "teamId": "t2",
+        "name": "2026",
+        "kind": "season",
+        "createdAt": "2026-01-03T00:00:00.000Z"
+      }
+    ],
+    "opponents": [
+      {
+        "id": "opp-season-t1-rivals",
+        "seasonId": "season-t1",
+        "name": "Rivals",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "opp-season-t1-cup%20team",
+        "seasonId": "season-t1",
+        "name": "Cup Team",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "opp-season-t2-x",
+        "seasonId": "season-t2",
+        "name": "X",
+        "createdAt": "2026-01-03T00:00:00.000Z"
+      }
+    ]
+  }
+}

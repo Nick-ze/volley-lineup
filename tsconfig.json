@@ -5,7 +5,12 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["jest"]
+    "types": ["jest"],
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
   "exclude": ["node_modules", "dist", ".claude"]

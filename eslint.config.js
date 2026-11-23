@@ -1,11 +1,12 @@
 // https://docs.expo.dev/guides/using-eslint/
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
-const prettierRecommended = require('eslint-plugin-prettier/recommended');
+// Prettier runs as its own step (`npm run format:check`), not inside ESLint (v8.3, faster lint).
+const prettierConfig = require('eslint-config-prettier');
 
 module.exports = defineConfig([
   expoConfig,
-  prettierRecommended,
+  prettierConfig,
   {
     ignores: ['dist/*', 'node_modules/*', '.expo/*', 'coverage/*', '.claude/*'],
   },
@@ -14,6 +15,8 @@ module.exports = defineConfig([
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/ban-ts-comment': ['error', { 'ts-ignore': 'allow-with-description' }],
+      // TypeScript already checks namespace imports; this rule costs ~4 s per lint run.
+      'import/namespace': 'off',
     },
   },
   {
