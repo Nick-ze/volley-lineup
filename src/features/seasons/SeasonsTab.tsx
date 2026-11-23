@@ -43,7 +43,7 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
       <View style={[styles.grid, wide && styles.gridWide]} testID="season-list">
         {seasons.map((season) => (
           <View key={season.id} style={wide ? styles.cellWide : null}>
-            <SeasonMatches season={season} teamMatches={matches} onOpenSeason={onOpenSeason} />
+            <SeasonBox season={season} teamMatches={matches} onOpenSeason={onOpenSeason} />
           </View>
         ))}
       </View>
@@ -55,7 +55,7 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
  * v8.3: one season's box with its matches. The list keeps its array while those matches are
  * unchanged (`useShallow`), so the box's overview isn't recomputed when another season changes.
  */
-function SeasonMatches({
+function SeasonBox({
   season,
   teamMatches,
   onOpenSeason,
