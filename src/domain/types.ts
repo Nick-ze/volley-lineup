@@ -228,6 +228,7 @@ export const ERROR_TYPES: readonly ErrorType[] = [
   'netFault',
   'other',
 ] as const;
+
 /** Every point tag kind (`PointKind`); the tag rows order them in `pointTags.ts`. */
 export const POINT_KINDS = [
   'kill',
@@ -238,4 +239,5 @@ export const POINT_KINDS = [
   'opponentKill',
   'opponentAce',
 ] as const satisfies readonly PointKind[];
+
 export const ALL_POSITIONS: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'L', 'DS'] as const;

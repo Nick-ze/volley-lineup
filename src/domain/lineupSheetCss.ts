@@ -1,9 +1,9 @@
 /**
- * The printable lineup sheet's style sheet: light print theme, A4 portrait (`@/theme/print`).
+ * The printable lineup sheet's style sheet: light print theme, A4 portrait (`theme/print.ts`).
  *
  * Part of the printable lineup sheet: `lineupSheet.ts` imports it, never the other way round.
  */
-import { printColors as c, printLayout as l } from '@/theme/print';
+import { printColors as c, printLayout as l } from '../theme/print';
 
 /** Inline CSS of the sheet document. */
 export const LINEUP_SHEET_CSS = `
