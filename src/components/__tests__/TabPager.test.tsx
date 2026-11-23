@@ -12,16 +12,9 @@ import { SLIDE_DURATION_MS, TAB_COMMIT_FALLBACK_MS } from '@/domain/tabMotion';
  * ends) and, since v8.1.1, pages that stay mounted: the neighbours are there before a drag, and
  * neither a drag nor a tap remounts a page (the v8.1 flicker on Android). */
 
-jest.mock('react-native-reanimated', () => {
-  const mock = jest.requireActual('react-native-reanimated/mock');
-  return {
-    ...mock,
-    useReducedMotion: jest.fn(() => false),
-    withTiming: jest.fn(mock.withTiming),
-  };
-});
-const reduceMotion = Reanimated.useReducedMotion as jest.Mock;
-const withTiming = Reanimated.withTiming as jest.Mock;
+// Spies on the animation helpers (jest.setup.ts); `useReducedMotion` can be switched per test.
+const reduceMotion = jest.mocked(Reanimated.useReducedMotion);
+const withTiming = jest.mocked(Reanimated.withTiming);
 
 const TABS = ['a', 'b', 'c', 'd', 'e'] as const;
 type Tab = (typeof TABS)[number];
@@ -205,12 +198,10 @@ describe('interactive tab pager', () => {
   /** The next settle waits: returns the call that finishes it. */
   const holdSettle = () => {
     let finish: (done: boolean) => void = () => {};
-    withTiming.mockImplementationOnce(
-      (to: number, _config: unknown, callback: (done: boolean) => void) => {
-        finish = callback;
-        return to;
-      },
-    );
+    withTiming.mockImplementationOnce((to, _config, callback) => {
+      finish = callback ?? finish;
+      return to;
+    });
     return () => act(() => finish(false));
   };
 

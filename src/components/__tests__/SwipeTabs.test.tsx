@@ -7,19 +7,10 @@ import * as Reanimated from 'react-native-reanimated';
 
 import { NoTabSwipe, SlideTransition, SwipeTabs } from '@/components';
 
-// Spies on the animation helpers; `useReducedMotion` can be switched per test.
-jest.mock('react-native-reanimated', () => {
-  const mock = jest.requireActual('react-native-reanimated/mock');
-  return {
-    ...mock,
-    useReducedMotion: jest.fn(() => false),
-    withSequence: jest.fn(mock.withSequence),
-    withTiming: jest.fn(mock.withTiming),
-  };
-});
-const reduceMotion = Reanimated.useReducedMotion as jest.Mock;
-const withSequence = Reanimated.withSequence as jest.Mock;
-const withTiming = Reanimated.withTiming as jest.Mock;
+// Spies on the animation helpers (jest.setup.ts); `useReducedMotion` can be switched per test.
+const reduceMotion = jest.mocked(Reanimated.useReducedMotion);
+const withSequence = jest.mocked(Reanimated.withSequence);
+const withTiming = jest.mocked(Reanimated.withTiming);
 
 const TABS = ['a', 'b', 'c'] as const;
 type Tab = (typeof TABS)[number];
