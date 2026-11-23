@@ -62,7 +62,7 @@ export const lineup: Strings['lineup'] = {
     hint: 'In der Hinterreihe, außer beim Aufschlag.',
     noStarters: 'Stelle Spieler aufs Feld, um zu wählen, wen der Libero ersetzt.',
     groupLabel: 'Spieler, die der Libero ersetzt',
-    optionLabel: (number: number, name: string) => `#${number} ${name}: wird vom Libero ersetzt`,
+    optionLabel: (shown: string, name: string) => `${shown}: ${name}, wird vom Libero ersetzt`,
     optionText: (number: number, name: string) => `#${number} ${name}`,
     suggest: 'Mittelblocker vorschlagen',
     suggestLabel: 'Mittelblocker vorschlagen: die Mittelblocker auf dem Feld auswählen',

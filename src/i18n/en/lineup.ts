@@ -62,7 +62,8 @@ export const lineup = {
     hint: 'In the back row, except when serving.',
     noStarters: 'Put players on court to choose whom the libero replaces.',
     groupLabel: 'Players the libero replaces',
-    optionLabel: (number: number, name: string) => `#${number} ${name}: replaced by the libero`,
+    /** v8.3: `shown` is the chip text (`optionText`), `name` the full name. */
+    optionLabel: (shown: string, name: string) => `${shown}: ${name}, replaced by the libero`,
     optionText: (number: number, name: string) => `#${number} ${name}`,
     suggest: 'Suggest middles',
     suggestLabel: 'Suggest middles: the middle blockers on court',

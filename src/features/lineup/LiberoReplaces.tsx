@@ -65,12 +65,12 @@ export function LiberoReplaces({ editor }: { editor: LineupDraft }) {
             <View style={styles.options} accessibilityLabel={s.groupLabel}>
               {starters.map((p) => {
                 const checked = set.liberoReplaces.includes(p.id);
-                const name = shortName(p, players);
+                const shown = s.optionText(p.number, shortName(p, players));
                 return (
                   <Pressable
                     key={p.id}
                     accessibilityRole="checkbox"
-                    accessibilityLabel={s.optionLabel(p.number, fullName(p))}
+                    accessibilityLabel={s.optionLabel(shown, fullName(p))}
                     accessibilityState={{ checked, disabled: out }}
                     aria-checked={checked}
                     aria-disabled={out}
@@ -83,9 +83,7 @@ export function LiberoReplaces({ editor }: { editor: LineupDraft }) {
                     ]}
                     testID={`libero-replaces-${p.number}`}
                   >
-                    <Text style={[styles.optionText, checked && styles.checkedText]}>
-                      {s.optionText(p.number, name)}
-                    </Text>
+                    <Text style={[styles.optionText, checked && styles.checkedText]}>{shown}</Text>
                   </Pressable>
                 );
               })}

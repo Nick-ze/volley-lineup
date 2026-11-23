@@ -336,8 +336,12 @@ PAIRS.push(
   ],
   [
     'libero replaces chip',
-    (t) => t.lineup.liberoReplaces.optionText(anna.number, shortName(anna, [anna])),
-    (t) => t.lineup.liberoReplaces.optionLabel(anna.number, fullName(anna)),
+    (t) => t.lineup.liberoReplaces.optionText(anna.number, shortName(anna, [anna, annaToo])),
+    (t) =>
+      t.lineup.liberoReplaces.optionLabel(
+        t.lineup.liberoReplaces.optionText(anna.number, shortName(anna, [anna, annaToo])),
+        fullName(anna),
+      ),
   ],
 );
 

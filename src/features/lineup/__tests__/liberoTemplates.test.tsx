@@ -134,7 +134,7 @@ describe('lineup builder — libero replaces', () => {
 
     const chooser = screen.getByTestId('libero-replaces');
     const middle6 = within(chooser).getByRole('checkbox', {
-      name: '#6 B Block: replaced by the libero',
+      name: '#6 B: B Block, replaced by the libero',
     });
     expect(middle6).toBeChecked();
     expect(within(chooser).getByRole('checkbox', { name: /^#7 / })).toBeChecked();
