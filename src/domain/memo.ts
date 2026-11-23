@@ -25,17 +25,24 @@ export function memoByIdentity<A extends object, R>(fn: (a: A) => R): (a: A) => 
   };
 }
 
-/** `fn` cached by the identity of both arguments (one cache per first argument). */
+/**
+ * `fn` cached by the identity of both arguments: one inner cache per first argument. The inner
+ * cache holds no reference to its own key (no closure over `a`), so entries can be collected.
+ */
 export function memoByIdentity2<A extends object, B extends object, R>(
   fn: (a: A, b: B) => R,
 ): (a: A, b: B) => R {
-  const cache = new WeakMap<A, (b: B) => R>();
+  const cache = new WeakMap<A, WeakMap<B, Entry<R>>>();
   return (a, b) => {
-    let withA = cache.get(a);
-    if (!withA) {
-      withA = memoByIdentity((x: B) => fn(a, x));
-      cache.set(a, withA);
+    let inner = cache.get(a);
+    if (!inner) {
+      inner = new WeakMap<B, Entry<R>>();
+      cache.set(a, inner);
     }
-    return withA(b);
+    const hit = inner.get(b);
+    if (hit) return hit.value;
+    const value = fn(a, b);
+    inner.set(b, { value });
+    return value;
   };
 }
