@@ -4,7 +4,7 @@ export const language = {
   hint: 'Choose the language of the app.',
   english: 'English',
   german: 'Deutsch',
-  optionLabel: (name: string) => `Language: ${name}`,
+  optionLabel: (name: string) => `${name}: app language`,
   display: {
     title: 'Player chips',
     hint: 'On the court and the bench, show the player’s name in the circle and the number below it.',

@@ -4,7 +4,7 @@ import { renderRouter } from 'expo-router/testing-library';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
-import { fullLineup, seedTeam } from '../__fixtures__/team';
+import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
 
 const store = () => useAppStore.getState();
 const s = t.presets;
@@ -100,7 +100,7 @@ describe('presets tab', () => {
     await fireEvent.press(screen.getByTestId('confirm'));
     expect(store().presets.some((p) => p.name === 'Beta')).toBe(false);
 
-    await fireEvent.press(screen.getByRole('button', { name: /Edit preset Preset 1/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Preset 1: edit preset/ }));
     const copyId = store().presets.find((p) => p.name === 'Preset 1')!.id;
     expect(screen).toHavePathname(`/team/team1/preset/${copyId}`);
   });

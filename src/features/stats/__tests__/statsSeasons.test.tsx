@@ -6,7 +6,7 @@ import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
-import { fullLineup, seedTeam } from '../../presets/__fixtures__/team';
+import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
 
 const W: PointEvent = { type: 'point', winner: 'us' };
 const L: PointEvent = { type: 'point', winner: 'them' };

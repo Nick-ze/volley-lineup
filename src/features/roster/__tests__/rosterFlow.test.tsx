@@ -6,7 +6,7 @@ import { t } from '@/i18n/en';
 import { STORAGE_KEY, useAppStore } from '@/store';
 
 import { resetStartupRedirect } from '../hooks/useStartupRedirect';
-import { seasonRefs } from '@/store/testSeason';
+import { seasonRefs } from '@/test-utils/seasonRefs';
 
 const s = t.roster;
 const store = () => useAppStore.getState();

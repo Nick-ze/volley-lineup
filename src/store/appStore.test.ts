@@ -15,7 +15,7 @@ import {
   selectStarters,
   selectTeamsForProfile,
 } from './selectors';
-import { seasonRefs } from './testSeason';
+import { seasonRefs } from '@/test-utils/seasonRefs';
 
 const withPhotos = (data: AppData) => ({ ...data, photos: [] });
 

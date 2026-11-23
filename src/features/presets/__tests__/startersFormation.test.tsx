@@ -3,7 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { useAppStore } from '@/store';
 
-import { fullLineup, seedTeam } from '../__fixtures__/team';
+import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
 
 const hidden = { includeHiddenElements: true };
 const roleAt = (position: number) => screen.getByTestId(`role-tag-${position}`, hidden);

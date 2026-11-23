@@ -1,16 +1,9 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
-import type {
-  LineupPreset,
-  Match,
-  Player,
-  PointEvent,
-  SetLineup,
-  SetNumber,
-  Side,
-} from '@/domain/types';
+import type { LineupPreset, Player, PointEvent, SetLineup, SetNumber, Side } from '@/domain/types';
 import { useAppStore } from '@/store';
+import { type SeedMatch, seedApp } from '@/test-utils';
 
 const player = (n: number, lastName: string, active = true): Player => ({
   id: `p${n}`,
@@ -65,27 +58,19 @@ const set = (setNumber: SetNumber, us: number, them: number, weServeFirst = true
   events: [...points('us', us), ...points('them', them)],
 });
 
-function seed(sets: SetLineup[], extra: Partial<Match>[] = [], playerList = players) {
-  const match = (over: Partial<Match>): Match => ({
+function seed(sets: SetLineup[], extra: Partial<SeedMatch>[] = [], playerList = players) {
+  const match = (over: Partial<SeedMatch>): SeedMatch => ({
     id: 'm1',
-    teamId: 'team1',
-    seasonId: 's1',
-    opponentId: 'o1',
     opponent: 'Rivals',
     date: '2026-11-20',
     home: true,
     sets,
     ...over,
   });
-  useAppStore.getState().resetAll();
-  useAppStore.setState({
-    hydrated: true,
-    profiles: [{ id: 'prof1', name: 'Coach', color: '#FF6B00', createdAt: '2026-01-01' }],
-    teams: [{ id: 'team1', profileId: 'prof1', name: 'Herren 1', createdAt: '2026-01-01' }],
+  seedApp({
     players: playerList,
     matches: [match({}), ...extra.map(match)],
     presets: [starters, { ...starters, id: 'pr1', kind: 'preset', name: 'Big block' }],
-    currentProfileId: 'prof1',
   });
 }
 
@@ -237,7 +222,7 @@ describe('whole-match live mode', () => {
     await press('next-set');
     expect(screen.getByTestId('set-setup')).toBeTruthy();
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Undo the last point of set 1 (re-opens it)' }),
+      screen.getByRole('button', { name: 'Undo last point of set 1 (re-opens it)' }),
     );
     expect(await screen.findByTestId('point-us')).toBeTruthy();
     expect(screen.getByTestId('scoreboard').props.accessibilityLabel).toMatch(/^Set 1,/);
@@ -303,12 +288,7 @@ describe('whole-match live mode', () => {
         { id: 'm5', opponent: 'Hawks', sets: [set(1, 3, 0)] },
       ],
     );
-    // v7: the match list is on the season screen (the seeded matches are in season s1).
-    useAppStore.setState({
-      seasons: [
-        { id: 's1', teamId: 'team1', name: '2026', kind: 'season', createdAt: '2026-01-01' },
-      ],
-    });
+    // v7: the match list is on the season screen (`seedApp` puts the matches in season s1).
     await renderRouter('./app', { initialUrl: '/team/team1/season/s1' });
     // The result has its own (never truncated) line under date · home/away.
     const results = (await screen.findAllByTestId('match-row-result')).map((r) => r.props.children);

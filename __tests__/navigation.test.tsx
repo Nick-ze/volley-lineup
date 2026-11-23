@@ -3,7 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
-import { seasonRefs } from '@/store/testSeason';
+import { seasonRefs } from '@/test-utils/seasonRefs';
 
 describe('navigation shell', () => {
   it('renders the profile picker at /', async () => {

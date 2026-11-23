@@ -59,7 +59,9 @@ const set1 = () => useAppStore.getState().matches[0].sets.find((s) => s.setNumbe
 async function fillWith(system: '5-1' | '6-2') {
   await fireEvent.press(await screen.findByRole('button', { name: 'Fill from template' }));
   await fireEvent.press(
-    screen.getByRole('button', { name: `Fill the starting six with a ${system} system` }),
+    screen.getByRole('button', {
+      name: `${system}: fill the starting six with a ${system} system`,
+    }),
   );
 }
 
@@ -90,7 +92,9 @@ describe('lineup builder — fill from template', () => {
   it('can be cancelled without changing anything', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
     await fireEvent.press(await screen.findByRole('button', { name: 'Fill from template' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Close the template choice' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Cancel: close the template choice' }),
+    );
     expect(useAppStore.getState().matches[0].sets).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Fill from template' })).toBeTruthy();
   });
@@ -130,16 +134,16 @@ describe('lineup builder — libero replaces', () => {
 
     const chooser = screen.getByTestId('libero-replaces');
     const middle6 = within(chooser).getByRole('checkbox', {
-      name: 'Libero replaces number 6 B Block',
+      name: '#6 B: B Block, replaced by the libero',
     });
     expect(middle6).toBeChecked();
-    expect(within(chooser).getByRole('checkbox', { name: /number 7/ })).toBeChecked();
-    expect(within(chooser).getByRole('checkbox', { name: /number 1 / })).not.toBeChecked();
+    expect(within(chooser).getByRole('checkbox', { name: /^#7 / })).toBeChecked();
+    expect(within(chooser).getByRole('checkbox', { name: /^#1 / })).not.toBeChecked();
     expect(set1().liberoReplaces).toEqual(['p6', 'p7']);
 
     // Untick #6, tick the setter.
     await fireEvent.press(middle6);
-    await fireEvent.press(within(chooser).getByRole('checkbox', { name: /number 1 / }));
+    await fireEvent.press(within(chooser).getByRole('checkbox', { name: /^#1 / }));
     expect(set1().liberoReplaces).toEqual(['p7', 'p1']);
 
     // #7 goes to the bench → no longer replaced.
@@ -150,7 +154,7 @@ describe('lineup builder — libero replaces', () => {
 
     // Suggest middles again → only #6 is a middle on court now.
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Suggest the middle blockers on court' }),
+      screen.getByRole('button', { name: 'Suggest middles: the middle blockers on court' }),
     );
     expect(set1().liberoReplaces).toEqual(['p6']);
   });
