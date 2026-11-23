@@ -27,15 +27,24 @@ Expo SDK 58, React Native 0.88, React 19.3, TypeScript 6 (strict + `noUnusedLoca
 store fields, features and components: HANDOFF §3.
 
 - `src/domain/` — pure TypeScript, 100 % coverage (statements, branches, functions, lines). `types.ts` is the only
-  place for data-model types. Screens and components never contain rotation, validation or stats logic.
+  place for data-model types. Screens and components never contain rotation, validation or stats logic. Big
+  modules are barrels over sub-modules — import the barrel (`exportSchema` → `exportFormat` / `exportUpgrades` /
+  `exportConsistency` / `exportMerge`; likewise `seasons`, `lineupSheet`, `tabMotion`). Derived results
+  (replay, match state, stats, performance) are cached by object identity with `memo.ts` — never mutate a
+  result. `duration.ts` formats durations.
 - `src/store/` — `useAppStore` (version 10, migrations in `migrations.ts`) and `photoStore` (photos under their own
   storage keys). Use the hooks in `src/store/hooks.ts`; never return a fresh array / object from a selector
   without `useShallow` (Zustand 5 loops).
 - `src/lib/` — platform code only here: mostly a base `x.ts` (native / default) with an `x.web.ts` override,
   some `x.native.ts` (file transfer, print, drag activation, switch props, document language, photo picking,
   unlock, `inert`, theme colour, cancel press). No `Platform.OS` checks in screens.
-- Persisted shape changes (store version + migration, export `schemaVersion` + upgrade, zod `Same<>` guard,
-  consistency checks, tests) are done by the orchestrator in the foundation PR, not by workers.
+- Persisted shape changes (store version + migration, export `schemaVersion` + upgrade in `exportUpgrades.ts`,
+  shared old-data traversal in `legacyData.ts`, zod `Same<>` guard, consistency checks, tests) are done by the
+  orchestrator in the foundation PR, not by workers.
+- Shared UI in `src/components` — reuse before writing your own: `Dialog` (modal shell), `ScreenTitle`
+  (screen title; never an inline `<Stack.Screen options={{…}} />`, which re-renders the navigator every
+  render), `parseTab` (`?tab=` params), `SwipeTabs` / `NoTabSwipe`, `Court`, `PlayerChip`; `SetChipFilter`
+  (`src/features/stats`) for set filters; the app tab bar lives in `src/features/appTabs`.
 
 ## 4. Binding rules
 
@@ -53,7 +62,7 @@ store fields, features and components: HANDOFF §3.
   guard test `__tests__/labelInName.test.tsx` checks it in EN and DE — add new dialogs / hidden controls to its
   `PAIRS`. Touch targets ≥ 44 × 44. react-native-web ignores `accessibilityState` → also set `aria-checked` /
   `aria-selected` / `aria-disabled`. Drag and drop always has the tap alternative.
-- **Dialogs**: RN `Modal` like the existing dialogs; never `Alert.alert` (does nothing on web).
+- **Dialogs**: the `Dialog` component (RN `Modal` underneath); never `Alert.alert` (does nothing on web).
 - **Tabs and swipe**: every `SwipeTabs` needs `renderTab` (the pager keeps the tabs ±1 mounted, keyed by tab;
   hidden pages are hidden from assistive tech). Wrap anything that scrolls or drags sideways inside a swipeable
   page in `NoTabSwipe`. Put `touchAction` in the gesture config, not on `GestureDetector`.
