@@ -3,7 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 import { StyleSheet } from 'react-native';
 
 import { t } from '@/i18n/en';
-import { useAppStore } from '@/store';
+import { useAppStore, usePhotoStore } from '@/store';
 
 import { resetStartupRedirect } from '../hooks/useStartupRedirect';
 
@@ -75,6 +75,22 @@ describe('roster player cards (v8)', () => {
     // 1280 px screen: the 1100 px content width minus padding → 5 columns.
     await layout(1068);
     expect(cardWidth(7)).toBe(207);
+  });
+
+  it('shows the picture in full as a square across the card, the text below (v8.2)', async () => {
+    const { team, anna } = seed();
+    usePhotoStore.setState({ photos: { pa: 'data:image/jpeg;base64,AAAA' }, hydrated: true });
+    store().updatePlayer(anna.id, { photoId: 'pa' });
+    await renderRouter('./app', { initialUrl: `/team/${team.id}` });
+    await layout(343);
+    const card = within(screen.getByTestId('player-7-card'));
+    const photo = StyleSheet.flatten(
+      card.getByTestId('photo', { includeHiddenElements: true }).props.style,
+    );
+    // 167 px card minus its 1 px border on each side; square, not a circle.
+    expect(photo.width).toBe(165);
+    expect(photo.height).toBe(165);
+    expect(photo.borderRadius).toBe(0);
   });
 
   it('never shows the description on a card', async () => {

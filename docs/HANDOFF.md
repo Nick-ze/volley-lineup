@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-23, after releasing **v8.1.1**.
+Last updated: 2026-11-23, after releasing **v8.2.0**.
 
 ---
 
@@ -27,10 +27,11 @@ Last updated: 2026-11-23, after releasing **v8.1.1**.
 | v8.0.0  | Look & feel: light / dark / system theme, dyslexia font (OpenDyslexic), Swiss dates dd.mm.yy, roster player cards, first name first, team pictures, tab slides + swipe, rotation slides, new app icon; store v10, export v9                | `v8.0.0` |
 | v8.1.0  | Interactive drag between tabs: the page follows the finger with the neighbouring tab beside it (RNGH + Reanimated pager)                                                                                                                   | `v8.1.0` |
 | v8.1.1  | Swipe without flicker: real pager (neighbour tabs stay mounted, no swap on release), app tab bar moves the real scenes                                                                                                                     | `v8.1.1` |
+| v8.2.0  | Roster cards show the player's picture in full (square, card width) with the text below                                                                                                                                                    | `v8.2.0` |
 
-- `main` is green (CI), **1197 tests**, `src/domain` at 100% coverage.
-- Current versions: app **8.1.1** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#221**. Continue at #222.
+- `main` is green (CI), **1198 tests**, `src/domain` at 100% coverage.
+- Current versions: app **8.2.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
+- Last decision number in `docs/DECISIONS.md`: **#222**. Continue at #223.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
