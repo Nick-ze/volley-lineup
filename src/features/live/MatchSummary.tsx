@@ -34,7 +34,7 @@ export function MatchSummary({
       ? durationParts(state.durationMs)
       : null;
   const duration = parts ? s.duration(parts.hours, parts.minutes) : null;
-  const undoLabel = t.live.undoPoint(state.winner === 'us');
+  const undoLabel = t.live.undoLastPointLabel(state.winner === 'us');
 
   return (
     <View style={styles.box} testID="match-summary">

@@ -5,7 +5,7 @@ import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
-import { seedTeam } from '../../presets/__fixtures__/team';
+import { seedTeam } from '@/test-utils/presetsTeam';
 import { parseTeamTab } from '../tabs';
 
 const nav = t.presets.nav;

@@ -9,7 +9,7 @@ export const transfer: Strings['transfer'] = {
     hint: 'Speichere deine Daten als .json-Datei, als Sicherung oder für ein anderes Gerät.',
     all: 'Alles exportieren',
     team: (name: string) => `${name} exportieren`,
-    teamLabel: (name: string) => `Nur das Team ${name} exportieren`,
+    teamLabel: (name: string) => `${name} exportieren: nur dieses Team`,
     teamsHeading: 'Ein Team exportieren',
     noTeams: 'Das aktuelle Profil hat noch keine Teams.',
     dialogTitle: 'Volley-Lineup-Daten exportieren',

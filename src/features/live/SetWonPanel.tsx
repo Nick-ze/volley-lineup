@@ -60,7 +60,9 @@ export function SetWonPanel({
         <Button
           label={t.live.undoLastPoint}
           accessibilityLabel={
-            tagDetail ? t.tags.withDetail(t.live.undoPoint(us), tagDetail) : t.live.undoPoint(us)
+            tagDetail
+              ? t.tags.withDetail(t.live.undoLastPointLabel(us), tagDetail)
+              : t.live.undoLastPointLabel(us)
           }
           variant="secondary"
           onPress={onUndo}

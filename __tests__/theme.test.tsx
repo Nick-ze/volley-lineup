@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 import { StyleSheet } from 'react-native';
 
-import { seedTeam } from '@/features/presets/__fixtures__/team';
+import { seedTeam } from '@/test-utils/presetsTeam';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 import { darkColors, DYSLEXIA_FONT_BOLD, DYSLEXIA_FONT_REGULAR, lightColors } from '@/theme';
@@ -52,12 +52,12 @@ describe('v8 theme on real screens', () => {
   });
 });
 
-/** Every source file under a folder (tests and fixtures excluded). */
+/** Every source file under a folder (tests, fixtures and test helpers excluded). */
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) {
-      return name === '__tests__' || name === '__fixtures__' ? [] : sources(path);
+      return ['__tests__', '__fixtures__', 'test-utils'].includes(name) ? [] : sources(path);
     }
     return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
   });

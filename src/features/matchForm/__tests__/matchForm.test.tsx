@@ -7,7 +7,7 @@ import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
-import { seedTeam } from '../../presets/__fixtures__/team';
+import { seedTeam } from '@/test-utils/presetsTeam';
 
 const s = t.roster.matchForm;
 const store = () => useAppStore.getState();

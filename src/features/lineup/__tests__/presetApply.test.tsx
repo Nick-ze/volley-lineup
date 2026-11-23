@@ -6,8 +6,8 @@ import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 
-import { fullLineup, seedTeam } from '../../presets/__fixtures__/team';
-import { seasonRefs } from '@/store/testSeason';
+import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
+import { seasonRefs } from '@/test-utils/seasonRefs';
 
 const store = () => useAppStore.getState();
 const s = t.presets.apply;

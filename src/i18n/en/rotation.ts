@@ -16,7 +16,7 @@ export const rotation = {
   nextLabel: 'Next rotation',
   swipeHint: 'Swipe left or right on the court to change rotation.',
   setTab: (n: number) => `Set ${n}`,
-  setTabLabel: (n: number) => `Show set ${n}`,
+  setTabLabel: (n: number) => `Set ${n}: show this set`,
   setPickerLabel: 'Sets',
   stepperLabel: 'Rotations',
   weServeFirst: 'We serve first',

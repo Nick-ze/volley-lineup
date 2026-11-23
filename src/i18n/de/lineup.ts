@@ -15,7 +15,8 @@ export const lineup: Strings['lineup'] = {
   benchDropLabel: 'Ausgewählten Spieler auf die Bank setzen',
   libero: 'Libero',
   liberoEmpty: 'Kein Libero',
-  liberoSlotLabel: (name: string | null) => (name ? `Libero-Platz, ${name}` : 'Libero-Platz frei'),
+  liberoSlotLabel: (name: string | null) =>
+    name ? `Libero-Platz, ${name}` : 'Kein Libero: Libero-Platz frei',
   slotLabel: (position: number, name: string | null) =>
     name ? `Position ${position}, ${name}` : `Position ${position} frei`,
   emptySlotLabel: (position: number, code: string, role: string) =>
@@ -29,12 +30,12 @@ export const lineup: Strings['lineup'] = {
   copyPrevious: 'Aufstellung aus dem vorigen Satz übernehmen',
   copyPreviousHint: 'Ersetzt Startspieler und Libero dieses Satzes durch die des vorigen Satzes',
   clear: 'Leeren',
-  clearLabel: 'Aufstellung dieses Satzes leeren',
+  clearLabel: 'Leeren: Aufstellung dieses Satzes',
   serveLabel: 'Wer hat den ersten Aufschlag',
   weServe: 'Wir haben Aufschlag',
   theyServe: 'Gegner hat Aufschlag',
   rotation: 'Rotation',
-  rotationLabel: 'Rotationsansicht für diesen Satz öffnen',
+  rotationLabel: 'Rotation: Rotationsansicht für diesen Satz öffnen',
   starters: 'Aufstellungen',
   startersLabel: 'Aufstellungen: Übersicht der Startaufstellungen aller Sätze öffnen',
   validationTitle: 'Aufstellungs-Check',
@@ -59,10 +60,10 @@ export const lineup: Strings['lineup'] = {
     hint: 'In der Hinterreihe, außer beim Aufschlag.',
     noStarters: 'Stelle Spieler aufs Feld, um zu wählen, wen der Libero ersetzt.',
     groupLabel: 'Spieler, die der Libero ersetzt',
-    optionLabel: (number: number, name: string) => `Libero ersetzt Nummer ${number} ${name}`,
+    optionLabel: (shown: string, name: string) => `${shown}: ${name}, wird vom Libero ersetzt`,
     optionText: (number: number, name: string) => `#${number} ${name}`,
     suggest: 'Mittelblocker vorschlagen',
-    suggestLabel: 'Die Mittelblocker auf dem Feld vorschlagen',
+    suggestLabel: 'Mittelblocker vorschlagen: die Mittelblocker auf dem Feld auswählen',
   },
   rotate: {
     clockwise: 'Rotieren ↻',
@@ -108,9 +109,10 @@ export const lineup: Strings['lineup'] = {
       'Dieser Satz wurde schon gespielt, daher kann die Startaufstellung nicht neu gefüllt werden.',
     choose:
       'Wähle ein System: Es legt die Formation fest (5-1 oder 6-2) und füllt die Startaufstellung nach Rollen aus dem Kader. Die aktuellen Startspieler werden ersetzt.',
-    systemLabel: (system: string) => `Startaufstellung mit einem ${system}-System füllen`,
+    systemLabel: (system: string) =>
+      `${system}: Startaufstellung mit einem ${system}-System füllen`,
     cancel: 'Abbrechen',
-    cancelLabel: 'Vorlagenauswahl schließen',
+    cancelLabel: 'Abbrechen: Vorlagenauswahl schließen',
     filled: (system: string) => `Formation auf ${system} gesetzt, Spieler nach Rollen eingetragen.`,
     missing: (system: string, list: string) =>
       `Formation auf ${system} gesetzt, Spieler nach Rollen eingetragen. Nicht besetzt: ${list}. Füge Spieler mit diesen Positionen hinzu oder stelle jemanden von Hand auf.`,

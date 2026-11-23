@@ -108,7 +108,7 @@ export function NextSetSetup({
         {undoSet !== null ? (
           <Button
             label={t.live.undoLastPoint}
-            accessibilityLabel={t.live.undoAcross(undoSet)}
+            accessibilityLabel={t.live.undoLastPointAcross(undoSet)}
             variant="secondary"
             compact
             style={styles.grow}

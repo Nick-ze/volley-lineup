@@ -33,9 +33,9 @@ export const stats: Strings['stats'] = {
   filter: {
     label: 'Statistik für',
     all: 'Alle Sätze',
-    allLabel: 'Statistik aller Sätze',
+    allLabel: 'Alle Sätze: Statistik zeigen',
     set: (n: number) => `Satz ${n}`,
-    setLabel: (n: number) => `Statistik von Satz ${n}`,
+    setLabel: (n: number) => `Satz ${n}: Statistik zeigen`,
   },
   rotations: {
     heading: 'Rotationen',

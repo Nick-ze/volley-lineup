@@ -13,7 +13,7 @@ export const rotation: Strings['rotation'] = {
   previous: '‹ Vorige',
   next: 'Weiter ›',
   previousLabel: 'Vorige Rotation',
-  nextLabel: 'Nächste Rotation',
+  nextLabel: 'Weiter: nächste Rotation',
   swipeHint: 'Wische auf dem Feld nach links oder rechts, um die Rotation zu wechseln.',
   setTab: (n: number) => `Satz ${n}`,
   setTabLabel: (n: number) => `Satz ${n} zeigen`,

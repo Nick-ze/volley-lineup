@@ -61,11 +61,12 @@ export const tags = {
   clearErrorType: (type: string) => `${type}: remove the error type`,
   rowLabel: (us: boolean) =>
     us ? 'Optional: how did we win the point?' : 'Optional: how did we lose the point?',
-  chooseKind: (kind: string) => `Tag the last point as ${kind}`,
-  clearKind: (kind: string) => `Remove the tag ${kind}`,
+  chooseKind: (shown: string, name: string) => `${shown}: tag the last point as ${name}`,
+  clearKind: (shown: string, name: string) => `${shown}: remove the tag ${name}`,
   playersLabel: (kind: string) => `Optional: which player? (${kind})`,
-  choosePlayer: (desc: string, kind: string) => `${desc}: ${kind}`,
-  clearPlayer: (desc: string) => `Remove ${desc} from the tag`,
+  /** v8.3: `ref` is the chip text ("#7 Anna"), `desc` the full description. */
+  choosePlayer: (ref: string, desc: string, kind: string) => `${ref}: ${desc}, ${kind}`,
+  clearPlayer: (ref: string, desc: string) => `${ref}: ${desc}, remove from the tag`,
   close: '✕',
   skipLabel: 'Skip point details',
   doneLabel: 'Close point details',

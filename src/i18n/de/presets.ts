@@ -24,12 +24,12 @@ export const presets: Strings['presets'] = {
     summary: (filled: number, libero: boolean) => `${filled}/6${libero ? ' + L' : ''}`,
     summaryLabel: (filled: number, libero: boolean) =>
       `${filled} von 6 Positionen besetzt${libero ? ', mit Libero' : ''}`,
-    open: (name: string) => `Vorlage ${name} bearbeiten`,
-    renameLabel: (name: string) => `Vorlage ${name} umbenennen`,
+    open: (name: string) => `${name}: Vorlage bearbeiten`,
+    renameLabel: (name: string) => `Umbenennen: Vorlage ${name}`,
     duplicate: 'Kopieren',
-    duplicateLabel: (name: string) => `Vorlage ${name} kopieren`,
+    duplicateLabel: (name: string) => `Kopieren: Vorlage ${name}`,
     copyName: (name: string) => `${name} (Kopie)`,
-    deleteLabel: (name: string) => `Vorlage ${name} löschen`,
+    deleteLabel: (name: string) => `Löschen: Vorlage ${name}`,
     confirmDelete: (name: string) =>
       `Die Vorlage „${name}“ löschen? Spiele werden nicht verändert.`,
     defaultName: 'Vorlage',
@@ -50,7 +50,7 @@ export const presets: Strings['presets'] = {
   editor: {
     title: (name: string) => `Vorlage: ${name}`,
     rename: 'Umbenennen',
-    renameLabel: 'Diese Vorlage umbenennen',
+    renameLabel: 'Umbenennen: diese Vorlage',
     notFound: 'Diese Vorlage gibt es nicht mehr.',
     startersHint:
       'Die Startsechs füllt Satz 1 jedes neuen Spiels. Im Spiel kannst du sie auch in jeden anderen Satz übernehmen.',
@@ -62,9 +62,9 @@ export const presets: Strings['presets'] = {
     empty:
       'Noch keine Startsechs. Lege die übliche Startaufstellung und den Libero einmal fest; neue Spiele beginnen damit.',
     set: 'Startsechs festlegen',
-    setLabel: 'Die Startsechs des Teams festlegen',
+    setLabel: 'Startsechs festlegen: gilt für das ganze Team',
     edit: 'Startsechs bearbeiten',
-    editLabel: 'Die Startsechs des Teams bearbeiten',
+    editLabel: 'Startsechs bearbeiten: gilt für das ganze Team',
     incomplete: (filled: number) =>
       `${filled} von 6 Positionen festgelegt. Neue Spiele beginnen in Satz 1 damit; die übrigen Spieler wählst du im Spiel vor dem Anpfiff.`,
     complete: 'Neue Spiele beginnen in Satz 1 mit dieser Aufstellung.',
@@ -84,9 +84,9 @@ export const presets: Strings['presets'] = {
     applyPresetLabel: 'Eine Vorlage wählen, um diesen Satz zu füllen',
     noPresets: 'Das Team hat noch keine Vorlagen (Team › Vorlagen).',
     choose: 'Vorlage wählen:',
-    presetLabel: (name: string) => `Vorlage ${name} in diesen Satz übernehmen`,
+    presetLabel: (name: string) => `${name}: Vorlage in diesen Satz übernehmen`,
     cancel: 'Abbrechen',
-    cancelLabel: 'Vorlagenliste schließen',
+    cancelLabel: 'Abbrechen: Vorlagenliste schließen',
     locked:
       'Dieser Satz wurde schon gespielt; setze seine Live-Daten zurück, um die Aufstellung zu ändern.',
     applied: (name: string) => `${name} übernommen.`,

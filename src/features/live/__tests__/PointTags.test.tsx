@@ -1,8 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
-import type { Match, Player, Position, SetEvent, SetLineup } from '@/domain/types';
+import type { Player, Position, SetEvent, SetLineup } from '@/domain/types';
 import { useAppStore } from '@/store';
+import { type SeedMatch, seedApp } from '@/test-utils';
 
 const player = (n: number, lastName: string, positions: Position[]): Player => ({
   id: `p${n}`,
@@ -42,25 +43,14 @@ const set1 = (
 });
 
 function seed(...sets: SetLineup[]) {
-  const match: Match = {
+  const match: SeedMatch = {
     id: 'm1',
-    teamId: 'team1',
-    seasonId: 's1',
-    opponentId: 'o1',
     opponent: 'Rivals',
     date: '2026-11-20',
     home: true,
     sets: sets.length ? sets : [set1()],
   };
-  useAppStore.getState().resetAll();
-  useAppStore.setState({
-    hydrated: true,
-    profiles: [{ id: 'prof1', name: 'Coach', color: '#FF6B00', createdAt: '2026-01-01' }],
-    teams: [{ id: 'team1', profileId: 'prof1', name: 'Herren 1', createdAt: '2026-01-01' }],
-    players,
-    matches: [match],
-    currentProfileId: 'prof1',
-  });
+  seedApp({ players, matches: [match] });
 }
 
 const events = (index = 0) => useAppStore.getState().matches[0]?.sets[index]?.events ?? [];
@@ -138,7 +128,9 @@ describe('point tagging in live mode', () => {
   it('a substitution dismisses the row', async () => {
     await open();
     await press('point-them');
-    await fireEvent.press(screen.getByRole('button', { name: 'Make a substitution' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Substitution: bring a player on from the bench' }),
+    );
     await press('live-court-2');
     await fireEvent.press(screen.getByLabelText(/^Number 8, Sub S/));
     expect(events()[1]).toEqual({ type: 'sub', outPlayerId: 'p2', inPlayerId: 'p8' });

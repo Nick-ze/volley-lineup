@@ -9,7 +9,13 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|nanoid|zustand|standard-navigation)',
   ],
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.test.{ts,tsx}', '!src/i18n/**'],
+  // src/test-utils: shared test helpers and fixtures (v8.3), not app code.
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.test.{ts,tsx}',
+    '!src/i18n/**',
+    '!src/test-utils/**',
+  ],
   coverageThreshold: {
     './src/domain/': { statements: 100, branches: 100, functions: 100, lines: 100 },
   },
