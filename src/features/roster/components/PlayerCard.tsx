@@ -7,8 +7,8 @@ import { NumberAvatar } from '@/features/photos/NumberAvatar';
 import { useT } from '@/i18n';
 import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
-/** Diameter of the picture (or the big jersey number) on a card. */
-export const CARD_PHOTO_SIZE = 88;
+/** v8.2: the jersey number on a card without a picture, as a share of the picture's side. */
+const CARD_NUMBER_SCALE = 0.36;
 
 export interface PlayerCardProps {
   player: Player;
@@ -20,6 +20,7 @@ export interface PlayerCardProps {
 
 /**
  * v8: one player in the roster grid: picture (or the jersey number), name (first name first),
+ * (v8.2: the picture fills the card's width as a square, the text sits below it)
  * number, position badges (first = primary) and the active / injured toggle. Descriptions are
  * never shown here.
  */
@@ -30,6 +31,9 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
   const name = fullName(player);
   const positions = player.positions.map((p) => t.positions[p]).join(', ');
   const toggleText = player.active ? s.active : s.inactive;
+  // The picture spans the card inside its border; its top corners follow the card's.
+  const side = Math.max(0, width - 2 * borderWidth.thin);
+  const corner = Math.max(0, radius.lg - borderWidth.thin);
   return (
     <View
       style={[styles.card, !player.active && styles.cardInactive, { width }]}
@@ -42,29 +46,38 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
         testID={`player-${player.number}`}
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
       >
-        <Photo
-          photoId={player.photoId}
-          size={CARD_PHOTO_SIZE}
-          dimmed={!player.active}
-          fallback={
-            <NumberAvatar
-              number={player.number}
-              size={CARD_PHOTO_SIZE}
-              inactive={!player.active}
-              large
-            />
-          }
-        />
-        <Text style={styles.name} numberOfLines={2} testID={`player-${player.number}-name`}>
-          {name}
-        </Text>
-        <Text style={styles.number} testID={`player-${player.number}-number`}>
-          {t.player.numberTag(player.number)}
-        </Text>
-        <View style={styles.badges}>
-          {player.positions.map((p) => (
-            <PositionBadge key={p} position={p} />
-          ))}
+        <View
+          style={[styles.picture, { borderTopLeftRadius: corner, borderTopRightRadius: corner }]}
+        >
+          <Photo
+            photoId={player.photoId}
+            size={side}
+            shape="square"
+            dimmed={!player.active}
+            fallback={
+              <NumberAvatar
+                number={player.number}
+                size={side}
+                shape="square"
+                inactive={!player.active}
+                large
+                largeScale={CARD_NUMBER_SCALE}
+              />
+            }
+          />
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={2} testID={`player-${player.number}-name`}>
+            {name}
+          </Text>
+          <Text style={styles.number} testID={`player-${player.number}-number`}>
+            {t.player.numberTag(player.number)}
+          </Text>
+          <View style={styles.badges}>
+            {player.positions.map((p) => (
+              <PositionBadge key={p} position={p} />
+            ))}
+          </View>
         </View>
       </Pressable>
       <Pressable
@@ -94,17 +107,26 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: radius.lg,
     borderWidth: borderWidth.thin,
     borderColor: theme.colors.border,
-    padding: spacing.sm,
+    overflow: 'hidden',
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
   cardInactive: { borderColor: theme.colors.error },
   // Grows so the toggles of a row line up at the bottom of equally tall cards.
-  main: { flexGrow: 1, alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs },
+  main: { flexGrow: 1 },
+  picture: { overflow: 'hidden' },
+  info: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
   pressed: { opacity: 0.8 },
   name: { ...typography.subheading, color: theme.colors.text, textAlign: 'center' },
   number: { ...typography.label, color: theme.colors.textMuted },
   badges: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xs },
   toggle: {
+    marginHorizontal: spacing.sm,
     minHeight: touchTarget,
     minWidth: touchTarget,
     alignItems: 'center',
