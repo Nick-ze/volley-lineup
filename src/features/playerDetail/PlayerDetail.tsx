@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { Text } from 'react-native';
 
+import { useListStyles } from '@/components';
 import { playerSeason } from '@/domain/performance';
 import type { Player } from '@/domain/types';
 import { DescriptionSection } from '@/features/descriptions/DescriptionSection';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, usePlayersForTeam } from '@/store';
 

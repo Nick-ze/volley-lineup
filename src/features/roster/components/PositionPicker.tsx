@@ -1,12 +1,10 @@
 import { Text, View } from 'react-native';
 
+import { ChoiceChip, useFormStyles } from '@/components';
 import { makePrimaryPosition, togglePosition } from '@/domain/roster';
 import { ALL_POSITIONS, type Position } from '@/domain/types';
 import { useT } from '@/i18n';
 import { makeStyles, spacing, typography } from '@/theme';
-
-import { ChoiceChip } from './ChoiceChip';
-import { useFormStyles } from './styles';
 
 export interface PositionPickerProps {
   value: Position[];

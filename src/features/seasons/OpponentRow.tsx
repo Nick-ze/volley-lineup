@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ListRow, TextField, useFormStyles, useListStyles } from '@/components';
 import {
   validateOpponentName,
   type OpponentNameError,
   type OpponentRecord,
 } from '@/domain/seasons';
-import { ListRow } from '@/features/roster/components/ListRow';
-import { useFormStyles, useListStyles } from '@/features/roster/components/styles';
-import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 

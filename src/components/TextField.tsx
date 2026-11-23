@@ -1,7 +1,8 @@
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { NoTabSwipe } from '@/components';
 import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
+
+import { NoTabSwipe } from './SwipeTabs';
 
 export interface TextFieldProps extends Pick<
   TextInputProps,

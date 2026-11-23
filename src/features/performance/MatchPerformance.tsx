@@ -1,12 +1,10 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { SwipeTabs } from '@/components';
+import { SetChipFilter, SwipeTabs, useListStyles } from '@/components';
 import { matchPerformance, performanceRows } from '@/domain/performance';
 import { playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
-import { useListStyles } from '@/features/roster/components/styles';
-import { SetChipFilter } from '@/features/stats/SetChipFilter';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
 import { makeStyles, spacing } from '@/theme';

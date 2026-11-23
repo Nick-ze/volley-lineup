@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ConfirmDialog, ListRow, useConfirm, useListStyles } from '@/components';
 import {
   filledCount,
   nextPresetName,
@@ -10,10 +10,6 @@ import {
   validatePresetName,
 } from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
-import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
-import { ListRow } from '@/features/roster/components/ListRow';
-import { useListStyles } from '@/features/roster/components/styles';
-import { useConfirm } from '@/features/roster/hooks/useConfirm';
 import { useT } from '@/i18n';
 import { useAppStore, usePresetsForTeam } from '@/store';
 

@@ -1,9 +1,8 @@
 import { Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button } from '@/components';
+import { Button, useListStyles } from '@/components';
 import type { Match, Season } from '@/domain/types';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, useSeasonsForTeam } from '@/store';
 import { makeStyles, spacing } from '@/theme';

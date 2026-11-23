@@ -1,9 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet, View } from 'react-native';
 
+import { ListRow } from '@/components';
 import { touchTarget } from '@/theme';
-
-import { ListRow } from '../components/ListRow';
 
 const basis = (testID: string) =>
   StyleSheet.flatten(screen.getByTestId(testID).props.style).flexBasis as number;

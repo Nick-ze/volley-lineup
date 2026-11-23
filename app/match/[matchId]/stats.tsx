@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen, ScreenTitle } from '@/components';
-import { NotFound } from '@/features/roster/components/NotFound';
+import { NotFound, Screen, ScreenTitle } from '@/components';
 import { MatchStats } from '@/features/stats/MatchStats';
 import { useT } from '@/i18n';
 import { useMatch } from '@/store';

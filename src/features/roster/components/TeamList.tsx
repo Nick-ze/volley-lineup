@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button, TeamAvatar } from '@/components';
+import {
+  Button,
+  ConfirmDialog,
+  ListRow,
+  TeamAvatar,
+  useConfirm,
+  useListStyles,
+} from '@/components';
 import type { Team } from '@/domain/types';
 import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
 
-import { useConfirm } from '../hooks/useConfirm';
-import { ConfirmDialog } from './ConfirmDialog';
-import { ListRow } from './ListRow';
-import { useListStyles } from './styles';
 import { TeamForm } from './TeamForm';
 
 type Editing = { mode: 'create' } | { mode: 'edit'; id: string } | null;

@@ -2,9 +2,7 @@ import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { Text } from 'react-native';
 
-import { Button, Screen } from '@/components';
-import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
-import { useConfirm } from '@/features/roster/hooks/useConfirm';
+import { Button, ConfirmDialog, Screen, useConfirm } from '@/components';
 import { Section } from '@/features/settings/Section';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';

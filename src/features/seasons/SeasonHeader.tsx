@@ -1,8 +1,7 @@
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ChoiceChip } from '@/components';
 import type { Season } from '@/domain/types';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
 import { useT } from '@/i18n';
 import { makeStyles, spacing, typography } from '@/theme';
 
