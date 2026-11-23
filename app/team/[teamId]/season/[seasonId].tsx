@@ -1,8 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
-import { Screen, ScreenTitle, SwipeTabs } from '@/components';
-import { NotFound } from '@/features/roster/components/NotFound';
+import { NotFound, Screen, ScreenTitle, SwipeTabs } from '@/components';
 import { SeasonHeader } from '@/features/seasons/SeasonHeader';
 import { SeasonMatches } from '@/features/seasons/SeasonMatches';
 import { SeasonOpponents } from '@/features/seasons/SeasonOpponents';

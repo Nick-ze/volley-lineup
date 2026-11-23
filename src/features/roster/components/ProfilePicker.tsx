@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ConfirmDialog, ListRow, useConfirm, useListStyles } from '@/components';
 import type { ManagerProfile } from '@/domain/types';
 import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 
-import { useConfirm } from '../hooks/useConfirm';
 import { Avatar } from './Avatar';
-import { ConfirmDialog } from './ConfirmDialog';
-import { ListRow } from './ListRow';
 import { ProfileForm } from './ProfileForm';
-import { useListStyles } from './styles';
 
 type Editing = { mode: 'create' } | { mode: 'edit'; profile: ManagerProfile } | null;
 

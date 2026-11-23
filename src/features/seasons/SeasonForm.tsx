@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ChoiceChip, TextField, useFormStyles } from '@/components';
 import { DATE_INPUT_MAX_LENGTH, formatDateInput, todayInput } from '@/domain/dates';
 import {
   SEASON_KINDS,
@@ -11,9 +11,6 @@ import {
   type SeasonFormResult,
 } from '@/domain/seasons';
 import type { Season } from '@/domain/types';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
-import { useFormStyles } from '@/features/roster/components/styles';
-import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 

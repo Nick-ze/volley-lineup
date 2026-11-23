@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ConfirmDialog, TextField, useConfirm, useListStyles } from '@/components';
 import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
-import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
-import { TextField } from '@/features/roster/components/TextField';
-import { useListStyles } from '@/features/roster/components/styles';
-import { useConfirm } from '@/features/roster/hooks/useConfirm';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForSeason } from '@/store';
 

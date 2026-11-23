@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, TeamAvatar } from '@/components';
+import { Button, TeamAvatar, TextField, useFormStyles } from '@/components';
 import {
   validateTeamForm,
   type FormErrors,
@@ -13,8 +13,6 @@ import { KEEP_PHOTO, type PhotoDraft } from '@/features/photos/photoDraft';
 import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
-import { useFormStyles } from './styles';
-import { TextField } from './TextField';
 
 export interface TeamFormProps {
   initial?: TeamFormValue;

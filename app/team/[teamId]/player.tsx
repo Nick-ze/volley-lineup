@@ -1,10 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen, ScreenTitle } from '@/components';
+import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
 import { isPlayerInPlayedSet } from '@/domain/playerUsage';
-import { NotFound } from '@/features/roster/components/NotFound';
 import { PlayerForm } from '@/features/roster/components/PlayerForm';
-import { useGoBack } from '@/features/roster/hooks/useGoBack';
 import { useT } from '@/i18n';
 import { useAppStore, usePlayer, useTeam } from '@/store';
 

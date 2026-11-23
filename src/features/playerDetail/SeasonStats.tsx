@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
+import { useListStyles } from '@/components';
 import { errorBreakdown, plusMinus, type PlayerSeason } from '@/domain/performance';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 

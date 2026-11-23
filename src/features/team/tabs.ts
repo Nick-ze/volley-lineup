@@ -1,4 +1,4 @@
-import { parseTab } from '@/components/parseTab';
+import { parseTab } from '@/lib/parseTab';
 
 /** The sections of the team screen (`/team/[teamId]?tab=…`), in nav bar order. */
 export const TEAM_TABS = ['roster', 'matches', 'presets', 'starters', 'stats'] as const;

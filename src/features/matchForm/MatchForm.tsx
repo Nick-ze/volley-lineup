@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ChoiceChip, TextField, useFormStyles } from '@/components';
 import {
   matchingOpponent,
   validateNewMatch,
@@ -9,9 +9,6 @@ import {
   type NewMatchValue,
 } from '@/domain/matchForm';
 import { DATE_INPUT_MAX_LENGTH, todayInput } from '@/domain/dates';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
-import { useFormStyles } from '@/features/roster/components/styles';
-import { TextField } from '@/features/roster/components/TextField';
 import { errorText } from '@/features/roster/errorText';
 import { useT } from '@/i18n';
 import { useOpponentsForSeason, useSeasonsForTeam } from '@/store';

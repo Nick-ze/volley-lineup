@@ -1,9 +1,7 @@
 import { Text, View } from 'react-native';
 
+import { ChoiceChip, TextField, useFormStyles } from '@/components';
 import type { Season } from '@/domain/types';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
-import { useFormStyles } from '@/features/roster/components/styles';
-import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 
 import { useChipStyles } from './chipStyles';

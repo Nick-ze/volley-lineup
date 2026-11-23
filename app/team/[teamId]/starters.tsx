@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 
+import { NotFound } from '@/components';
 import { emptyPresetLineup, type PresetLineup } from '@/domain/presets';
 import { PresetLineupEditor } from '@/features/presets/PresetLineupEditor';
-import { NotFound } from '@/features/roster/components/NotFound';
 import { useT } from '@/i18n';
 import { useAppStore, useStarters, useTeam } from '@/store';
 

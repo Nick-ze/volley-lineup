@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
+import { useListStyles } from '@/components';
 import { seasonOverview, seasonStats } from '@/domain/stats';
-import { useListStyles } from '@/features/roster/components/styles';
 import { PlayerTable } from '@/features/stats/PlayerTable';
 import { RotationTable } from '@/features/stats/RotationTable';
 import { SeasonOverview } from '@/features/stats/SeasonOverview';

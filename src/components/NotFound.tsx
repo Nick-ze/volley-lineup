@@ -1,9 +1,10 @@
 import { Text } from 'react-native';
 
-import { Button, Screen } from '@/components';
 import { useT } from '@/i18n';
 
-import { useListStyles } from './styles';
+import { Button } from './Button';
+import { useListStyles } from './formStyles';
+import { Screen } from './Screen';
 
 /** Shown when a route points at a team / player that no longer exists. */
 export function NotFound({

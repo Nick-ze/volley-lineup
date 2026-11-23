@@ -1,17 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { SwipeTabs } from '@/components';
+import { SetChipFilter, SwipeTabs, useListStyles } from '@/components';
 import { matchStats, playedSetNumbers } from '@/domain/stats';
 import type { Match, Player, SetNumber } from '@/domain/types';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
 import { makeStyles, spacing, typography } from '@/theme';
 
 import { PlayerTable } from './PlayerTable';
 import { RotationTable } from './RotationTable';
-import { SetChipFilter } from './SetChipFilter';
 
 /** One match's rotation and player tables, for all sets or one played set. */
 export function MatchStats({ match }: { match: Match }) {

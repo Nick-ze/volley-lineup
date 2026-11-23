@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Dialog, useDialogStyles } from '@/components';
+import { Button, Dialog, TextField, useDialogStyles } from '@/components';
 import { validatePresetName, type PresetNameError } from '@/domain/presets';
-import { TextField } from '@/features/roster/components/TextField';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 

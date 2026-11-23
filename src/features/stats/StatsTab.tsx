@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { useListStyles } from '@/components';
 import { seasonOverview, seasonStats } from '@/domain/stats';
 import { defaultStatsSeasonId } from '@/domain/statsSeason';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, usePlayersForTeam, useSeasonsForTeam } from '@/store';
 import { makeStyles, spacing } from '@/theme';

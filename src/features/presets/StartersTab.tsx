@@ -1,14 +1,13 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
+import { Button, useListStyles } from '@/components';
 import { fullName } from '@/domain/playerNames';
-import { Button } from '@/components';
 import { emptySetLineup } from '@/domain/lineup';
 import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
 import { isOffPosition, spotRoles } from '@/domain/roles';
 import { COURT_POSITIONS, type CourtPosition, type Player, type Position } from '@/domain/types';
 import { RotationCourt } from '@/features/rotation';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT, type Strings } from '@/i18n';
 import { usePlayersForTeam, useStarters } from '@/store';
 import { makeStyles, radius, spacing, typography } from '@/theme';

@@ -1,11 +1,9 @@
 import { Text } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ListRow, useListStyles } from '@/components';
 import { formatDate } from '@/domain/dates';
 import type { Match } from '@/domain/types';
 import { matchResultLabel } from '@/features/live/matchResult';
-import { ListRow } from '@/features/roster/components/ListRow';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 
 export interface MatchRowProps {

@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
+import { useListStyles } from '@/components';
 import type { SeasonOverview as Overview } from '@/domain/stats';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
