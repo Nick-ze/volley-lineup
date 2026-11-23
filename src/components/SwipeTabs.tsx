@@ -1,102 +1,91 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { useContext, useMemo, type ReactNode } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { GestureDetector, useNativeGesture, type PanGesture } from 'react-native-gesture-handler';
-import type { SharedValue } from 'react-native-reanimated';
+import { GestureDetector, useNativeGesture } from 'react-native-gesture-handler';
 
+import { pagerWindow } from '@/domain/tabMotion';
 import { spacing } from '@/theme';
 
 import { SlideTransition } from './SlideTransition';
 import { PagerView } from './TabPager';
+import { TabSwipeContext, type TabSwipe } from './tabSwipeContext';
 import { usePagerGesture } from './usePagerGesture';
 import { useTabPager } from './useTabPager';
 
-interface TabSwipe {
-  gesture: PanGesture;
-  /** Set while the touch began in a `NoTabSwipe` area: that touch never changes the tab. */
-  blocked: SharedValue<boolean>;
-}
-
 type NativeConfig = Parameters<typeof useNativeGesture>[0];
 
-/** The tab swipe of the nearest `SwipeTabs` (null outside one). */
-const TabSwipeContext = createContext<TabSwipe | null>(null);
-
 export interface SwipeTabsProps<T> {
-  /** The tabs in their visual order (left to right). */
+  /** The tabs in their visual order (left to right); each must give a distinct `String(tab)`. */
   tabs: readonly T[];
   value: T;
   onChange: (next: T) => void;
-  /** The current tab's content (default: `renderTab(value)`). */
-  children?: ReactNode;
   /**
-   * v8.1: the content of any tab, for the neighbouring page a drag shows beside the current one
-   * (mounted only while a drag shows it): it should look like the current page for that tab.
+   * The content of a tab. v8.1.1: the shown tab and its neighbours are rendered with it and stay
+   * mounted (keyed by the tab), so a tab change never remounts a page.
    */
   renderTab: (tab: T) => ReactNode;
   /** Gesture test id (`getByGestureTestId`); unique per screen. */
   testID: string;
-  /**
-   * `grow` (default): content inside a page's ScrollView, at least as tall as the page.
-   * `fill`: a whole screen with its own ScrollView, exactly as tall as its parent.
-   */
-  size?: 'grow' | 'fill';
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   /**
    * v8.1: the parent's side padding, which the drag uses so pages slide out to the screen's
-   * edges (default: the `Screen` padding for `grow`, none for `fill`).
+   * edges (default: the `Screen` padding).
    */
   bleed?: number;
 }
 
 /**
- * v8 (PLAN §31.2): tab content that slides in from the side of the chosen tab. v8.1: a sideways
- * drag moves it with the finger, the neighbouring tab beside it (an interactive pager); released
- * past a third of the width or flicked it goes on to that tab, else back. The pan only takes over
- * after `TAB_SWIPE_ACTIVATION` px sideways and fails on vertical movement, so scrolling and taps
- * keep working. Inside another `SwipeTabs` only the outer one swipes (this one just slides), so
- * one drag never changes two things. Areas that need sideways drags themselves sit in `NoTabSwipe`.
+ * v8 (PLAN §31.2): tab content that pages sideways. v8.1: a sideways drag moves it with the
+ * finger, the neighbouring tab beside it; released past 35 % of the width or flicked it goes on
+ * to that tab, else back. v8.1.1: a real pager — the shown tab and its neighbours stay mounted,
+ * so the drag and the tab change never swap or remount a page (no flicker); a tapped tab slides
+ * in. The pan only takes over after `TAB_SWIPE_ACTIVATION` px sideways and fails on vertical
+ * movement, so scrolling and taps keep working. Inside another pager only the outer one swipes
+ * (this one just slides), so one drag never changes two things. Areas that need sideways drags
+ * themselves sit in `NoTabSwipe`.
  */
 export function SwipeTabs<T>(props: SwipeTabsProps<T>) {
   const outer = useContext(TabSwipeContext);
-  if (outer) return <Slide {...props} />;
+  if (outer || !props.tabs.includes(props.value)) return <Slide {...props} />;
   return <SwipeArea {...props} />;
 }
 
-function Slide<T>(props: SwipeTabsProps<T> & { instant?: boolean }) {
-  const box = styles[props.size ?? 'grow'];
+function Slide<T>(props: SwipeTabsProps<T>) {
   return (
     <SlideTransition
       index={props.tabs.indexOf(props.value)}
-      instant={props.instant}
-      style={[box, props.style]}
-      contentStyle={[box, props.contentStyle]}
+      style={[styles.grow, props.style]}
+      contentStyle={[styles.grow, props.contentStyle]}
       testID={`${props.testID}-slide`}
     >
-      {props.children ?? props.renderTab(props.value)}
+      {props.renderTab(props.value)}
     </SlideTransition>
   );
 }
 
 function SwipeArea<T>(props: SwipeTabsProps<T>) {
   const { tabs, value, onChange, renderTab, testID } = props;
-  const pager = useTabPager(tabs, tabs.indexOf(value), onChange);
+  const index = tabs.indexOf(value);
+  const pager = useTabPager(tabs.length, index, (next) => onChange(tabs[next] as T));
   const gesture = usePagerGesture(pager, tabs.length, testID);
   const { blocked } = pager;
   const tabSwipe = useMemo(() => ({ gesture, blocked }), [gesture, blocked]);
+  const pages = pagerWindow(index, pager.rest, tabs.length, pager.ready).map((i) => {
+    const tab = tabs[i] as T;
+    return { key: String(tab), index: i, content: renderTab(tab) };
+  });
   return (
     <TabSwipeContext.Provider value={tabSwipe}>
       <PagerView
         pager={pager}
         gesture={gesture}
-        neighbour={pager.neighbour ? renderTab(tabs[pager.neighbour.index] as T) : null}
-        style={styles[props.size ?? 'grow']}
-        bleed={props.bleed ?? (props.size === 'fill' ? 0 : spacing.lg)}
+        pages={pages}
+        index={index}
+        style={[styles.grow, props.style]}
+        bleed={props.bleed ?? spacing.lg}
         contentStyle={props.contentStyle}
         testID={testID}
-      >
-        <Slide {...props} instant={pager.instant} />
-      </PagerView>
+      />
     </TabSwipeContext.Provider>
   );
 }
@@ -104,7 +93,7 @@ function SwipeArea<T>(props: SwipeTabsProps<T>) {
 /**
  * Wraps one native view that handles sideways drags itself (a horizontal ScrollView, a text
  * field): a touch that starts on it never changes the tab, so scrolling a table or selecting
- * text works as before. Outside a `SwipeTabs` it renders the child as it is.
+ * text works as before. Outside a pager it renders the child as it is.
  */
 export function NoTabSwipe({ children, testID }: { children: ReactNode; testID?: string }) {
   const tabSwipe = useContext(TabSwipeContext);
@@ -143,7 +132,5 @@ function Blocker({
   return <GestureDetector gesture={native}>{children}</GestureDetector>;
 }
 
-const styles = StyleSheet.create({
-  grow: { flexGrow: 1 },
-  fill: { flex: 1 },
-});
+// Content inside a page's ScrollView, at least as tall as the page.
+const styles = StyleSheet.create({ grow: { flexGrow: 1 } });

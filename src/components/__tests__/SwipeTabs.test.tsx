@@ -14,40 +14,46 @@ jest.mock('react-native-reanimated', () => {
     ...mock,
     useReducedMotion: jest.fn(() => false),
     withSequence: jest.fn(mock.withSequence),
+    withTiming: jest.fn(mock.withTiming),
   };
 });
 const reduceMotion = Reanimated.useReducedMotion as jest.Mock;
 const withSequence = Reanimated.withSequence as jest.Mock;
+const withTiming = Reanimated.withTiming as jest.Mock;
 
 const TABS = ['a', 'b', 'c'] as const;
 type Tab = (typeof TABS)[number];
 
+// v8.1.1: SwipeTabs renders every page with `renderTab` (no `children`), so the tab buttons sit
+// beside it and each page holds its content.
 function Tabs({ inner = false, blocked = false }: { inner?: boolean; blocked?: boolean }) {
   const [tab, setTab] = useState<Tab>('a');
-  const content = <Text>{`content ${tab}`}</Text>;
-  const page = (k: Tab) => <Text>{`page ${k}`}</Text>;
-  return (
-    <SwipeTabs tabs={TABS} value={tab} onChange={setTab} renderTab={page} testID="outer">
-      {TABS.map((k) => (
-        <Text key={k} onPress={() => setTab(k)} testID={`tab-${k}`}>
-          {k}
-        </Text>
-      ))}
+  const content = (k: Tab) => <Text>{`content ${k}`}</Text>;
+  const page = (k: Tab) => (
+    <>
       {inner ? (
-        <SwipeTabs tabs={TABS} value={tab} onChange={setTab} renderTab={page} testID="inner">
-          {content}
-        </SwipeTabs>
+        <SwipeTabs tabs={TABS} value={k} onChange={setTab} renderTab={content} testID="inner" />
       ) : (
-        content
+        content(k)
       )}
-      {blocked ? (
+      {blocked && k === 'a' ? (
         <NoTabSwipe testID="table">
           <ScrollView horizontal>
             <Text>table</Text>
           </ScrollView>
         </NoTabSwipe>
       ) : null}
-    </SwipeTabs>
+    </>
+  );
+  return (
+    <>
+      {TABS.map((k) => (
+        <Text key={k} onPress={() => setTab(k)} testID={`tab-${k}`}>
+          {k}
+        </Text>
+      ))}
+      <SwipeTabs tabs={TABS} value={tab} onChange={setTab} renderTab={page} testID="outer" />
+    </>
   );
 }
 
@@ -65,6 +71,7 @@ const swipe = (id: string, dx: number) =>
 beforeEach(() => {
   reduceMotion.mockReturnValue(false);
   withSequence.mockClear();
+  withTiming.mockClear();
 });
 
 describe('SwipeTabs', () => {
@@ -87,7 +94,10 @@ describe('SwipeTabs', () => {
     await render(inRoot(<Tabs />));
     await fireEvent.press(screen.getByTestId('tab-c'));
     expect(screen.getByText('content c')).toBeTruthy();
-    expect(withSequence).toHaveBeenCalled();
+    // v8.1.1: the pager itself slides the pages (one shared position), not a SlideTransition.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 40)));
+    expect(withTiming).toHaveBeenCalledWith(2, expect.anything(), expect.any(Function));
+    expect(withSequence).not.toHaveBeenCalled();
   });
 
   it('swipes only with the outer tabs when nested', async () => {
