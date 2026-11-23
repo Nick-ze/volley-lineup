@@ -9,28 +9,21 @@
  *
  * Pure: no React, no i18n import. Translated labels come in through `labels`, and every piece of
  * user text (names, team, opponent, season, labels) is HTML-escaped.
+ *
+ * v8.3: the style sheet (`lineupSheetCss.ts`), the results section (`lineupSheetResults.ts`) and
+ * the HTML escaping (`html.ts`) live in their own modules; this one lays out the sets and roster.
  */
-import { printColors as c, printLayout as l } from '../theme/print';
 import { formatDate } from './dates';
-import { getMatchState, type MatchState } from './matchState';
+import { escapeHtml } from './html';
+import { LINEUP_SHEET_CSS } from './lineupSheetCss';
+import { hasResults, renderResults, type LineupSheetResultLabels } from './lineupSheetResults';
+import { getMatchState } from './matchState';
 import { fullName } from './playerNames';
 import { isOffPosition, roleOf, spotRole } from './roles';
 import type { CourtPosition, Match, Player, SetLineup, Team } from './types';
 
-/** Labels of the optional "with results" section (v3). */
-export interface LineupSheetResultLabels {
-  heading: string;
-  /** Final result of a decided match, e.g. "Won" / "Lost"; "In progress" otherwise. */
-  won: string;
-  lost: string;
-  inProgress: string;
-  setsWon: string;
-  /** e.g. "Set 1 25:21"; `open` is true for a set that is still being played. */
-  setScore: (setNumber: number, us: number, them: number, open: boolean) => string;
-  duration: string;
-  /** e.g. "1 h 32 min" from whole hours and the remaining minutes. */
-  durationValue: (hours: number, minutes: number) => string;
-}
+export { escapeHtml } from './html';
+export { hasResults, type LineupSheetResultLabels } from './lineupSheetResults';
 
 export interface LineupSheetLabels {
   /** Document title, e.g. "Lineup · Team vs Opponent". */
@@ -85,47 +78,18 @@ export interface LineupSheetInput {
   withResults?: boolean;
 }
 
-/** True once a rally of the match has been played, i.e. there are results to print. */
-export function hasResults(match: Pick<Match, 'sets'>): boolean {
-  return getMatchState(match).status !== 'notStarted';
-}
-
-/** Whole hours and remaining minutes of a duration, rounded to the nearest minute. */
-export function durationParts(ms: number): { hours: number; minutes: number } {
-  const total = Math.round(ms / 60_000);
-  return { hours: Math.floor(total / 60), minutes: total % 60 };
-}
-
 /** Court cells in reading order: front row under the net, then the back row. */
 export const SHEET_ROWS: readonly (readonly CourtPosition[])[] = [
   [4, 3, 2],
   [5, 6, 1],
 ] as const;
 
-const HTML_ESCAPES: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-};
-
-/** Escapes text for use in HTML element content and quoted attribute values. */
-export function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
-}
-
-/** v8: "Anna Meier", first name first. */
-export function playerName(player: Player): string {
-  return fullName(player);
-}
-
 function playerCell(player: Player | undefined, id: string | null, labels: LineupSheetLabels) {
   if (!id) return `<span class="empty">${escapeHtml(labels.emptySlot)}</span>`;
   if (!player) return `<span class="empty">${escapeHtml(labels.unknownPlayer)}</span>`;
   return (
     `<span class="num">${player.number}</span>` +
-    `<span class="name">${escapeHtml(playerName(player))}</span>`
+    `<span class="name">${escapeHtml(fullName(player))}</span>`
   );
 }
 
@@ -189,46 +153,12 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
   );
 }
 
-function renderResults(state: MatchState, labels: LineupSheetResultLabels): string {
-  const status =
-    state.status === 'won' ? labels.won : state.status === 'lost' ? labels.lost : labels.inProgress;
-  const sets = state.sets
-    .filter((set) => set.status !== 'notStarted')
-    .map((set) => {
-      const text = labels.setScore(
-        set.setNumber,
-        set.score.us,
-        set.score.them,
-        set.status === 'inProgress',
-      );
-      return `<li data-set-result="${set.setNumber}">${escapeHtml(text)}</li>`;
-    })
-    .join('');
-  const line = (cls: string, label: string, value: string) =>
-    `<div class="${cls}"><span class="label">${escapeHtml(label)}</span> ${escapeHtml(value)}</div>`;
-  let duration = '';
-  // Under a minute there is nothing useful to show (no "0 min").
-  if (state.durationMs !== null && state.durationMs >= 60_000) {
-    const { hours, minutes } = durationParts(state.durationMs);
-    duration = line('duration', labels.duration, labels.durationValue(hours, minutes));
-  }
-  return (
-    `<section class="results" data-status="${state.status}">` +
-    `<h2>${escapeHtml(labels.heading)}</h2>` +
-    `<div class="final">${escapeHtml(status)}</div>` +
-    line('sets-won', labels.setsWon, `${state.setsWon.us}:${state.setsWon.them}`) +
-    `<ul class="set-scores">${sets}</ul>` +
-    duration +
-    `</section>`
-  );
-}
-
 function renderRoster(players: Player[], labels: LineupSheetLabels): string {
   if (players.length === 0) return `<p class="empty">${escapeHtml(labels.noPlayers)}</p>`;
   const body = players
     .map(
       (p) =>
-        `<tr><td class="n">${p.number}</td><td>${escapeHtml(playerName(p))}</td>` +
+        `<tr><td class="n">${p.number}</td><td>${escapeHtml(fullName(p))}</td>` +
         `<td>${escapeHtml(p.positions.join(', '))}</td>` +
         `<td>${p.active ? '' : escapeHtml(labels.inactive)}</td></tr>`,
     )
@@ -239,55 +169,6 @@ function renderRoster(players: Player[], labels: LineupSheetLabels): string {
     `<th>${escapeHtml(labels.status)}</th></tr></thead><tbody>${body}</tbody></table>`
   );
 }
-
-const CSS = `
-@page { size: ${l.pageSize}; margin: ${l.pageMargin}; }
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: ${c.background}; color: ${c.text}; }
-body { font-family: ${l.fontFamily}; font-size: ${l.baseFontSize}; line-height: 1.3;
-  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-header { border-bottom: 2px solid ${c.border}; padding-bottom: 6px; margin-bottom: ${l.sectionGap}; }
-h1 { font-size: ${l.titleFontSize}; margin: 0 0 4px; }
-h2 { font-size: ${l.headingFontSize}; margin: 0 0 4px; }
-dl.meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; }
-dl.meta div { display: flex; gap: 4px; }
-dt { color: ${c.textMuted}; } dd { margin: 0; font-weight: 600; }
-.sets { display: grid; grid-template-columns: 1fr 1fr; gap: ${l.setGap}; }
-.set { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border}; padding: ${l.setPadding}; }
-.net { background: ${c.fill}; border: 1px solid ${c.border}; text-align: center;
-  font-size: ${l.smallFontSize}; letter-spacing: 2px; text-transform: uppercase; }
-table.court { width: 100%; border-collapse: collapse; table-layout: fixed; }
-td.cell { border: 1px solid ${c.grid}; height: ${l.cellHeight}; vertical-align: top; padding: 3px 4px; }
-td.serving { border: 2px solid ${c.border}; }
-.pos { display: block; font-size: ${l.smallFontSize}; line-height: 1.15; color: ${c.textMuted}; }
-.role { float: right; font-weight: 700; color: ${c.text}; }
-.off { font-weight: 800; }
-p.off-note { float: right; margin: 0; font-size: ${l.smallFontSize}; color: ${c.textMuted}; }
-.srv { font-weight: 700; color: ${c.text}; }
-.num { display: block; font-size: ${l.jerseyFontSize}; font-weight: 700; line-height: 1; }
-/* One line per name in a court cell (the roster lists full names), so the sheet keeps its height. */
-.name { display: block; font-size: ${l.nameFontSize}; line-height: 1.2; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; }
-.info .num, .info .name { display: inline; font-size: ${l.infoFontSize}; margin-right: 4px; }
-.info { margin-top: 3px; font-size: ${l.infoFontSize}; line-height: 1.2; display: grid; gap: 1px; }
-.info > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.label { color: ${c.textMuted}; }
-.empty { color: ${c.textMuted}; }
-section.roster-section { margin-top: ${l.sectionGap}; }
-table.roster thead { display: table-header-group; }
-table.roster tr { break-inside: avoid; page-break-inside: avoid; }
-table.roster { width: 100%; border-collapse: collapse; font-size: ${l.infoFontSize}; line-height: 1.15; }
-table.roster th, table.roster td { border: 1px solid ${c.grid}; padding: 1px 6px; text-align: left; }
-table.roster th { background: ${c.fill}; }
-table.roster td.n { width: 3em; font-weight: 700; text-align: right; }
-/* Compact: everything on one line (wraps only if needed), so a 5-set sheet stays on one page. */
-section.results { break-inside: avoid; page-break-inside: avoid; border: 1px solid ${c.border};
-  padding: 2px ${l.setPadding}; margin-bottom: ${l.setGap.split(' ')[0]}; font-size: ${l.infoFontSize};
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; line-height: 1.25; }
-section.results h2 { margin: 0; }
-.final { font-size: ${l.headingFontSize}; font-weight: 700; }
-ul.set-scores { display: flex; flex-wrap: wrap; gap: 0 10px; list-style: none; margin: 0; padding: 0; }
-`;
 
 /** Builds the full printable HTML document for a match. */
 export function buildLineupSheetHtml(input: LineupSheetInput): string {
@@ -325,7 +206,7 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
   return (
     `<!DOCTYPE html><html lang="${escapeHtml(input.lang ?? 'en')}"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
-    `<title>${escapeHtml(labels.documentTitle)}</title><style>${CSS}</style></head><body>` +
+    `<title>${escapeHtml(labels.documentTitle)}</title><style>${LINEUP_SHEET_CSS}</style></head><body>` +
     `<header><h1>${escapeHtml(team.name)}</h1><dl class="meta">${metaHtml}</dl></header>` +
     `<main>${resultsHtml}${setsHtml}<section class="roster-section">${offNote}` +
     `<h2>${escapeHtml(labels.roster)}</h2>` +
