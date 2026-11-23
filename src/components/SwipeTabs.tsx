@@ -117,18 +117,25 @@ function Blocker({
   const { gesture, blocked } = tabSwipe;
   // `block`: the tab swipe waits while this view scrolls (phones). The flag also covers a drag
   // that doesn't scroll (a mouse on web, a table that fits): the swipe may end, but is ignored.
-  const native = useNativeGesture({
-    // Web: a table / text field keeps the browser's own scrolling and text selection.
-    touchAction: 'auto',
-    userSelect: 'auto',
-    block: gesture,
-    disallowInterruption: true,
-    runOnJS: true,
-    testID,
-    onBegin: () => {
-      blocked.set(true);
-    },
-  } as NativeConfig);
+  // v8.3: one config object per gesture / test id (RNGH rebuilds the native gesture whenever the
+  // config object changes).
+  const config = useMemo(
+    () =>
+      ({
+        // Web: a table / text field keeps the browser's own scrolling and text selection.
+        touchAction: 'auto',
+        userSelect: 'auto',
+        block: gesture,
+        disallowInterruption: true,
+        runOnJS: true,
+        testID,
+        onBegin: () => {
+          blocked.set(true);
+        },
+      }) as NativeConfig,
+    [gesture, blocked, testID],
+  );
+  const native = useNativeGesture(config);
   return <GestureDetector gesture={native}>{children}</GestureDetector>;
 }
 
