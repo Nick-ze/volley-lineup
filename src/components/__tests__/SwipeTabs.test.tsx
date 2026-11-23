@@ -25,15 +25,16 @@ type Tab = (typeof TABS)[number];
 function Tabs({ inner = false, blocked = false }: { inner?: boolean; blocked?: boolean }) {
   const [tab, setTab] = useState<Tab>('a');
   const content = <Text>{`content ${tab}`}</Text>;
+  const page = (k: Tab) => <Text>{`page ${k}`}</Text>;
   return (
-    <SwipeTabs tabs={TABS} value={tab} onChange={setTab} testID="outer">
+    <SwipeTabs tabs={TABS} value={tab} onChange={setTab} renderTab={page} testID="outer">
       {TABS.map((k) => (
         <Text key={k} onPress={() => setTab(k)} testID={`tab-${k}`}>
           {k}
         </Text>
       ))}
       {inner ? (
-        <SwipeTabs tabs={TABS} value={tab} onChange={setTab} testID="inner">
+        <SwipeTabs tabs={TABS} value={tab} onChange={setTab} renderTab={page} testID="inner">
           {content}
         </SwipeTabs>
       ) : (

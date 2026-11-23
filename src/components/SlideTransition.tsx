@@ -41,6 +41,8 @@ export interface SlideTransitionProps {
   /** The moving content box (e.g. a `gap`). */
   contentStyle?: StyleProp<ViewStyle>;
   testID?: string;
+  /** v8.1: the new index is already in place (dragged there): change without a slide. */
+  instant?: boolean;
 }
 
 const EASING = Easing.out(Easing.cubic);
@@ -58,6 +60,7 @@ export function SlideTransition({
   contentStyle,
   clip = true,
   testID,
+  instant = false,
 }: SlideTransitionProps) {
   const reduceMotion = useReducedMotion();
   const lastRef = useRef<number | null>(fromIndex);
@@ -69,7 +72,7 @@ export function SlideTransition({
     const previous = lastRef.current;
     lastRef.current = index;
     const direction = previous === null ? 0 : slideDirection(previous, index);
-    if (direction === 0 || reduceMotion) return;
+    if (direction === 0 || reduceMotion || instant) return;
     const timing = { duration: SLIDE_DURATION_MS, easing: EASING };
     x.value = withSequence(
       withTiming(slideOffset(direction, width), { duration: 0 }),
