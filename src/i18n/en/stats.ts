@@ -31,9 +31,9 @@ export const stats = {
   filter: {
     label: 'Show stats for',
     all: 'All sets',
-    allLabel: 'Stats of all sets',
+    allLabel: 'All sets: show the stats',
     set: (n: number) => `Set ${n}`,
-    setLabel: (n: number) => `Stats of set ${n}`,
+    setLabel: (n: number) => `Set ${n}: show the stats`,
   },
   rotations: {
     heading: 'Rotations',
@@ -83,5 +83,5 @@ export const stats = {
   legend: (abbr: string, label: string) => `${abbr} = ${label}`,
   tableScrollLabel: (heading: string) => `${heading} table, scrolls sideways`,
   open: 'Stats',
-  openLabel: 'Open the statistics of this match',
+  openLabel: 'Stats: open the statistics of this match',
 };

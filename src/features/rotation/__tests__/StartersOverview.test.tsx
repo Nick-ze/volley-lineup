@@ -53,7 +53,7 @@ describe('starters overview', () => {
     );
     // Set 2 starts with the setter at 6.
     expect(await screen.findByText('Rotation 6 (setter on\u00a06)')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Show set 2' })).toBeSelected();
+    expect(screen.getByRole('tab', { name: 'Set 2: show this set' })).toBeSelected();
   });
 
   it('handles a missing match and a match without sets', async () => {

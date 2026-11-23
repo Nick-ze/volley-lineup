@@ -16,13 +16,13 @@ export const presets = {
   list: {
     count: (n: number) => (n === 1 ? '1 preset' : `${n} presets`),
     add: 'New preset',
-    addLabel: 'Create a new preset',
+    addLabel: 'New preset: create a saved lineup',
     empty:
       'No presets yet. Save lineups you use often (for example “5-1 strong serve”) and apply them to any set.',
     summary: (filled: number, libero: boolean) => `${filled}/6${libero ? ' + L' : ''}`,
     summaryLabel: (filled: number, libero: boolean) =>
       `${filled} of 6 positions filled${libero ? ', with libero' : ''}`,
-    open: (name: string) => `Edit preset ${name}`,
+    open: (name: string) => `${name}: edit preset`,
     renameLabel: (name: string) => `Rename preset ${name}`,
     duplicate: 'Copy',
     duplicateLabel: (name: string) => `Copy preset ${name}`,
@@ -58,9 +58,9 @@ export const presets = {
     empty:
       'No starters yet. Set the team’s usual starting six and libero once; new matches start with them.',
     set: 'Set starters',
-    setLabel: 'Set the team’s starters',
+    setLabel: 'Set starters of the team',
     edit: 'Edit starters',
-    editLabel: 'Edit the team’s starters',
+    editLabel: 'Edit starters of the team',
     incomplete: (filled: number) =>
       `${filled} of 6 positions set. New matches start with them in set 1; pick the other players in the match before the game.`,
     complete: 'New matches start with this lineup in set 1.',
@@ -80,9 +80,9 @@ export const presets = {
     applyPresetLabel: 'Choose a preset to fill this set',
     noPresets: 'The team has no presets yet (team screen › Presets).',
     choose: 'Choose a preset:',
-    presetLabel: (name: string) => `Apply preset ${name} to this set`,
+    presetLabel: (name: string) => `${name}: apply this preset to this set`,
     cancel: 'Cancel',
-    cancelLabel: 'Close the preset list',
+    cancelLabel: 'Cancel: close the preset list',
     locked: 'This set has been played; reset its live data to change the lineup.',
     applied: (name: string) => `Applied ${name}.`,
     startersName: 'the team starters',

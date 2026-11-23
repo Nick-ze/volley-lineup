@@ -15,7 +15,8 @@ export const lineup = {
   benchDropLabel: 'Move selected player to the bench',
   libero: 'Libero',
   liberoEmpty: 'No libero',
-  liberoSlotLabel: (name: string | null) => (name ? `Libero slot, ${name}` : 'Empty libero slot'),
+  liberoSlotLabel: (name: string | null) =>
+    name ? `Libero slot, ${name}` : 'No libero: empty libero slot',
   slotLabel: (position: number, name: string | null) =>
     name ? `Position ${position}, ${name}` : `Empty position ${position}`,
   /** An empty court spot with its role (v6); starts with the visible role code. */
@@ -33,7 +34,7 @@ export const lineup = {
   weServe: 'We serve first',
   theyServe: 'Opponent serves first',
   rotation: 'Rotation',
-  rotationLabel: 'Open the rotation viewer for this set',
+  rotationLabel: 'Rotation: open the rotation viewer for this set',
   starters: 'Starters',
   startersLabel: 'Starters: open the overview of all sets',
   validationTitle: 'Lineup check',
@@ -61,10 +62,10 @@ export const lineup = {
     hint: 'In the back row, except when serving.',
     noStarters: 'Put players on court to choose whom the libero replaces.',
     groupLabel: 'Players the libero replaces',
-    optionLabel: (number: number, name: string) => `Libero replaces number ${number} ${name}`,
+    optionLabel: (number: number, name: string) => `#${number} ${name}: replaced by the libero`,
     optionText: (number: number, name: string) => `#${number} ${name}`,
     suggest: 'Suggest middles',
-    suggestLabel: 'Suggest the middle blockers on court',
+    suggestLabel: 'Suggest middles: the middle blockers on court',
   },
   rotate: {
     clockwise: 'Rotate ↻',
@@ -102,9 +103,9 @@ export const lineup = {
     lockedHint: 'This set has already been played, so its starting six cannot be refilled.',
     choose:
       'Pick a system: it becomes the formation (5-1 or 6-2) and fills the starting six by role from the roster. This replaces the current starters.',
-    systemLabel: (system: string) => `Fill the starting six with a ${system} system`,
+    systemLabel: (system: string) => `${system}: fill the starting six with a ${system} system`,
     cancel: 'Cancel',
-    cancelLabel: 'Close the template choice',
+    cancelLabel: 'Cancel: close the template choice',
     filled: (system: string) => `Formation set to ${system}, players filled in by role.`,
     missing: (system: string, list: string) =>
       `Formation set to ${system}, players filled in by role. Could not fill: ${list}. Add players with these positions or place someone by hand.`,

@@ -3,6 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { emptySetLineup } from '@/domain/lineup';
 import type { Formation, Player, SetLineup } from '@/domain/types';
+import { includeHidden } from '@/test-utils';
 import { rosterPlayers } from '@/test-utils/presetsTeam';
 import { useAppStore, selectStarters } from '@/store';
 
@@ -36,11 +37,10 @@ function seed(set: SetLineup = emptySetLineup(1)) {
 }
 
 /** Role tags are hidden from screen readers (the spot's label says the role), so include hidden. */
-const hidden = { includeHiddenElements: true };
 const tagText = () =>
   [1, 2, 3, 4, 5, 6].map((p) => {
-    const node = screen.getByTestId(`role-tag-${p}`, hidden);
-    return within(node).getByText(/^[A-Z]+$/, hidden).props.children as string;
+    const node = screen.getByTestId(`role-tag-${p}`, includeHidden);
+    return within(node).getByText(/^[A-Z]+$/, includeHidden).props.children as string;
   });
 const set1 = () => useAppStore.getState().matches[0].sets.find((s) => s.setNumber === 1)!;
 const open = () => renderRouter('./app', { initialUrl: '/match/m1?set=1' });
@@ -128,7 +128,7 @@ describe('lineup builder — off-position confirmation', () => {
       screen.getByRole('button', { name: 'Confirm: put them on the spot anyway' }),
     );
     expect(set1().slots[3]).toBe('p5');
-    expect(screen.getByTestId('role-off-3', hidden)).toBeTruthy();
+    expect(screen.getByTestId('role-off-3', includeHidden)).toBeTruthy();
   });
 
   it('places listed positions (primary or secondary) without asking', async () => {
@@ -139,8 +139,8 @@ describe('lineup builder — off-position confirmation', () => {
     await fireEvent.press(screen.getByTestId('slot-empty-4')); // Olga OH, OPP → OPP
     expect(screen.queryByTestId('placement-confirm')).toBeNull();
     expect(set1().slots).toMatchObject({ 3: 'p3', 4: 'p2' });
-    expect(screen.queryByTestId('role-off-3', hidden)).toBeNull();
-    expect(screen.queryByTestId('role-off-4', hidden)).toBeNull();
+    expect(screen.queryByTestId('role-off-3', includeHidden)).toBeNull();
+    expect(screen.queryByTestId('role-off-4', includeHidden)).toBeNull();
   });
 
   it('a swap names both players in one dialog; same-role swaps need none', async () => {
@@ -166,8 +166,8 @@ describe('lineup builder — off-position confirmation', () => {
     await fireEvent.press(screen.getByTestId('slot-player-3'));
     await fireEvent.press(screen.getByTestId('placement-confirm-button'));
     expect(set1().slots).toMatchObject({ 1: 'p3', 3: 'p1' });
-    expect(screen.getByTestId('role-off-1', hidden)).toBeTruthy();
-    expect(screen.getByTestId('role-off-3', hidden)).toBeTruthy();
+    expect(screen.getByTestId('role-off-1', includeHidden)).toBeTruthy();
+    expect(screen.getByTestId('role-off-3', includeHidden)).toBeTruthy();
   });
 });
 
@@ -197,7 +197,7 @@ describe('lineup builder — formation changes with players on court', () => {
       screen.getByRole('button', { name: 'Confirm: change the formation anyway' }),
     );
     expect(set1().formation.order).toBe('middle');
-    expect(screen.getByTestId('role-off-3', hidden)).toBeTruthy();
+    expect(screen.getByTestId('role-off-3', includeHidden)).toBeTruthy();
   });
 
   it('a libero who replaced the middles follows them to the new middle spots', async () => {
@@ -271,7 +271,7 @@ describe('lineup builder — templates set the formation system', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Fill from template' }));
     expect(screen.getByText(/it becomes the formation \(5-1 or 6-2\)/)).toBeTruthy();
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Fill the starting six with a 6-2 system' }),
+      screen.getByRole('button', { name: '6-2: fill the starting six with a 6-2 system' }),
     );
     expect(set1().formation.system).toBe('6-2');
     expect(screen.getByTestId('formation-system-6-2')).toBeChecked();

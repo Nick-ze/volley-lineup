@@ -3,6 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { emptySetLineup } from '@/domain/lineup';
 import type { Player, SetLineup } from '@/domain/types';
+import { includeHidden } from '@/test-utils';
 import { rosterPlayers } from '@/test-utils/presetsTeam';
 import { useAppStore } from '@/store';
 
@@ -43,7 +44,7 @@ function seed(set: SetLineup = lineup(), roster: Player[] = players()) {
 
 /** Role tags are hidden from screen readers (the spot's label says the role), so include hidden. */
 const tag = (query: 'findByTestId' | 'getByTestId' | 'queryByTestId', id: string) =>
-  screen[query](id, { includeHiddenElements: true });
+  screen[query](id, includeHidden);
 
 const set1 = () => useAppStore.getState().matches[0].sets.find((s) => s.setNumber === 1)!;
 const open = () => renderRouter('./app', { initialUrl: '/match/m1?set=1' });
@@ -183,7 +184,7 @@ describe('lineup builder — templates set roles', () => {
     await open();
     await fireEvent.press(await screen.findByRole('button', { name: 'Fill from template' }));
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Fill the starting six with a 6-2 system' }),
+      screen.getByRole('button', { name: '6-2: fill the starting six with a 6-2 system' }),
     );
     expect(screen.queryByTestId('role-confirm')).toBeNull();
     expect(set1().slots[5]).toBe('p4');

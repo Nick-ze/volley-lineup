@@ -89,14 +89,14 @@ describe('rotation viewer', () => {
     await screen.findByText('Rotation 1 (setter on 1)');
     await fireEvent.press(screen.getByRole('button', { name: 'Next rotation' }));
 
-    await fireEvent.press(screen.getByRole('tab', { name: 'Show set 2' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Set 2: show this set' }));
     expect(await screen.findByText('We receive first')).toBeTruthy();
     expect(screen.getByText('Rotation 6 (setter on 6)')).toBeTruthy();
     expectLineup({ 1: '2', 6: '1' });
     expect(screen.getByText('No libero')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Show set 2' })).toBeSelected();
+    expect(screen.getByRole('tab', { name: 'Set 2: show this set' })).toBeSelected();
     // Only existing sets get tabs.
-    expect(screen.queryByRole('tab', { name: 'Show set 4' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Set 4: show this set' })).toBeNull();
   });
 
   it('shows an empty set gracefully', async () => {
@@ -108,7 +108,7 @@ describe('rotation viewer', () => {
   it('falls back to the first set for an unknown set param and corrects the URL', async () => {
     await renderRouter('./app', { initialUrl: '/match/m1/rotation?set=9' });
     expect(await screen.findByText('We serve first')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Show set 1' })).toBeSelected();
+    expect(screen.getByRole('tab', { name: 'Set 1: show this set' })).toBeSelected();
     expect(screen).toHaveSearchParams({ matchId: 'm1', set: '1' });
   });
 

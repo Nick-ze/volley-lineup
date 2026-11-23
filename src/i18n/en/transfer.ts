@@ -7,7 +7,7 @@ export const transfer = {
     hint: 'Save your data as a .json file to keep a backup or move it to another device.',
     all: 'Export everything',
     team: (name: string) => `Export ${name}`,
-    teamLabel: (name: string) => `Export only the team ${name}`,
+    teamLabel: (name: string) => `Export ${name}: only this team`,
     teamsHeading: 'Export one team',
     noTeams: 'The current profile has no teams yet.',
     dialogTitle: 'Export Volley Lineup data',

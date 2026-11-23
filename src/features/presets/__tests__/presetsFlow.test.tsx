@@ -100,7 +100,7 @@ describe('presets tab', () => {
     await fireEvent.press(screen.getByTestId('confirm'));
     expect(store().presets.some((p) => p.name === 'Beta')).toBe(false);
 
-    await fireEvent.press(screen.getByRole('button', { name: /Edit preset Preset 1/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Preset 1: edit preset/ }));
     const copyId = store().presets.find((p) => p.name === 'Preset 1')!.id;
     expect(screen).toHavePathname(`/team/team1/preset/${copyId}`);
   });

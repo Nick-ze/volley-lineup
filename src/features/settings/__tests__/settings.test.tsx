@@ -208,8 +208,8 @@ describe('export', () => {
   it("exports one of the current profile's teams", async () => {
     seed();
     await renderSettings();
-    expect(screen.queryByLabelText('Export only the team Mixed')).toBeNull(); // other profile
-    await fireEvent.press(screen.getByLabelText('Export only the team Herren 1'));
+    expect(screen.queryByLabelText('Export Mixed: only this team')).toBeNull(); // other profile
+    await fireEvent.press(screen.getByLabelText('Export Herren 1: only this team'));
 
     const [name, text] = mockSave.mock.calls[0];
     expect(name).toMatch(/^volley-lineup-herren-1-\d{4}-\d{2}-\d{2}\.json$/);
