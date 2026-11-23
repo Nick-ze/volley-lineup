@@ -8,7 +8,7 @@ import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { COMPACT_CHIP_SIZE, COMPACT_SLOT_MIN_HEIGHT, EMPTY_SLOT_SIZE } from './constants';
 import { CourtPlayerSpot } from './CourtPlayerSpot';
-import { useDrag } from './drag/DragContext';
+import { useDrag } from './drag/dragTypes';
 import { useZoneStyles, zoneFeedback } from './drag/useDropZone';
 import type { LineupDraft } from './useLineupDraft';
 

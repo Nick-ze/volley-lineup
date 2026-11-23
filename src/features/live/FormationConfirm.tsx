@@ -1,9 +1,9 @@
-import { Modal, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, Dialog, useDialogStyles } from '@/components';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
-import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
+import { makeStyles, spacing } from '@/theme';
 
 import { playerRef } from './format';
 import type { PendingFormation } from './useSetupDraft';
@@ -27,6 +27,7 @@ export function FormationConfirm({
   onConfirm,
   onCancel,
 }: FormationConfirmProps) {
+  const dialog = useDialogStyles();
   const styles = useStyles();
   const t = useT();
   const s = t.live.setup;
@@ -34,51 +35,33 @@ export function FormationConfirm({
     .map((o) => s.formationOffAs(playerRef(t, playersById, o.playerId), t.positions[o.role]))
     .join(', ');
   return (
-    <Modal visible={change !== null} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
-        <View style={styles.card} accessibilityViewIsModal testID="formation-confirm">
-          <Text style={styles.title} accessibilityRole="header">
-            {s.formationOffTitle}
-          </Text>
-          <Text style={styles.message}>{s.formationOff(list)}</Text>
-          <View style={styles.actions}>
-            <Button
-              label={t.common.cancel}
-              accessibilityLabel={s.formationCancelLabel}
-              variant="secondary"
-              onPress={onCancel}
-              testID="formation-cancel"
-            />
-            <Button
-              label={s.formationConfirm}
-              accessibilityLabel={s.formationConfirmLabel}
-              onPress={onConfirm}
-              testID="formation-confirm-ok"
-            />
-          </View>
-        </View>
+    <Dialog
+      visible={change !== null}
+      onClose={onCancel}
+      title={s.formationOffTitle}
+      testID="formation-confirm"
+    >
+      <Text style={dialog.message}>{s.formationOff(list)}</Text>
+      <View style={styles.actions}>
+        <Button
+          label={t.common.cancel}
+          accessibilityLabel={s.formationCancelLabel}
+          variant="secondary"
+          onPress={onCancel}
+          testID="formation-cancel"
+        />
+        <Button
+          label={s.formationConfirm}
+          accessibilityLabel={s.formationConfirmLabel}
+          onPress={onConfirm}
+          testID="formation-confirm-ok"
+        />
       </View>
-    </Modal>
+    </Dialog>
   );
 }
 
-const useStyles = makeStyles((theme) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  card: {
-    width: '100%',
-    maxWidth: dialogMaxWidth,
-    backgroundColor: theme.colors.surfaceRaised,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  title: { ...typography.subheading, color: theme.colors.text },
-  message: { ...typography.body, color: theme.colors.text },
+const useStyles = makeStyles(() => ({
+  // The dialog's button row, wrapping when the labels don't fit side by side.
   actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: spacing.sm },
 }));
