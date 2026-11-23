@@ -1,6 +1,8 @@
 import { Text, View } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components';
+import type { Match, Season } from '@/domain/types';
 import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, useSeasonsForTeam } from '@/store';
@@ -41,15 +43,36 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
       <View style={[styles.grid, wide && styles.gridWide]} testID="season-list">
         {seasons.map((season) => (
           <View key={season.id} style={wide ? styles.cellWide : null}>
-            <SeasonCard
-              season={season}
-              matches={matches.filter((m) => m.seasonId === season.id)}
-              onPress={() => onOpenSeason(season.id)}
-            />
+            <SeasonBox season={season} teamMatches={matches} onOpenSeason={onOpenSeason} />
           </View>
         ))}
       </View>
     </>
+  );
+}
+
+/**
+ * v8.3: one season's box with its matches. The list keeps its array while those matches are
+ * unchanged (`useShallow`), so the box's overview isn't recomputed when another season changes.
+ */
+function SeasonBox({
+  season,
+  teamMatches,
+  onOpenSeason,
+}: {
+  season: Season;
+  teamMatches: readonly Match[];
+  onOpenSeason: (seasonId: string) => void;
+}) {
+  const ofSeason = useShallow((all: readonly Match[]) =>
+    all.filter((m) => m.seasonId === season.id),
+  );
+  return (
+    <SeasonCard
+      season={season}
+      matches={ofSeason(teamMatches)}
+      onPress={() => onOpenSeason(season.id)}
+    />
   );
 }
 

@@ -23,6 +23,7 @@
  */
 import { applyLiberoSwaps } from './liberoSwap';
 import { replaySteps } from './liveSet';
+import { memoByIdentity2 } from './memo';
 import { serverPosition } from './rotation';
 import { countedSets, setStats, type PlayerStats } from './stats';
 import {
@@ -95,8 +96,10 @@ function addInto(sum: PlayerPerformance, line: PlayerPerformance): void {
   for (const c of ERROR_CATEGORIES) sum.errorsByType[c] += line.errorsByType[c];
 }
 
-/** The performance of every player in one set. */
-export function setPerformance(set: SetLineup, players: readonly Player[]): Performance {
+/** The performance of every player in one set. v8.3: cached per set and players (never mutate it). */
+export const setPerformance = memoByIdentity2(setPerformanceOf);
+
+function setPerformanceOf(set: SetLineup, players: readonly Player[]): Performance {
   const result: Performance = { rallies: 0, players: {} };
   const base = setStats(set, players);
   for (const [id, stats] of Object.entries(base.players)) {

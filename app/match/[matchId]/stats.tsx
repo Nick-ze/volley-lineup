@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen } from '@/components';
+import { Screen, ScreenTitle } from '@/components';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { MatchStats } from '@/features/stats/MatchStats';
 import { useT } from '@/i18n';
@@ -18,7 +18,7 @@ export default function MatchStatsScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: t.nav.matchStats }} />
+      <ScreenTitle title={t.nav.matchStats} />
       <MatchStats match={match} />
     </Screen>
   );
