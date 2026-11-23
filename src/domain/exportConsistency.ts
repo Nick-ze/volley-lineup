@@ -8,7 +8,7 @@ import type { TransferData } from './exportFormat';
 import { isValidPointTag } from './pointTags';
 import { referencedPhotoIds } from './photos';
 import { validatePresetName } from './presets';
-import { namesAreUnique } from './seasons';
+import { namesAreUnique } from './seasonMerge';
 import type { Match, SetLineup } from './types';
 
 const hasDuplicates = (values: readonly (string | number)[]): boolean =>

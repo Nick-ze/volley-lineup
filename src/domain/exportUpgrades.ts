@@ -7,7 +7,7 @@
  */
 import { addRoleDefaults, addSetLogDefaults, mapLineups, mapSets, type Rec } from './legacyData';
 import { upgradeLineupToFormation } from './roles';
-import { upgradeToSeasons } from './seasons';
+import { upgradeToSeasons } from './seasonUpgrade';
 
 /**
  * v1 → v2: sets gain `liberoReplaces: []` and `events: []`. Anything malformed is passed through

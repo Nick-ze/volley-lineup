@@ -6,7 +6,7 @@
 import { isConsistent } from './exportConsistency';
 import type { TransferData } from './exportFormat';
 import { keepReferencedPhotos } from './photos';
-import { alignIncomingByName } from './seasons';
+import { alignIncomingByName } from './seasonMerge';
 import type { Player } from './types';
 
 /** Replace: the imported data becomes the whole app data. */

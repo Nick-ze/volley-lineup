@@ -26,7 +26,7 @@ import type {
   Team,
 } from './types';
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from './roles';
-import { SEASON_KINDS } from './seasons';
+import { SEASON_KINDS } from './seasonNames';
 import { isPhotoDataUri, isValidDescription } from './photos';
 import { ALL_POSITIONS, ERROR_TYPES } from './types';
 
