@@ -10,9 +10,7 @@ import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
 import { makeStyles, spacing } from '@/theme';
 
-import { PerformanceCard } from './PerformanceCard';
-import { PerformanceLegend } from './PerformanceLegend';
-import { PlayerPerformanceDetail } from './PlayerPerformanceDetail';
+import { PerformancePage } from './PerformancePage';
 import { SetSwitch } from './SetSwitch';
 
 export interface MatchPerformanceProps {
@@ -47,9 +45,10 @@ export function MatchPerformance({
     () => matchPerformance(match, players, setNumber),
     [match, players, setNumber],
   );
-  const rows = useMemo(() => performanceRows(perf, players), [perf, players]);
   const setKey = setNumber === null ? 'all' : String(setNumber);
-  const detail = rows.find((r) => r.player.id === playerParam);
+  const rows = useMemo(() => performanceRows(perf, players), [perf, players]);
+  // The open player, if they have a line in this set (else the overview).
+  const openPlayer = rows.find((r) => r.player.id === playerParam)?.player.id;
 
   const heading = (
     <Text style={listStyles.heading} accessibilityRole="header" testID="perf-heading">
@@ -68,11 +67,12 @@ export function MatchPerformance({
   }
   // Keep the open player only if they have a line in the new set (else the overview, with no
   // stale `player` in the URL — v6 QA).
-  const switchSet = (n: SetNumber | null) => {
-    const keep =
-      detail !== undefined && matchPerformance(match, players, n).players[detail.player.id];
-    onParams({ set: n === null ? 'all' : String(n), player: keep ? detail.player.id : undefined });
-  };
+  const keptPlayer = (n: SetNumber | null) =>
+    openPlayer !== undefined && matchPerformance(match, players, n).players[openPlayer]
+      ? openPlayer
+      : undefined;
+  const switchSet = (n: SetNumber | null) =>
+    onParams({ set: n === null ? 'all' : String(n), player: keptPlayer(n) });
 
   return (
     <View style={styles.wrap} testID="performance">
@@ -83,37 +83,23 @@ export function MatchPerformance({
         tabs={[...sets, null]}
         value={setNumber}
         onChange={switchSet}
+        renderTab={(n) => (
+          <PerformancePage
+            match={match}
+            players={players}
+            setNumber={n}
+            playerId={n === setNumber ? openPlayer : keptPlayer(n)}
+            onBack={() => onParams({ set: setKey, player: undefined })}
+            onOpenPlayer={(id) => onOpenPlayer({ set: setKey, player: id })}
+          />
+        )}
         testID="perf-set-swipe"
         contentStyle={styles.wrap}
-      >
-        {detail ? (
-          <PlayerPerformanceDetail
-            player={detail.player}
-            performance={detail.performance}
-            totalRallies={perf.rallies}
-            onBack={() => onParams({ set: setKey, player: undefined })}
-          />
-        ) : (
-          <>
-            <View style={styles.list}>
-              {rows.map(({ player, performance }) => (
-                <PerformanceCard
-                  key={player.id}
-                  player={player}
-                  performance={performance}
-                  onPress={() => onOpenPlayer({ set: setKey, player: player.id })}
-                />
-              ))}
-            </View>
-            <PerformanceLegend />
-          </>
-        )}
-      </SwipeTabs>
+      />
     </View>
   );
 }
 
 const useStyles = makeStyles(() => ({
   wrap: { gap: spacing.lg },
-  list: { gap: spacing.sm },
 }));

@@ -35,13 +35,29 @@ export default function LiveScreen() {
   );
   useCorrectSetParam(set, setNumber, selectSet);
   // v8: LiveMatch is remounted per set, so the set shown before is kept here for its slide.
-  const [shown, setShown] = useState({ set: setNumber, previous: null as SetNumber | null });
-  if (shown.set !== setNumber) setShown({ set: setNumber, previous: shown.set ?? null });
+  const [previous, setPrevious] = useState({ set: setNumber, previous: null as SetNumber | null });
+  if (previous.set !== setNumber) setPrevious({ set: setNumber, previous: previous.set ?? null });
   // Back from Performance the court only slides in with the view, not as another set.
   const changeView = (next: LiveView) => {
     setView(next);
-    setShown((s) => (s.previous === null ? s : { ...s, previous: null }));
+    setPrevious((s) => (s.previous === null ? s : { ...s, previous: null }));
   };
+  const renderView = (shown: LiveView) =>
+    match && shown === 'performance' ? (
+      <LivePerformance match={match} setNumber={setNumber} />
+    ) : (
+      /* Keyed by set: switching sets drops a half-finished substitution. The court only slides
+       * in as another set when it is the shown view (not as the neighbour of a drag). */
+      <LiveMatch
+        key={setNumber}
+        matchId={matchId}
+        setNumber={setNumber}
+        onSelectSet={selectSet}
+        onEditLineup={editLineup}
+        onBackToMatch={backToMatch}
+        previousSet={shown === view ? previous.previous : null}
+      />
+    );
   return (
     <Screen>
       {match && (
@@ -49,29 +65,15 @@ export default function LiveScreen() {
           options={{ headerRight: () => <LiveViewToggle value={view} onChange={changeView} /> }}
         />
       )}
-      {/* v8: Live ↔ Performance slides; a sideways swipe switches between them. */}
+      {/* v8: Live ↔ Performance slides; v8.1: a sideways drag shows the other one beside it. */}
       <SwipeTabs
         tabs={LIVE_VIEWS}
         value={view}
         onChange={changeView}
+        renderTab={renderView}
         testID="live-view-swipe"
         contentStyle={styles.content}
-      >
-        {match && view === 'performance' ? (
-          <LivePerformance match={match} setNumber={setNumber} />
-        ) : (
-          /* Keyed by set: switching sets drops a half-finished substitution. */
-          <LiveMatch
-            key={setNumber}
-            matchId={matchId}
-            setNumber={setNumber}
-            onSelectSet={selectSet}
-            onEditLineup={editLineup}
-            onBackToMatch={backToMatch}
-            previousSet={shown.previous}
-          />
-        )}
-      </SwipeTabs>
+      />
     </Screen>
   );
 }
