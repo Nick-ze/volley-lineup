@@ -112,13 +112,3 @@ function matchStateOfSets(stored: readonly SetLineup[]): MatchState {
 
   return { sets, setsWon, winner, status, currentSetNumber, durationMs: durationOf(counted) };
 }
-
-/**
- * The set whose last rally is the latest in the match: the highest-numbered set with point
- * events, or null. Undo across a set end removes that set's last event (re-opening it).
- */
-export function lastPlayedSetNumber(match: Pick<Match, 'sets'>): SetNumber | null {
-  const played = match.sets.filter((s) => s.events.some((e) => e.type === 'point'));
-  if (played.length === 0) return null;
-  return played.reduce((a, b) => (b.setNumber > a.setNumber ? b : a)).setNumber;
-}

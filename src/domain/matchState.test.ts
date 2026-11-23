@@ -2,7 +2,6 @@ import { emptySetLineup } from './lineup';
 import {
   durationOf,
   getMatchState,
-  lastPlayedSetNumber,
   setResult,
   setScore,
   setWinner,
@@ -184,18 +183,5 @@ describe('getMatchState', () => {
       events: [{ type: 'point', winner: 'us', at: 'x' }],
     };
     expect(durationOf([s1, bad])).toBeNull();
-  });
-});
-
-describe('lastPlayedSetNumber', () => {
-  it('is the highest set with points', () => {
-    expect(lastPlayedSetNumber(match([]))).toBeNull();
-    const subOnly: SetLineup = {
-      ...emptySetLineup(3),
-      events: [{ type: 'sub', outPlayerId: 'a', inPlayerId: 'b' }],
-    };
-    expect(lastPlayedSetNumber(match([playedSet(2, 25, 3), playedSet(1, 25, 3), subOnly]))).toBe(2);
-    expect(lastPlayedSetNumber(match([playedSet(1, 25, 3), emptySetLineup(2)]))).toBe(1);
-    expect(lastPlayedSetNumber(match([playedSet(1, 25, 3), playedSet(3, 25, 3)]))).toBe(3);
   });
 });
