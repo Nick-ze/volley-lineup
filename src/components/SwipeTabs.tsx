@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { GestureDetector, useNativeGesture, type PanGesture } from 'react-native-gesture-handler';
 import type { SharedValue } from 'react-native-reanimated';
@@ -6,7 +6,8 @@ import type { SharedValue } from 'react-native-reanimated';
 import { spacing } from '@/theme';
 
 import { SlideTransition } from './SlideTransition';
-import { PagerView, usePagerGesture } from './TabPager';
+import { PagerView } from './TabPager';
+import { usePagerGesture } from './usePagerGesture';
 import { useTabPager } from './useTabPager';
 
 interface TabSwipe {
@@ -81,8 +82,10 @@ function SwipeArea<T>(props: SwipeTabsProps<T>) {
   const { tabs, value, onChange, renderTab, testID } = props;
   const pager = useTabPager(tabs, tabs.indexOf(value), onChange);
   const gesture = usePagerGesture(pager, tabs.length, testID);
+  const { blocked } = pager;
+  const tabSwipe = useMemo(() => ({ gesture, blocked }), [gesture, blocked]);
   return (
-    <TabSwipeContext.Provider value={{ gesture, blocked: pager.blocked }}>
+    <TabSwipeContext.Provider value={tabSwipe}>
       <PagerView
         pager={pager}
         gesture={gesture}

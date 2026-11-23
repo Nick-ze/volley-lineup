@@ -7,7 +7,12 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SwipeTabs } from '@/components';
-import { SLIDE_DURATION_MS, SLIDE_FALLBACK_DISTANCE, TAB_SCENE_OPACITY } from '@/domain/tabMotion';
+import {
+  SLIDE_DURATION_MS,
+  TAB_COMMIT_FALLBACK_MS,
+  SLIDE_FALLBACK_DISTANCE,
+  TAB_SCENE_OPACITY,
+} from '@/domain/tabMotion';
 
 import { ProfileScreen } from '@/features/profile/ProfileScreen';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
@@ -125,6 +130,12 @@ export default function TabsLayout() {
   const reduceMotion = useReducedMotion();
   // v8.1: the last tab change was a drag (the screen is already in place): no slide.
   const [dragged, setDragged] = useState(false);
+  // Once the dragged-to tab is shown, later changes (Back, a link) slide again.
+  useEffect(() => {
+    if (!dragged) return;
+    const timer = setTimeout(() => setDragged(false), TAB_COMMIT_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [dragged]);
   // Any tab counts as "past the picker": from now on `/` never auto-forwards (DECISIONS #28).
   useEffect(markStartupHandled, []);
 

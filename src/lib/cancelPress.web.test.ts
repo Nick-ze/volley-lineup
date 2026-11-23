@@ -38,6 +38,7 @@ describe('cancelPress (web)', () => {
 
   it('stops waiting for a click once the pointer is up', () => {
     cancelPress();
+    expect(listeners.get('pointercancel')).toBe(listeners.get('pointerup'));
     listeners.get('pointerup')?.(new Event('pointerup'));
     expect(removed).toEqual([]);
     jest.runAllTimers();

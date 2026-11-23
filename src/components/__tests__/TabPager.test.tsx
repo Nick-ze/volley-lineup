@@ -41,6 +41,9 @@ function Pager({ start = 'b', onChange }: { start?: Tab; onChange?: (t: Tab) => 
       testID="pager"
     >
       <Text>{`current ${tab}`}</Text>
+      <Text testID="tap-a" onPress={() => setTab('a')}>
+        a
+      </Text>
     </SwipeTabs>
   );
 }
@@ -140,5 +143,39 @@ describe('interactive tab pager', () => {
     await wait(TAB_COMMIT_FALLBACK_MS + 50);
     expect(neighbour()).toBeNull();
     expect(screen.getByText('current b')).toBeTruthy();
+  });
+
+  /** The next settle waits: returns the call that finishes it. */
+  const holdSettle = () => {
+    let finish: (done: boolean) => void = () => {};
+    withTiming.mockImplementationOnce(
+      (to: number, _config: unknown, callback: (done: boolean) => void) => {
+        finish = callback;
+        return to;
+      },
+    );
+    return () => act(() => finish(true));
+  };
+
+  it('keeps a tab tapped while a drag goes on to its neighbour', async () => {
+    await setup();
+    const finish = holdSettle();
+    await drag(-WIDTH * 0.5);
+    await fireEvent.press(screen.getByTestId('tap-a'));
+    expect(screen.getByText('current a')).toBeTruthy();
+    await finish();
+    expect(screen.getByText('current a')).toBeTruthy();
+    expect(neighbour()).toBeNull();
+  });
+
+  it('drops the neighbour copy when a tab is tapped while a drag springs back', async () => {
+    await setup();
+    holdSettle();
+    await drag(-WIDTH * 0.2);
+    expect(neighbour()).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('tap-a'));
+    await wait(50);
+    expect(neighbour()).toBeNull();
+    expect(screen.getByText('current a')).toBeTruthy();
   });
 });

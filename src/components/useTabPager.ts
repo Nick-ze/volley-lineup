@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import {
-  Easing,
-  cancelAnimation,
-  useReducedMotion,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import { isRNRuntime, scheduleOnRN } from 'react-native-worklets';
+import { cancelAnimation, useReducedMotion, useSharedValue } from 'react-native-reanimated';
+import { scheduleOnUI } from 'react-native-worklets';
 
-import { TAB_COMMIT_FALLBACK_MS, type SlideDirection } from '@/domain/tabMotion';
+import {
+  TAB_COMMIT_FALLBACK_MS,
+  TAB_SETTLE_MIN_MS,
+  stepTab,
+  type SlideDirection,
+} from '@/domain/tabMotion';
+
+import { animateTo, callReact } from './pagerWorklets';
 
 /** The neighbouring page a drag shows: its tab index and side (1 right, -1 left). */
 export interface PagerNeighbour {
@@ -22,25 +23,13 @@ interface PagerCommit {
   to: number;
 }
 
-const EASING = Easing.out(Easing.cubic);
-
-/**
- * Calls a React-side function from a worklet: at once where worklets run on the React runtime
- * (web, Jest), else scheduled from the UI thread.
- */
-export function callReact<A extends unknown[]>(fn: (...args: A) => void, ...args: A) {
-  'worklet';
-  if (isRNRuntime()) fn(...args);
-  else scheduleOnRN(fn, ...args);
-}
-
 /**
  * v8.1: the React side of the interactive tab pager (`SwipeTabs`). The drag itself only moves
  * shared values on the UI thread; React state changes just when a neighbour page is needed
- * (lazily, when the drag direction changes), once when a drag goes on to the neighbour, and once
- * when it is over. After a drag went on, the settled neighbour stays in place until the parent
- * shows the new tab; then the content moves back to 0 (showing the new tab) a frame later and
- * the neighbour is removed after that, so nothing flashes or jumps.
+ * (lazily), once when a drag goes on to the neighbour, and once when it is over. After a drag went
+ * on, the settled neighbour stays in place until the parent shows the new tab; then the content
+ * moves back to 0 (showing the new tab) a frame later and the copy is removed after that, so
+ * nothing flashes. A flick made meanwhile is queued and runs once the new tab is in place.
  */
 export function useTabPager<T>(tabs: readonly T[], index: number, onChange: (next: T) => void) {
   const reduceMotion = useReducedMotion();
@@ -48,25 +37,31 @@ export function useTabPager<T>(tabs: readonly T[], index: number, onChange: (nex
   const width = useSharedValue(0);
   /** The side of the mounted (or requested) neighbour, 0 for none. */
   const shownSide = useSharedValue<SlideDirection>(0);
-  /** A drag went on: new drags wait until the pager is reset. */
+  /** A drag went on: new drags wait until the pager is reset (a flick is queued). */
   const busy = useSharedValue(false);
+  const queued = useSharedValue<SlideDirection>(0);
   /** The current touch began in a `NoTabSwipe` area. */
   const blocked = useSharedValue(false);
   /** The tab index, for the gesture worklets. */
   const current = useSharedValue(index);
   const [neighbour, setNeighbour] = useState<PagerNeighbour | null>(null);
   const [commit, setCommit] = useState<PagerCommit | null>(null);
-  const latest = useRef({ tabs, onChange });
+  const latest = useRef({ tabs, onChange, index });
+  const shownIndex = useRef(index);
   const fallback = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useLayoutEffect(() => {
-    latest.current = { tabs, onChange };
+    latest.current = { tabs, onChange, index };
     current.set(index);
   });
 
-  const clear = useCallback(() => {
+  const stopFallback = () => {
     if (fallback.current) clearTimeout(fallback.current);
     fallback.current = null;
+  };
+
+  const clear = useCallback(() => {
+    stopFallback();
     setNeighbour(null);
     setCommit(null);
     shownSide.set(0);
@@ -77,8 +72,9 @@ export function useTabPager<T>(tabs: readonly T[], index: number, onChange: (nex
   const resetNow = useCallback(() => {
     cancelAnimation(x);
     x.set(0);
+    queued.set(0);
     clear();
-  }, [x, clear]);
+  }, [x, queued, clear]);
 
   const showNeighbour = useCallback((next: number, side: SlideDirection) => {
     setNeighbour({ index: next, side });
@@ -91,38 +87,16 @@ export function useTabPager<T>(tabs: readonly T[], index: number, onChange: (nex
 
   const goTo = useCallback(
     (from: number, to: number) => {
+      // Another tab was chosen (a tap) while this drag settled: that choice wins.
+      if (latest.current.index !== from) {
+        resetNow();
+        return;
+      }
       setCommit({ from, to });
-      const { tabs: all, onChange: change } = latest.current;
-      change(all[to] as T);
+      latest.current.onChange(latest.current.tabs[to] as T);
       fallback.current = setTimeout(resetNow, TAB_COMMIT_FALLBACK_MS);
     },
     [resetNow],
-  );
-
-  // The parent shows the dragged-to tab: move it into place a frame later (its content is mounted
-  // by then), then drop the copy. Another tab chosen meanwhile (a tap): back to rest.
-  useLayoutEffect(() => {
-    if (!commit || index === commit.from) return;
-    if (fallback.current) clearTimeout(fallback.current);
-    fallback.current = null;
-    if (index !== commit.to) {
-      const frame = requestAnimationFrame(resetNow);
-      return () => cancelAnimationFrame(frame);
-    }
-    let frame = requestAnimationFrame(() => {
-      x.set(0);
-      frame = requestAnimationFrame(() => {
-        frame = requestAnimationFrame(clear);
-      });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [index, commit, x, clear, resetNow]);
-
-  useEffect(
-    () => () => {
-      if (fallback.current) clearTimeout(fallback.current);
-    },
-    [],
   );
 
   /** UI thread: animate to `target` (0 back, ±width on), then commit or hide the neighbour. */
@@ -130,35 +104,59 @@ export function useTabPager<T>(tabs: readonly T[], index: number, onChange: (nex
     (target: number, duration: number, to: number | null) => {
       'worklet';
       const from = current.value;
-      const done = () => {
+      if (to !== null) busy.set(true);
+      animateTo(x, target, duration, reduceMotion, () => {
         'worklet';
         if (to === null) callReact(hideNeighbour);
         else callReact(goTo, from, to);
-      };
-      if (to !== null) busy.set(true);
-      if (reduceMotion) {
-        x.set(target);
-        done();
-        return;
-      }
-      x.set(
-        withTiming(target, { duration, easing: EASING }, (finished) => {
-          'worklet';
-          if (finished) done();
-        }),
-      );
+      });
     },
     [current, busy, reduceMotion, x, hideNeighbour, goTo],
   );
 
+  /** The new tab is in place: drop the copy, then run a flick made meanwhile. */
+  const landed = useCallback(() => {
+    const step = queued.value;
+    queued.set(0);
+    clear();
+    const next = stepTab(latest.current.index, step, latest.current.tabs.length);
+    if (next === null) return;
+    setNeighbour({ index: next, side: step });
+    shownSide.set(step);
+    scheduleOnUI(settle, -step * width.value, TAB_SETTLE_MIN_MS, next);
+  }, [queued, clear, shownSide, settle, width]);
+
+  // The parent shows the dragged-to tab: move it into place a frame later (its content is mounted
+  // by then), then drop the copy. Another tab chosen meanwhile (a tap): back to rest.
+  useLayoutEffect(() => {
+    if (!commit || index === commit.from) return;
+    stopFallback();
+    if (index !== commit.to) {
+      const frame = requestAnimationFrame(resetNow);
+      return () => cancelAnimationFrame(frame);
+    }
+    let frame = requestAnimationFrame(() => {
+      x.set(0);
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(landed);
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [index, commit, x, landed, resetNow]);
+
+  // A tap while a drag springs back: the old neighbour copy goes at once.
+  useLayoutEffect(() => {
+    if (shownIndex.current === index) return;
+    shownIndex.current = index;
+    if (commit || !neighbour) return;
+    const frame = requestAnimationFrame(resetNow);
+    return () => cancelAnimationFrame(frame);
+  }, [index, commit, neighbour, resetNow]);
+
+  useEffect(() => stopFallback, []);
+
   return {
-    x,
-    width,
-    shownSide,
-    busy,
-    blocked,
-    current,
-    neighbour,
+    ...{ x, width, shownSide, busy, queued, blocked, current, neighbour },
     /** The tab now shown was dragged into place: it must not slide in again. */
     instant: commit !== null && commit.to === index,
     showNeighbour,

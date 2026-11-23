@@ -14,5 +14,6 @@ export function cancelPress(): void {
   // The click (if any) comes right after the release; stop waiting for one after that.
   const stop = () => setTimeout(() => window.removeEventListener('click', swallow, true), 0);
   window.addEventListener('pointerup', stop, { capture: true, once: true });
+  window.addEventListener('pointercancel', stop, { capture: true, once: true });
   document.body.dispatchEvent(new Event('dragstart', { bubbles: true }));
 }
