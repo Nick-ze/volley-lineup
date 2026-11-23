@@ -220,7 +220,7 @@ describe('roster flows', () => {
   it('creates a match and opens it', async () => {
     const { team } = seedTeam();
     await renderRouter('./app', { initialUrl: `/team/${team.id}` });
-    await fireEvent.press(screen.getByRole('tab', { name: s.team.matchesTab }));
+    await fireEvent.press(screen.getByRole('tab', { name: t.presets.nav.matches }));
     // v7: matches live in a season — create one first; it opens straight away.
     expect(screen.getByText(t.seasons.list.empty)).toBeTruthy();
     await press(t.seasons.list.newSeason);

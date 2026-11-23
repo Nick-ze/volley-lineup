@@ -11,7 +11,7 @@ import { makeStyles, spacing, typography } from '@/theme';
 
 import { PlayerTable } from './PlayerTable';
 import { RotationTable } from './RotationTable';
-import { SetFilter } from './SetFilter';
+import { SetChipFilter } from './SetChipFilter';
 
 /** One match's rotation and player tables, for all sets or one played set. */
 export function MatchStats({ match }: { match: Match }) {
@@ -45,7 +45,14 @@ export function MatchStats({ match }: { match: Match }) {
   return (
     <View style={styles.wrap} testID="match-stats">
       {heading}
-      <SetFilter sets={sets} value={setNumber} onChange={setFilter} />
+      <SetChipFilter
+        sets={sets}
+        value={setNumber}
+        onChange={setFilter}
+        strings={t.stats.filter}
+        testIDPrefix="stats-set"
+        allPosition="first"
+      />
       <SwipeTabs
         tabs={filters}
         value={setNumber}

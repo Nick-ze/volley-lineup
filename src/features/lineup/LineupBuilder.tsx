@@ -10,7 +10,8 @@ import { makeStyles, spacing, typography } from '@/theme';
 
 import { Bench } from './Bench';
 import { CopyClearButtons } from './CopyClearButtons';
-import { DragProvider, type DragItem } from './drag/DragContext';
+import { DragProvider } from './drag/DragContext';
+import type { DragItem } from './drag/dragTypes';
 import { FormationControls } from './FormationControls';
 import { LiberoReplaces } from './LiberoReplaces';
 import { LiberoSlot } from './LiberoSlot';

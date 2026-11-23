@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { usePanGesture, type PanGesture } from 'react-native-gesture-handler';
 import { cancelAnimation, useSharedValue } from 'react-native-reanimated';
 
@@ -40,70 +41,95 @@ export function usePagerGesture(pager: Pager, count: number, testID: string): Pa
   const lastMove = useSharedValue(0);
   /** This drag began while the last one was still going on to its tab (it may be queued). */
   const waiting = useSharedValue(false);
-  return usePanGesture({
-    // Web: vertical touch scrolling stays with the browser; the right-click menu keeps working.
-    // The detector's own `touchAction` prop doesn't reach a hook gesture's view; these web-only
-    // settings are accepted at runtime (gesture-handler's props white list) but are not in the
-    // config type, hence the `as PanConfig`.
-    touchAction: 'pan-y',
-    enableContextMenu: true,
-    testID,
-    activeOffsetX: [-OFFSET, OFFSET],
-    failOffsetY: [-OFFSET, OFFSET],
-    onActivate: (e) => {
-      tracking.set(false);
-      waiting.set(false);
-      origin.set(e.translationX);
-      if (blocked.value) return;
-      // The card under the pointer must not open on release (web mouse).
-      callReact(cancelPress);
-      if (busy.value) waiting.set(true);
-      if (busy.value || aliasPage.value !== NO_PAGE) return;
-      queued.set(0);
-      cancelAnimation(position);
-      start.set(position.value);
-      tracking.set(true);
-    },
-    onUpdate: (e) => {
-      lastMove.set(Date.now());
-      if (!tracking.value || blocked.value) return;
-      const moved = dragOffset(e.translationX, origin.value);
-      const offset = dragFromTab(current.value, start.value, width.value, moved);
-      const next = stepTab(current.value, dragSide(offset), count);
-      position.set(dragToPosition(current.value, offset, next !== null, width.value));
-    },
-    onDeactivate: (e) => {
-      const velocity = releaseVelocity(e.velocityX, Date.now() - lastMove.value);
-      const stopped = e.canceled || blocked.value;
-      if (!tracking.value) {
-        // Begun during a commit: a flick (or a long drag) goes on once the new tab is shown —
-        // queued while it still isn't, at once if it already is (review: no lost flick).
-        if (!waiting.value || stopped) return;
-        waiting.set(false);
-        const step = dragCommit(
-          dragOffset(e.translationX, origin.value),
-          velocity,
-          width.value,
-          true,
-        );
-        if (busy.value) queued.set(step);
-        else {
-          const next = stepTab(current.value, step, count);
-          if (next !== null && aliasPage.value === NO_PAGE) settle(next, TAB_SETTLE_MIN_MS, true);
-        }
-        return;
-      }
-      tracking.set(false);
-      const moved = dragOffset(e.translationX, origin.value);
-      const offset = dragFromTab(current.value, start.value, width.value, moved);
-      const next = stepTab(current.value, dragSide(offset), count);
-      const step = stopped ? 0 : dragCommit(offset, velocity, width.value, next !== null);
-      const target = current.value + step;
-      const distance = (target - position.value) * width.value;
-      settle(target, settleDuration(distance, velocity), step !== 0);
-    },
-    onFinalize: () => {
-      blocked.set(false);
-    },
-  } as PanConfig);
+  // v8.3: one config object per pager (RNGH rebuilds the native gesture and its worklets
+  // whenever the config object changes). Everything the callbacks read is a shared value, or
+  // `count` / `settle` / `testID`, which are deps.
+  const config = useMemo(
+    () =>
+      ({
+        // Web: vertical touch scrolling stays with the browser; the right-click menu keeps working.
+        // The detector's own `touchAction` prop doesn't reach a hook gesture's view; these web-only
+        // settings are accepted at runtime (gesture-handler's props white list) but are not in the
+        // config type, hence the `as PanConfig`.
+        touchAction: 'pan-y',
+        enableContextMenu: true,
+        testID,
+        activeOffsetX: [-OFFSET, OFFSET],
+        failOffsetY: [-OFFSET, OFFSET],
+        onActivate: (e) => {
+          tracking.set(false);
+          waiting.set(false);
+          origin.set(e.translationX);
+          if (blocked.value) return;
+          // The card under the pointer must not open on release (web mouse).
+          callReact(cancelPress);
+          if (busy.value) waiting.set(true);
+          if (busy.value || aliasPage.value !== NO_PAGE) return;
+          queued.set(0);
+          cancelAnimation(position);
+          start.set(position.value);
+          tracking.set(true);
+        },
+        onUpdate: (e) => {
+          lastMove.set(Date.now());
+          if (!tracking.value || blocked.value) return;
+          const moved = dragOffset(e.translationX, origin.value);
+          const offset = dragFromTab(current.value, start.value, width.value, moved);
+          const next = stepTab(current.value, dragSide(offset), count);
+          position.set(dragToPosition(current.value, offset, next !== null, width.value));
+        },
+        onDeactivate: (e) => {
+          const velocity = releaseVelocity(e.velocityX, Date.now() - lastMove.value);
+          const stopped = e.canceled || blocked.value;
+          if (!tracking.value) {
+            // Begun during a commit: a flick (or a long drag) goes on once the new tab is shown —
+            // queued while it still isn't, at once if it already is (review: no lost flick).
+            if (!waiting.value || stopped) return;
+            waiting.set(false);
+            const step = dragCommit(
+              dragOffset(e.translationX, origin.value),
+              velocity,
+              width.value,
+              true,
+            );
+            if (busy.value) queued.set(step);
+            else {
+              const next = stepTab(current.value, step, count);
+              if (next !== null && aliasPage.value === NO_PAGE)
+                settle(next, TAB_SETTLE_MIN_MS, true);
+            }
+            return;
+          }
+          tracking.set(false);
+          const moved = dragOffset(e.translationX, origin.value);
+          const offset = dragFromTab(current.value, start.value, width.value, moved);
+          const next = stepTab(current.value, dragSide(offset), count);
+          const step = stopped ? 0 : dragCommit(offset, velocity, width.value, next !== null);
+          const target = current.value + step;
+          const distance = (target - position.value) * width.value;
+          settle(target, settleDuration(distance, velocity), step !== 0);
+        },
+        onFinalize: () => {
+          blocked.set(false);
+        },
+      }) as PanConfig,
+    [
+      count,
+      testID,
+      settle,
+      tracking,
+      start,
+      origin,
+      lastMove,
+      waiting,
+      position,
+      width,
+      aliasPage,
+      busy,
+      queued,
+      blocked,
+      current,
+    ],
+  );
+  return usePanGesture(config);
 }

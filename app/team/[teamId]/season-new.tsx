@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen } from '@/components';
+import { Screen, ScreenTitle } from '@/components';
 import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { useConfirm } from '@/features/roster/hooks/useConfirm';
@@ -41,7 +41,7 @@ export default function SeasonFormScreen() {
   const teamTab = `/team/${team.id}?tab=matches` as const;
   return (
     <Screen>
-      <Stack.Screen options={{ title: season ? s.editTitle : s.newTitle }} />
+      <ScreenTitle title={season ? s.editTitle : s.newTitle} />
       <SeasonForm
         key={season?.id ?? 'new'}
         teamId={team.id}

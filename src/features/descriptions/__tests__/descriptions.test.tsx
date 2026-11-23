@@ -194,9 +194,8 @@ describe('the unlock state', () => {
   it('listens to AppState app-wide', () => {
     const spy = jest.spyOn(AppState, 'addEventListener');
     jest.isolateModules(() => {
-      // A fresh, synchronous load of the module (like an app start) needs require().
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fresh = require('../descriptionLock') as typeof import('../descriptionLock');
+      // A fresh, synchronous load of the module (like an app start).
+      const fresh = jest.requireActual<typeof import('../descriptionLock')>('../descriptionLock');
       expect(spy).toHaveBeenCalledWith('change', fresh.handleAppStateChange);
       // A fresh module (= app restart) starts locked.
       expect(fresh.useDescriptionLock.getState()).toMatchObject({

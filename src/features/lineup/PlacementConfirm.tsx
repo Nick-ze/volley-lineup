@@ -1,9 +1,8 @@
-import { Modal, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { fullName } from '@/domain/playerNames';
-import { Button } from '@/components';
+import { Button, Dialog, useDialogStyles } from '@/components';
 import { useT } from '@/i18n';
-import { dialogMaxWidth, makeStyles, radius, spacing, typography } from '@/theme';
 
 import type { LineupDraft } from './useLineupDraft';
 
@@ -13,7 +12,7 @@ import type { LineupDraft } from './useLineupDraft';
  * swap). Cancel changes nothing; Confirm makes the change (the spot then shows "*").
  */
 export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
-  const styles = useStyles();
+  const styles = useDialogStyles();
   const t = useT();
   const s = t.roles.confirm;
   const { pending, pendingKind, playerById, confirmPending, cancelPending } = editor;
@@ -24,69 +23,41 @@ export function PlacementConfirm({ editor }: { editor: LineupDraft }) {
   });
 
   return (
-    <Modal
+    <Dialog
       visible={pending !== null}
-      transparent
-      animationType="fade"
-      onRequestClose={cancelPending}
+      onClose={cancelPending}
+      title={s.title}
+      testID="placement-confirm"
     >
-      <View style={styles.backdrop}>
-        <View style={styles.card} accessibilityViewIsModal testID="placement-confirm">
-          <Text style={styles.title} accessibilityRole="header">
-            {s.title}
-          </Text>
-          {lines.map((line) => (
-            <Text key={line} style={styles.message}>
-              {line}
-            </Text>
-          ))}
-          <Text style={styles.message}>
-            {pendingKind === 'formation'
-              ? s.questionFormation
-              : lines.length > 1
-                ? s.questionMany
-                : s.questionOne}
-          </Text>
-          <View style={styles.actions}>
-            <Button
-              label={s.cancel}
-              accessibilityLabel={s.cancelLabel}
-              variant="secondary"
-              onPress={cancelPending}
-              testID="placement-cancel"
-            />
-            <Button
-              label={s.confirm}
-              accessibilityLabel={
-                pendingKind === 'formation' ? s.confirmFormationLabel : s.confirmLabel
-              }
-              onPress={confirmPending}
-              testID="placement-confirm-button"
-            />
-          </View>
-        </View>
+      {lines.map((line) => (
+        <Text key={line} style={styles.message}>
+          {line}
+        </Text>
+      ))}
+      <Text style={styles.message}>
+        {pendingKind === 'formation'
+          ? s.questionFormation
+          : lines.length > 1
+            ? s.questionMany
+            : s.questionOne}
+      </Text>
+      <View style={styles.actions}>
+        <Button
+          label={s.cancel}
+          accessibilityLabel={s.cancelLabel}
+          variant="secondary"
+          onPress={cancelPending}
+          testID="placement-cancel"
+        />
+        <Button
+          label={s.confirm}
+          accessibilityLabel={
+            pendingKind === 'formation' ? s.confirmFormationLabel : s.confirmLabel
+          }
+          onPress={confirmPending}
+          testID="placement-confirm-button"
+        />
       </View>
-    </Modal>
+    </Dialog>
   );
 }
-
-const useStyles = makeStyles((theme) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  card: {
-    width: '100%',
-    maxWidth: dialogMaxWidth,
-    backgroundColor: theme.colors.surfaceRaised,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  title: { ...typography.subheading, color: theme.colors.text },
-  message: { ...typography.body, color: theme.colors.text },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-}));

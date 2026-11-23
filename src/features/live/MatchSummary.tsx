@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
-import { durationParts } from '@/domain/lineupSheet';
+import { durationParts } from '@/domain/duration';
 import type { MatchState } from '@/domain/matchState';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, typography } from '@/theme';

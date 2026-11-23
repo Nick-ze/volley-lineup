@@ -1,10 +1,10 @@
 /**
- * v7 (app 6.0): pictures of profiles and players (docs/PLAN.md §26, DECISIONS #148).
+ * v7 (app 6.0): pictures of profiles, players and (v8) teams (docs/PLAN.md §26, DECISIONS #148).
  *
  * Photos are kept out of the main store: each one is a small data URI under its own storage
  * key (`volley-lineup-photo:<id>`), so the main store stays small and fast to write (every
  * rally in live mode writes it) and no single stored value grows with the number of photos.
- * Profiles and players only hold a `photoId`.
+ * Profiles, players and teams only hold a `photoId`.
  *
  * - Loading starts when this module is imported; `whenPhotosLoaded()` waits for it (export /
  *   import await it; screens simply show the fallback until a photo has loaded).
@@ -36,7 +36,7 @@ export const usePhotoStore = create<PhotoState>()(() => ({ photos: {}, hydrated:
 /** Writes / deletes storage keys; false when that failed (storage full or unavailable). */
 async function persist(write: Record<string, string>, remove: readonly string[]): Promise<boolean> {
   try {
-    const entries = Object.entries(write).map(([id, uri]) => [keyOf(id), uri] as [string, string]);
+    const entries = Object.entries(write).map(([id, uri]): [string, string] => [keyOf(id), uri]);
     if (entries.length > 0) await AsyncStorage.multiSet(entries);
     if (remove.length > 0) await AsyncStorage.multiRemove(remove.map(keyOf));
     return true;
@@ -63,7 +63,10 @@ export async function setPhoto(id: string, dataUri: string): Promise<boolean> {
   return ok;
 }
 
-/** Deletes a photo. */
+/**
+ * Deletes a photo.
+ * @internal Not used by the app (photos go through `prunePhotos`); kept for the storage tests.
+ */
 export async function removePhoto(id: string): Promise<void> {
   usePhotoStore.setState((s) => {
     const { [id]: _removed, ...photos } = s.photos;

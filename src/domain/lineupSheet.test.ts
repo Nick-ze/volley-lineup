@@ -1,13 +1,13 @@
 import { emptySetLineup } from './lineup';
+import { durationParts } from './duration';
 import {
   buildLineupSheetHtml,
-  durationParts,
   escapeHtml,
   hasResults,
-  playerName,
-  SHEET_ROWS,
   type LineupSheetLabels,
 } from './lineupSheet';
+import { fullName } from './playerNames';
+import { COURT_ROWS } from './rotation';
 import type { Match, PointEvent, Player, SetLineup, Side, Team } from './types';
 
 const labels: LineupSheetLabels = {
@@ -113,15 +113,15 @@ describe('escapeHtml', () => {
   });
 });
 
-describe('playerName', () => {
+describe('fullName (player names on the sheet)', () => {
   it('joins first and last name', () => {
-    expect(playerName(players[0])).toBe('Anna Setter');
-    expect(playerName(mk('z', 0, 'Solo', ''))).toBe('Solo');
+    expect(fullName(players[0])).toBe('Anna Setter');
+    expect(fullName(mk('z', 0, 'Solo', ''))).toBe('Solo');
   });
 
   it('v8: puts the first name first, without stray spaces', () => {
-    expect(playerName(mk('y', 0, ' Anna ', ' Meier '))).toBe('Anna Meier');
-    expect(playerName(mk('x', 0, '', 'Meier'))).toBe('Meier');
+    expect(fullName(mk('y', 0, ' Anna ', ' Meier '))).toBe('Anna Meier');
+    expect(fullName(mk('x', 0, '', 'Meier'))).toBe('Meier');
   });
 });
 
@@ -163,7 +163,7 @@ describe('buildLineupSheetHtml', () => {
   });
 
   it('lays each court out as 4-3-2 over 5-6-1 with numbers and names', () => {
-    expect(SHEET_ROWS).toEqual([
+    expect(COURT_ROWS).toEqual([
       [4, 3, 2],
       [5, 6, 1],
     ]);

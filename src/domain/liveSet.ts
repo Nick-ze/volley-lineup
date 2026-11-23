@@ -20,6 +20,7 @@ import {
   findLiberoSwap,
   type LiberoSwap,
 } from './liberoSwap';
+import { memoByIdentity2 } from './memo';
 import { setterRotation, startingRoles } from './roles';
 import {
   ROTATION_COUNT,
@@ -174,7 +175,10 @@ export function replaySteps(set: SetLineup, players: readonly Player[]): ReplayS
   return replay(set, players).steps;
 }
 
-function replay(
+/** v8.3: cached per set and players array (an unchanged set is never replayed again; read-only). */
+const replay = memoByIdentity2(replayUncached);
+
+function replayUncached(
   set: SetLineup,
   players: readonly Player[],
 ): { state: LiveState; steps: ReplayStep[] } {

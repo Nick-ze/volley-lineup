@@ -3,7 +3,8 @@ import { useCallback } from 'react';
 import type { DropTarget } from '@/domain/lineupEditing';
 import { makeStyles, radius } from '@/theme';
 
-import { targetKey, useDrag, type MeasurableView } from './DragContext';
+import { useDrag } from './dragTypes';
+import { targetKey, type MeasurableView } from './useZoneMeasurements';
 
 type DragState = ReturnType<typeof useDrag>;
 type ZoneStyles = ReturnType<typeof useZoneStyles>;

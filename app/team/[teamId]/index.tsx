@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { HeaderTitle, Screen, SwipeTabs, TeamAvatar } from '@/components';
+import type { Team } from '@/domain/types';
 import { PresetsTab } from '@/features/presets/PresetsTab';
 import { StartersTab } from '@/features/presets/StartersTab';
 import { NotFound } from '@/features/roster/components/NotFound';
@@ -68,17 +69,7 @@ export default function TeamScreen() {
   };
   return (
     <Screen footer={<TeamNavBar value={tab} onChange={selectTab} />}>
-      <Stack.Screen
-        options={{
-          title: team.name,
-          // v8: the team picture (or initial) before the name.
-          headerTitle: () => (
-            <HeaderTitle leading={<TeamAvatar team={team} size={TEAM_HEADER_AVATAR} />}>
-              {team.name}
-            </HeaderTitle>
-          ),
-        }}
-      />
+      <TeamHeader team={team} />
       {/* v8: the tab slides in from its side; v8.1: a sideways drag shows the next tab beside it. */}
       <SwipeTabs
         tabs={TEAM_TABS}
@@ -89,4 +80,21 @@ export default function TeamScreen() {
       />
     </Screen>
   );
+}
+
+/** The header options, kept while the team is unchanged (v8.3: no `setOptions` per render). */
+function TeamHeader({ team }: { team: Team }) {
+  const options = useMemo(
+    () => ({
+      title: team.name,
+      // v8: the team picture (or initial) before the name.
+      headerTitle: () => (
+        <HeaderTitle leading={<TeamAvatar team={team} size={TEAM_HEADER_AVATAR} />}>
+          {team.name}
+        </HeaderTitle>
+      ),
+    }),
+    [team],
+  );
+  return <Stack.Screen options={options} />;
 }

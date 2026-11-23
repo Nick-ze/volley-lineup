@@ -23,5 +23,3 @@ export function useLineupEditor(matchId: string, setNumber: SetNumber) {
 
   return { ...draft, match, previous };
 }
-
-export type LineupEditor = ReturnType<typeof useLineupEditor>;

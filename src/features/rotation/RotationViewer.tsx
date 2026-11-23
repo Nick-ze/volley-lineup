@@ -1,6 +1,4 @@
-import { Stack } from 'expo-router';
-
-import { SlideTransition } from '@/components';
+import { ScreenTitle, SlideTransition } from '@/components';
 import type { SetNumber } from '@/domain/types';
 import { useT } from '@/i18n';
 
@@ -29,7 +27,7 @@ export function RotationViewer({ matchId, setParam, onSelectSet }: RotationViewe
 
   return (
     <>
-      <Stack.Screen options={{ title: t.rotation.title(set.setNumber) }} />
+      <ScreenTitle title={t.rotation.title(set.setNumber)} />
       <SetPicker sets={setNumbersOf(sets)} selected={set.setNumber} onSelect={onSelectSet} />
       {/* v8: another set slides in from the side of its tab (the swipe here steps rotations). */}
       <SlideTransition index={set.setNumber}>

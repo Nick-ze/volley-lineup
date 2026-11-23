@@ -38,7 +38,6 @@ export const roster = {
     new: 'New team',
     name: 'Team name',
     season: 'Season (optional)',
-    seasonPlaceholder: '2026/27',
     create: 'Create team',
     open: (name: string) => `${name}: open team`,
     rename: (name: string) => `Edit team ${name}`,
@@ -47,8 +46,6 @@ export const roster = {
   team: {
     title: (name: string, season?: string) => (season ? `${name} · ${season}` : name),
     tabs: 'Team sections',
-    rosterTab: 'Roster',
-    matchesTab: 'Matches',
     playerCount: (n: number) => (n === 1 ? '1 player' : `${n} players`),
   },
   roster: {

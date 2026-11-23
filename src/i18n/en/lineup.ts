@@ -39,8 +39,6 @@ export const lineup = {
   startersLabel: 'Starters: open the overview of all sets',
   validationTitle: 'Lineup check',
   validationOk: 'Lineup is complete.',
-  errorsHeading: 'Errors',
-  warningsHeading: 'Warnings',
   errors: {
     INCOMPLETE: 'Fewer than 6 players on court.',
     DUPLICATE_PLAYER: 'A player is in more than one position.',

@@ -16,6 +16,7 @@
  * The rotation number follows the setter: a setter at position 4 means "rotation 4". With two
  * setters (6-2) the one in the back row counts.
  */
+import { isRecord } from './legacyData';
 import { isLineupLocked } from './lineupLock';
 import {
   BACK_ROW_POSITIONS,
@@ -36,9 +37,6 @@ import {
   type Position,
   type SetLineup,
 } from './types';
-
-/** Roles a starter can play (the libero has its own slot). */
-export const COURT_ROLES: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'DS'];
 
 export const FORMATION_SYSTEMS: readonly FormationSystem[] = ['5-1', '6-2'];
 export const FORMATION_ORDERS: readonly FormationOrder[] = ['outside', 'middle'];
@@ -67,19 +65,13 @@ export const DEFAULT_FORMATION: Formation = { system: '5-1', order: 'outside', s
 /** The role of one court spot in a formation. */
 export function spotRole(formation: Formation, position: CourtPosition): Position {
   const pattern = FORMATION_PATTERNS[formation.system][formation.order];
-  return pattern[(position - formation.setterAt + 6) % 6] as Position;
+  return pattern[(position - formation.setterAt + 6) % 6];
 }
 
 /** The roles of all six spots. */
 export function spotRoles(formation: Formation): Record<CourtPosition, Position> {
-  const roles = {} as Record<CourtPosition, Position>;
-  for (const p of COURT_POSITIONS) roles[p] = spotRole(formation, p);
-  return roles;
-}
-
-/** A player's primary position, or null when none is set. */
-export function primaryPosition(player: Pick<Player, 'positions'>): Position | null {
-  return player.positions[0] ?? null;
+  const role = (p: CourtPosition) => spotRole(formation, p);
+  return { 1: role(1), 2: role(2), 3: role(3), 4: role(4), 5: role(5), 6: role(6) };
 }
 
 /** The role a starter plays in the set: the role of their spot; null when not on court. */
@@ -174,7 +166,7 @@ export function setterRotation(slots: Slots, roles: Readonly<PlayerRoles>): Rota
   });
   if (setters.length === 0) return null;
   const backRow = setters.find((p) => BACK_ROW_POSITIONS.includes(p));
-  return (backRow ?? setters[0]) as CourtPosition as RotationNumber;
+  return backRow ?? setters[0];
 }
 
 /**
@@ -183,7 +175,7 @@ export function setterRotation(slots: Slots, roles: Readonly<PlayerRoles>): Rota
  */
 export function formationRotation(formation: Formation): RotationNumber {
   const spots = COURT_POSITIONS.filter((p) => spotRole(formation, p) === 'S');
-  return (spots.find((p) => BACK_ROW_POSITIONS.includes(p)) ?? spots[0]) as RotationNumber;
+  return spots.find((p) => BACK_ROW_POSITIONS.includes(p)) ?? spots[0];
 }
 
 /**
@@ -211,9 +203,6 @@ export function inferFormation(
   const order: FormationOrder = role(next) === 'MB' ? 'middle' : 'outside';
   return { system, order, setterAt };
 }
-
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
  * Upgrades one stored lineup (set or preset) of the v5 data shape to v6: drops the per-player

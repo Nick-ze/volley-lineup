@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { Screen, SwipeTabs } from '@/components';
@@ -38,10 +38,15 @@ export default function LiveScreen() {
   const [previous, setPrevious] = useState({ set: setNumber, previous: null as SetNumber | null });
   if (previous.set !== setNumber) setPrevious({ set: setNumber, previous: previous.set ?? null });
   // Back from Performance the court only slides in with the view, not as another set.
-  const changeView = (next: LiveView) => {
+  const changeView = useCallback((next: LiveView) => {
     setView(next);
     setPrevious((s) => (s.previous === null ? s : { ...s, previous: null }));
-  };
+  }, []);
+  // v8.3: kept while the view is the same (expo-router calls `setOptions` for a new object).
+  const headerOptions = useMemo(
+    () => ({ headerRight: () => <LiveViewToggle value={view} onChange={changeView} /> }),
+    [view, changeView],
+  );
   const renderView = (shown: LiveView) =>
     match && shown === 'performance' ? (
       <LivePerformance match={match} setNumber={setNumber} />
@@ -60,11 +65,7 @@ export default function LiveScreen() {
     );
   return (
     <Screen>
-      {match && (
-        <Stack.Screen
-          options={{ headerRight: () => <LiveViewToggle value={view} onChange={changeView} /> }}
-        />
-      )}
+      {match && <Stack.Screen options={headerOptions} />}
       {/* v8: Live ↔ Performance slides; v8.1: a sideways drag shows the other one beside it. */}
       <SwipeTabs
         tabs={LIVE_VIEWS}
