@@ -34,9 +34,9 @@ function mergeById<T extends { id: string }>(existing: readonly T[], incoming: r
 export type MergeResult = { ok: true; data: TransferData } | { ok: false; error: 'MERGE_CONFLICT' };
 
 /**
- * Merge: every profile, team, player, match and preset is matched by id. **On an equal id the
- * incoming item wins** (it replaces the existing one in place); items only in `existing` are
- * kept, items only in `incoming` are appended.
+ * Merge: every profile, team, player, match, preset, season, opponent and photo is matched by
+ * id. **On an equal id the incoming item wins** (it replaces the existing one in place); items
+ * only in `existing` are kept, items only in `incoming` are appended.
  *
  * The one deletion: a team has a single starters preset, so when the file has starters for a
  * team, they replace that team's existing starters (even under a different id). Nothing else is

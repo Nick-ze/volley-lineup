@@ -1,10 +1,10 @@
 /**
- * v7 (app 6.0): profile / player pictures and confidential player descriptions — the pure
- * rules (docs/PLAN.md §25–26). No React, no storage.
+ * v7 (app 6.0): profile / player (v8: and team) pictures and confidential player descriptions —
+ * the pure rules (docs/PLAN.md §25–26). No React, no storage.
  *
  * Pictures are small JPEGs (`PHOTO_SIZE` px, the UI resizes and compresses them) kept as data
  * URIs in their own storage (one key per photo, `src/store/photoStore.ts`), so the main store
- * stays small. Profiles and players only hold a `photoId`.
+ * stays small. Profiles, players and teams only hold a `photoId`.
  */
 import type { ManagerProfile, Photo, Player, Team } from './types';
 
@@ -27,7 +27,7 @@ export function isPhotoDataUri(value: string): boolean {
   return value.length <= MAX_PHOTO_DATA_LENGTH && DATA_URI.test(value);
 }
 
-/** The photo ids that profiles and players refer to. */
+/** The photo ids that profiles, players and teams refer to. */
 export function referencedPhotoIds(data: {
   profiles: readonly Pick<ManagerProfile, 'photoId'>[];
   players: readonly Pick<Player, 'photoId'>[];

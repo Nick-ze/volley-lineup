@@ -1,10 +1,10 @@
 /**
- * v7 (app 6.0): pictures of profiles and players (docs/PLAN.md §26, DECISIONS #148).
+ * v7 (app 6.0): pictures of profiles, players and (v8) teams (docs/PLAN.md §26, DECISIONS #148).
  *
  * Photos are kept out of the main store: each one is a small data URI under its own storage
  * key (`volley-lineup-photo:<id>`), so the main store stays small and fast to write (every
  * rally in live mode writes it) and no single stored value grows with the number of photos.
- * Profiles and players only hold a `photoId`.
+ * Profiles, players and teams only hold a `photoId`.
  *
  * - Loading starts when this module is imported; `whenPhotosLoaded()` waits for it (export /
  *   import await it; screens simply show the fallback until a photo has loaded).

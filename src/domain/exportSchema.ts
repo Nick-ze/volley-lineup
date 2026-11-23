@@ -31,7 +31,10 @@ export * from './exportMerge';
 /* ------------------------------------------------------------------ export */
 
 export interface BuildExportOptions {
-  /** Export only this team (plus its owning profile, players, matches and presets). */
+  /**
+   * Export only this team (plus its owning profile, players, matches, presets, seasons with
+   * their opponents, and the photos they refer to).
+   */
   teamId?: string;
   /** Timestamp to write into `exportedAt` (defaults to now). */
   now?: Date;
@@ -168,7 +171,7 @@ export function parseImport(jsonText: string): ParseImportResult {
   const parsed = exportFileSchema.safeParse(upgradeToCurrent(raw));
   if (!parsed.success) return { ok: false, error: 'INVALID_SHAPE' };
   // The store keeps sets ordered by set number; do the same for imported files. Photos no
-  // profile or player refers to are dropped (v7).
+  // profile, player or (v9) team refers to are dropped (v7).
   const file: ExportFile = {
     ...parsed.data,
     matches: parsed.data.matches.map((m) => ({

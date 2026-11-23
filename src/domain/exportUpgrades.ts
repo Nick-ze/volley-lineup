@@ -33,7 +33,8 @@ function upgradeV5(raw: Rec): Rec {
  * change: untagged points without timestamps stay valid), v4 → v5 (roles + libero on/off),
  * v5 → v6 (roles become a formation per lineup), v6 → v7 (`photos: []`; photo ids,
  * descriptions and error types are optional, so nothing else changes), v7 → v8 (one season
- * per team with its opponents, `upgradeToSeasons`).
+ * per team with its opponents, `upgradeToSeasons`), v8 → v9 (teams may have a `photoId`, which
+ * is optional, so nothing changes).
  */
 export function upgradeToCurrent(raw: Rec): Rec {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
