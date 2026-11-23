@@ -1,23 +1,21 @@
-import { createContext, useContext, useRef, type ReactNode, type RefObject } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import {
-  GestureDetector,
-  useNativeGesture,
-  usePanGesture,
-  type PanGesture,
-} from 'react-native-gesture-handler';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { GestureDetector, useNativeGesture, type PanGesture } from 'react-native-gesture-handler';
+import type { SharedValue } from 'react-native-reanimated';
 
-import { TAB_SWIPE_ACTIVATION as OFFSET, swipeTarget } from '@/domain/tabMotion';
+import { spacing } from '@/theme';
 
 import { SlideTransition } from './SlideTransition';
+import { PagerView } from './TabPager';
+import { usePagerGesture } from './usePagerGesture';
+import { useTabPager } from './useTabPager';
 
 interface TabSwipe {
   gesture: PanGesture;
   /** Set while the touch began in a `NoTabSwipe` area: that touch never changes the tab. */
-  blockedRef: RefObject<boolean>;
+  blocked: SharedValue<boolean>;
 }
 
-type PanConfig = Parameters<typeof usePanGesture>[0];
 type NativeConfig = Parameters<typeof useNativeGesture>[0];
 
 /** The tab swipe of the nearest `SwipeTabs` (null outside one). */
@@ -28,7 +26,13 @@ export interface SwipeTabsProps<T> {
   tabs: readonly T[];
   value: T;
   onChange: (next: T) => void;
-  children: ReactNode;
+  /** The current tab's content (default: `renderTab(value)`). */
+  children?: ReactNode;
+  /**
+   * v8.1: the content of any tab, for the neighbouring page a drag shows beside the current one
+   * (mounted only while a drag shows it): it should look like the current page for that tab.
+   */
+  renderTab: (tab: T) => ReactNode;
   /** Gesture test id (`getByGestureTestId`); unique per screen. */
   testID: string;
   /**
@@ -38,62 +42,61 @@ export interface SwipeTabsProps<T> {
   size?: 'grow' | 'fill';
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
+  /**
+   * v8.1: the parent's side padding, which the drag uses so pages slide out to the screen's
+   * edges (default: the `Screen` padding for `grow`, none for `fill`).
+   */
+  bleed?: number;
 }
 
 /**
- * v8 (PLAN §31.2): tab content that slides in from the side of the chosen tab and changes tab on
- * a horizontal swipe (left → next, right → previous). The pan only takes over after
- * `TAB_SWIPE_ACTIVATION` px sideways and fails on vertical movement, so scrolling and taps keep
- * working. Inside another `SwipeTabs` only the outer one swipes (this one just slides), so one
- * swipe never changes two things. Areas that need sideways drags themselves sit in `NoTabSwipe`.
+ * v8 (PLAN §31.2): tab content that slides in from the side of the chosen tab. v8.1: a sideways
+ * drag moves it with the finger, the neighbouring tab beside it (an interactive pager); released
+ * past a third of the width or flicked it goes on to that tab, else back. The pan only takes over
+ * after `TAB_SWIPE_ACTIVATION` px sideways and fails on vertical movement, so scrolling and taps
+ * keep working. Inside another `SwipeTabs` only the outer one swipes (this one just slides), so
+ * one drag never changes two things. Areas that need sideways drags themselves sit in `NoTabSwipe`.
  */
 export function SwipeTabs<T>(props: SwipeTabsProps<T>) {
   const outer = useContext(TabSwipeContext);
-  const index = props.tabs.indexOf(props.value);
+  if (outer) return <Slide {...props} />;
+  return <SwipeArea {...props} />;
+}
+
+function Slide<T>(props: SwipeTabsProps<T> & { instant?: boolean }) {
   const box = styles[props.size ?? 'grow'];
-  const slide = (
+  return (
     <SlideTransition
-      index={index}
+      index={props.tabs.indexOf(props.value)}
+      instant={props.instant}
       style={[box, props.style]}
       contentStyle={[box, props.contentStyle]}
       testID={`${props.testID}-slide`}
     >
-      {props.children}
+      {props.children ?? props.renderTab(props.value)}
     </SlideTransition>
   );
-  if (outer) return slide;
-  return <SwipeArea {...props}>{slide}</SwipeArea>;
 }
 
-function SwipeArea<T>({ tabs, value, onChange, children, testID, size }: SwipeTabsProps<T>) {
-  const blockedRef = useRef(false);
-  const pan = usePanGesture({
-    // Web: vertical touch scrolling stays with the browser; the right-click menu keeps working.
-    // The detector's own `touchAction` prop doesn't reach a hook gesture's view; these web-only
-    // settings are accepted at runtime (gesture-handler's props white list) but are not in the
-    // config type, hence the `as PanConfig`.
-    touchAction: 'pan-y',
-    enableContextMenu: true,
-    runOnJS: true,
-    testID,
-    activeOffsetX: [-OFFSET, OFFSET],
-    failOffsetY: [-OFFSET, OFFSET],
-    onDeactivate: (e) => {
-      if (e.canceled || blockedRef.current) return;
-      const next = swipeTarget(tabs, value, e.translationX, e.velocityX);
-      if (next !== null) onChange(tabs[next] as T);
-    },
-    onFinalize: () => {
-      blockedRef.current = false;
-    },
-  } as PanConfig);
+function SwipeArea<T>(props: SwipeTabsProps<T>) {
+  const { tabs, value, onChange, renderTab, testID } = props;
+  const pager = useTabPager(tabs, tabs.indexOf(value), onChange);
+  const gesture = usePagerGesture(pager, tabs.length, testID);
+  const { blocked } = pager;
+  const tabSwipe = useMemo(() => ({ gesture, blocked }), [gesture, blocked]);
   return (
-    <TabSwipeContext.Provider value={{ gesture: pan, blockedRef }}>
-      <GestureDetector gesture={pan}>
-        <View collapsable={false} style={styles[size ?? 'grow']}>
-          {children}
-        </View>
-      </GestureDetector>
+    <TabSwipeContext.Provider value={tabSwipe}>
+      <PagerView
+        pager={pager}
+        gesture={gesture}
+        neighbour={pager.neighbour ? renderTab(tabs[pager.neighbour.index] as T) : null}
+        style={styles[props.size ?? 'grow']}
+        bleed={props.bleed ?? (props.size === 'fill' ? 0 : spacing.lg)}
+        contentStyle={props.contentStyle}
+        testID={testID}
+      >
+        <Slide {...props} instant={pager.instant} />
+      </PagerView>
     </TabSwipeContext.Provider>
   );
 }
@@ -122,7 +125,7 @@ function Blocker({
   children: ReactNode;
   testID?: string;
 }) {
-  const { gesture, blockedRef } = tabSwipe;
+  const { gesture, blocked } = tabSwipe;
   // `block`: the tab swipe waits while this view scrolls (phones). The flag also covers a drag
   // that doesn't scroll (a mouse on web, a table that fits): the swipe may end, but is ignored.
   const native = useNativeGesture({
@@ -134,7 +137,7 @@ function Blocker({
     runOnJS: true,
     testID,
     onBegin: () => {
-      blockedRef.current = true;
+      blocked.set(true);
     },
   } as NativeConfig);
   return <GestureDetector gesture={native}>{children}</GestureDetector>;

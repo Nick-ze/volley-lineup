@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { SwipeTabs } from '@/components';
 import { matchStats, playedSetNumbers } from '@/domain/stats';
-import type { Match, SetNumber } from '@/domain/types';
+import type { Match, Player, SetNumber } from '@/domain/types';
 import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
@@ -23,7 +23,6 @@ export function MatchStats({ match }: { match: Match }) {
   const [filter, setFilter] = useState<SetNumber | null>(null);
   // A filter for a set that is no longer played (e.g. after Reset) falls back to all sets.
   const setNumber = filter !== null && sets.includes(filter) ? filter : null;
-  const stats = useMemo(() => matchStats(match, players, setNumber), [match, players, setNumber]);
 
   // The opponent goes here, not in the header, so long names wrap instead of overflowing.
   const heading = (
@@ -41,7 +40,6 @@ export function MatchStats({ match }: { match: Match }) {
       </View>
     );
   }
-  const { us, them } = stats.points;
   // v8: the filter's tabs in order (All sets first): the tables slide / swipe between them.
   const filters = [null, ...sets];
   return (
@@ -52,20 +50,40 @@ export function MatchStats({ match }: { match: Match }) {
         tabs={filters}
         value={setNumber}
         onChange={setFilter}
+        renderTab={(n) => <MatchStatsPage match={match} players={players} setNumber={n} />}
         testID="stats-set-swipe"
         contentStyle={styles.wrap}
-      >
-        <Text
-          style={styles.points}
-          accessibilityLabel={t.stats.season.pointsLabel(us, them)}
-          testID="match-stats-points"
-        >
-          {`${t.stats.season.points} ${t.stats.score(us, them)}`}
-        </Text>
-        <RotationTable stats={stats} />
-        <PlayerTable stats={stats} players={players} />
-      </SwipeTabs>
+      />
     </View>
+  );
+}
+
+/** The points and both tables for all sets (null) or one set. */
+function MatchStatsPage({
+  match,
+  players,
+  setNumber,
+}: {
+  match: Match;
+  players: Player[];
+  setNumber: SetNumber | null;
+}) {
+  const styles = useStyles();
+  const t = useT();
+  const stats = useMemo(() => matchStats(match, players, setNumber), [match, players, setNumber]);
+  const { us, them } = stats.points;
+  return (
+    <>
+      <Text
+        style={styles.points}
+        accessibilityLabel={t.stats.season.pointsLabel(us, them)}
+        testID="match-stats-points"
+      >
+        {`${t.stats.season.points} ${t.stats.score(us, them)}`}
+      </Text>
+      <RotationTable stats={stats} />
+      <PlayerTable stats={stats} players={players} />
+    </>
   );
 }
 

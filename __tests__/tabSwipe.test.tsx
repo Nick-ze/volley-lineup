@@ -156,3 +156,16 @@ describe('match performance set switch', () => {
     expect(screen.getByTestId('perf-set-all')).toBeSelected();
   });
 });
+
+describe('app tab bar (v8.1)', () => {
+  it('drags from Teams onto Profile and back', async () => {
+    await renderRouter('./app', { initialUrl: '/teams' });
+    expect(await screen.findByTestId('app-tab-swipe-teams-pager')).toBeTruthy();
+    await swipe('app-tab-swipe-teams', -120);
+    await act(() => jest.runOnlyPendingTimers());
+    expect(screen).toHavePathname('/profile');
+    await swipe('app-tab-swipe-profile', 120);
+    await act(() => jest.runOnlyPendingTimers());
+    expect(screen).toHavePathname('/teams');
+  });
+});

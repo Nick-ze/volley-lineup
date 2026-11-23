@@ -35,6 +35,37 @@ export default function TeamScreen() {
 
   const id = team.id;
   const selectTab = (next: TeamTab) => router.setParams({ tab: next });
+  const renderTab = (shown: TeamTab) => {
+    switch (shown) {
+      case 'roster':
+        return (
+          <RosterTab
+            teamId={id}
+            onAddPlayer={() => router.push(`/team/${id}/player`)}
+            onOpenPlayer={(playerId) => router.push(`/team/${id}/players/${playerId}`)}
+          />
+        );
+      case 'matches':
+        return (
+          <SeasonsTab
+            teamId={id}
+            onNewSeason={() => router.push(`/team/${id}/season-new`)}
+            onOpenSeason={(seasonId) => router.push(`/team/${id}/season/${seasonId}`)}
+          />
+        );
+      case 'presets':
+        return (
+          <PresetsTab
+            teamId={id}
+            onOpenPreset={(presetId) => router.push(`/team/${id}/preset/${presetId}`)}
+          />
+        );
+      case 'starters':
+        return <StartersTab teamId={id} onEdit={() => router.push(`/team/${id}/starters`)} />;
+      case 'stats':
+        return <StatsTab teamId={id} />;
+    }
+  };
   return (
     <Screen footer={<TeamNavBar value={tab} onChange={selectTab} />}>
       <Stack.Screen
@@ -48,33 +79,14 @@ export default function TeamScreen() {
           ),
         }}
       />
-      {/* v8: the tab slides in from its side; a sideways swipe changes the tab. */}
-      <SwipeTabs tabs={TEAM_TABS} value={tab} onChange={selectTab} testID="team-tab-swipe">
-        {tab === 'roster' ? (
-          <RosterTab
-            teamId={id}
-            onAddPlayer={() => router.push(`/team/${id}/player`)}
-            onOpenPlayer={(playerId) => router.push(`/team/${id}/players/${playerId}`)}
-          />
-        ) : null}
-        {tab === 'matches' ? (
-          <SeasonsTab
-            teamId={id}
-            onNewSeason={() => router.push(`/team/${id}/season-new`)}
-            onOpenSeason={(seasonId) => router.push(`/team/${id}/season/${seasonId}`)}
-          />
-        ) : null}
-        {tab === 'presets' ? (
-          <PresetsTab
-            teamId={id}
-            onOpenPreset={(presetId) => router.push(`/team/${id}/preset/${presetId}`)}
-          />
-        ) : null}
-        {tab === 'starters' ? (
-          <StartersTab teamId={id} onEdit={() => router.push(`/team/${id}/starters`)} />
-        ) : null}
-        {tab === 'stats' ? <StatsTab teamId={id} /> : null}
-      </SwipeTabs>
+      {/* v8: the tab slides in from its side; v8.1: a sideways drag shows the next tab beside it. */}
+      <SwipeTabs
+        tabs={TEAM_TABS}
+        value={tab}
+        onChange={selectTab}
+        renderTab={renderTab}
+        testID="team-tab-swipe"
+      />
     </Screen>
   );
 }

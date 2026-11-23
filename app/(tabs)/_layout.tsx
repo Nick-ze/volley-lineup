@@ -1,17 +1,27 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Tabs, type BottomTabNavigationOptions } from 'expo-router/js-tabs';
-import { useEffect, type ComponentProps, type ReactElement } from 'react';
+import { useEffect, useState, type ComponentProps, type ReactElement } from 'react';
 import type { ColorValue } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SwipeTabs } from '@/components';
-import { SLIDE_DURATION_MS, SLIDE_FALLBACK_DISTANCE, TAB_SCENE_OPACITY } from '@/domain/tabMotion';
+import {
+  SLIDE_DURATION_MS,
+  TAB_COMMIT_FALLBACK_MS,
+  SLIDE_FALLBACK_DISTANCE,
+  TAB_SCENE_OPACITY,
+} from '@/domain/tabMotion';
 
+import { ProfileScreen } from '@/features/profile/ProfileScreen';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
+import { SettingsScreen } from '@/features/settings/SettingsScreen';
 import { useT } from '@/i18n';
+import { LAZY_TAB_SCREENS } from '@/lib/tabScreens';
 import { fontSize, makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
+
+import TeamsScreen from './teams';
 
 /** Bar height above the bottom safe area: a 44 px target plus room for the label. */
 const TAB_BAR_HEIGHT = touchTarget + spacing.md;
@@ -68,15 +78,38 @@ const slideScenes: NonNullable<BottomTabNavigationOptions['sceneStyleInterpolato
 
 const isAppTab = (name: string): name is AppTab => (APP_TABS as readonly string[]).includes(name);
 
-/** v8: a sideways swipe on a tab screen goes to the neighbouring tab. */
-function TabSwipe({ name, children }: { name: string; children: ReactElement }) {
+/** v8.1: what a drag shows of a neighbouring tab: the same screen as its route renders. */
+function renderAppTab(tab: AppTab) {
+  if (tab === 'teams') return <TeamsScreen />;
+  if (tab === 'profile') return <ProfileScreen />;
+  return <SettingsScreen />;
+}
+
+/**
+ * v8: a sideways swipe on a tab screen goes to the neighbouring tab. v8.1: the drag shows that
+ * tab's screen beside this one; once released onto it, the bar switches without its own slide
+ * (`onDragged`), since the new screen is already in place.
+ */
+function TabSwipe({
+  name,
+  children,
+  onDragged,
+}: {
+  name: string;
+  children: ReactElement;
+  onDragged: () => void;
+}) {
   const router = useRouter();
   if (!isAppTab(name)) return children;
   return (
     <SwipeTabs
       tabs={APP_TABS}
       value={name}
-      onChange={(next) => router.navigate(`/${next}`)}
+      onChange={(next) => {
+        onDragged();
+        router.navigate(`/${next}`);
+      }}
+      renderTab={renderAppTab}
       testID={`app-tab-swipe-${name}`}
       size="fill"
     >
@@ -95,15 +128,32 @@ export default function TabsLayout() {
   const t = useT();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
+  // v8.1: the last tab change was a drag (the screen is already in place): no slide.
+  const [dragged, setDragged] = useState(false);
+  // Once the dragged-to tab is shown, later changes (Back, a link) slide again.
+  useEffect(() => {
+    if (!dragged) return;
+    const timer = setTimeout(() => setDragged(false), TAB_COMMIT_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [dragged]);
   // Any tab counts as "past the picker": from now on `/` never auto-forwards (DECISIONS #28).
   useEffect(markStartupHandled, []);
 
   return (
     <Tabs
-      screenLayout={({ route, children }) => <TabSwipe name={route.name}>{children}</TabSwipe>}
+      screenLayout={({ route, children }) => (
+        <TabSwipe name={route.name} onDragged={() => setDragged(true)}>
+          {children}
+        </TabSwipe>
+      )}
+      screenListeners={{ tabPress: () => setDragged(false) }}
       screenOptions={{
-        // v8: slide between tabs; the OS "reduce motion" setting switches tabs instantly.
-        animation: reduceMotion ? 'none' : 'shift',
+        // v8: slide between tabs; the OS "reduce motion" setting switches tabs instantly, as does
+        // a drag (v8.1), which already moved the new screen into place.
+        animation: reduceMotion || dragged ? 'none' : 'shift',
+        // v8.1: on the web all three tabs are mounted up front, so a drag never ends on a tab
+        // whose code is still loading (a blank screen).
+        lazy: LAZY_TAB_SCREENS,
         transitionSpec: { animation: 'timing', config: { duration: SLIDE_DURATION_MS } },
         sceneStyleInterpolator: slideScenes,
         headerStyle: { backgroundColor: colors.surface },

@@ -3,13 +3,23 @@ import {
   SLIDE_START_OPACITY,
   TAB_SCENE_OPACITY,
   SLIDE_MAX_DISTANCE,
-  TAB_SWIPE_DISTANCE,
-  TAB_SWIPE_VELOCITY,
+  TAB_DRAG_COMMIT_RATIO,
+  TAB_DRAG_EDGE_RESISTANCE,
+  TAB_DRAG_FALLBACK_DISTANCE,
+  TAB_DRAG_FLICK_VELOCITY,
+  TAB_DRAG_STILL_MS,
+  TAB_SETTLE_MAX_MS,
+  TAB_SETTLE_MIN_MS,
+  TAB_SWIPE_ACTIVATION,
+  dragCommit,
+  dragOffset,
+  dragPosition,
+  dragSide,
+  releaseVelocity,
+  settleDuration,
   slideDirection,
   slideOffset,
   stepTab,
-  swipeTabStep,
-  swipeTarget,
 } from './tabMotion';
 
 describe('slideDirection', () => {
@@ -33,22 +43,85 @@ describe('slideOffset', () => {
   });
 });
 
-describe('swipeTabStep', () => {
-  it('goes to the next tab on a swipe left, the previous on a swipe right', () => {
-    expect(swipeTabStep(-TAB_SWIPE_DISTANCE, 0)).toBe(1);
-    expect(swipeTabStep(TAB_SWIPE_DISTANCE + 10, 0)).toBe(-1);
+describe('dragOffset', () => {
+  it('counts from where the drag took over, without a jump', () => {
+    expect(dragOffset(-TAB_SWIPE_ACTIVATION, -TAB_SWIPE_ACTIVATION)).toBe(0);
+    expect(dragOffset(TAB_SWIPE_ACTIVATION + 10, TAB_SWIPE_ACTIVATION)).toBe(10);
+    expect(dragOffset(-TAB_SWIPE_ACTIVATION - 100, -TAB_SWIPE_ACTIVATION)).toBe(-100);
+    // Back past the start point: the other way.
+    expect(dragOffset(0, -TAB_SWIPE_ACTIVATION)).toBe(TAB_SWIPE_ACTIVATION);
+  });
+});
+
+describe('dragSide', () => {
+  it('shows the next tab when dragging left, the previous when dragging right', () => {
+    expect(dragSide(-5)).toBe(1);
+    expect(dragSide(5)).toBe(-1);
+    expect(dragSide(0)).toBe(0);
+  });
+});
+
+describe('dragPosition', () => {
+  it('follows the finger 1:1 towards a neighbour, at most one page', () => {
+    expect(dragPosition(-150, true, 400)).toBe(-150);
+    expect(dragPosition(150, true, 400)).toBe(150);
+    expect(dragPosition(-500, true, 400)).toBe(-400);
+    expect(dragPosition(500, true, 400)).toBe(400);
+    // Not measured yet: no limit.
+    expect(dragPosition(-500, true, 0)).toBe(-500);
   });
 
-  it('ignores short, slow swipes', () => {
-    expect(swipeTabStep(-30, -100)).toBe(0);
-    expect(swipeTabStep(0, 0)).toBe(0);
+  it('resists past the first / last tab (rubber band)', () => {
+    expect(dragPosition(-100, false, 400)).toBeCloseTo(-100 * TAB_DRAG_EDGE_RESISTANCE);
+    expect(dragPosition(100, false, 400)).toBeCloseTo(100 * TAB_DRAG_EDGE_RESISTANCE);
+  });
+});
+
+describe('dragCommit', () => {
+  const width = 400;
+  const past = width * TAB_DRAG_COMMIT_RATIO;
+
+  it('goes on past the commit share of the width, else back', () => {
+    expect(dragCommit(-past, 0, width, true)).toBe(1);
+    expect(dragCommit(past + 1, 0, width, true)).toBe(-1);
+    expect(dragCommit(-(past - 1), 0, width, true)).toBe(0);
+    expect(dragCommit(width * 0.2, 0, width, true)).toBe(0);
+    expect(dragCommit(-width / 2, -100, width, true)).toBe(1);
   });
 
-  it('accepts a short flick in the same direction only', () => {
-    expect(swipeTabStep(-30, -TAB_SWIPE_VELOCITY)).toBe(1);
-    expect(swipeTabStep(30, TAB_SWIPE_VELOCITY)).toBe(-1);
-    expect(swipeTabStep(30, -TAB_SWIPE_VELOCITY)).toBe(0);
-    expect(swipeTabStep(0, TAB_SWIPE_VELOCITY)).toBe(0);
+  it('goes on after a flick in the drag direction, back after a flick against it', () => {
+    expect(dragCommit(-30, -TAB_DRAG_FLICK_VELOCITY, width, true)).toBe(1);
+    expect(dragCommit(30, TAB_DRAG_FLICK_VELOCITY + 1, width, true)).toBe(-1);
+    expect(dragCommit(-width * 0.8, TAB_DRAG_FLICK_VELOCITY, width, true)).toBe(0);
+  });
+
+  it('needs a fixed distance before the width is measured', () => {
+    expect(dragCommit(-TAB_DRAG_FALLBACK_DISTANCE, 0, 0, true)).toBe(1);
+    expect(dragCommit(-(TAB_DRAG_FALLBACK_DISTANCE - 1), 0, 0, true)).toBe(0);
+  });
+
+  it('never steps without a neighbour or without a drag', () => {
+    expect(dragCommit(-width, -2000, width, false)).toBe(0);
+    expect(dragCommit(0, -2000, width, true)).toBe(0);
+  });
+});
+
+describe('releaseVelocity', () => {
+  it('keeps the speed of a release while moving, none after a pause', () => {
+    expect(releaseVelocity(-900, 10)).toBe(-900);
+    expect(releaseVelocity(-900, TAB_DRAG_STILL_MS)).toBe(-900);
+    expect(releaseVelocity(-900, TAB_DRAG_STILL_MS + 1)).toBe(0);
+  });
+});
+
+describe('settleDuration', () => {
+  it('keeps the release speed, within the limits', () => {
+    // 3 × 100 px / 2000 px/s = 150 ms.
+    expect(settleDuration(100, -2000)).toBe(150);
+    expect(settleDuration(-100, 2000)).toBe(150);
+    expect(settleDuration(10, 5000)).toBe(TAB_SETTLE_MIN_MS);
+    expect(settleDuration(300, 100)).toBe(TAB_SETTLE_MAX_MS);
+    expect(settleDuration(300, 0)).toBe(TAB_SETTLE_MAX_MS);
   });
 });
 
@@ -60,23 +133,6 @@ describe('stepTab', () => {
     expect(stepTab(0, -1, 3)).toBeNull();
     expect(stepTab(1, 0, 3)).toBeNull();
     expect(stepTab(-1, 1, 3)).toBeNull();
-  });
-});
-
-describe('swipeTarget', () => {
-  const tabs = ['roster', 'matches', 'stats'] as const;
-  it('returns the index of the neighbouring tab or null', () => {
-    expect(swipeTarget(tabs, 'roster', -100, 0)).toBe(1);
-    expect(swipeTarget(tabs, 'matches', 100, 0)).toBe(0);
-    expect(swipeTarget(tabs, 'stats', -100, 0)).toBeNull();
-    expect(swipeTarget(tabs, 'roster', -10, 0)).toBeNull();
-  });
-
-  it('works with null entries (the "all sets" filter)', () => {
-    expect(swipeTarget([null, 1, 2], null, -100, 0)).toBe(1);
-    expect(swipeTarget([null, 1, 2], 1, 100, 0)).toBe(0);
-    expect(swipeTarget([1, 2, null], 2, -100, 0)).toBe(2);
-    expect(swipeTarget([1, 2, null], null, -100, 0)).toBeNull();
   });
 });
 
