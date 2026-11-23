@@ -9,15 +9,15 @@ import {
   type NewMatchValue,
 } from '@/domain/matchForm';
 import { DATE_INPUT_MAX_LENGTH, todayInput } from '@/domain/dates';
-import { OpponentPicker } from '@/features/matchForm/OpponentPicker';
-import { SeasonPicker } from '@/features/matchForm/SeasonPicker';
+import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
+import { useFormStyles } from '@/features/roster/components/styles';
+import { TextField } from '@/features/roster/components/TextField';
+import { errorText } from '@/features/roster/errorText';
 import { useT } from '@/i18n';
 import { useOpponentsForSeason, useSeasonsForTeam } from '@/store';
 
-import { errorText } from '../errorText';
-import { ChoiceChip } from './ChoiceChip';
-import { useFormStyles } from './styles';
-import { TextField } from './TextField';
+import { OpponentPicker } from './OpponentPicker';
+import { SeasonPicker } from './SeasonPicker';
 
 export interface MatchFormProps {
   teamId: string;

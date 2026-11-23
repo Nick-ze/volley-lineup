@@ -8,7 +8,7 @@ import { useT } from '@/i18n';
 import { dragActivation } from '@/lib/dragActivation';
 
 import { CHIP_SIZE, DRAG_GHOST_OPACITY } from '../constants';
-import { useDrag } from './DragContext';
+import { useDrag } from './dragTypes';
 
 export interface DraggablePlayerProps {
   player: Player;

@@ -1,4 +1,5 @@
 export * from './Button';
+export * from './Dialog';
 export * from './Court';
 export * from './PlayerChip';
 export * from './PositionBadge';
