@@ -43,8 +43,10 @@ store fields, features and components: HANDOFF §3.
   orchestrator in the foundation PR, not by workers.
 - Shared UI in `src/components` — reuse before writing your own: `Dialog` (modal shell), `ScreenTitle`
   (screen title; never an inline `<Stack.Screen options={{…}} />`, which re-renders the navigator every
-  render), `parseTab` (`?tab=` params), `SwipeTabs` / `NoTabSwipe`, `Court`, `PlayerChip`; `SetChipFilter`
-  (`src/features/stats`) for set filters; the app tab bar lives in `src/features/appTabs`.
+  render), `SwipeTabs` / `NoTabSwipe`, `Court`, `PlayerChip`, `SetChipFilter` (set filters), `ChoiceChip`,
+  `TextField`, `ListRow`, `NotFound`, `ConfirmDialog` + `useConfirm`, `useGoBack`, `useFormStyles` /
+  `useListStyles` (`formStyles.ts`), all through `@/components`; `parseTab` (`?tab=` params) is in
+  `src/lib/parseTab.ts`; the app tab bar lives in `src/features/appTabs`.
 
 ## 4. Binding rules
 
