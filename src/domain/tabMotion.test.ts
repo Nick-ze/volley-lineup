@@ -1,7 +1,6 @@
 import {
+  NO_PAGE,
   SLIDE_FALLBACK_DISTANCE,
-  SLIDE_START_OPACITY,
-  TAB_SCENE_OPACITY,
   SLIDE_MAX_DISTANCE,
   TAB_DRAG_COMMIT_RATIO,
   TAB_DRAG_EDGE_RESISTANCE,
@@ -12,13 +11,20 @@ import {
   TAB_SETTLE_MIN_MS,
   TAB_SWIPE_ACTIVATION,
   dragCommit,
+  dragFromTab,
   dragOffset,
   dragPosition,
   dragSide,
+  dragToPosition,
+  pageOpacity,
+  pageSlot,
+  pageTranslate,
+  pagerWindow,
   releaseVelocity,
   settleDuration,
   slideDirection,
   slideOffset,
+  slideStart,
   stepTab,
 } from './tabMotion';
 
@@ -136,20 +142,72 @@ describe('stepTab', () => {
   });
 });
 
-describe('TAB_SCENE_OPACITY', () => {
-  it('hides resting scenes and fades moving ones from the start opacity', () => {
-    const { inputRange, outputRange } = TAB_SCENE_OPACITY;
-    expect(inputRange).toHaveLength(outputRange.length);
-    // Increasing input, symmetric around the focused scene.
-    expect([...inputRange].sort((a, b) => a - b)).toEqual(inputRange);
-    expect(inputRange.map((x) => (x === 0 ? 0 : -x)).reverse()).toEqual(inputRange);
-    expect(outputRange).toEqual([...outputRange].reverse());
-    const at = (p: number) => outputRange[inputRange.indexOf(p)];
-    expect(at(-1)).toBe(0);
-    expect(at(1)).toBe(0);
-    expect(at(0)).toBe(1);
-    // Just off the edge a moving scene is at the start opacity.
-    expect(outputRange[1]).toBe(SLIDE_START_OPACITY);
-    expect(inputRange[1]).toBeGreaterThan(-1);
+describe('pagerWindow (v8.1.1)', () => {
+  it('mounts the shown tab and its neighbours, within the tabs', () => {
+    expect(pagerWindow(2, 2, 5, true)).toEqual([1, 2, 3]);
+    expect(pagerWindow(0, 0, 5, true)).toEqual([0, 1]);
+    expect(pagerWindow(4, 4, 5, true)).toEqual([3, 4]);
+    expect(pagerWindow(0, 0, 1, true)).toEqual([0]);
+  });
+
+  it('keeps the page a slide leaves (and its neighbours) until it is at rest', () => {
+    expect(pagerWindow(4, 0, 5, true)).toEqual([0, 1, 3, 4]);
+    expect(pagerWindow(1, 0, 5, true)).toEqual([0, 1, 2]);
+  });
+
+  it('mounts only the shown page before the first frame, nothing for an unknown tab', () => {
+    expect(pagerWindow(2, 2, 5, false)).toEqual([2]);
+    expect(pagerWindow(-1, -1, 5, true)).toEqual([]);
+    expect(pagerWindow(7, 2, 5, false)).toEqual([2]);
+  });
+});
+
+describe('page placement (v8.1.1)', () => {
+  it('places each page at its slot relative to the position', () => {
+    expect(pageTranslate(2, 2, 400, NO_PAGE, 0)).toBe(0);
+    expect(pageTranslate(3, 2, 400, NO_PAGE, 0)).toBe(400);
+    expect(pageTranslate(1, 2.5, 400, NO_PAGE, 0)).toBe(-600);
+    expect(pageSlot(1, NO_PAGE, 0)).toBe(1);
+  });
+
+  it('moves an aliased page to its stand-in slot and hides the page there', () => {
+    expect(pageSlot(0, 0, 3)).toBe(3);
+    expect(pageTranslate(0, 3, 400, 0, 3)).toBe(0);
+    expect(pageOpacity(3, 3, 400, 0, 3)).toBe(0);
+    expect(pageOpacity(0, 3, 400, 0, 3)).toBe(1);
+    expect(pageOpacity(4, 3, 400, 0, 3)).toBe(1);
+  });
+
+  it('shows only the page at the position before the pager is measured', () => {
+    expect(pageOpacity(2, 2, 0, NO_PAGE, 0)).toBe(1);
+    expect(pageOpacity(3, 2, 0, NO_PAGE, 0)).toBe(0);
+    expect(pageOpacity(0, 3, 0, 0, 3)).toBe(1);
+  });
+});
+
+describe('drag position (v8.1.1)', () => {
+  it('counts the drag from the shown tab, including where the row was caught', () => {
+    expect(dragFromTab(2, 2, 400, -50)).toBe(-50);
+    expect(dragFromTab(2, 2.25, 400, 0)).toBe(-100);
+  });
+
+  it('turns a drag into the row position, rubber-banding at the ends', () => {
+    expect(dragToPosition(2, -200, true, 400)).toBe(2.5);
+    expect(dragToPosition(2, 200, true, 400)).toBe(1.5);
+    expect(dragToPosition(0, 100, false, 400)).toBeCloseTo((-100 * TAB_DRAG_EDGE_RESISTANCE) / 400);
+    expect(dragToPosition(2, -200, true, 0)).toBe(2);
+  });
+});
+
+describe('slideStart (v8.1.1)', () => {
+  it('slides straight to a tab one page away (also from a moving position)', () => {
+    expect(slideStart(2, 3)).toEqual({ start: 2, aliasPage: NO_PAGE, aliasSlot: 0 });
+    expect(slideStart(2.4, 2)).toEqual({ start: 2.4, aliasPage: NO_PAGE, aliasSlot: 0 });
+  });
+
+  it('jumps over tabs with the shown page beside the target', () => {
+    expect(slideStart(0, 4)).toEqual({ start: 3, aliasPage: 0, aliasSlot: 3 });
+    expect(slideStart(4, 1)).toEqual({ start: 2, aliasPage: 4, aliasSlot: 2 });
+    expect(slideStart(0.6, 3)).toEqual({ start: 2, aliasPage: 1, aliasSlot: 2 });
   });
 });

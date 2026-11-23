@@ -157,6 +157,41 @@ describe('match performance set switch', () => {
   });
 });
 
+/*
+ * v8.1.1 flicker regression: a page dragged in must be the very element that becomes the shown
+ * tab (v8.1 showed a copy and then mounted the real page, a visible flash on Android). The host
+ * element of a page found before the drag is the same instance after it: nothing was remounted.
+ */
+describe('no remount on a tab change (v8.1.1)', () => {
+  const hidden = { includeHiddenElements: true };
+
+  it('team tabs: the neighbouring tab is mounted before the drag and kept after it', async () => {
+    await renderRouter('./app', { initialUrl: '/team/team1' });
+    expect(await screen.findByTestId('team-tab-roster')).toBeSelected();
+    await act(() => jest.runOnlyPendingTimers());
+    const seasons = screen.getByTestId('season-list', hidden);
+    expect(screen.queryByTestId('season-list')).toBeNull(); // mounted, hidden
+    await swipe('team-tab-swipe', -120);
+    expect(screen.getByTestId('team-tab-matches')).toBeSelected();
+    expect(screen.getByTestId('season-list')).toBe(seasons);
+    // A tap back slides the roster in: still the same pages.
+    await fireEvent.press(screen.getByTestId('team-tab-roster'));
+    expect(screen.getByTestId('season-list', hidden)).toBe(seasons);
+  });
+
+  it('app tab bar: the Profile screen dragged in is the real one, not a copy', async () => {
+    await renderRouter('./app', { initialUrl: '/teams' });
+    const card = await screen.findByTestId('profile-card', hidden);
+    await swipe('app-tab-swipe-teams', -120);
+    await act(() => jest.runOnlyPendingTimers());
+    expect(screen).toHavePathname('/profile');
+    expect(screen.getByTestId('profile-card')).toBe(card);
+    await fireEvent.press(screen.getByTestId('tab-teams'));
+    expect(screen).toHavePathname('/teams');
+    expect(screen.getByTestId('profile-card', hidden)).toBe(card);
+  });
+});
+
 describe('app tab bar (v8.1)', () => {
   it('drags from Teams onto Profile and back', async () => {
     await renderRouter('./app', { initialUrl: '/teams' });

@@ -2,11 +2,13 @@ import { usePanGesture, type PanGesture } from 'react-native-gesture-handler';
 import { cancelAnimation, useSharedValue } from 'react-native-reanimated';
 
 import {
+  NO_PAGE,
   TAB_SWIPE_ACTIVATION as OFFSET,
   dragCommit,
+  dragFromTab,
   dragOffset,
-  dragPosition,
   dragSide,
+  dragToPosition,
   releaseVelocity,
   settleDuration,
   stepTab,
@@ -20,15 +22,16 @@ type PanConfig = Parameters<typeof usePanGesture>[0];
 
 /**
  * v8.1: the pan of the interactive tab pager. Runs on the UI thread: each frame only moves the
- * shared `x` (no React render); React hears of the drag when a neighbour page is needed and once
- * at the end. A drag made while the last one is still going on to its tab doesn't move the page;
- * if it is a flick (or long enough) it is queued and runs once the new tab is in place.
+ * shared position (no React render); React hears of the drag once, when it went on to the next
+ * tab. A drag made while the last one is still going on to its tab (or while a tap jumps over
+ * tabs) doesn't move the pages; if it is a flick (or long enough) it is queued and runs once the
+ * new tab is shown. v8.1.1: the neighbouring pages are already mounted, so nothing renders here.
  */
 export function usePagerGesture(pager: Pager, count: number, testID: string): PanGesture {
-  const { x, width, shownSide, busy, queued, blocked, current, showNeighbour, settle } = pager;
-  /** This drag moves the page (it didn't start in a `NoTabSwipe` area or during a commit). */
+  const { position, width, aliasPage, busy, queued, blocked, current, settle } = pager;
+  /** This drag moves the pages (it didn't start in a `NoTabSwipe` area or during a commit). */
   const tracking = useSharedValue(false);
-  /** Where the content was when the drag took over (a drag may catch a page settling back)… */
+  /** Where the row was when the drag took over (a drag may catch it still moving)… */
   const start = useSharedValue(0);
   /** …and the gesture's translation then. */
   const origin = useSharedValue(0);
@@ -50,38 +53,36 @@ export function usePagerGesture(pager: Pager, count: number, testID: string): Pa
       if (blocked.value) return;
       // The card under the pointer must not open on release (web mouse).
       callReact(cancelPress);
-      if (busy.value) return;
-      cancelAnimation(x);
-      start.set(x.value);
+      if (busy.value || aliasPage.value !== NO_PAGE) return;
+      cancelAnimation(position);
+      start.set(position.value);
       tracking.set(true);
     },
     onUpdate: (e) => {
       lastMove.set(Date.now());
       if (!tracking.value || blocked.value) return;
-      const offset = start.value + dragOffset(e.translationX, origin.value);
-      const side = dragSide(offset);
-      const next = stepTab(current.value, side, count);
-      if (next !== null && side !== shownSide.value) {
-        shownSide.set(side);
-        callReact(showNeighbour, next, side);
-      }
-      x.set(dragPosition(offset, next !== null, width.value));
+      const moved = dragOffset(e.translationX, origin.value);
+      const offset = dragFromTab(current.value, start.value, width.value, moved);
+      const next = stepTab(current.value, dragSide(offset), count);
+      position.set(dragToPosition(current.value, offset, next !== null, width.value));
     },
     onDeactivate: (e) => {
       const velocity = releaseVelocity(e.velocityX, Date.now() - lastMove.value);
       const stopped = e.canceled || blocked.value;
       if (!tracking.value) {
-        // During a commit: queue a flick (or a long drag) for when the new tab is in place.
+        // During a commit: queue a flick (or a long drag) for when the new tab is shown.
         const offset = dragOffset(e.translationX, origin.value);
         if (busy.value && !stopped) queued.set(dragCommit(offset, velocity, width.value, true));
         return;
       }
       tracking.set(false);
-      const offset = start.value + dragOffset(e.translationX, origin.value);
+      const moved = dragOffset(e.translationX, origin.value);
+      const offset = dragFromTab(current.value, start.value, width.value, moved);
       const next = stepTab(current.value, dragSide(offset), count);
       const step = stopped ? 0 : dragCommit(offset, velocity, width.value, next !== null);
-      const target = -step * width.value;
-      settle(target, settleDuration(target - x.value, velocity), step === 0 ? null : next);
+      const target = current.value + step;
+      const distance = (target - position.value) * width.value;
+      settle(target, settleDuration(distance, velocity), step !== 0);
     },
     onFinalize: () => {
       blocked.set(false);

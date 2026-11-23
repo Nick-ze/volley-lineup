@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import { resetStartupRedirect } from '@/features/roster/hooks/useStartupRedirect';
@@ -21,6 +21,12 @@ const hidden = { includeHiddenElements: true };
 
 const press = async (name: string) => fireEvent.press(screen.getByRole('button', { name }));
 const photoCount = () => screen.queryAllByTestId('photo', hidden).length;
+/** v8.1.1: photos in the Profile tab only (the Teams tab is mounted beside it, hidden). */
+const profileTabPhotoCount = () =>
+  within(screen.getByTestId('app-tab-swipe-profile-pager', hidden)).queryAllByTestId(
+    'photo',
+    hidden,
+  ).length;
 
 beforeEach(() => {
   store().resetAll();
@@ -48,9 +54,10 @@ describe('profile photos', () => {
     expect(screen).toHavePathname('/teams');
     const profile = store().profiles[0];
     expect(photos()).toEqual({ [profile.photoId as string]: URI_A });
-    // The teams header (and the profile list underneath it in the stack) show the photo.
+    // The teams header (and the profile list underneath it in the stack) show the photo, as does
+    // the Profile tab: v8.1.1 mounts all three app tabs up front (hidden until shown).
     expect(screen.getByText(t.roster.teams.heading('Coach'))).toBeTruthy();
-    expect(photoCount()).toBe(2);
+    expect(photoCount()).toBe(3);
   });
 
   it('disables Create profile while a picked picture is being prepared', async () => {
@@ -72,7 +79,7 @@ describe('profile photos', () => {
     store().selectProfile(coach.id);
     await renderRouter('./app', { initialUrl: '/profile' });
     await screen.findByTestId('profile-card');
-    expect(photoCount()).toBe(1);
+    expect(profileTabPhotoCount()).toBe(1);
 
     pick.mockResolvedValue({ status: 'picked', dataUri: URI_B });
     await fireEvent.press(screen.getByLabelText(t.profile.editLabel('Coach')));
@@ -82,16 +89,16 @@ describe('profile photos', () => {
     const changed = store().profiles[0].photoId as string;
     expect(changed).not.toBe('old');
     expect(photos()).toEqual({ [changed]: URI_B });
-    expect(photoCount()).toBe(1);
+    expect(profileTabPhotoCount()).toBe(1);
 
     await fireEvent.press(screen.getByLabelText(t.profile.editLabel('Coach')));
     await press(s.remove);
-    expect(photoCount()).toBe(0);
+    expect(profileTabPhotoCount()).toBe(0);
     await press(t.common.save);
     expect(store().profiles[0].photoId).toBeUndefined();
     expect(photos()).toEqual({});
     expect(screen.getByTestId('profile-card')).toHaveTextContent(/C/);
-    expect(photoCount()).toBe(0);
+    expect(profileTabPhotoCount()).toBe(0);
   });
 
   it('the profile list shows photos and edits them', async () => {
