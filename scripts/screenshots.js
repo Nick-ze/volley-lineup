@@ -140,7 +140,8 @@ async function shoot(dist, outDir, only) {
   let count = 0;
   const worker = async () => {
     for (let job = jobs.shift(); job !== undefined; job = jobs.shift()) {
-      count += await shootVariant(browser, base, outDir, only, job);
+      const shot = await shootVariant(browser, base, outDir, only, job);
+      count += shot;
     }
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
