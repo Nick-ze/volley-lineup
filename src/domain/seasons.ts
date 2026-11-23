@@ -7,6 +7,7 @@
  */
 import { getMatchState } from './matchState';
 import { parseDateInput } from './dates';
+import { isRecord as isRec, type Rec } from './legacyData';
 import type { Match, Opponent, Season, SeasonKind } from './types';
 
 export const SEASON_KINDS: readonly SeasonKind[] = ['season', 'tournament'] as const;
@@ -36,8 +37,6 @@ export const upgradeSeasonId = (teamId: string) => `season-${teamId}`;
 export const upgradeOpponentId = (seasonId: string, name: string) =>
   `opp-${seasonId}-${encodeURIComponent(foldName(name))}`;
 
-type Rec = Record<string, unknown>;
-const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
 
 /**

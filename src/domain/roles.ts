@@ -16,6 +16,7 @@
  * The rotation number follows the setter: a setter at position 4 means "rotation 4". With two
  * setters (6-2) the one in the back row counts.
  */
+import { isRecord } from './legacyData';
 import { isLineupLocked } from './lineupLock';
 import {
   BACK_ROW_POSITIONS,
@@ -203,9 +204,6 @@ export function inferFormation(
   const order: FormationOrder = role(next) === 'MB' ? 'middle' : 'outside';
   return { system, order, setterAt };
 }
-
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
  * Upgrades one stored lineup (set or preset) of the v5 data shape to v6: drops the per-player

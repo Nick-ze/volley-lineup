@@ -26,6 +26,14 @@ import type {
   SetLineup,
   Team,
 } from './types';
+import {
+  addRoleDefaults,
+  addSetLogDefaults,
+  isRecord,
+  mapLineups,
+  mapSets,
+  type Rec,
+} from './legacyData';
 import { isValidPointTag } from './pointTags';
 import { FORMATION_ORDERS, FORMATION_SYSTEMS, upgradeLineupToFormation } from './roles';
 import { validatePresetName } from './presets';
@@ -348,9 +356,6 @@ export function summarize(data: TransferData): ImportSummary {
   };
 }
 
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-
 const hasDuplicates = (values: readonly (string | number)[]): boolean =>
   new Set(values).size !== values.length;
 
@@ -440,45 +445,19 @@ export function isConsistent(data: TransferData): boolean {
  * v1 → v2: sets gain `liberoReplaces: []` and `events: []`. Anything malformed is passed through
  * untouched so the zod check reports it as INVALID_SHAPE.
  */
-function upgradeV1(raw: Record<string, unknown>): Record<string, unknown> {
-  const matches = Array.isArray(raw.matches)
-    ? raw.matches.map((m: unknown) =>
-        isRecord(m) && Array.isArray(m.sets)
-          ? {
-              ...m,
-              sets: m.sets.map((set: unknown) =>
-                isRecord(set) ? { liberoReplaces: [], events: [], ...set } : set,
-              ),
-            }
-          : m,
-      )
-    : raw.matches;
-  return { ...raw, schemaVersion: 2, matches };
+function upgradeV1(raw: Rec): Rec {
+  return { ...raw, schemaVersion: 2, matches: mapSets(raw.matches, addSetLogDefaults) };
 }
 
 /** v4 → v5: every set and preset gains `roles: {}` (primary positions) and `liberoActive: true`. */
-function upgradeV4(raw: Record<string, unknown>): Record<string, unknown> {
-  const lineupDefaults = (x: unknown) =>
-    isRecord(x) ? { roles: {}, liberoActive: true, ...x } : x;
-  const matches = Array.isArray(raw.matches)
-    ? raw.matches.map((m: unknown) =>
-        isRecord(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(lineupDefaults) } : m,
-      )
-    : raw.matches;
-  const presets = Array.isArray(raw.presets) ? raw.presets.map(lineupDefaults) : raw.presets;
-  return { ...raw, schemaVersion: 5, matches, presets };
+function upgradeV4(raw: Rec): Rec {
+  return { ...raw, schemaVersion: 5, ...mapLineups(raw, addRoleDefaults) };
 }
 
 /** v5 → v6: per-player role overrides become a formation per set and preset (roles.ts). */
-function upgradeV5(raw: Record<string, unknown>): Record<string, unknown> {
+function upgradeV5(raw: Rec): Rec {
   const toFormation = (x: unknown) => upgradeLineupToFormation(x, raw.players);
-  const matches = Array.isArray(raw.matches)
-    ? raw.matches.map((m: unknown) =>
-        isRecord(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(toFormation) } : m,
-      )
-    : raw.matches;
-  const presets = Array.isArray(raw.presets) ? raw.presets.map(toFormation) : raw.presets;
-  return { ...raw, schemaVersion: 6, matches, presets };
+  return { ...raw, schemaVersion: 6, ...mapLineups(raw, toFormation) };
 }
 
 /**
@@ -488,7 +467,7 @@ function upgradeV5(raw: Record<string, unknown>): Record<string, unknown> {
  * descriptions and error types are optional, so nothing else changes), v7 → v8 (one season
  * per team with its opponents, `upgradeToSeasons`).
  */
-function upgradeToCurrent(raw: Record<string, unknown>): Record<string, unknown> {
+function upgradeToCurrent(raw: Rec): Rec {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
   const v3 = v2.schemaVersion === 2 ? { presets: [], ...v2, schemaVersion: 3 } : v2;
   const v4 = v3.schemaVersion === 3 ? { ...v3, schemaVersion: 4 } : v3;
