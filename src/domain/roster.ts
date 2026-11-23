@@ -1,6 +1,6 @@
 /**
- * Roster domain helpers: form validation for profiles, teams, players and matches,
- * plus small pure helpers (jersey uniqueness, position ordering, dates).
+ * Roster domain helpers: form validation for profiles, teams and players, plus small pure
+ * helpers (jersey uniqueness, position ordering). The match form lives in `matchForm.ts`.
  *
  * Validation returns error **codes**, never user-facing text; the UI maps codes to strings.
  */
@@ -46,22 +46,6 @@ export function makePrimaryPosition(
   position: Position,
 ): Position[] {
   return [position, ...positions.filter((p) => p !== position)];
-}
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Local calendar date as `YYYY-MM-DD`. */
-export function toIsoDate(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-/** True for a real calendar date written as `YYYY-MM-DD`. */
-export function isValidIsoDate(value: string): boolean {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!m) return false;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const date = new Date(Date.UTC(y, mo - 1, d));
-  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
 }
 
 /* ---------- zod plumbing ---------- */
@@ -167,23 +151,4 @@ function playerSchema(ctx: PlayerFormContext) {
 
 export function validatePlayerForm(input: PlayerFormInput, ctx: PlayerFormContext) {
   return run<PlayerFormValue, PlayerFormField>(playerSchema(ctx), input);
-}
-
-/* ---------- match ---------- */
-
-export interface MatchFormInput {
-  opponent: string;
-  date: string;
-  home: boolean;
-}
-export type MatchFormField = keyof MatchFormInput;
-
-const matchSchema = z.object({
-  opponent: name,
-  date: z.string().trim().refine(isValidIsoDate, 'invalidDate'),
-  home: z.boolean(),
-});
-
-export function validateMatchForm(input: MatchFormInput) {
-  return run<MatchFormInput, MatchFormField>(matchSchema, input);
 }

@@ -37,9 +37,6 @@ import {
   type SetLineup,
 } from './types';
 
-/** Roles a starter can play (the libero has its own slot). */
-export const COURT_ROLES: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'DS'];
-
 export const FORMATION_SYSTEMS: readonly FormationSystem[] = ['5-1', '6-2'];
 export const FORMATION_ORDERS: readonly FormationOrder[] = ['outside', 'middle'];
 
@@ -75,11 +72,6 @@ export function spotRoles(formation: Formation): Record<CourtPosition, Position>
   const roles = {} as Record<CourtPosition, Position>;
   for (const p of COURT_POSITIONS) roles[p] = spotRole(formation, p);
   return roles;
-}
-
-/** A player's primary position, or null when none is set. */
-export function primaryPosition(player: Pick<Player, 'positions'>): Position | null {
-  return player.positions[0] ?? null;
 }
 
 /** The role a starter plays in the set: the role of their spot; null when not on court. */

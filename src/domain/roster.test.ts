@@ -1,12 +1,9 @@
 import {
   isJerseyNumberTaken,
-  isValidIsoDate,
   makePrimaryPosition,
   NAME_MAX_LENGTH,
   SEASON_MAX_LENGTH,
-  toIsoDate,
   togglePosition,
-  validateMatchForm,
   validatePlayerForm,
   validateProfileForm,
   validateTeamForm,
@@ -46,22 +43,6 @@ describe('positions', () => {
   it('makes a position primary', () => {
     expect(makePrimaryPosition(['S', 'OH', 'MB'], 'MB')).toEqual(['MB', 'S', 'OH']);
     expect(makePrimaryPosition(['S'], 'L')).toEqual(['L', 'S']);
-  });
-});
-
-describe('dates', () => {
-  it('formats a local date', () => {
-    expect(toIsoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
-    expect(toIsoDate(new Date(2026, 10, 20))).toBe('2026-11-20');
-  });
-  it('validates ISO calendar dates', () => {
-    expect(isValidIsoDate('2026-11-20')).toBe(true);
-    expect(isValidIsoDate('2024-02-29')).toBe(true);
-    expect(isValidIsoDate('2025-02-29')).toBe(false);
-    expect(isValidIsoDate('2026-13-01')).toBe(false);
-    expect(isValidIsoDate('2026-1-01')).toBe(false);
-    expect(isValidIsoDate('20.11.2026')).toBe(false);
-    expect(isValidIsoDate('')).toBe(false);
   });
 });
 
@@ -170,21 +151,5 @@ describe('validatePlayerForm', () => {
         ctx,
       ).errors,
     ).toEqual({ positions: 'duplicate', lastName: 'tooLong' });
-  });
-});
-
-describe('validateMatchForm', () => {
-  it('accepts a valid match', () => {
-    expect(validateMatchForm({ opponent: ' Rivals ', date: '2026-11-20', home: false })).toEqual({
-      ok: true,
-      value: { opponent: 'Rivals', date: '2026-11-20', home: false },
-      errors: {},
-    });
-  });
-  it('rejects missing opponent and invalid date', () => {
-    expect(validateMatchForm({ opponent: '', date: '2026-02-30', home: true }).errors).toEqual({
-      opponent: 'required',
-      date: 'invalidDate',
-    });
   });
 });

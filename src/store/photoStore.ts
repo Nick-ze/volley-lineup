@@ -63,7 +63,10 @@ export async function setPhoto(id: string, dataUri: string): Promise<boolean> {
   return ok;
 }
 
-/** Deletes a photo. */
+/**
+ * Deletes a photo.
+ * @internal Not used by the app (photos go through `prunePhotos`); kept for the storage tests.
+ */
 export async function removePhoto(id: string): Promise<void> {
   usePhotoStore.setState((s) => {
     const { [id]: _removed, ...photos } = s.photos;
