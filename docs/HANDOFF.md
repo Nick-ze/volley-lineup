@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-23, after releasing **v8.1.0**.
+Last updated: 2026-11-23, after releasing **v8.1.1**.
 
 ---
 
@@ -26,15 +26,16 @@ Last updated: 2026-11-23, after releasing **v8.1.0**.
 | v7.0.0  | Seasons & tournaments: season boxes, season screen (matches · opponents with records · stats), opponent picker for new matches, Stats season switcher, data model v8                                                                       | `v7.0.0` |
 | v8.0.0  | Look & feel: light / dark / system theme, dyslexia font (OpenDyslexic), Swiss dates dd.mm.yy, roster player cards, first name first, team pictures, tab slides + swipe, rotation slides, new app icon; store v10, export v9                | `v8.0.0` |
 | v8.1.0  | Interactive drag between tabs: the page follows the finger with the neighbouring tab beside it (RNGH + Reanimated pager)                                                                                                                   | `v8.1.0` |
+| v8.1.1  | Swipe without flicker: real pager (neighbour tabs stay mounted, no swap on release), app tab bar moves the real scenes                                                                                                                     | `v8.1.1` |
 
-- `main` is green (CI), **1180 tests**, `src/domain` at 100% coverage.
-- Current versions: app **8.1.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#217**. Continue at #218.
+- `main` is green (CI), **1197 tests**, `src/domain` at 100% coverage.
+- Current versions: app **8.1.1** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
+- Last decision number in `docs/DECISIONS.md`: **#221**. Continue at #222.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
 
-- **v8 / v8.1 not verified on a real phone**: animation feel and the interactive tab drag (RNGH + Reanimated on native: hand-over frame order on Fabric — a heavy new tab could flash for a frame; the neighbour mounts a few frames after the drag starts), OpenDyslexic rendering and fit on Android, the launcher icon (adaptive + monochrome) and splash, store v9 → v10 upgrade in Android AsyncStorage, "System" theme following the phone. All checked in a browser (Playwright, mouse + touch emulation, 375 / 390 / 1280, EN + DE, dark + light, font on) and by unit tests.
+- **v8 / v8.1 not verified on a real phone**: animation feel and the interactive tab drag (the owner saw a flicker on every swipe in 8.1.0 — fixed in 8.1.1 by a real pager, #218–220; 8.1.1 is not yet confirmed on the phone; Live keeps Performance mounted beside it — if scoring feels slow on a phone, mount it on idle), OpenDyslexic rendering and fit on Android, the launcher icon (adaptive + monochrome) and splash, store v9 → v10 upgrade in Android AsyncStorage, "System" theme following the phone. All checked in a browser (Playwright, mouse + touch emulation, 375 / 390 / 1280, EN + DE, dark + light, font on) and by unit tests.
 - v8 known gaps (not fixed): next-set setup has no court, so its Rotate doesn't slide (#207); reduce motion is read at app start only (#208); nested tab sets only slide, the outermost swipes (#204); the sliding rotation copies repeat the spots' test IDs for ~290 ms; the native root background (`app.json` `backgroundColor`) stays dark in light mode (#196); the court's white outer border is invisible on the white page; long single-word first names wrap mid-word in small court chips; long names are cut with "…" on performance cards with the font on; the season screen header doesn't show the team picture; with a mouse on web, dragging from a tag chip and releasing counts as a tap; a very long opponent name can push the live Substitution button ~20 px below 844; the icon's ball panels are orange because the source PNG's panels are transparent (#193 — ask the owner if they want white panels); `useShortNames` hook in `src/store/hooks.ts` is unused.
 
 - **v6 not verified on a real phone**: the camera and photo-library permission prompts (`expo-image-picker`), biometric / device-PIN unlock (`expo-local-authentication`, incl. whether iOS Face ID's `inactive` event interferes — DECISIONS #158), auto-lock when the app goes to the background, the store v7 → v8 upgrade in Android AsyncStorage. All checked in a browser (Playwright) and by unit tests with mocks only.
@@ -89,7 +90,7 @@ Last updated: 2026-11-23, after releasing **v8.1.0**.
 - **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language).
 - **Theme (v8)**: `src/theme/` — `darkColors` / `lightColors` (same tokens; use `primaryText` / `highlightText` / `secondaryText` for coloured text and outlines on backgrounds, `on*` for text on fills, `onCourt` on the orange court), `darkPositionColors` / `lightPositionColors`, `ThemeProvider` (props `mode`, `dyslexiaFont`, wired from the store in `app/_layout.tsx` → `ThemedRoot`), `useTheme()`, `makeStyles((theme) => ({...}))` → `useStyles()` (cached per theme; injects the OpenDyslexic family at 0.85× size into every text style; `inlineFontSize()` for inline sizes), `navigationTheme.ts`. No colour literals outside `src/theme` (a test enforces it). `print.ts` stays the light print theme. Fonts: `assets/fonts/OpenDyslexic-*.otf` (OFL), loaded by `src/lib/fonts.ts` (`useAppFonts`, waits only when the font is on, max 3 s).
 - **v8 domain helpers**: `dates.ts` (`formatDate` dd.mm.yy, `parseDateInput` d.m.yy / dd.mm.yyyy / ISO → ISO, `formatDateInput`, `formatTimestampDate`, `todayInput`), `playerNames.ts` (`fullName`, `shortName` "Anna" / "Anna M.", `numberAndName`), `rosterGrid.ts`, `teamAvatar.ts`, `tabMotion.ts` (slide direction, swipe thresholds, `TAB_SCENE_OPACITY`), `courtMotion.ts` (which court changes are rotations that slide).
-- **v8 components**: `SlideTransition`, `SwipeTabs` + `NoTabSwipe` (v8.1: interactive pager `TabPager` / `useTabPager` / `usePagerGesture` / `pagerWorklets`, every SwipeTabs needs `renderTab`) (stats tables, tag rows, text fields), `CourtMotion` (inert ghost layer; `Court` props `slotKeys` / `renderSlotStatic`), `TeamAvatar`, `PlayerCard` (roster grid), `AppearanceSection` (Profile tab). `src/lib/inert*.ts`, `src/lib/themeColor*.ts`. Icons are generated by `scripts/generate-icons.py` from `assets/source/app-icon-source.png` (don't hand-edit `assets/images`).
+- **v8 components**: `SlideTransition`, `SwipeTabs` + `NoTabSwipe` (v8.1.1: real pager `TabPager` / `useTabPager` / `usePagerGesture` / `pagerWorklets` — tabs ±1 stay mounted keyed by tab, every SwipeTabs needs `renderTab`; app tab bar: `PagerScene` + `VisibleScenes`) (stats tables, tag rows, text fields), `CourtMotion` (inert ghost layer; `Court` props `slotKeys` / `renderSlotStatic`), `TeamAvatar`, `PlayerCard` (roster grid), `AppearanceSection` (Profile tab). `src/lib/inert*.ts`, `src/lib/themeColor*.ts`. Icons are generated by `scripts/generate-icons.py` from `assets/source/app-icon-source.png` (don't hand-edit `assets/images`).
 
 ---
 
@@ -149,6 +150,7 @@ Small requests (layout tweaks) are faster done yourself; still use a branch + PR
 - **Test helper** `seasonRefs(teamId, name)` (`src/store/testSeason.ts`) creates a real season + opponent for `addMatch` in tests.
 - **Styles go through `makeStyles`** (v8): a module-level `StyleSheet.create` with colours or text won't follow the theme or the dyslexia font. Name the factory parameter `theme` (`t` is the translation object).
 - **Test the dyslexia font at 375 px in German**: OpenDyslexic is ~1.8× taller and wider; v8 needed font-only layout tweaks (#200). Check new screens with it.
+- **Phone-only behaviour isn't visible in Playwright**: react-native-screens is off on web, so a navigator hiding scenes (`display: 'none'`) only shows on native — check with Jest (jest-expo runs as native) and read the navigator source; v8.1.1 nearly shipped a blank app-tab neighbour.
 - **Web touch**: RNGH v3 `GestureDetector touchAction` has no effect with hook gestures — put `touchAction: 'pan-y'` in the gesture config (`SwipeTabs.tsx`), and test vertical scrolling with real touch (`hasTouch` + CDP), not only mouse.
 - **PR footers**: the GitHub MCP / agents kept ending PR bodies with `_Generated by …_`; check and fix the body before merging (also in v8).
 - **Label in name** (WCAG 2.5.3): an `accessibilityLabel` must start with the button's visible text — reviewers check this.
