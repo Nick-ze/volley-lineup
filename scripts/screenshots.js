@@ -21,6 +21,7 @@ const DATA = JSON.parse(
   fs.readFileSync(path.join(ROOT, 'src/domain/__golden__/input.json'), 'utf8'),
 );
 const NOW = new Date('2026-11-23T12:00:00.000Z');
+const CONCURRENCY = Number(process.env.SHOT_JOBS ?? 4);
 
 const SCREENS = [
   ['profiles', '/'],
@@ -96,43 +97,53 @@ function storage(variant) {
   return items;
 }
 
+async function shootVariant(browser, base, outDir, only, { width, height, variant }) {
+  const context = await browser.newContext({
+    viewport: { width, height },
+    deviceScaleFactor: 1,
+    reducedMotion: 'reduce',
+    locale: variant.language === 'de' ? 'de-CH' : 'en-GB',
+    timezoneId: 'Europe/Zurich',
+  });
+  await context.addInitScript((items) => {
+    if (sessionStorage.getItem('seeded')) return;
+    localStorage.clear();
+    for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
+    sessionStorage.setItem('seeded', '1');
+  }, storage(variant));
+  const page = await context.newPage();
+  await page.clock.setFixedTime(NOW);
+  let count = 0;
+  for (const [name, route] of SCREENS) {
+    if (only && !name.includes(only)) continue;
+    await page.goto(base + route, { waitUntil: 'networkidle' });
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(700);
+    const v = variant;
+    const file = `${name}_${width}_${v.language}_${v.themeMode}${v.dyslexiaFont ? '_font' : ''}.png`;
+    await page.screenshot({ path: path.join(outDir, file), animations: 'disabled' });
+    count += 1;
+  }
+  await context.close();
+  return count;
+}
+
 async function shoot(dist, outDir, only) {
   const { chromium } = require('playwright');
   const server = await serve(path.resolve(dist));
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
   fs.mkdirSync(outDir, { recursive: true });
+  const jobs = WIDTHS.flatMap(([width, height]) =>
+    VARIANTS.map((variant) => ({ width, height, variant })),
+  );
   let count = 0;
-  for (const [width, height] of WIDTHS) {
-    for (const variant of VARIANTS) {
-      const context = await browser.newContext({
-        viewport: { width, height },
-        deviceScaleFactor: 1,
-        reducedMotion: 'reduce',
-        locale: variant.language === 'de' ? 'de-CH' : 'en-GB',
-        timezoneId: 'Europe/Zurich',
-      });
-      await context.addInitScript((items) => {
-        if (sessionStorage.getItem('seeded')) return;
-        localStorage.clear();
-        for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
-        sessionStorage.setItem('seeded', '1');
-      }, storage(variant));
-      const page = await context.newPage();
-      await page.clock.setFixedTime(NOW);
-      for (const [name, route] of SCREENS) {
-        if (only && !name.includes(only)) continue;
-        await page.goto(base + route, { waitUntil: 'networkidle' });
-        await page.evaluate(() => document.fonts.ready);
-        await page.waitForTimeout(700);
-        const v = variant;
-        const file = `${name}_${width}_${v.language}_${v.themeMode}${v.dyslexiaFont ? '_font' : ''}.png`;
-        await page.screenshot({ path: path.join(outDir, file), animations: 'disabled' });
-        count += 1;
-      }
-      await context.close();
+  const worker = async () => {
+    for (let job = jobs.shift(); job !== undefined; job = jobs.shift()) {
+      count += await shootVariant(browser, base, outDir, only, job);
     }
-  }
+  };
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   await browser.close();
   server.close();
   console.log(`${count} screenshots in ${outDir}`);

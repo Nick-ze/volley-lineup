@@ -9,8 +9,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# v8.3: three parallel jobs; ESLint and Jest keep their caches in node_modules/.cache between runs.
 jobs:
-  check:
+  static:
+    name: lint · format · typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +21,39 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/eslint
+          key: eslint-${{ hashFiles('package-lock.json', 'eslint.config.js') }}-${{ github.sha }}
+          restore-keys: eslint-${{ hashFiles('package-lock.json', 'eslint.config.js') }}-
       - run: npm run lint
+      - run: npm run format:check
       - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/jest
+          key: jest-${{ hashFiles('package-lock.json', 'jest.config.js', 'babel.config.js') }}-${{ github.sha }}
+          restore-keys: jest-${{ hashFiles('package-lock.json', 'jest.config.js', 'babel.config.js') }}-
       - run: npm test -- --ci --coverage
+
+  web:
+    name: web export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npx expo export -p web

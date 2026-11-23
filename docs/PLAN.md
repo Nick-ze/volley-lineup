@@ -569,3 +569,55 @@ Store v9 → v10 adds `themeMode: 'dark'` and `dyslexiaFont: false`. The photo s
 - [x] First names come first everywhere names are shown; duplicates are told apart (tests).
 - [x] Teams can have a picture (add / change / remove), shown in the team list and header; old data and v1–v8 export files open without loss; round trip restores exactly.
 - [x] Lint, typecheck and tests pass in CI; src/domain at 100%.
+
+## 34. v8.3 — "Code health" (no visible change)
+
+A review-and-improve release: better performance and easier future work, with **no change the user can see or
+notice** — same screens, texts (EN + DE), layouts, animations, gestures, themes and fonts; same stored data (store
+**10**, no migration); same export files (`schemaVersion` **9**; the same input gives the same output except
+`exportedAt`); old data and v1–v9 files still open. Screen-reader-only label fixes are allowed. The findings, their
+ranking and what was skipped (with reasons) are in `docs/AUDIT.md`.
+
+**Proof of "no change"** (every PR):
+
+- `src/domain/__golden__/exportGolden.test.ts`: a fixed data set exports byte for byte as in 8.2.0 (all / one team /
+  without descriptions), and v1–v9 files import, replace and merge to the same data (golden files written from 8.2.0).
+- `scripts/screenshots.js`: 31 screens × 375 / 1280 px × EN / DE × dark / light × dyslexia font off / on (496 images)
+  from a web build, compared with ImageMagick `compare -metric AE` against the 8.2.0 baseline: 0 differing pixels, or
+  each difference explained.
+- Lint, format, typecheck and tests pass; `src/domain` stays at 100 %; no test is weakened or deleted (moving or
+  splitting tests keeps their assertions; tests of deleted dead code go with it).
+- Performance changes: before / after numbers (render counts, live screen point-to-paint at 4–6× CPU throttling,
+  bundle size).
+
+**Tasks**
+
+1. **Foundation** (orchestrator): golden test, screenshot script, `docs/AUDIT.md`; tooling — Prettier as its own
+   `format:check` step (not inside ESLint), ESLint cache, `import/namespace` off, five extra tsc flags
+   (`noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUnusedLocals`,
+   `noUnusedParameters`), CI as three parallel jobs with ESLint / Jest caches, the Pages deploy no longer repeats the
+   checks, `eslint-plugin-prettier` removed.
+2. **Performance** (A): identity-cached domain results (`getMatchState`, `setStats`, `setPerformance`,
+   `replaySteps`) so screens hidden under live mode stop recomputing every match on each point; stable gesture
+   configs in the pager and `NoTabSwipe`; `SeasonsTab` passes stable arrays; memoised `Stack.Screen` options.
+3. **Domain and store** (B): split `exportSchema.ts`, `seasons.ts`, `lineupSheet.ts`, `tabMotion.ts` and (after A)
+   `liveSet.ts` by responsibility behind the same import paths; one `legacyData.ts` for the store migrations and
+   export upgrades; dead code and unused i18n keys removed; zod out of `roster.ts` if it shrinks the startup bundle;
+   shared constants (court rows, `pad2`, `POINT_KINDS`); fewer casts in domain / store / lib; stale comments.
+4. **Components and hooks** (C): one `Dialog` shell for the six modals; one set chip filter; generic tab parser;
+   `MatchForm` into `features/matchForm`; components and screens over ~150 lines split as pure extracts; fewer casts
+   and suppressions; last, the shared UI kit moves from `features/roster/components` to `src/components`.
+5. **Accessibility, tests, docs** (D): accessible names start with the visible text (EN + DE) plus a guard test;
+   shared test helpers (`src/test-utils`); `docs/WORKER_BRIEF.md` rewritten for v8.
+6. **QA** over the v8 checklist (§33) and release 8.3.0 (DECISIONS, README development section, HANDOFF).
+
+## 35. v8.3 acceptance checklist
+
+- [ ] docs/AUDIT.md lists the findings, ranked, with what was done and what was skipped (and why).
+- [ ] Before/after screenshots of every main screen are pixel-identical (375 + 1280, EN + DE, dark + light, dyslexia font).
+- [ ] Export golden test: identical output except `exportedAt`; old data and v1–v9 files open.
+- [ ] Measured improvements where performance work was done (numbers in the PR and AUDIT.md).
+- [ ] No component over ~150 lines without a recorded reason; the big domain files are split.
+- [ ] Fewer `as` casts and lint/type suppressions (before → after counts).
+- [ ] WORKER_BRIEF.md and HANDOFF §3 are current.
+- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%; test count not lower.

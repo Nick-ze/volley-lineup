@@ -24,9 +24,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test -- --ci
+      # Lint, typecheck and tests already ran in CI for this commit (main only takes green PRs).
       - name: Export web build
         run: npx expo export -p web
         env:

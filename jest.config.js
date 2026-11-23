@@ -1,6 +1,8 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  // Kept in node_modules/.cache so CI can restore it (v8.3).
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/.claude/', '<rootDir>/dist/'],
   modulePathIgnorePatterns: ['<rootDir>/.claude/', '<rootDir>/dist/'],

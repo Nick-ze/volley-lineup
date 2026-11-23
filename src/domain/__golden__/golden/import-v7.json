@@ -50,7 +50,10 @@
         "firstName": "Anna",
         "lastName": "Meier",
         "number": 7,
-        "positions": ["S", "OPP"],
+        "positions": [
+          "S",
+          "OPP"
+        ],
         "active": true,
         "photoId": "ph2",
         "description": "Strong serve. Knee tape."
@@ -61,7 +64,9 @@
         "firstName": "Anna",
         "lastName": "Müller",
         "number": 3,
-        "positions": ["OH"],
+        "positions": [
+          "OH"
+        ],
         "active": true
       },
       {
@@ -70,7 +75,9 @@
         "firstName": "Lea",
         "lastName": "Schmid",
         "number": 12,
-        "positions": ["MB"],
+        "positions": [
+          "MB"
+        ],
         "active": true
       },
       {
@@ -79,7 +86,9 @@
         "firstName": "Mia",
         "lastName": "Keller",
         "number": 9,
-        "positions": ["OPP"],
+        "positions": [
+          "OPP"
+        ],
         "active": true
       },
       {
@@ -88,7 +97,9 @@
         "firstName": "Zoë",
         "lastName": "Frei",
         "number": 5,
-        "positions": ["OH"],
+        "positions": [
+          "OH"
+        ],
         "active": true
       },
       {
@@ -97,7 +108,9 @@
         "firstName": "Nora",
         "lastName": "Weber",
         "number": 14,
-        "positions": ["MB"],
+        "positions": [
+          "MB"
+        ],
         "active": true
       },
       {
@@ -106,7 +119,9 @@
         "firstName": "Lia",
         "lastName": "Graf",
         "number": 1,
-        "positions": ["L"],
+        "positions": [
+          "L"
+        ],
         "active": true
       },
       {
@@ -115,7 +130,10 @@
         "firstName": "Sara",
         "lastName": "Bühler",
         "number": 10,
-        "positions": ["OH", "MB"],
+        "positions": [
+          "OH",
+          "MB"
+        ],
         "active": false
       },
       {
@@ -124,7 +142,9 @@
         "firstName": "Eva",
         "lastName": "Huber",
         "number": 7,
-        "positions": ["S"],
+        "positions": [
+          "S"
+        ],
         "active": true
       }
     ],
@@ -150,7 +170,10 @@
             },
             "liberoId": "p7",
             "weServeFirst": true,
-            "liberoReplaces": ["p3", "p6"],
+            "liberoReplaces": [
+              "p3",
+              "p6"
+            ],
             "events": [
               {
                 "type": "point",
@@ -360,7 +383,9 @@
           "6": "p6"
         },
         "liberoId": "p7",
-        "liberoReplaces": ["p3"],
+        "liberoReplaces": [
+          "p3"
+        ],
         "formation": {
           "system": "5-1",
           "order": "outside",
