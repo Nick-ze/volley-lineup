@@ -1,12 +1,9 @@
 import {
   isJerseyNumberTaken,
-  isValidIsoDate,
   makePrimaryPosition,
   NAME_MAX_LENGTH,
   SEASON_MAX_LENGTH,
-  toIsoDate,
   togglePosition,
-  validateMatchForm,
   validatePlayerForm,
   validateProfileForm,
   validateTeamForm,
@@ -49,22 +46,6 @@ describe('positions', () => {
   });
 });
 
-describe('dates', () => {
-  it('formats a local date', () => {
-    expect(toIsoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
-    expect(toIsoDate(new Date(2026, 10, 20))).toBe('2026-11-20');
-  });
-  it('validates ISO calendar dates', () => {
-    expect(isValidIsoDate('2026-11-20')).toBe(true);
-    expect(isValidIsoDate('2024-02-29')).toBe(true);
-    expect(isValidIsoDate('2025-02-29')).toBe(false);
-    expect(isValidIsoDate('2026-13-01')).toBe(false);
-    expect(isValidIsoDate('2026-1-01')).toBe(false);
-    expect(isValidIsoDate('20.11.2026')).toBe(false);
-    expect(isValidIsoDate('')).toBe(false);
-  });
-});
-
 describe('validateProfileForm', () => {
   it('trims and accepts a valid profile', () => {
     expect(validateProfileForm({ name: '  Coach ', color: '#fff' })).toEqual({
@@ -80,6 +61,13 @@ describe('validateProfileForm', () => {
     });
     expect(
       validateProfileForm({ name: 'x'.repeat(NAME_MAX_LENGTH + 1), color: '#f' }).errors,
+    ).toEqual({ name: 'tooLong' });
+  });
+  it('counts characters, not UTF-16 units (as zod did before v8.3)', () => {
+    const emoji = '😀'; // two UTF-16 units
+    expect(validateProfileForm({ name: emoji.repeat(NAME_MAX_LENGTH), color: '#f' }).ok).toBe(true);
+    expect(
+      validateProfileForm({ name: emoji.repeat(NAME_MAX_LENGTH + 1), color: '#f' }).errors,
     ).toEqual({ name: 'tooLong' });
   });
 });
@@ -170,21 +158,5 @@ describe('validatePlayerForm', () => {
         ctx,
       ).errors,
     ).toEqual({ positions: 'duplicate', lastName: 'tooLong' });
-  });
-});
-
-describe('validateMatchForm', () => {
-  it('accepts a valid match', () => {
-    expect(validateMatchForm({ opponent: ' Rivals ', date: '2026-11-20', home: false })).toEqual({
-      ok: true,
-      value: { opponent: 'Rivals', date: '2026-11-20', home: false },
-      errors: {},
-    });
-  });
-  it('rejects missing opponent and invalid date', () => {
-    expect(validateMatchForm({ opponent: '', date: '2026-02-30', home: true }).errors).toEqual({
-      opponent: 'required',
-      date: 'invalidDate',
-    });
   });
 });

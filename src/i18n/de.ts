@@ -84,9 +84,6 @@ export const de: Strings = {
       `Nummer ${number}, ${name}, ${position}`,
     numberTag: (number: number) => `#${number}`,
   },
-  placeholder: {
-    comingSoon: 'Diese Ansicht kommt bald.',
-  },
   roster,
   lineup,
   rotation,

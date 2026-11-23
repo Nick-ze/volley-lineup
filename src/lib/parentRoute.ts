@@ -19,6 +19,7 @@ export function parentRoute(
   const teamId = str(params?.teamId);
   const matchId = str(params?.matchId);
   const seasonId = str(params?.seasonId);
+  const set = str(params?.set);
   switch (routeName) {
     case 'team/[teamId]/player':
     case 'team/[teamId]/players/[playerId]':
@@ -57,8 +58,8 @@ export function parentRoute(
     case 'match/[matchId]/stats':
     case 'match/[matchId]/performance':
       if (!matchId) return '/teams';
-      return str(params?.set)
-        ? { pathname: '/match/[matchId]', params: { matchId, set: str(params?.set) as string } }
+      return set
+        ? { pathname: '/match/[matchId]', params: { matchId, set } }
         : { pathname: '/match/[matchId]', params: { matchId } };
     default:
       return '/teams';

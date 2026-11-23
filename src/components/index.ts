@@ -1,7 +1,6 @@
 export * from './Button';
 export * from './Dialog';
 export * from './Court';
-export * from './Placeholder';
 export * from './PlayerChip';
 export * from './PositionBadge';
 export * from './Screen';

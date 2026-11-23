@@ -1,11 +1,10 @@
 /**
- * Roster domain helpers: form validation for profiles, teams, players and matches,
- * plus small pure helpers (jersey uniqueness, position ordering, dates).
+ * Roster domain helpers: form validation for profiles, teams and players, plus small pure
+ * helpers (jersey uniqueness, position ordering). The match form lives in `matchForm.ts`.
  *
  * Validation returns error **codes**, never user-facing text; the UI maps codes to strings.
+ * Plain checks, no zod (v8.3: zod is only used by the export file format).
  */
-import { z } from 'zod';
-
 import type { Player, Position } from './types';
 
 export const NAME_MAX_LENGTH = 40;
@@ -48,35 +47,28 @@ export function makePrimaryPosition(
   return [position, ...positions.filter((p) => p !== position)];
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
+/* ---------- checks ---------- */
 
-/** Local calendar date as `YYYY-MM-DD`. */
-export function toIsoDate(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+/**
+ * A trimmed text's error: `required` when blank (if it is required), `tooLong` over `max`
+ * characters (Unicode code points, so an emoji counts once).
+ */
+function textError(text: string, max: number, required = true): FieldErrorCode | undefined {
+  if (required && text === '') return 'required';
+  return [...text].length > max ? 'tooLong' : undefined;
 }
 
-/** True for a real calendar date written as `YYYY-MM-DD`. */
-export function isValidIsoDate(value: string): boolean {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!m) return false;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const date = new Date(Date.UTC(y, mo - 1, d));
-  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
-}
-
-/* ---------- zod plumbing ---------- */
-
-const name = z.string().trim().min(1, 'required').max(NAME_MAX_LENGTH, 'tooLong');
-
-function run<T, K extends string>(schema: z.ZodType<T>, input: unknown): FormResult<T, K> {
-  const parsed = schema.safeParse(input);
-  if (parsed.success) return { ok: true, value: parsed.data, errors: {} };
+/** The failing fields only (an error object lists no field without an error). */
+function errorsOf<K extends string>(
+  checks: readonly (readonly [K, FieldErrorCode | undefined])[],
+): FormErrors<K> {
   const errors: FormErrors<K> = {};
-  for (const issue of parsed.error.issues) {
-    const key = String(issue.path[0]) as K;
-    errors[key] ??= issue.message as FieldErrorCode;
-  }
-  return { ok: false, errors };
+  for (const [field, code] of checks) if (code !== undefined) errors[field] = code;
+  return errors;
+}
+
+function result<T, K extends string>(value: T, errors: FormErrors<K>): FormResult<T, K> {
+  return Object.keys(errors).length === 0 ? { ok: true, value, errors } : { ok: false, errors };
 }
 
 /* ---------- profile ---------- */
@@ -87,10 +79,15 @@ export interface ProfileFormInput {
 }
 export type ProfileFormField = keyof ProfileFormInput;
 
-const profileSchema = z.object({ name, color: z.string().min(1, 'required') });
-
-export function validateProfileForm(input: ProfileFormInput) {
-  return run<ProfileFormInput, ProfileFormField>(profileSchema, input);
+export function validateProfileForm(
+  input: ProfileFormInput,
+): FormResult<ProfileFormInput, ProfileFormField> {
+  const value = { name: input.name.trim(), color: input.color };
+  const errors = errorsOf<ProfileFormField>([
+    ['name', textError(value.name, NAME_MAX_LENGTH)],
+    ['color', value.color === '' ? 'required' : undefined],
+  ]);
+  return result(value, errors);
 }
 
 /* ---------- team ---------- */
@@ -105,17 +102,14 @@ export interface TeamFormValue {
 }
 export type TeamFormField = keyof TeamFormInput;
 
-const teamSchema = z.object({
-  name,
-  season: z
-    .string()
-    .trim()
-    .max(SEASON_MAX_LENGTH, 'tooLong')
-    .transform((s) => (s === '' ? undefined : s)),
-});
-
-export function validateTeamForm(input: TeamFormInput) {
-  return run<TeamFormValue, TeamFormField>(teamSchema, input);
+export function validateTeamForm(input: TeamFormInput): FormResult<TeamFormValue, TeamFormField> {
+  const name = input.name.trim();
+  const season = input.season.trim();
+  const errors = errorsOf<TeamFormField>([
+    ['name', textError(name, NAME_MAX_LENGTH)],
+    ['season', textError(season, SEASON_MAX_LENGTH, false)],
+  ]);
+  return result({ name, season: season === '' ? undefined : season }, errors);
 }
 
 /* ---------- player ---------- */
@@ -138,52 +132,38 @@ export interface PlayerFormContext {
   playerId?: string;
 }
 
-const positionSchema = z.enum(['S', 'OH', 'MB', 'OPP', 'L', 'DS']);
-
-function playerSchema(ctx: PlayerFormContext) {
-  return z.object({
-    firstName: name,
-    lastName: name,
-    number: z
-      .string()
-      .trim()
-      .min(1, 'required')
-      .regex(/^-?\d+$/, 'notInteger')
-      .transform(Number)
-      .pipe(
-        z
-          .number()
-          .min(JERSEY_MIN, 'outOfRange')
-          .max(JERSEY_MAX, 'outOfRange')
-          .refine((n) => !isJerseyNumberTaken(ctx.players, ctx.teamId, n, ctx.playerId), 'taken'),
-      ),
-    positions: z
-      .array(positionSchema)
-      .min(1, 'required')
-      .refine((ps) => new Set(ps).size === ps.length, 'duplicate'),
-    active: z.boolean(),
-  });
+/** The jersey number's first error, checked in this order, or undefined when it is fine. */
+function numberError(text: string, ctx: PlayerFormContext): FieldErrorCode | undefined {
+  if (text === '') return 'required';
+  if (!/^-?\d+$/.test(text)) return 'notInteger';
+  const number = Number(text);
+  if (number < JERSEY_MIN || number > JERSEY_MAX) return 'outOfRange';
+  return isJerseyNumberTaken(ctx.players, ctx.teamId, number, ctx.playerId) ? 'taken' : undefined;
 }
 
-export function validatePlayerForm(input: PlayerFormInput, ctx: PlayerFormContext) {
-  return run<PlayerFormValue, PlayerFormField>(playerSchema(ctx), input);
+/** Positions: at least one, none twice. */
+function positionsError(positions: readonly Position[]): FieldErrorCode | undefined {
+  if (positions.length === 0) return 'required';
+  return new Set(positions).size === positions.length ? undefined : 'duplicate';
 }
 
-/* ---------- match ---------- */
-
-export interface MatchFormInput {
-  opponent: string;
-  date: string;
-  home: boolean;
-}
-export type MatchFormField = keyof MatchFormInput;
-
-const matchSchema = z.object({
-  opponent: name,
-  date: z.string().trim().refine(isValidIsoDate, 'invalidDate'),
-  home: z.boolean(),
-});
-
-export function validateMatchForm(input: MatchFormInput) {
-  return run<MatchFormInput, MatchFormField>(matchSchema, input);
+export function validatePlayerForm(
+  input: PlayerFormInput,
+  ctx: PlayerFormContext,
+): FormResult<PlayerFormValue, PlayerFormField> {
+  const number = input.number.trim();
+  const value: PlayerFormValue = {
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    number: Number(number),
+    positions: [...input.positions],
+    active: input.active,
+  };
+  const errors = errorsOf<PlayerFormField>([
+    ['firstName', textError(value.firstName, NAME_MAX_LENGTH)],
+    ['lastName', textError(value.lastName, NAME_MAX_LENGTH)],
+    ['number', numberError(number, ctx)],
+    ['positions', positionsError(value.positions)],
+  ]);
+  return result(value, errors);
 }

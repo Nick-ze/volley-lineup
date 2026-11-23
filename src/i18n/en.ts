@@ -85,9 +85,6 @@ export const en = {
       `Number ${number}, ${name}, ${position}`,
     numberTag: (number: number) => `#${number}`,
   },
-  placeholder: {
-    comingSoon: 'This screen is coming soon.',
-  },
   roster,
   lineup,
   rotation,

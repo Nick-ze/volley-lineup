@@ -24,5 +24,5 @@ function hash(key: string): number {
 /** The palette colour for `key` (the team id), always the same for the same key. */
 export function teamAvatarColor(key: string, palette: readonly string[]): string {
   if (palette.length === 0) throw new Error('teamAvatarColor: empty palette');
-  return palette[hash(key) % palette.length] as string;
+  return palette[hash(key) % palette.length];
 }

@@ -28,7 +28,7 @@ describe('German strings', () => {
       [de.positions.MB, en.positions.MB],
       [de.positions.OPP, en.positions.OPP],
       [de.positions.DS, en.positions.DS],
-      [de.roster.team.rosterTab, en.roster.team.rosterTab],
+      [de.presets.nav.roster, en.presets.nav.roster],
       [de.roster.matches.home, en.roster.matches.home],
       [de.roster.matches.away, en.roster.matches.away],
       [de.lineup.setTab(2), en.lineup.setTab(2)],
