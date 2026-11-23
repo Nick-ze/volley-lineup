@@ -1,6 +1,6 @@
 {
   "name": "volley-lineup",
-  "version": "8.2.0",
+  "version": "8.3.0",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {

@@ -196,21 +196,36 @@ To move data to another device: export on one, send the file, import on the othe
 
 | Command                  | What it does                                                                                   |
 | ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `npm run lint`           | ESLint (+ Prettier)                                                                            |
+| `npm run lint`           | ESLint (cached)                                                                                |
+| `npm run format:check`   | Prettier check (`npm run format` fixes)                                                        |
 | `npm run typecheck`      | `tsc --noEmit`                                                                                 |
 | `npm test`               | Jest (jest-expo + React Native Testing Library); `-- --coverage` enforces 100% on `src/domain` |
+| `npm run check`          | All of the above                                                                               |
 | `npx expo export -p web` | Production web build                                                                           |
 
-CI (`.github/workflows/ci.yml`) runs install → lint → typecheck → tests → web export on every push and pull request. Project rules for contributors (and AI agents) are in [`CLAUDE.md`](CLAUDE.md).
+CI (`.github/workflows/ci.yml`) runs three parallel jobs on every push and pull request: lint · format · typecheck, tests (with coverage), and the web export. Project rules for contributors (and AI agents) are in [`CLAUDE.md`](CLAUDE.md); the brief for worker agents is [`docs/WORKER_BRIEF.md`](docs/WORKER_BRIEF.md).
+
+**Proving "no visible change"** (refactors, performance work):
+
+- `src/domain/__golden__/exportGolden.test.ts` (runs with `npm test`): a fixed data set must export byte for byte as before, and v1–v9 files must import to the same data. Rewrite the golden files only with a new export version (`UPDATE_GOLDEN=1 npx jest src/domain/__golden__`).
+- `scripts/screenshots.js` (needs Playwright and ImageMagick, not in CI): shoots 31 screens at 375 / 1280 px, EN / DE, dark / light, dyslexia font off / on from a web build, and compares two runs pixel by pixel:
+
+  ```
+  npx expo export -p web --output-dir /tmp/before   # on the old commit
+  node scripts/screenshots.js /tmp/before /tmp/shots-before
+  # …same for the new commit, then:
+  node scripts/screenshots.js --compare /tmp/shots-before /tmp/shots-after /tmp/diff
+  ```
 
 ```
-app/               Expo Router screens
-src/domain/        Pure logic: rotation, lineup editing, validation, roster rules, export schema
-src/store/         Zustand store + persistence
-src/components/    Shared UI (Court, PlayerChip, Button, …)
-src/features/      Feature components (roster, lineup, rotation, settings)
+app/               Expo Router screens (thin)
+src/domain/        Pure logic: rotation, lineup editing, live replay, stats, seasons, export schema (100 % tested)
+src/store/         Zustand store + persistence (+ migrations), photo store
+src/components/    Shared UI (Court, PlayerChip, Button, Dialog, tab pager, …)
+src/features/      Feature components (roster, lineup, live, stats, seasons, …)
 src/lib/           Platform helpers (.web.ts / .native.ts)
 src/theme/         Light / dark colours, ThemeProvider + makeStyles, fonts, spacing, typography
-scripts/           generate-icons.py (rebuilds assets/images from assets/source/app-icon-source.png)
-src/i18n/          All user-facing strings
+src/i18n/          All user-facing strings (en/*, de/*)
+src/test-utils/    Shared test helpers and fixtures
+scripts/           generate-icons.py, screenshots.js
 ```
