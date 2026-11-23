@@ -6,12 +6,12 @@ import { matchPerformance, performanceRows } from '@/domain/performance';
 import { playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
 import { useListStyles } from '@/features/roster/components/styles';
+import { SetChipFilter } from '@/features/stats/SetChipFilter';
 import { useT } from '@/i18n';
 import { usePlayersForTeam } from '@/store';
 import { makeStyles, spacing } from '@/theme';
 
 import { PerformancePage } from './PerformancePage';
-import { SetSwitch } from './SetSwitch';
 
 export interface MatchPerformanceProps {
   match: Match;
@@ -77,7 +77,14 @@ export function MatchPerformance({
   return (
     <View style={styles.wrap} testID="performance">
       {heading}
-      <SetSwitch sets={sets} value={setNumber} onChange={switchSet} />
+      <SetChipFilter
+        sets={sets}
+        value={setNumber}
+        onChange={switchSet}
+        strings={t.performance.filter}
+        testIDPrefix="perf-set"
+        allPosition="last"
+      />
       {/* v8: the switch's tabs in order (All sets last): the cards slide / swipe between them. */}
       <SwipeTabs
         tabs={[...sets, null]}
