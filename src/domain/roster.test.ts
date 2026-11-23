@@ -63,6 +63,13 @@ describe('validateProfileForm', () => {
       validateProfileForm({ name: 'x'.repeat(NAME_MAX_LENGTH + 1), color: '#f' }).errors,
     ).toEqual({ name: 'tooLong' });
   });
+  it('counts characters, not UTF-16 units (as zod did before v8.3)', () => {
+    const emoji = '😀'; // two UTF-16 units
+    expect(validateProfileForm({ name: emoji.repeat(NAME_MAX_LENGTH), color: '#f' }).ok).toBe(true);
+    expect(
+      validateProfileForm({ name: emoji.repeat(NAME_MAX_LENGTH + 1), color: '#f' }).errors,
+    ).toEqual({ name: 'tooLong' });
+  });
 });
 
 describe('validateTeamForm', () => {
