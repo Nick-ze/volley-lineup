@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen } from '@/components';
+import { Screen, ScreenTitle } from '@/components';
 import { StartersOverview } from '@/features/rotation';
 import { useT } from '@/i18n';
 
@@ -10,7 +10,7 @@ export default function StartersScreen() {
   const router = useRouter();
   return (
     <Screen>
-      <Stack.Screen options={{ title: t.rotation.startersTitle }} />
+      <ScreenTitle title={t.rotation.startersTitle} />
       <StartersOverview
         matchId={matchId}
         onOpenSet={(set) =>

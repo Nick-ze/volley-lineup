@@ -1,8 +1,7 @@
-import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { SlideTransition } from '@/components';
+import { ScreenTitle, SlideTransition } from '@/components';
 
 import {
   decidingSetNumber,
@@ -60,7 +59,7 @@ export function LiveMatch({
   );
   const picker =
     tabs.length > 1 ? <SetPicker sets={tabs} selected={setNumber} onSelect={onSelectSet} /> : null;
-  const title = <Stack.Screen options={{ title: t.live.title(setNumber) }} />;
+  const title = <ScreenTitle title={t.live.title(setNumber)} />;
   const undo = () => {
     const target = live.undoLast();
     if (target !== null && target !== setNumber) onSelectSet(target);

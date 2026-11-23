@@ -1,8 +1,8 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, ScreenTitle } from '@/components';
 import type { PresetLineup } from '@/domain/presets';
 import { PresetLineupEditor } from '@/features/presets/PresetLineupEditor';
 import { PresetNameDialog } from '@/features/presets/PresetNameDialog';
@@ -34,7 +34,7 @@ export default function PresetScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t.presets.editor.title(preset.name) }} />
+      <ScreenTitle title={t.presets.editor.title(preset.name)} />
       <PresetLineupEditor
         teamId={preset.teamId}
         lineup={preset}

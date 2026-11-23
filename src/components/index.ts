@@ -4,6 +4,7 @@ export * from './Placeholder';
 export * from './PlayerChip';
 export * from './PositionBadge';
 export * from './Screen';
+export * from './ScreenTitle';
 export * from './HeaderBack';
 export * from './ToggleRow';
 export * from './HeaderTitle';

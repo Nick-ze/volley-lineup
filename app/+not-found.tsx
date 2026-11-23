@@ -1,7 +1,7 @@
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Text } from 'react-native';
 
-import { Button, Screen } from '@/components';
+import { Button, Screen, ScreenTitle } from '@/components';
 import { useT } from '@/i18n';
 import { makeStyles, typography } from '@/theme';
 
@@ -12,7 +12,7 @@ export default function NotFoundScreen() {
   const router = useRouter();
   return (
     <Screen>
-      <Stack.Screen options={{ title: t.common.notFound }} />
+      <ScreenTitle title={t.common.notFound} />
       <Text style={styles.title} accessibilityRole="header">
         {t.common.pageNotFound}
       </Text>

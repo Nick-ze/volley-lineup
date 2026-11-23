@@ -1,7 +1,7 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
-import { Screen, SwipeTabs } from '@/components';
+import { Screen, ScreenTitle, SwipeTabs } from '@/components';
 import { NotFound } from '@/features/roster/components/NotFound';
 import { SeasonHeader } from '@/features/seasons/SeasonHeader';
 import { SeasonMatches } from '@/features/seasons/SeasonMatches';
@@ -71,7 +71,7 @@ export default function SeasonScreen() {
   };
   return (
     <Screen>
-      <Stack.Screen options={{ title: team.name }} />
+      <ScreenTitle title={team.name} />
       <SeasonHeader
         season={season}
         tab={tab}
