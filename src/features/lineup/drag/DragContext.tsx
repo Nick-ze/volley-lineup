@@ -1,52 +1,13 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useSharedValue, type SharedValue } from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
 
-import { hitTest, type DropTarget, type PlayerLocation } from '@/domain/lineupEditing';
-import type { Player } from '@/domain/types';
+import { hitTest, type DropTarget } from '@/domain/lineupEditing';
 import { measureInWindow } from '@/lib/measureInWindow';
 
+import { DragContext, type DragApi, type DragItem } from './dragTypes';
 import { DragOverlay } from './DragOverlay';
 import { targetKey, useZoneMeasurements, type MeasurableView } from './useZoneMeasurements';
-
-export { targetKey, type MeasurableView };
-
-export interface DragItem {
-  player: Player;
-  from: PlayerLocation;
-}
-
-interface DragApi {
-  registerZone(target: DropTarget, view: MeasurableView | null): void;
-  begin(item: DragItem, x: number, y: number): void;
-  move(x: number, y: number): void;
-  end(x: number, y: number, canceled: boolean): void;
-  /** True right after a drag finished, so the trailing click/press is ignored. */
-  justDragged(): boolean;
-  /** True while drags are disabled (locked lineup): chips also report themselves disabled. */
-  disabled: boolean;
-  active: DragItem | null;
-  hoverKey: string | null;
-  /** Pointer position relative to the provider's root view (drives the overlay chip). */
-  x: SharedValue<number>;
-  y: SharedValue<number>;
-}
-
-const DragContext = createContext<DragApi | null>(null);
-
-export function useDrag(): DragApi {
-  const ctx = useContext(DragContext);
-  if (!ctx) throw new Error('useDrag must be used inside <DragProvider>');
-  return ctx;
-}
 
 /** A press this soon after a drag ended is the drag's own trailing click: ignore it. */
 const CLICK_AFTER_DRAG_MS = 250;

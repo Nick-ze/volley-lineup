@@ -8,7 +8,7 @@ import { useT } from '@/i18n';
 import { spacing, touchTarget } from '@/theme';
 
 import { COMPACT_CHIP_SIZE, ROLE_PRESS_MAX_MOVE } from './constants';
-import { useDrag } from './drag/DragContext';
+import { useDrag } from './drag/dragTypes';
 import { DraggablePlayer } from './drag/DraggablePlayer';
 import type { LineupDraft } from './useLineupDraft';
 
