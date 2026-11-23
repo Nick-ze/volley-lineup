@@ -21,50 +21,29 @@
  * v9 → v10 (app 8.0): device settings `themeMode: 'dark'` (the look so far) and
  * `dyslexiaFont: false`; teams may have a `photoId` (optional, no data change).
  */
+import {
+  addRoleDefaults,
+  addSetLogDefaults,
+  isRecord as isRec,
+  mapLineups,
+  mapSets,
+  type Rec,
+} from '@/domain/legacyData';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
 export const STORE_VERSION = 10;
 
-type Rec = Record<string, unknown>;
-const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
-
 function v1ToV2(state: Rec): Rec {
-  const matches = Array.isArray(state.matches)
-    ? state.matches.map((m: unknown) =>
-        isRec(m) && Array.isArray(m.sets)
-          ? {
-              ...m,
-              sets: m.sets.map((set: unknown) =>
-                isRec(set) ? { liberoReplaces: [], events: [], ...set } : set,
-              ),
-            }
-          : m,
-      )
-    : state.matches;
-  return { language: 'en', ...state, matches };
+  return { language: 'en', ...state, matches: mapSets(state.matches, addSetLogDefaults) };
 }
 
 function v5ToV6(state: Rec): Rec {
-  const lineupDefaults = (x: unknown) => (isRec(x) ? { roles: {}, liberoActive: true, ...x } : x);
-  const matches = Array.isArray(state.matches)
-    ? state.matches.map((m: unknown) =>
-        isRec(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(lineupDefaults) } : m,
-      )
-    : state.matches;
-  const presets = Array.isArray(state.presets) ? state.presets.map(lineupDefaults) : state.presets;
-  return { ...state, matches, presets };
+  return { ...state, ...mapLineups(state, addRoleDefaults) };
 }
 
 /** v6 → v7: per-player role overrides become a formation per set and preset (roles.ts). */
 function v6ToV7(state: Rec): Rec {
-  const toFormation = (x: unknown) => upgradeLineupToFormation(x, state.players);
-  const matches = Array.isArray(state.matches)
-    ? state.matches.map((m: unknown) =>
-        isRec(m) && Array.isArray(m.sets) ? { ...m, sets: m.sets.map(toFormation) } : m,
-      )
-    : state.matches;
-  const presets = Array.isArray(state.presets) ? state.presets.map(toFormation) : state.presets;
-  return { ...state, matches, presets };
+  return { ...state, ...mapLineups(state, (x) => upgradeLineupToFormation(x, state.players)) };
 }
 
 export function migrateStore(persisted: unknown, fromVersion: number): unknown {

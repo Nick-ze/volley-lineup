@@ -11,7 +11,6 @@ import { applyLineupEdit } from './lineupLock';
 import { addPoint, addSub, liveCourtView, replaySet, replaySteps } from './liveSet';
 import { applyPresetToSet, presetFromSet } from './presets';
 import {
-  COURT_ROLES,
   DEFAULT_FORMATION,
   FORMATION_ORDERS,
   FORMATION_PATTERNS,
@@ -19,7 +18,6 @@ import {
   formationRotation,
   inferFormation,
   isOffPosition,
-  primaryPosition,
   roleOf,
   rotateStarters,
   setFormation,
@@ -84,7 +82,6 @@ const layout = (f: Formation): Position[] => COURT_POSITIONS.map((pos) => spotRo
 
 describe('formation patterns', () => {
   it('lists the systems, orders and the default formation', () => {
-    expect(COURT_ROLES).toEqual(['S', 'OH', 'MB', 'OPP', 'DS']);
     expect(FORMATION_SYSTEMS).toEqual(['5-1', '6-2']);
     expect(FORMATION_ORDERS).toEqual(['outside', 'middle']);
     expect(DEFAULT_FORMATION).toEqual({ system: '5-1', order: 'outside', setterAt: 1 });
@@ -137,8 +134,6 @@ describe('formation patterns', () => {
 
 describe('roles of players', () => {
   it('a starter plays the role of their spot; off the court no role', () => {
-    expect(primaryPosition(byId('p4'))).toBe('OPP');
-    expect(primaryPosition(byId('p9'))).toBeNull();
     const set = lineup();
     expect(roleOf(set, 'p1')).toBe('S');
     expect(roleOf(set, 'p4')).toBe('OPP');

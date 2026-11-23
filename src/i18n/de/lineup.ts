@@ -39,8 +39,6 @@ export const lineup: Strings['lineup'] = {
   startersLabel: 'Aufstellungen: Übersicht der Startaufstellungen aller Sätze öffnen',
   validationTitle: 'Aufstellungs-Check',
   validationOk: 'Die Aufstellung ist vollständig.',
-  errorsHeading: 'Fehler',
-  warningsHeading: 'Hinweise',
   errors: {
     INCOMPLETE: 'Weniger als 6 Spieler auf dem Feld.',
     DUPLICATE_PLAYER: 'Ein Spieler steht auf mehr als einer Position.',

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type { SpotKeys } from '@/domain/courtMotion';
+import { COURT_ROWS } from '@/domain/rotation';
 import type { CourtPosition } from '@/domain/types';
 import { useT } from '@/i18n';
 
@@ -11,8 +12,7 @@ import { flat, splitPadding, useCourtStyles } from './courtStyle';
 import { useCourtMotion } from './useCourtMotion';
 
 /** Front row is drawn nearest the net (top), back row below. Left→right as seen from behind our baseline. */
-export const FRONT_ROW: readonly CourtPosition[] = [4, 3, 2];
-export const BACK_ROW: readonly CourtPosition[] = [5, 6, 1];
+export const [FRONT_ROW, BACK_ROW] = COURT_ROWS;
 
 export type { CourtSlotInfo, CourtSlotRef };
 

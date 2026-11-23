@@ -1,10 +1,10 @@
 /**
- * v7 (app 6.0): profile / player pictures and confidential player descriptions — the pure
- * rules (docs/PLAN.md §25–26). No React, no storage.
+ * v7 (app 6.0): profile / player (v8: and team) pictures and confidential player descriptions —
+ * the pure rules (docs/PLAN.md §25–26). No React, no storage.
  *
  * Pictures are small JPEGs (`PHOTO_SIZE` px, the UI resizes and compresses them) kept as data
  * URIs in their own storage (one key per photo, `src/store/photoStore.ts`), so the main store
- * stays small. Profiles and players only hold a `photoId`.
+ * stays small. Profiles, players and teams only hold a `photoId`.
  */
 import type { ManagerProfile, Photo, Player, Team } from './types';
 
@@ -27,7 +27,7 @@ export function isPhotoDataUri(value: string): boolean {
   return value.length <= MAX_PHOTO_DATA_LENGTH && DATA_URI.test(value);
 }
 
-/** The photo ids that profiles and players refer to. */
+/** The photo ids that profiles, players and teams refer to. */
 export function referencedPhotoIds(data: {
   profiles: readonly Pick<ManagerProfile, 'photoId'>[];
   players: readonly Pick<Player, 'photoId'>[];
@@ -64,9 +64,25 @@ export function isValidDescription(text: string): boolean {
   return text !== '' && text === text.trim() && text.length <= MAX_DESCRIPTION_LENGTH;
 }
 
+/**
+ * The item without one of its optional fields (the omit-from-a-generic idiom needs the one cast:
+ * TypeScript types the rest as `Omit<T, K>`, which is a `T` because the field is optional).
+ */
+function omitOptional<T, K extends keyof T>(item: T, key: K): T {
+  const { [key]: _omitted, ...rest } = item;
+  return rest as T;
+}
+
 /** The player without their description (for exports that leave descriptions out). */
 export function withoutDescription<T extends Pick<Player, 'description'>>(player: T): T {
-  if (player.description === undefined) return player;
-  const { description: _description, ...rest } = player;
-  return rest as T;
+  return player.description === undefined ? player : omitOptional(player, 'description');
+}
+
+/** The item without its `photoId` when that photo isn't among `photoIds`. */
+export function withoutDanglingPhoto<T extends { photoId?: string }>(
+  item: T,
+  photoIds: Set<string>,
+): T {
+  if (item.photoId === undefined || photoIds.has(item.photoId)) return item;
+  return omitOptional(item, 'photoId');
 }
