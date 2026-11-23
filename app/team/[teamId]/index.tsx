@@ -1,11 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 
-import { HeaderTitle, Screen, SwipeTabs, TeamAvatar } from '@/components';
+import { HeaderTitle, NotFound, Screen, SwipeTabs, TeamAvatar } from '@/components';
 import type { Team } from '@/domain/types';
 import { PresetsTab } from '@/features/presets/PresetsTab';
 import { StartersTab } from '@/features/presets/StartersTab';
-import { NotFound } from '@/features/roster/components/NotFound';
 import { RosterTab } from '@/features/roster/components/RosterTab';
 import { SeasonsTab } from '@/features/seasons/SeasonsTab';
 import { StatsTab } from '@/features/stats/StatsTab';

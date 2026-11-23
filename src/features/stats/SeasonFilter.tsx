@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { ChoiceChip } from '@/components';
 import type { Season } from '@/domain/types';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
 import { useT } from '@/i18n';
 import { spacing } from '@/theme';
 

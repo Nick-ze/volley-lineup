@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import {
+  Button,
+  ConfirmDialog,
+  TextField,
+  ToggleRow,
+  useConfirm,
+  useFormStyles,
+} from '@/components';
 import { fullName } from '@/domain/playerNames';
-import { Button, ToggleRow } from '@/components';
 import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
 import { FORM_PHOTO_SIZE, PhotoField } from '@/features/photos/PhotoField';
 import { useT } from '@/i18n';
 
 import { errorText } from '../errorText';
-import { useConfirm } from '../hooks/useConfirm';
 import { usePlayerForm } from '../hooks/usePlayerForm';
-import { ConfirmDialog } from './ConfirmDialog';
 import { PositionPicker } from './PositionPicker';
-import { useFormStyles } from './styles';
-import { TextField } from './TextField';
 
 export interface PlayerFormProps {
   teamId: string;

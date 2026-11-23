@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, TextField, useFormStyles } from '@/components';
 import {
   validateProfileForm,
   type FormErrors,
@@ -16,8 +16,6 @@ import { profileColors } from '@/theme';
 import { errorText } from '../errorText';
 import { LetterAvatar } from './Avatar';
 import { ColorPicker } from './ColorPicker';
-import { useFormStyles } from './styles';
-import { TextField } from './TextField';
 
 export interface ProfileFormProps {
   initial?: ProfileFormInput;

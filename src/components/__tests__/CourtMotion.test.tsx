@@ -6,11 +6,8 @@ import { Court } from '@/components';
 import type { SpotKeys } from '@/domain/courtMotion';
 import { rotateBy } from '@/domain/rotation';
 
-jest.mock('react-native-reanimated', () => ({
-  ...jest.requireActual('react-native-reanimated/mock'),
-  useReducedMotion: jest.fn(() => false),
-}));
-const reduceMotion = Reanimated.useReducedMotion as jest.Mock;
+// `useReducedMotion` is a spy (jest.setup.ts), switched per test.
+const reduceMotion = jest.mocked(Reanimated.useReducedMotion);
 
 const start: SpotKeys = { 1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: null };
 const all = { includeHiddenElements: true };

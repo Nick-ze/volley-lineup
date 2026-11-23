@@ -2,11 +2,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button, ScreenTitle } from '@/components';
+import { Button, NotFound, ScreenTitle } from '@/components';
 import type { PresetLineup } from '@/domain/presets';
 import { PresetLineupEditor } from '@/features/presets/PresetLineupEditor';
 import { PresetNameDialog } from '@/features/presets/PresetNameDialog';
-import { NotFound } from '@/features/roster/components/NotFound';
 import { useT } from '@/i18n';
 import { useAppStore, usePreset } from '@/store';
 

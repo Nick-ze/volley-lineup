@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { Button } from '@/components';
-import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
+import { Button, ConfirmDialog } from '@/components';
 import { useT } from '@/i18n';
 
 export interface ResetLiveDataProps {

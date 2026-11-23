@@ -1,11 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen } from '@/components';
+import { NotFound, Screen, useGoBack } from '@/components';
 import { firstSetForNewMatch } from '@/domain/presets';
 import { findOpponentByName, foldName, seasonsForTeam } from '@/domain/seasons';
 import { MatchForm } from '@/features/matchForm/MatchForm';
-import { NotFound } from '@/features/roster/components/NotFound';
-import { useGoBack } from '@/features/roster/hooks/useGoBack';
 import { useT } from '@/i18n';
 import { selectPlayersForTeam, useAppStore, useTeam } from '@/store';
 

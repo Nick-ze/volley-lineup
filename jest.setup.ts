@@ -15,7 +15,19 @@ jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock
 jest.mock('react-native-reanimated/src/initializers', () => ({
   initializeReanimatedModule: () => {},
 }));
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+/*
+ * v8.3: the animation helpers tests check are spies (same behaviour as the mock), and
+ * `useReducedMotion` can be switched per test (`jest.mocked(useReducedMotion).mockReturnValue`).
+ */
+jest.mock('react-native-reanimated', () => {
+  const mock = require('react-native-reanimated/mock');
+  return {
+    ...mock,
+    useReducedMotion: jest.fn(() => false),
+    withSequence: jest.fn(mock.withSequence),
+    withTiming: jest.fn(mock.withTiming),
+  };
+});
 /*
  * v8.1.1: the mock's `useSharedValue` makes a new value on every render (the real one keeps it
  * for the component's life). The tab pager keeps its state in shared values across renders, so

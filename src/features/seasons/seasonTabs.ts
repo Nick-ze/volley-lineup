@@ -1,4 +1,4 @@
-import { parseTab } from '@/components/parseTab';
+import { parseTab } from '@/lib/parseTab';
 
 /** The sections of the season screen (`?tab=…`), in tab order. */
 export const SEASON_TABS = ['matches', 'opponents', 'stats'] as const;

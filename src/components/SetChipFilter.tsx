@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
 import type { SetNumber } from '@/domain/types';
-import { ChoiceChip } from '@/features/roster/components/ChoiceChip';
 import { spacing } from '@/theme';
+
+import { ChoiceChip } from './ChoiceChip';
 
 /** The texts of a set filter (`t.stats.filter`, `t.performance.filter`). */
 export interface SetChipFilterStrings {

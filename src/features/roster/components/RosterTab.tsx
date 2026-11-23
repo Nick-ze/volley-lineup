@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
-import { Button } from '@/components';
+import { Button, useListStyles } from '@/components';
 import { rosterCardWidth, rosterColumns } from '@/domain/rosterGrid';
 import { useT } from '@/i18n';
 import { useAppStore, usePlayersForTeam } from '@/store';
 import { makeStyles, maxContentWidth, spacing } from '@/theme';
 
 import { PlayerCard } from './PlayerCard';
-import { useListStyles } from './styles';
 
 export interface RosterTabProps {
   teamId: string;

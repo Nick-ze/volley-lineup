@@ -1,10 +1,9 @@
 import { Text, View } from 'react-native';
 
+import { ListRow, useListStyles } from '@/components';
 import { formatDate } from '@/domain/dates';
 import { plusMinus, type PlayerMatchLine } from '@/domain/performance';
 import { matchResultLabel } from '@/features/live/matchResult';
-import { ListRow } from '@/features/roster/components/ListRow';
-import { useListStyles } from '@/features/roster/components/styles';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 

@@ -1,11 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
+import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
 import { fullName } from '@/domain/playerNames';
-import { Screen, ScreenTitle } from '@/components';
 import { PlayerDetail } from '@/features/playerDetail/PlayerDetail';
-import { NotFound } from '@/features/roster/components/NotFound';
-import { useGoBack } from '@/features/roster/hooks/useGoBack';
 import { useT } from '@/i18n';
 import { usePlayer, useTeam } from '@/store';
 

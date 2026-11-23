@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useT } from '@/i18n';
 
-import { useListStyles } from './styles';
+import { useListStyles } from './formStyles';
 
 export interface ListRowProps {
   title: string;

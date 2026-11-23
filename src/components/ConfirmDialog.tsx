@@ -1,7 +1,9 @@
 import { Text, View } from 'react-native';
 
-import { Button, Dialog, useDialogStyles } from '@/components';
 import { useT } from '@/i18n';
+
+import { Button } from './Button';
+import { Dialog, useDialogStyles } from './Dialog';
 
 export interface ConfirmDialogProps {
   visible: boolean;

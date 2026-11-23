@@ -1,10 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Screen, ScreenTitle } from '@/components';
-import { ConfirmDialog } from '@/features/roster/components/ConfirmDialog';
-import { NotFound } from '@/features/roster/components/NotFound';
-import { useConfirm } from '@/features/roster/hooks/useConfirm';
-import { useGoBack } from '@/features/roster/hooks/useGoBack';
+import { ConfirmDialog, NotFound, Screen, ScreenTitle, useConfirm, useGoBack } from '@/components';
 import { SeasonForm } from '@/features/seasons/SeasonForm';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForSeason, useSeason, useTeam } from '@/store';
