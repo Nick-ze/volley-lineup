@@ -13,13 +13,12 @@
  * coming back for that substitute, once (`REENTRY_RULE` otherwise). The libero is not a sub.
  * Rule breaches are warnings, never blocks: the event is still applied. Events that can't be
  * applied at all (player not on court, already on court, the libero, unknown) are skipped.
+ *
+ * v8.3: the scoring rules (`setScore.ts`), the substitution rules (`subRules.ts`) and the shown
+ * court (`liveCourt.ts`) live in their own modules; this one replays the log and re-exports them,
+ * so `@/domain/liveSet` stays the import path.
  */
-import {
-  activeLiberoReplaces,
-  applyLiberoSwaps,
-  findLiberoSwap,
-  type LiberoSwap,
-} from './liberoSwap';
+import { activeLiberoReplaces } from './liberoSwap';
 import { memoByIdentity2 } from './memo';
 import { setterRotation, startingRoles } from './roles';
 import {
@@ -29,6 +28,15 @@ import {
   type RotationNumber,
   type Slots,
 } from './rotation';
+import { setPointOf, setWinnerOf, targetPoints, type Score } from './setScore';
+import {
+  createSubTracker,
+  invalidReason,
+  MAX_SUBS_PER_SET,
+  substitute,
+  type LiveWarning,
+  type LiveWarningCode,
+} from './subRules';
 import {
   COURT_POSITIONS,
   type Player,
@@ -40,33 +48,14 @@ import {
   type SubEvent,
 } from './types';
 
-/** Substitutions allowed per set. */
-export const MAX_SUBS_PER_SET = 6;
-
-export type LiveWarningCode =
-  /** A substitution beyond the 6 allowed per set. */
-  | 'SUB_LIMIT'
-  /** A substitution that breaks the re-entry rule (wrong partner, or a pair used up). */
-  | 'REENTRY_RULE'
-  /** A substitution that could not be applied (skipped): see `InvalidSubReason`. */
-  | 'INVALID_SUB';
-
-export type InvalidSubReason =
-  'OUT_NOT_ON_COURT' | 'IN_ON_COURT' | 'IN_IS_LIBERO' | 'UNKNOWN_PLAYER';
-
-export interface LiveWarning {
-  code: LiveWarningCode;
-  /** Index of the offending event in `set.events`. */
-  eventIndex: number;
-  outPlayerId: string;
-  inPlayerId: string;
-  reason?: InvalidSubReason;
-}
-
-export interface Score {
-  us: number;
-  them: number;
-}
+export { liveCourtView, type LiveCourtView } from './liveCourt';
+export { setPointOf, setWinnerOf, targetPoints, type Score } from './setScore';
+export {
+  MAX_SUBS_PER_SET,
+  type InvalidSubReason,
+  type LiveWarning,
+  type LiveWarningCode,
+} from './subRules';
 
 export interface LiveState {
   score: Score;
@@ -89,48 +78,6 @@ export interface LiveState {
   /** The side that has reached the target with a 2-point lead (set ends aren't enforced). */
   setWinner: Side | null;
   warnings: LiveWarning[];
-}
-
-/** Points needed to win a set: 25, or 15 in the deciding fifth set. */
-export function targetPoints(setNumber: SetLineup['setNumber']): number {
-  return setNumber === 5 ? 15 : 25;
-}
-
-const other = (side: Side): Side => (side === 'us' ? 'them' : 'us');
-
-/** The side that has won the set (target reached, lead ≥ 2), or null. */
-export function setWinnerOf(score: Score, target: number): Side | null {
-  for (const side of ['us', 'them'] as const) {
-    if (score[side] >= target && score[side] - score[other(side)] >= 2) return side;
-  }
-  return null;
-}
-
-/** The side one point from winning (≥ target − 1 and ahead), or null; null once the set is won. */
-export function setPointOf(score: Score, target: number): Side | null {
-  if (setWinnerOf(score, target)) return null;
-  for (const side of ['us', 'them'] as const) {
-    if (score[side] >= target - 1 && score[side] > score[other(side)]) return side;
-  }
-  return null;
-}
-
-function onCourt(slots: Slots, playerId: string): boolean {
-  return COURT_POSITIONS.some((p) => slots[p] === playerId);
-}
-
-function invalidReason(
-  set: SetLineup,
-  knownIds: Set<string>,
-  slots: Slots,
-  outId: string,
-  inId: string,
-): InvalidSubReason | null {
-  if (!knownIds.has(inId) || !knownIds.has(outId)) return 'UNKNOWN_PLAYER';
-  if (!onCourt(slots, outId)) return 'OUT_NOT_ON_COURT';
-  if (onCourt(slots, inId)) return 'IN_ON_COURT';
-  if (set.liberoId === inId) return 'IN_IS_LIBERO';
-  return null;
 }
 
 /** A rally as it was played: the state just before it (used by the statistics). */
@@ -190,10 +137,7 @@ function replayUncached(
   let servingSide: Side = set.weServeFirst ? 'us' : 'them';
   let subsUsed = 0;
   const warnings: LiveWarning[] = [];
-  /** player id → the player they are paired with by their first substitution. */
-  const partner = new Map<string, string>();
-  /** "a|b" (sorted) → substitutions made within that pair. */
-  const pairUses = new Map<string, number>();
+  const subs = createSubTracker();
   const steps: ReplayStep[] = [];
   /** v5: player id → role, for everyone who has been on court; subs inherit. */
   const roles: PlayerRoles = startingRoles(set, players);
@@ -242,18 +186,7 @@ function replayUncached(
     subsUsed += 1;
     if (subsUsed > MAX_SUBS_PER_SET) warnings.push({ code: 'SUB_LIMIT', ...base });
 
-    const key = [outPlayerId, inPlayerId].sort().join('|');
-    const outPartner = partner.get(outPlayerId);
-    const inPartner = partner.get(inPlayerId);
-    if (outPartner === undefined && inPartner === undefined) {
-      partner.set(outPlayerId, inPlayerId);
-      partner.set(inPlayerId, outPlayerId);
-      pairUses.set(key, 1);
-    } else if (outPartner === inPlayerId) {
-      const uses = (pairUses.get(key) as number) + 1;
-      pairUses.set(key, uses);
-      if (uses > 2) warnings.push({ code: 'REENTRY_RULE', ...base });
-    } else {
+    if (subs.breaksReentry(outPlayerId, inPlayerId)) {
       warnings.push({ code: 'REENTRY_RULE', ...base });
     }
 
@@ -261,8 +194,7 @@ function replayUncached(
     // v6: every known player on court has a role (each known starter plays the role of their
     // spot, substitutes inherit), so the substitute always takes one over.
     roles[inPlayerId] = roles[outPlayerId];
-    const position = COURT_POSITIONS.find((p) => slots[p] === outPlayerId);
-    slots = { ...slots, [position as number]: inPlayerId };
+    slots = substitute(slots, outPlayerId, inPlayerId);
   });
 
   const state: LiveState = {
@@ -319,25 +251,4 @@ export function previewSub(
   return replaySet(addSub(set, outPlayerId, inPlayerId), players)
     .warnings.filter((w) => w.eventIndex === index)
     .map((w) => w.code);
-}
-
-/** The court as shown in live mode: the real players plus where the libero stands in. */
-export interface LiveCourtView {
-  slots: Slots;
-  liberoSwap: LiberoSwap | null;
-}
-
-/**
- * Applies the libero swap to the live court. The libero may not serve, so position 1 is only
- * excluded while we serve. Whom the libero replaces comes from the replay: a substitute for a
- * replaced player is replaced too (they take over the role, v4.0 #130); nobody when the libero
- * is switched off.
- */
-export function liveCourtView(set: SetLineup, state: LiveState): LiveCourtView {
-  const options = { serving: state.servingSide === 'us' };
-  const replaces = state.liberoReplaces;
-  return {
-    slots: applyLiberoSwaps(state.slots, set.liberoId, replaces, options),
-    liberoSwap: findLiberoSwap(state.slots, set.liberoId, replaces, options),
-  };
 }
