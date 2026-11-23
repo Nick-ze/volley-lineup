@@ -106,7 +106,7 @@ describe('rotation viewer — rotation named after the setter (v4)', () => {
   });
 
   it('shows each role on top of the spot, "*" when it is none of the player’s positions', async () => {
-    const wing2: Player = { ...players[4]!, id: 'p8', number: 8, positions: ['OH', 'OPP'] };
+    const wing2: Player = { ...players[4], id: 'p8', number: 8, positions: ['OH', 'OPP'] };
     // v6: the spots decide (S 1 · OH 2 · MB 3 · OPP 4 · OH 5 · MB 6). #8 on the OPP spot plays a
     // secondary position (no "*"); #4 (OPP) on the OH spot 2 is off position ("*").
     seedWith(

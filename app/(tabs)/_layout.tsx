@@ -1,88 +1,18 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ComponentProps,
-  type ReactElement,
-} from 'react';
-import type { ColorValue } from 'react-native';
+import { useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PagerScene, useTabPager, VisibleScenes, type TabPager } from '@/components';
+import { useTabPager, VisibleScenes } from '@/components';
+import { APP_TABS, AppTabPagerContext, useShownTab } from '@/features/appTabs/appTabs';
+import { TabIcon } from '@/features/appTabs/TabIcon';
+import { TabScene } from '@/features/appTabs/TabScene';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { useT } from '@/i18n';
 import { fontSize, makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 /** Bar height above the bottom safe area: a 44 px target plus room for the label. */
 const TAB_BAR_HEIGHT = touchTarget + spacing.md;
-
-type IconName = ComponentProps<typeof Ionicons>['name'];
-
-interface TabIconProps {
-  focused: boolean;
-  color: ColorValue;
-  size: number;
-}
-
-/** Filled icon for the active tab, outline for the others (decorative: the label is read). */
-function TabIcon({
-  focused,
-  color,
-  size,
-  active,
-  inactive,
-}: TabIconProps & {
-  active: IconName;
-  inactive: IconName;
-}) {
-  const { colors } = useTheme();
-  // The tint is one of our theme colours (always a string); ColorValue also allows platform colours.
-  const tint = typeof color === 'string' ? color : colors.textMuted;
-  return <Ionicons name={focused ? active : inactive} size={size} color={tint} />;
-}
-
-/** The tabs in bar order (v8: swipe left → the next one). */
-const APP_TABS = ['teams', 'profile', 'settings'] as const;
-type AppTab = (typeof APP_TABS)[number];
-
-const isAppTab = (name: string | undefined): name is AppTab =>
-  (APP_TABS as readonly (string | undefined)[]).includes(name);
-
-/** The app tab shown (the last one while a detail screen is pushed over the tabs). */
-function useShownTab(): AppTab {
-  const [group, name] = useSegments() as string[];
-  const current = group === '(tabs)' && isAppTab(name) ? name : null;
-  const [last, setLast] = useState<AppTab>(current ?? 'teams');
-  if (current && current !== last) setLast(current);
-  return current ?? last;
-}
-
-/** v8.1.1: the pager all three tab scenes share. */
-const AppTabPagerContext = createContext<TabPager | null>(null);
-
-/**
- * v8: a sideways swipe on a tab screen goes to the neighbouring tab. v8.1.1: the real screens
- * follow the finger (every scene stays mounted, at its slot for the shared pager position); a
- * drag that goes on navigates once the new screen is in place, and a tap or Back slides there.
- */
-function TabScene({ name, children }: { name: string; children: ReactElement }) {
-  const pager = useContext(AppTabPagerContext);
-  if (!pager || !isAppTab(name)) return children;
-  return (
-    <PagerScene
-      pager={pager}
-      index={APP_TABS.indexOf(name)}
-      count={APP_TABS.length}
-      testID={`app-tab-swipe-${name}`}
-    >
-      {children}
-    </PagerScene>
-  );
-}
 
 /**
  * Bottom tab bar for the three top-level screens (Teams, Profile, Settings). Detail screens
