@@ -70,3 +70,13 @@ export function withoutDescription<T extends Pick<Player, 'description'>>(player
   const { description: _description, ...rest } = player;
   return rest as T;
 }
+
+/** The item without its `photoId` when that photo isn't among `photoIds`. */
+export function withoutDanglingPhoto<T extends { photoId?: string }>(
+  item: T,
+  photoIds: Set<string>,
+): T {
+  if (item.photoId === undefined || photoIds.has(item.photoId)) return item;
+  const { photoId: _photoId, ...rest } = item;
+  return rest as T;
+}
