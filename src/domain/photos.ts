@@ -64,11 +64,18 @@ export function isValidDescription(text: string): boolean {
   return text !== '' && text === text.trim() && text.length <= MAX_DESCRIPTION_LENGTH;
 }
 
+/**
+ * The item without one of its optional fields (the omit-from-a-generic idiom needs the one cast:
+ * TypeScript types the rest as `Omit<T, K>`, which is a `T` because the field is optional).
+ */
+function omitOptional<T, K extends keyof T>(item: T, key: K): T {
+  const { [key]: _omitted, ...rest } = item;
+  return rest as T;
+}
+
 /** The player without their description (for exports that leave descriptions out). */
 export function withoutDescription<T extends Pick<Player, 'description'>>(player: T): T {
-  if (player.description === undefined) return player;
-  const { description: _description, ...rest } = player;
-  return rest as T;
+  return player.description === undefined ? player : omitOptional(player, 'description');
 }
 
 /** The item without its `photoId` when that photo isn't among `photoIds`. */
@@ -77,6 +84,5 @@ export function withoutDanglingPhoto<T extends { photoId?: string }>(
   photoIds: Set<string>,
 ): T {
   if (item.photoId === undefined || photoIds.has(item.photoId)) return item;
-  const { photoId: _photoId, ...rest } = item;
-  return rest as T;
+  return omitOptional(item, 'photoId');
 }

@@ -27,7 +27,7 @@ const SWISS = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/;
 export function formatDate(iso: string): string {
   const match = ISO.exec(iso.slice(0, 10));
   if (!match) return iso;
-  const [, year, month, day] = match as unknown as [string, string, string, string];
+  const [, year, month, day] = match;
   return `${day}.${month}.${year.slice(2)}`;
 }
 
@@ -58,7 +58,7 @@ export function parseDateInput(text: string): string | null {
   if (!swiss) return null;
   const day = Number(swiss[1]);
   const month = Number(swiss[2]);
-  const yearText = swiss[3] as string;
+  const yearText = swiss[3];
   const year = yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText);
   if (!isRealDate(year, month, day)) return null;
   return `${year}-${pad2(month)}-${pad2(day)}`;
@@ -83,7 +83,7 @@ export function formatDateInput(iso: string | undefined): string {
   if (iso === undefined || iso === '') return '';
   const match = ISO.exec(iso);
   if (!match) return iso;
-  const [, year, month, day] = match as unknown as [string, string, string, string];
+  const [, year, month, day] = match;
   return year.startsWith('20') ? `${day}.${month}.${year.slice(2)}` : `${day}.${month}.${year}`;
 }
 

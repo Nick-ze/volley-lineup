@@ -33,7 +33,7 @@ export function shortName(player: Named, teammates: readonly Named[]): string {
   // By code point, so a name starting with an emoji or astral letter isn't cut in half.
   const initial = (text: string) => [...fold(text)][0] ?? '';
   const initialShared = others.some((p) => initial(p.lastName) === initial(last));
-  return initialShared ? `${first} ${last}` : `${first} ${[...last][0] as string}.`;
+  return initialShared ? `${first} ${last}` : `${first} ${[...last][0]}.`;
 }
 
 /** The short names of a whole team at once, by player id. */

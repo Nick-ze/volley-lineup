@@ -28,7 +28,7 @@ function upgradeSeasonName(team: Rec, matches: readonly Rec[]): string {
     .sort();
   const first = years[0];
   if (first !== undefined) {
-    const last = years[years.length - 1] as string; // non-empty: the last exists too
+    const last = years[years.length - 1]; // non-empty: the last exists too
     return first === last ? first : `${first}–${last}`;
   }
   return str(team.createdAt)?.slice(0, 4) ?? '—';

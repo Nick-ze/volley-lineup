@@ -65,14 +65,13 @@ export const DEFAULT_FORMATION: Formation = { system: '5-1', order: 'outside', s
 /** The role of one court spot in a formation. */
 export function spotRole(formation: Formation, position: CourtPosition): Position {
   const pattern = FORMATION_PATTERNS[formation.system][formation.order];
-  return pattern[(position - formation.setterAt + 6) % 6] as Position;
+  return pattern[(position - formation.setterAt + 6) % 6];
 }
 
 /** The roles of all six spots. */
 export function spotRoles(formation: Formation): Record<CourtPosition, Position> {
-  const roles = {} as Record<CourtPosition, Position>;
-  for (const p of COURT_POSITIONS) roles[p] = spotRole(formation, p);
-  return roles;
+  const role = (p: CourtPosition) => spotRole(formation, p);
+  return { 1: role(1), 2: role(2), 3: role(3), 4: role(4), 5: role(5), 6: role(6) };
 }
 
 /** The role a starter plays in the set: the role of their spot; null when not on court. */
@@ -167,7 +166,7 @@ export function setterRotation(slots: Slots, roles: Readonly<PlayerRoles>): Rota
   });
   if (setters.length === 0) return null;
   const backRow = setters.find((p) => BACK_ROW_POSITIONS.includes(p));
-  return (backRow ?? setters[0]) as CourtPosition as RotationNumber;
+  return backRow ?? setters[0];
 }
 
 /**
@@ -176,7 +175,7 @@ export function setterRotation(slots: Slots, roles: Readonly<PlayerRoles>): Rota
  */
 export function formationRotation(formation: Formation): RotationNumber {
   const spots = COURT_POSITIONS.filter((p) => spotRole(formation, p) === 'S');
-  return (spots.find((p) => BACK_ROW_POSITIONS.includes(p)) ?? spots[0]) as RotationNumber;
+  return spots.find((p) => BACK_ROW_POSITIONS.includes(p)) ?? spots[0];
 }
 
 /**

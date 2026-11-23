@@ -23,21 +23,15 @@ const yearMatches = (stored: string, year: string | undefined) =>
 export function dateMatches(date: string, word: string): boolean {
   if (date.includes(word)) return true;
   const parts = date.split('-'); // split always returns at least one part
-  const year = parts[0] as string;
+  const year = parts[0];
   const [, month = '', day = ''] = parts;
   const german = /^(\d{1,2})\.(\d{1,2})\.?(\d{2}|\d{4})?$/.exec(word);
   if (german) {
-    return (
-      pad(german[1] as string) === day &&
-      pad(german[2] as string) === month &&
-      yearMatches(year, german[3])
-    );
+    return pad(german[1]) === day && pad(german[2]) === month && yearMatches(year, german[3]);
   }
   const us = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/.exec(word);
   if (us) {
-    return (
-      pad(us[1] as string) === month && pad(us[2] as string) === day && yearMatches(year, us[3])
-    );
+    return pad(us[1]) === month && pad(us[2]) === day && yearMatches(year, us[3]);
   }
   return false;
 }

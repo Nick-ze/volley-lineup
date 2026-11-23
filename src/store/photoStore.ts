@@ -36,7 +36,7 @@ export const usePhotoStore = create<PhotoState>()(() => ({ photos: {}, hydrated:
 /** Writes / deletes storage keys; false when that failed (storage full or unavailable). */
 async function persist(write: Record<string, string>, remove: readonly string[]): Promise<boolean> {
   try {
-    const entries = Object.entries(write).map(([id, uri]) => [keyOf(id), uri] as [string, string]);
+    const entries = Object.entries(write).map(([id, uri]): [string, string] => [keyOf(id), uri]);
     if (entries.length > 0) await AsyncStorage.multiSet(entries);
     if (remove.length > 0) await AsyncStorage.multiRemove(remove.map(keyOf));
     return true;
