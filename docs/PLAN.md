@@ -560,7 +560,7 @@ Store v9 → v10 adds `themeMode: 'dark'` and `dyslexiaFont: false`. The photo s
 ## 33. v8 acceptance checklist
 
 - [x] All dates show as dd.mm.yy (EN + DE); date fields accept dd.mm.yy / dd.mm.yyyy / ISO; storage and exports stay ISO (tests).
-- [x] Tab switches slide in the right direction; a horizontal swipe changes tabs; drag & drop, tables, the tag row and text fields still work; reduce motion turns the slides off. — _checked in a browser with mouse and touch emulation (Playwright); swipe feel not yet checked on a real phone. Reduce motion is read at app start (#208)._
+- [x] Tab switches slide in the right direction; a horizontal swipe changes tabs (v8.1: the page follows the finger, #214); drag & drop, tables, the tag row and text fields still work; reduce motion turns the slides off. — _checked in a browser with mouse and touch emulation (Playwright); swipe feel not yet checked on a real phone. Reduce motion is read at app start (#208)._
 - [x] Rotating (builder, next-set setup, rotation viewer, live side-out) slides every player to their new spot. — _next-set setup shows no court (text only), so nothing slides there (#207)._
 - [x] The new icon is used for the app icon, adaptive icon, splash and favicon (checked in the APK workflow and web build). — _web favicon and `expo config` checked; the launcher icon on a real home screen is not yet checked._
 - [x] The roster shows player cards (photo or number, name, positions, active / injured), 2 columns at 375 px.

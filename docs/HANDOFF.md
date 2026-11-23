@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-23, after releasing **v8.0.0**.
+Last updated: 2026-11-23, after releasing **v8.1.0**.
 
 ---
 
@@ -25,15 +25,16 @@ Last updated: 2026-11-23, after releasing **v8.0.0**.
 | v6.2.0  | Performance list best → worst, match search by opponent / date, partly filled team starters                                                                                                                                                | `v6.2.0` |
 | v7.0.0  | Seasons & tournaments: season boxes, season screen (matches · opponents with records · stats), opponent picker for new matches, Stats season switcher, data model v8                                                                       | `v7.0.0` |
 | v8.0.0  | Look & feel: light / dark / system theme, dyslexia font (OpenDyslexic), Swiss dates dd.mm.yy, roster player cards, first name first, team pictures, tab slides + swipe, rotation slides, new app icon; store v10, export v9                | `v8.0.0` |
+| v8.1.0  | Interactive drag between tabs: the page follows the finger with the neighbouring tab beside it (RNGH + Reanimated pager)                                                                                                                   | `v8.1.0` |
 
-- `main` is green (CI), **1162 tests**, `src/domain` at 100% coverage.
-- Current versions: app **8.0.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#213**. Continue at #214.
+- `main` is green (CI), **1180 tests**, `src/domain` at 100% coverage.
+- Current versions: app **8.1.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
+- Last decision number in `docs/DECISIONS.md`: **#217**. Continue at #218.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
 
-- **v8 not verified on a real phone**: animation feel and swipe gestures (RNGH on native), OpenDyslexic rendering and fit on Android, the launcher icon (adaptive + monochrome) and splash, store v9 → v10 upgrade in Android AsyncStorage, "System" theme following the phone. All checked in a browser (Playwright, mouse + touch emulation, 375 / 390 / 1280, EN + DE, dark + light, font on) and by unit tests.
+- **v8 / v8.1 not verified on a real phone**: animation feel and the interactive tab drag (RNGH + Reanimated on native: hand-over frame order on Fabric — a heavy new tab could flash for a frame; the neighbour mounts a few frames after the drag starts), OpenDyslexic rendering and fit on Android, the launcher icon (adaptive + monochrome) and splash, store v9 → v10 upgrade in Android AsyncStorage, "System" theme following the phone. All checked in a browser (Playwright, mouse + touch emulation, 375 / 390 / 1280, EN + DE, dark + light, font on) and by unit tests.
 - v8 known gaps (not fixed): next-set setup has no court, so its Rotate doesn't slide (#207); reduce motion is read at app start only (#208); nested tab sets only slide, the outermost swipes (#204); the sliding rotation copies repeat the spots' test IDs for ~290 ms; the native root background (`app.json` `backgroundColor`) stays dark in light mode (#196); the court's white outer border is invisible on the white page; long single-word first names wrap mid-word in small court chips; long names are cut with "…" on performance cards with the font on; the season screen header doesn't show the team picture; with a mouse on web, dragging from a tag chip and releasing counts as a tap; a very long opponent name can push the live Substitution button ~20 px below 844; the icon's ball panels are orange because the source PNG's panels are transparent (#193 — ask the owner if they want white panels); `useShortNames` hook in `src/store/hooks.ts` is unused.
 
 - **v6 not verified on a real phone**: the camera and photo-library permission prompts (`expo-image-picker`), biometric / device-PIN unlock (`expo-local-authentication`, incl. whether iOS Face ID's `inactive` event interferes — DECISIONS #158), auto-lock when the app goes to the background, the store v7 → v8 upgrade in Android AsyncStorage. All checked in a browser (Playwright) and by unit tests with mocks only.
@@ -88,7 +89,7 @@ Last updated: 2026-11-23, after releasing **v8.0.0**.
 - **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language).
 - **Theme (v8)**: `src/theme/` — `darkColors` / `lightColors` (same tokens; use `primaryText` / `highlightText` / `secondaryText` for coloured text and outlines on backgrounds, `on*` for text on fills, `onCourt` on the orange court), `darkPositionColors` / `lightPositionColors`, `ThemeProvider` (props `mode`, `dyslexiaFont`, wired from the store in `app/_layout.tsx` → `ThemedRoot`), `useTheme()`, `makeStyles((theme) => ({...}))` → `useStyles()` (cached per theme; injects the OpenDyslexic family at 0.85× size into every text style; `inlineFontSize()` for inline sizes), `navigationTheme.ts`. No colour literals outside `src/theme` (a test enforces it). `print.ts` stays the light print theme. Fonts: `assets/fonts/OpenDyslexic-*.otf` (OFL), loaded by `src/lib/fonts.ts` (`useAppFonts`, waits only when the font is on, max 3 s).
 - **v8 domain helpers**: `dates.ts` (`formatDate` dd.mm.yy, `parseDateInput` d.m.yy / dd.mm.yyyy / ISO → ISO, `formatDateInput`, `formatTimestampDate`, `todayInput`), `playerNames.ts` (`fullName`, `shortName` "Anna" / "Anna M.", `numberAndName`), `rosterGrid.ts`, `teamAvatar.ts`, `tabMotion.ts` (slide direction, swipe thresholds, `TAB_SCENE_OPACITY`), `courtMotion.ts` (which court changes are rotations that slide).
-- **v8 components**: `SlideTransition`, `SwipeTabs` + `NoTabSwipe` (stats tables, tag rows, text fields), `CourtMotion` (inert ghost layer; `Court` props `slotKeys` / `renderSlotStatic`), `TeamAvatar`, `PlayerCard` (roster grid), `AppearanceSection` (Profile tab). `src/lib/inert*.ts`, `src/lib/themeColor*.ts`. Icons are generated by `scripts/generate-icons.py` from `assets/source/app-icon-source.png` (don't hand-edit `assets/images`).
+- **v8 components**: `SlideTransition`, `SwipeTabs` + `NoTabSwipe` (v8.1: interactive pager `TabPager` / `useTabPager` / `usePagerGesture` / `pagerWorklets`, every SwipeTabs needs `renderTab`) (stats tables, tag rows, text fields), `CourtMotion` (inert ghost layer; `Court` props `slotKeys` / `renderSlotStatic`), `TeamAvatar`, `PlayerCard` (roster grid), `AppearanceSection` (Profile tab). `src/lib/inert*.ts`, `src/lib/themeColor*.ts`. Icons are generated by `scripts/generate-icons.py` from `assets/source/app-icon-source.png` (don't hand-edit `assets/images`).
 
 ---
 
