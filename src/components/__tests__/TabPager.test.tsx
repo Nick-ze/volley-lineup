@@ -1,52 +1,70 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 import * as Reanimated from 'react-native-reanimated';
 
 import { SwipeTabs } from '@/components';
-import { TAB_COMMIT_FALLBACK_MS } from '@/domain/tabMotion';
+import { SLIDE_DURATION_MS, TAB_COMMIT_FALLBACK_MS } from '@/domain/tabMotion';
 
-/* v8.1: the interactive pager — the neighbouring tab beside the dragged one, the release rules
- * (a third of the width, a flick, the ends) and the hand-over to the new tab. */
+/* v8.1 / v8.1.1: the interactive pager — the release rules (35 % of the width, a flick, the
+ * ends) and, since v8.1.1, pages that stay mounted: the neighbours are there before a drag, and
+ * neither a drag nor a tap remounts a page (the v8.1 flicker on Android). */
 
 jest.mock('react-native-reanimated', () => {
   const mock = jest.requireActual('react-native-reanimated/mock');
   return {
     ...mock,
     useReducedMotion: jest.fn(() => false),
-    withSequence: jest.fn(mock.withSequence),
     withTiming: jest.fn(mock.withTiming),
   };
 });
 const reduceMotion = Reanimated.useReducedMotion as jest.Mock;
-const withSequence = Reanimated.withSequence as jest.Mock;
 const withTiming = Reanimated.withTiming as jest.Mock;
 
-const TABS = ['a', 'b', 'c'] as const;
+const TABS = ['a', 'b', 'c', 'd', 'e'] as const;
 type Tab = (typeof TABS)[number];
 const WIDTH = 400;
 
-const renderTab = jest.fn((k: Tab) => <Text>{`page ${k}`}</Text>);
+/** How often each tab's page was mounted / unmounted. */
+let mounts: Record<string, number> = {};
+let unmounts: Record<string, number> = {};
+
+function Page({ tab }: { tab: Tab }) {
+  useEffect(() => {
+    mounts[tab] = (mounts[tab] ?? 0) + 1;
+    return () => {
+      unmounts[tab] = (unmounts[tab] ?? 0) + 1;
+    };
+  }, [tab]);
+  return <Text>{`page ${tab}`}</Text>;
+}
 
 function Pager({ start = 'b', onChange }: { start?: Tab; onChange?: (t: Tab) => void }) {
   const [tab, setTab] = useState<Tab>(start);
   return (
-    <SwipeTabs
-      tabs={TABS}
-      value={tab}
-      onChange={onChange ?? setTab}
-      renderTab={renderTab}
-      testID="pager"
-    >
-      <Text>{`current ${tab}`}</Text>
-      <Text testID="tap-a" onPress={() => setTab('a')}>
-        a
-      </Text>
-    </SwipeTabs>
+    <>
+      {TABS.map((k) => (
+        <Text key={k} testID={`tap-${k}`} onPress={() => setTab(k)}>
+          {k}
+        </Text>
+      ))}
+      <Text>{`value ${tab}`}</Text>
+      <SwipeTabs
+        tabs={TABS}
+        value={tab}
+        onChange={onChange ?? setTab}
+        renderTab={(k) => <Page tab={k} />}
+        testID="pager"
+      />
+    </>
   );
 }
+
+const wait = (ms: number) => act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+/** A couple of frames (the neighbours mount a frame late; a tap's slide starts a frame late). */
+const frames = () => wait(40);
 
 async function setup(props: { start?: Tab; onChange?: (t: Tab) => void } = {}) {
   await render(
@@ -57,6 +75,7 @@ async function setup(props: { start?: Tab; onChange?: (t: Tab) => void } = {}) {
   await fireEvent(screen.getByTestId('pager-pager'), 'layout', {
     nativeEvent: { layout: { x: 0, y: 0, width: WIDTH, height: 600 } },
   });
+  await frames();
 }
 
 /** A drag by `dx`, released at `velocityX` (px/s). */
@@ -69,80 +88,118 @@ const drag = (dx: number, velocityX = 0) =>
     ]),
   );
 
-const wait = (ms: number) => act(() => new Promise((resolve) => setTimeout(resolve, ms)));
-// The neighbour is hidden from accessibility (a copy), so the query must include hidden elements.
-const neighbour = () => screen.queryByTestId('pager-neighbour', { includeHiddenElements: true });
+/** The shown page (the others are hidden from accessibility, so plain queries skip them). */
+const shown = (k: Tab) => screen.queryByText(`page ${k}`);
+const mounted = (k: Tab) => screen.queryByText(`page ${k}`, { includeHiddenElements: true });
 
 beforeEach(() => {
+  mounts = {};
+  unmounts = {};
   reduceMotion.mockReturnValue(false);
-  renderTab.mockClear();
-  withSequence.mockClear();
   withTiming.mockClear();
 });
 
 describe('interactive tab pager', () => {
-  it('shows the next tab beside the page while dragging and goes on past a third', async () => {
+  it('has the neighbours mounted (hidden) before any drag', async () => {
+    await setup();
+    expect(shown('b')).toBeTruthy();
+    expect(shown('a')).toBeNull();
+    expect(mounted('a')).toBeTruthy();
+    expect(mounted('c')).toBeTruthy();
+    expect(mounted('d')).toBeNull();
+    expect(mounts).toEqual({ a: 1, b: 1, c: 1 });
+  });
+
+  it('goes on past 35 % without remounting the new or the old page (no flicker)', async () => {
     await setup();
     await drag(-WIDTH * 0.4);
-    // The neighbour was rendered for the drag (lazily: only the one in the drag direction).
-    expect(renderTab.mock.calls.map(([k]) => k)).toEqual(expect.arrayContaining(['c']));
-    expect(renderTab.mock.calls.some(([k]) => k === 'a')).toBe(false);
-    expect(screen.getByText('current c')).toBeTruthy();
-    // The settled copy stays until the new tab is in place, then goes; no second slide.
-    expect(neighbour()).toBeTruthy();
-    await wait(50);
-    expect(neighbour()).toBeNull();
-    expect(withSequence).not.toHaveBeenCalled();
+    expect(screen.getByText('value c')).toBeTruthy();
+    expect(shown('c')).toBeTruthy();
+    expect(shown('b')).toBeNull();
+    await frames();
+    // The page that was dragged in is the very same element: mounted once, never unmounted.
+    expect(mounts).toMatchObject({ b: 1, c: 1, d: 1 });
+    expect(unmounts.b).toBeUndefined();
+    expect(unmounts.c).toBeUndefined();
+    // Only the page now two tabs away goes (it is off screen).
+    expect(unmounts.a).toBe(1);
     expect(withTiming).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the previous tab when dragging right', async () => {
+  it('goes to the previous tab when dragged right', async () => {
     await setup();
     await drag(WIDTH * 0.5);
-    expect(renderTab.mock.calls.map(([k]) => k)).toContain('a');
-    expect(screen.getByText('current a')).toBeTruthy();
+    expect(shown('a')).toBeTruthy();
+    expect(mounts.a).toBe(1);
   });
 
-  it('goes back after a short drag and drops the neighbour', async () => {
+  it('goes back after a short drag', async () => {
     await setup();
     await drag(-WIDTH * 0.2);
-    expect(screen.getByText('current b')).toBeTruthy();
-    expect(neighbour()).toBeNull();
+    expect(screen.getByText('value b')).toBeTruthy();
+    expect(shown('b')).toBeTruthy();
+    expect(mounts).toEqual({ a: 1, b: 1, c: 1 });
   });
 
   it('goes on after a flick, back after a flick against the drag', async () => {
     await setup();
     await drag(WIDTH * 0.6, -900);
-    expect(screen.getByText('current b')).toBeTruthy();
+    expect(screen.getByText('value b')).toBeTruthy();
     await drag(-40, -900);
-    expect(screen.getByText('current c')).toBeTruthy();
+    expect(screen.getByText('value c')).toBeTruthy();
   });
 
-  it('resists at the first tab and stays there, without a neighbour', async () => {
+  it('resists at the first tab and stays there', async () => {
     await setup({ start: 'a' });
     await drag(WIDTH * 0.6);
-    expect(renderTab).not.toHaveBeenCalled();
-    expect(neighbour()).toBeNull();
-    expect(screen.getByText('current a')).toBeTruthy();
+    expect(screen.getByText('value a')).toBeTruthy();
+    expect(Object.keys(mounts).sort()).toEqual(['a', 'b']);
   });
 
   it('settles at once with reduce motion', async () => {
     reduceMotion.mockReturnValue(true);
     await setup();
     await drag(-WIDTH * 0.5);
-    expect(screen.getByText('current c')).toBeTruthy();
+    expect(screen.getByText('value c')).toBeTruthy();
     expect(withTiming).not.toHaveBeenCalled();
   });
 
-  it('resets if the screen itself does not change tab (another screen shows it)', async () => {
+  it('goes back if the parent never shows the dragged-to tab', async () => {
     const onChange = jest.fn();
     await setup({ onChange });
     await drag(-WIDTH * 0.5);
     expect(onChange).toHaveBeenCalledWith('c');
-    expect(neighbour()).toBeTruthy();
     await wait(TAB_COMMIT_FALLBACK_MS + 50);
-    expect(neighbour()).toBeNull();
-    expect(screen.getByText('current b')).toBeTruthy();
+    expect(shown('b')).toBeTruthy();
+    expect(mounts).toEqual({ a: 1, b: 1, c: 1, d: 1 });
+    expect(unmounts.b).toBeUndefined();
+  });
+
+  it('slides a tapped tab in without remounting it', async () => {
+    await setup();
+    await fireEvent.press(screen.getByTestId('tap-c'));
+    expect(shown('c')).toBeTruthy();
+    await frames();
+    expect(withTiming).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({ duration: SLIDE_DURATION_MS }),
+      expect.any(Function),
+    );
+    expect(mounts.c).toBe(1);
+    expect(unmounts.c).toBeUndefined();
+  });
+
+  it('jumps over tabs with a one-page slide, keeping the old page until it is off screen', async () => {
+    await setup();
+    await fireEvent.press(screen.getByTestId('tap-e'));
+    expect(shown('e')).toBeTruthy();
+    await frames();
+    // The slide ran from right beside the target (d) to e.
+    expect(withTiming).toHaveBeenLastCalledWith(4, expect.anything(), expect.any(Function));
+    // b stayed mounted for the slide, then went.
+    expect(mounts.b).toBe(1);
+    expect(unmounts.b).toBe(1);
+    expect(mounted('b')).toBeNull();
   });
 
   /** The next settle waits: returns the call that finishes it. */
@@ -154,28 +211,53 @@ describe('interactive tab pager', () => {
         return to;
       },
     );
-    return () => act(() => finish(true));
+    return () => act(() => finish(false));
   };
 
   it('keeps a tab tapped while a drag goes on to its neighbour', async () => {
     await setup();
     const finish = holdSettle();
     await drag(-WIDTH * 0.5);
+    expect(screen.getByText('value b')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('tap-a'));
-    expect(screen.getByText('current a')).toBeTruthy();
+    await frames();
+    // The tap stopped the settle (Reanimated reports it unfinished): no change to c.
     await finish();
-    expect(screen.getByText('current a')).toBeTruthy();
-    expect(neighbour()).toBeNull();
+    expect(screen.getByText('value a')).toBeTruthy();
+    expect(shown('a')).toBeTruthy();
   });
 
-  it('drops the neighbour copy when a tab is tapped while a drag springs back', async () => {
-    await setup();
-    holdSettle();
-    await drag(-WIDTH * 0.2);
-    expect(neighbour()).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('tap-a'));
-    await wait(50);
-    expect(neighbour()).toBeNull();
-    expect(screen.getByText('current a')).toBeTruthy();
+  it('runs a flick made while the last drag waits for its tab', async () => {
+    const changes: Tab[] = [];
+    // The parent shows the dragged-to tab only when told to (a slow screen).
+    function Delayed() {
+      const [tab, setTab] = useState<Tab>('a');
+      return (
+        <>
+          <Text testID="show-b" onPress={() => setTab('b')}>
+            b
+          </Text>
+          <SwipeTabs
+            tabs={TABS}
+            value={tab}
+            onChange={(t) => changes.push(t)}
+            renderTab={(k) => <Page tab={k} />}
+            testID="pager"
+          />
+        </>
+      );
+    }
+    await render(
+      <GestureHandlerRootView>
+        <Delayed />
+      </GestureHandlerRootView>,
+    );
+    await frames();
+    await drag(-WIDTH * 0.5);
+    expect(changes).toEqual(['b']);
+    await drag(-40, -900); // queued
+    await fireEvent.press(screen.getByTestId('show-b'));
+    await frames();
+    expect(changes).toEqual(['b', 'c']);
   });
 });

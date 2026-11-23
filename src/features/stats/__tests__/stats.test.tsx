@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import type { Match, PointEvent, SetLineup } from '@/domain/types';
@@ -53,8 +53,21 @@ function seedMatch() {
   useAppStore.setState({ matches: [match] });
 }
 
+const hidden = { includeHiddenElements: true };
+/**
+ * Table rows are hidden from accessibility (read as a whole), so cells are found with hidden
+ * elements. v8.1.1: a swipeable set filter keeps its neighbouring pages mounted (hidden), so the
+ * cell is looked up in the shown page (the innermost page that is not hidden).
+ */
+const shownPage = () => {
+  const pages = screen
+    .queryAllByTestId(/-swipe-page-/, hidden)
+    .filter((page) => page.props['aria-hidden'] !== true);
+  const page = pages[pages.length - 1];
+  return page ? within(page) : screen;
+};
 const cell = (table: string, row: string, col: string) =>
-  screen.getByTestId(`${table}-${row}-${col}`, { includeHiddenElements: true }).props.children;
+  shownPage().getByTestId(`${table}-${row}-${col}`, hidden).props.children;
 
 describe('Stats tab', () => {
   it('shows an empty state before any match is played', async () => {

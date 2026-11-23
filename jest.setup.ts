@@ -16,6 +16,24 @@ jest.mock('react-native-reanimated/src/initializers', () => ({
   initializeReanimatedModule: () => {},
 }));
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+/*
+ * v8.1.1: the mock's `useSharedValue` makes a new value on every render (the real one keeps it
+ * for the component's life). The tab pager keeps its state in shared values across renders, so
+ * the mock keeps each value per component instance (tests that spread the mock get this too).
+ */
+{
+  const { useRef } = require('react') as typeof import('react');
+  const reanimatedMock = require('react-native-reanimated/mock') as {
+    useSharedValue: <V>(init: V) => unknown;
+  };
+  const freshValue = reanimatedMock.useSharedValue;
+  const useKeptSharedValue = <V>(init: V) => {
+    const kept = useRef<unknown>(null);
+    if (kept.current === null) kept.current = freshValue(init);
+    return kept.current;
+  };
+  reanimatedMock.useSharedValue = useKeptSharedValue;
+}
 require('react-native-gesture-handler/jestSetup');
 
 // Route-level tests (renderRouter) compile the whole app tree; cold CI runs can exceed 5 s.
