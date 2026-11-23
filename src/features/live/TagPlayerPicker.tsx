@@ -55,7 +55,7 @@ export function TagPlayerPicker({
   const kindChip = (
     <TagChip
       label={t.tags.kinds[kind]}
-      accessibilityLabel={t.tags.clearKind(name)}
+      accessibilityLabel={t.tags.clearKind(t.tags.kinds[kind], name)}
       selected
       onPress={() => onTag(null, null)}
       testID={`tag-${kind}`}
@@ -84,12 +84,13 @@ export function TagPlayerPicker({
           {onCourt.map((p) => {
             const selected = p.id === chosen;
             const desc = playerDescription(t, p);
+            const ref = playerRef(t, playersById, p.id);
             return (
               <TagChip
                 key={p.id}
-                label={playerRef(t, playersById, p.id)}
+                label={ref}
                 accessibilityLabel={
-                  selected ? t.tags.clearPlayer(desc) : t.tags.choosePlayer(desc, name)
+                  selected ? t.tags.clearPlayer(ref, desc) : t.tags.choosePlayer(ref, desc, name)
                 }
                 selected={selected}
                 highlighted={served && p.id === rally.serverId}

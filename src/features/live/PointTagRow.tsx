@@ -65,12 +65,13 @@ export function PointTagRow({ rally, playersById, onTag, onErrorType, onClose }:
       >
         {plausibleKinds(rally).map((kind) => {
           const name = t.tags.kindNames[kind];
+          const shown = t.tags.kinds[kind];
           return (
             <TagChip
               key={kind}
-              label={t.tags.kinds[kind]}
+              label={shown}
               accessibilityLabel={
-                kind === chosen ? t.tags.clearKind(name) : t.tags.chooseKind(name)
+                kind === chosen ? t.tags.clearKind(shown, name) : t.tags.chooseKind(shown, name)
               }
               selected={kind === chosen}
               onPress={() => choose(kind)}

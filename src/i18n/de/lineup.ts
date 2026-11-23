@@ -65,7 +65,7 @@ export const lineup: Strings['lineup'] = {
     optionLabel: (number: number, name: string) => `#${number} ${name}: wird vom Libero ersetzt`,
     optionText: (number: number, name: string) => `#${number} ${name}`,
     suggest: 'Mittelblocker vorschlagen',
-    suggestLabel: 'Mittelblocker vorschlagen: die Mittelblocker auf dem Feld',
+    suggestLabel: 'Mittelblocker vorschlagen: die Mittelblocker auf dem Feld auswählen',
   },
   rotate: {
     clockwise: 'Rotieren ↻',

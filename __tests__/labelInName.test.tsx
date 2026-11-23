@@ -11,11 +11,27 @@
  *   Hidden pager pages are mounted, so they are checked too.
  * - The few intended exceptions are listed in `EXCEPTIONS` below, each with its reason.
  */
-import { screen } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 
+import { fullName, shortName } from '@/domain/playerNames';
+import type { Player, PointEvent, PointKind, SetNumber, Side } from '@/domain/types';
+import { playerDescription, playerRef } from '@/features/live/format';
 import { dictionaries, type Strings } from '@/i18n';
+import { en } from '@/i18n/en';
 import type { Language } from '@/store';
-import { includeHidden, type QueriedElement, renderApp, seedGolden } from '@/test-utils';
+import {
+  includeHidden,
+  makePlayer,
+  makeSet,
+  type QueriedElement,
+  renderApp,
+  seedApp,
+  seedGolden,
+} from '@/test-utils';
+
+// Expo Router warns about every modal route rendered as the first screen; not what this tests.
+beforeAll(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
+afterAll(() => jest.restoreAllMocks());
 
 const SCREENS: [string, string][] = [
   ['profiles', '/'],
@@ -134,13 +150,23 @@ const EXCEPTIONS: { reason: string; ok: (shown: string, label: string, l: Langua
     },
   ];
 
+/**
+ * True when `label` starts with `shown` as whole words: what follows the shown text is the end,
+ * a space or punctuation ("Angriff" is not the start of "Angriffspunkt").
+ */
+function startsWithText(label: string, shown: string): boolean {
+  const l = norm(label);
+  const s = norm(shown);
+  return l.startsWith(s) && (l.length === s.length || /[\s.,:;!?()–-]/.test(l.charAt(s.length)));
+}
+
 function failures(language: Language): string[] {
   const out = new Set<string>();
   for (const node of screen.queryAllByLabelText(/./, includeHidden)) {
     const label = propsOf(node).accessibilityLabel;
     if (typeof label !== 'string' || !isControl(node)) continue;
     const [shown] = shownTexts(node);
-    if (shown === undefined || norm(label).startsWith(shown)) continue;
+    if (shown === undefined || startsWithText(label, shown)) continue;
     if (EXCEPTIONS.some((e) => e.ok(shown, norm(label), language))) continue;
     out.add(`"${shown}" → "${label}"`);
   }
@@ -175,11 +201,6 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
     'libero suggest',
     (t) => t.lineup.liberoReplaces.suggest,
     (t) => t.lineup.liberoReplaces.suggestLabel,
-  ],
-  [
-    'libero replaces chip',
-    () => '#7 Anna Meier',
-    (t) => t.lineup.liberoReplaces.optionLabel(7, 'Anna Meier'),
   ],
   ['placement cancel', (t) => t.roles.confirm.cancel, (t) => t.roles.confirm.cancelLabel],
   ['placement confirm', (t) => t.roles.confirm.confirm, (t) => t.roles.confirm.confirmLabel],
@@ -228,10 +249,6 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
   ['undo point (them)', (t) => t.live.undo, (t) => t.live.undoPoint(false)],
   ['undo across sets', (t) => t.live.undo, (t) => t.live.undoAcross(1)],
   ['undo substitution', (t) => t.live.undo, (t) => t.live.undoSub('Anna', 'Mia')],
-  ['tag kind choose', (t) => t.tags.kinds.kill, (t) => t.tags.chooseKind(t.tags.kinds.kill)],
-  ['tag kind clear', (t) => t.tags.kinds.kill, (t) => t.tags.clearKind(t.tags.kinds.kill)],
-  ['tag player choose', () => '#7', (t) => t.tags.choosePlayer('#7 Anna Meier', t.tags.kinds.kill)],
-  ['tag player clear', () => '#7', (t) => t.tags.clearPlayer('#7 Anna Meier')],
   ['photo cancel', (t) => t.common.cancel, (t) => t.photos.cancelChoiceLabel],
   ['player edit', (t) => t.playerDetail.edit, (t) => t.playerDetail.editLabel('Anna Meier')],
   ['preset rename', (t) => t.common.rename, (t) => t.presets.list.renameLabel('Alpha')],
@@ -274,11 +291,144 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
   ['preset editor rename', (t) => t.presets.editor.rename, (t) => t.presets.editor.renameLabel],
 ];
 
+/* Tag chips and libero chips, built with the components' own helpers, for every kind. */
+const anna: Player = {
+  id: 'p7',
+  teamId: 't',
+  firstName: 'Anna',
+  lastName: 'Meier',
+  number: 7,
+  positions: ['OH'],
+  active: true,
+};
+const annaToo: Player = { ...anna, id: 'p8', lastName: 'Marti', number: 8 };
+const team = new Map([anna, annaToo].map((p) => [p.id, p]));
+const KINDS = Object.keys(en.tags.kinds) as PointKind[];
+for (const kind of KINDS) {
+  PAIRS.push(
+    [
+      `tag kind ${kind} choose`,
+      (t) => t.tags.kinds[kind],
+      (t) => t.tags.chooseKind(t.tags.kinds[kind], t.tags.kindNames[kind]),
+    ],
+    [
+      `tag kind ${kind} clear`,
+      (t) => t.tags.kinds[kind],
+      (t) => t.tags.clearKind(t.tags.kinds[kind], t.tags.kindNames[kind]),
+    ],
+    [
+      `tag player choose (${kind})`,
+      (t) => playerRef(t, team, anna.id),
+      (t) =>
+        t.tags.choosePlayer(
+          playerRef(t, team, anna.id),
+          playerDescription(t, anna),
+          t.tags.kindNames[kind],
+        ),
+    ],
+  );
+}
+PAIRS.push(
+  [
+    'tag player clear',
+    (t) => playerRef(t, team, anna.id),
+    (t) => t.tags.clearPlayer(playerRef(t, team, anna.id), playerDescription(t, anna)),
+  ],
+  [
+    'libero replaces chip',
+    (t) => t.lineup.liberoReplaces.optionText(anna.number, shortName(anna, [anna])),
+    (t) => t.lineup.liberoReplaces.optionLabel(anna.number, fullName(anna)),
+  ],
+);
+
 describe.each<Language>(['en', 'de'])('label in name of other controls (%s)', (language) => {
   it.each(PAIRS)('%s', (_name, shown, label) => {
     const t = dictionaries[language];
-    const text = norm(shown(t));
-    // The label's start must be the shown text (the rest is the extra context).
-    expect(norm(label(t)).slice(0, text.length)).toBe(text);
+    // The label must start with the shown text (the rest is the extra context).
+    expect({ shown: shown(t), label: label(t), ok: startsWithText(label(t), shown(t)) }).toEqual({
+      shown: shown(t),
+      label: label(t),
+      ok: true,
+    });
+  });
+});
+
+/*
+ * The live screen after a rally (tag row: kind chips, player chips, error types), at the end of
+ * a set (set-won panel, next-set setup) and at the end of the match (summary), really rendered.
+ */
+const press = (testID: string) => fireEvent.press(screen.getByTestId(testID));
+const pressFirst = (testID: RegExp) => fireEvent.press(screen.getAllByTestId(testID)[0]!);
+const rally = (winner: Side, n: number): PointEvent[] =>
+  Array.from({ length: n }, () => ({ type: 'point', winner }));
+const livePlayers = [
+  makePlayer(1, 'Sina', ['S']),
+  makePlayer(2, 'Olga', ['OH']),
+  makePlayer(3, 'Mara', ['MB']),
+  makePlayer(4, 'Opal', ['OPP']),
+  makePlayer(5, 'Ola', ['OH']),
+  makePlayer(6, 'Mia', ['MB']),
+  makePlayer(7, 'Lea', ['L']),
+  makePlayer(8, 'Sara', ['OH']),
+];
+
+describe.each<Language>(['en', 'de'])('label in name in live mode (%s)', (language) => {
+  it('tag row: kind chips, player chips, error types', async () => {
+    seedGolden(language);
+    await renderApp('/match/m1/live');
+    await press('point-us');
+    expect(failures(language)).toEqual([]);
+    await press('tag-kill');
+    expect(failures(language)).toEqual([]);
+    await pressFirst(/^tag-player-/);
+    expect(failures(language)).toEqual([]);
+    await press('point-them');
+    expect(failures(language)).toEqual([]);
+    await press('tag-ourError');
+    expect(failures(language)).toEqual([]);
+  });
+
+  it('set won panel and next-set setup', async () => {
+    seedApp({
+      players: livePlayers,
+      matches: [
+        {
+          id: 'm1',
+          opponent: 'Rivals',
+          date: '2026-11-20',
+          home: true,
+          sets: [makeSet({ events: rally('us', 24) })],
+        },
+      ],
+      language,
+    });
+    await renderApp('/match/m1/live');
+    await press('point-us');
+    expect(screen.getByTestId('set-won-panel')).toBeTruthy();
+    expect(failures(language)).toEqual([]);
+    await press('next-set');
+    expect(screen.getByTestId('set-setup')).toBeTruthy();
+    expect(failures(language)).toEqual([]);
+  });
+
+  it('match summary', async () => {
+    const won = (n: SetNumber, us: number) => makeSet({ setNumber: n, events: rally('us', us) });
+    seedApp({
+      players: livePlayers,
+      matches: [
+        {
+          id: 'm1',
+          opponent: 'Rivals',
+          date: '2026-11-20',
+          home: true,
+          sets: [won(1, 25), won(2, 25), won(3, 24)],
+        },
+      ],
+      language,
+    });
+    await renderApp('/match/m1/live');
+    await press('point-us');
+    expect(screen.getByTestId('match-summary')).toBeTruthy();
+    expect(failures(language)).toEqual([]);
   });
 });

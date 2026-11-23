@@ -58,9 +58,9 @@ export const presets = {
     empty:
       'No starters yet. Set the team’s usual starting six and libero once; new matches start with them.',
     set: 'Set starters',
-    setLabel: 'Set starters of the team',
+    setLabel: 'Set starters: for the whole team',
     edit: 'Edit starters',
-    editLabel: 'Edit starters of the team',
+    editLabel: 'Edit starters: for the whole team',
     incomplete: (filled: number) =>
       `${filled} of 6 positions set. New matches start with them in set 1; pick the other players in the match before the game.`,
     complete: 'New matches start with this lineup in set 1.',

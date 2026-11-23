@@ -58,11 +58,11 @@ export const tags: Strings['tags'] = {
     us
       ? 'Optional: Wie haben wir den Punkt gewonnen?'
       : 'Optional: Wie haben wir den Punkt verloren?',
-  chooseKind: (kind: string) => `${kind}: letzten Punkt so markieren`,
-  clearKind: (kind: string) => `${kind}: Markierung entfernen`,
+  chooseKind: (shown: string, name: string) => `${shown}: letzten Punkt als ${name} markieren`,
+  clearKind: (shown: string, name: string) => `${shown}: Markierung ${name} entfernen`,
   playersLabel: (kind: string) => `Optional: Wer war es? (${kind})`,
-  choosePlayer: (desc: string, kind: string) => `${desc}: ${kind}`,
-  clearPlayer: (desc: string) => `${desc}: aus der Markierung entfernen`,
+  choosePlayer: (ref: string, desc: string, kind: string) => `${ref}: ${desc}, ${kind}`,
+  clearPlayer: (ref: string, desc: string) => `${ref}: ${desc}, aus der Markierung entfernen`,
   close: '✕',
   skipLabel: 'Punkt-Details überspringen',
   doneLabel: 'Punkt-Details schließen',
