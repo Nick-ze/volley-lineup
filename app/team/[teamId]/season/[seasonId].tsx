@@ -43,6 +43,32 @@ export default function SeasonScreen() {
     setOpponentId(null);
     router.setParams({ tab: next });
   };
+  const renderTab = (shown: SeasonTab) => {
+    switch (shown) {
+      case 'matches':
+        return (
+          <SeasonMatches
+            seasonId={season.id}
+            opponent={opponent}
+            onClearOpponent={() => setOpponentId(null)}
+            onNewMatch={() => router.push(`/team/${team.id}/match-new?seasonId=${season.id}`)}
+            onOpenMatch={(matchId) => router.push(`/match/${matchId}`)}
+          />
+        );
+      case 'opponents':
+        return (
+          <SeasonOpponents
+            seasonId={season.id}
+            onOpenOpponent={(id) => {
+              setOpponentId(id);
+              router.setParams({ tab: 'matches' });
+            }}
+          />
+        );
+      case 'stats':
+        return <SeasonStats teamId={team.id} seasonId={season.id} />;
+    }
+  };
   return (
     <Screen>
       <Stack.Screen options={{ title: team.name }} />
@@ -52,28 +78,14 @@ export default function SeasonScreen() {
         onTab={selectTab}
         onEdit={() => router.push(`/team/${team.id}/season-new?seasonId=${season.id}`)}
       />
-      {/* v8: the tab slides in from its side; a sideways swipe changes the tab. */}
-      <SwipeTabs tabs={SEASON_TABS} value={tab} onChange={selectTab} testID="season-tab-swipe">
-        {tab === 'matches' ? (
-          <SeasonMatches
-            seasonId={season.id}
-            opponent={opponent}
-            onClearOpponent={() => setOpponentId(null)}
-            onNewMatch={() => router.push(`/team/${team.id}/match-new?seasonId=${season.id}`)}
-            onOpenMatch={(matchId) => router.push(`/match/${matchId}`)}
-          />
-        ) : null}
-        {tab === 'opponents' ? (
-          <SeasonOpponents
-            seasonId={season.id}
-            onOpenOpponent={(id) => {
-              setOpponentId(id);
-              router.setParams({ tab: 'matches' });
-            }}
-          />
-        ) : null}
-        {tab === 'stats' ? <SeasonStats teamId={team.id} seasonId={season.id} /> : null}
-      </SwipeTabs>
+      {/* v8: the tab slides in from its side; v8.1: a sideways drag shows the next tab beside it. */}
+      <SwipeTabs
+        tabs={SEASON_TABS}
+        value={tab}
+        onChange={selectTab}
+        renderTab={renderTab}
+        testID="season-tab-swipe"
+      />
     </Screen>
   );
 }
