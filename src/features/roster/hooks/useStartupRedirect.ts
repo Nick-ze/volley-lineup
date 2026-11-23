@@ -30,7 +30,6 @@ export function useStartupRedirect() {
     if (startupHandled) return;
     startupHandled = true;
     if (hasProfile) router.replace('/teams');
-    // Only the very first mount matters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Only the very first run matters (the module-level flag ignores every later one).
+  }, [hasProfile, router]);
 }
