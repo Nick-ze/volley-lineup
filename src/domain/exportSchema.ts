@@ -10,6 +10,7 @@
  * (`exportUpgrades.ts`), the consistency checks (`exportConsistency.ts`) and replace / merge
  * (`exportMerge.ts`). Those modules import each other directly, never this barrel.
  */
+import { pad2 } from './dates';
 import { isConsistent } from './exportConsistency';
 import {
   EXPORT_APP_ID,
@@ -97,8 +98,7 @@ export function slugify(name: string): string {
 
 /** `volley-lineup-2026-11-20.json`, or `volley-lineup-herren-1-2026-11-20.json` for a team. */
 export function exportFileName(now: Date, teamName?: string): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const date = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
   const team = teamName === undefined ? '' : `${slugify(teamName)}-`;
   return `${EXPORT_APP_ID}-${team}${date}.json`;
 }

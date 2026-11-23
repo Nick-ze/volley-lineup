@@ -20,6 +20,7 @@ import { hasResults, renderResults, type LineupSheetResultLabels } from './lineu
 import { getMatchState } from './matchState';
 import { fullName } from './playerNames';
 import { isOffPosition, roleOf, spotRole } from './roles';
+import { COURT_ROWS } from './rotation';
 import type { CourtPosition, Match, Player, SetLineup, Team } from './types';
 
 export { escapeHtml } from './html';
@@ -78,12 +79,6 @@ export interface LineupSheetInput {
   withResults?: boolean;
 }
 
-/** Court cells in reading order: front row under the net, then the back row. */
-export const SHEET_ROWS: readonly (readonly CourtPosition[])[] = [
-  [4, 3, 2],
-  [5, 6, 1],
-] as const;
-
 function playerCell(player: Player | undefined, id: string | null, labels: LineupSheetLabels) {
   if (!id) return `<span class="empty">${escapeHtml(labels.emptySlot)}</span>`;
   if (!player) return `<span class="empty">${escapeHtml(labels.unknownPlayer)}</span>`;
@@ -109,7 +104,7 @@ function hasOffPosition(set: SetLineup, byId: Map<string, Player>): boolean {
 }
 
 function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupSheetLabels): string {
-  const rows = SHEET_ROWS.map((row) => {
+  const rows = COURT_ROWS.map((row) => {
     const cells = row.map((pos) => {
       const id = set.slots[pos];
       const player = id ? byId.get(id) : undefined;

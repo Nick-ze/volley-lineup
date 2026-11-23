@@ -7,14 +7,13 @@
  * a part of the stored date ("2026-11", "11-21"), German style "21.11." / "21.11.2026" /
  * "21.11.26", or US style "11/21" / "11/21/2026". An empty query matches everything.
  */
+import { pad2 as pad } from './dates';
 import type { Match } from './types';
 
 /** Lower case without accents ("Müller" → "muller"). */
 function fold(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
-
-const pad = (n: string) => n.padStart(2, '0');
 
 /** True when `year` (2 or 4 digits) is the stored 4-digit year. */
 const yearMatches = (stored: string, year: string | undefined) =>

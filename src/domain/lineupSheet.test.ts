@@ -4,10 +4,10 @@ import {
   buildLineupSheetHtml,
   escapeHtml,
   hasResults,
-  SHEET_ROWS,
   type LineupSheetLabels,
 } from './lineupSheet';
 import { fullName } from './playerNames';
+import { COURT_ROWS } from './rotation';
 import type { Match, PointEvent, Player, SetLineup, Side, Team } from './types';
 
 const labels: LineupSheetLabels = {
@@ -163,7 +163,7 @@ describe('buildLineupSheetHtml', () => {
   });
 
   it('lays each court out as 4-3-2 over 5-6-1 with numbers and names', () => {
-    expect(SHEET_ROWS).toEqual([
+    expect(COURT_ROWS).toEqual([
       [4, 3, 2],
       [5, 6, 1],
     ]);

@@ -17,6 +17,14 @@ export const ROTATION_COUNT = 6;
 
 export const FRONT_ROW_POSITIONS: readonly CourtPosition[] = [2, 3, 4] as const;
 export const BACK_ROW_POSITIONS: readonly CourtPosition[] = [1, 5, 6] as const;
+/**
+ * The court as drawn (display order): the front row nearest the net, then the back row, each
+ * left → right as seen from behind our baseline.
+ */
+export const COURT_ROWS: readonly (readonly CourtPosition[])[] = [
+  [4, 3, 2],
+  [5, 6, 1],
+] as const;
 
 /** The serving position (back right). */
 export const serverPosition: CourtPosition = 1;
@@ -25,11 +33,15 @@ export function isFrontRow(position: CourtPosition): boolean {
   return FRONT_ROW_POSITIONS.includes(position);
 }
 
+/** Kept as rule evidence (tested with the rotation rules; the app uses `isFrontRow`). */
 export function isBackRow(position: CourtPosition): boolean {
   return !isFrontRow(position);
 }
 
-/** The position directly across the court (1↔4, 2↔5, 3↔6). */
+/**
+ * The position directly across the court (1↔4, 2↔5, 3↔6). Kept as rule evidence: the formation
+ * tests use it to prove the opposite pairs (docs/VOLLEYBALL_RULES.md rule 4).
+ */
 export function oppositePosition(position: CourtPosition): CourtPosition {
   return (((position + 2) % 6) + 1) as CourtPosition;
 }
@@ -74,7 +86,7 @@ export function getRotation(slots: Slots, n: number): Slots {
   return rotateBy(slots, n - 1);
 }
 
-/** All six rotations, index 0 = rotation 1. */
+/** All six rotations, index 0 = rotation 1. Kept as rule evidence (the rotation tests use it). */
 export function getAllRotations(slots: Slots): Slots[] {
   return ROTATION_NUMBERS.map((n) => getRotation(slots, n));
 }

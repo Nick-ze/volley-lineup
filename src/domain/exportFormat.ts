@@ -7,20 +7,14 @@
 import { z } from 'zod';
 
 import type {
-  ErrorType,
   ExportFile,
-  FormationOrder,
-  FormationSystem,
   LineupPreset,
   ManagerProfile,
   Match,
   Opponent,
   Photo,
   Player,
-  PointKind,
-  Position,
   Season,
-  SeasonKind,
   SetEvent,
   SetLineup,
   Team,
@@ -28,7 +22,7 @@ import type {
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from './roles';
 import { SEASON_KINDS } from './seasonNames';
 import { isPhotoDataUri, isValidDescription } from './photos';
-import { ALL_POSITIONS, ERROR_TYPES } from './types';
+import { ALL_POSITIONS, ERROR_TYPES, POINT_KINDS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
 export const EXPORT_SCHEMA_VERSION = 9 as const;
@@ -49,17 +43,7 @@ export type TransferData = Pick<
 const id = z.string().min(1);
 const playerRef = id.nullable();
 
-const positionSchema = z.enum(ALL_POSITIONS as [Position, ...Position[]]);
-
-const POINT_KINDS = [
-  'kill',
-  'ace',
-  'block',
-  'opponentError',
-  'ourError',
-  'opponentKill',
-  'opponentAce',
-] as const satisfies readonly PointKind[];
+const positionSchema = z.enum(ALL_POSITIONS);
 
 const profileSchema = z.object({
   id,
@@ -107,8 +91,8 @@ const slotsSchema = z.object({
 
 /** v6: the formation of a set / preset (roles.ts). */
 const formationSchema = z.object({
-  system: z.enum(FORMATION_SYSTEMS as [FormationSystem, ...FormationSystem[]]),
-  order: z.enum(FORMATION_ORDERS as [FormationOrder, ...FormationOrder[]]),
+  system: z.enum(FORMATION_SYSTEMS),
+  order: z.enum(FORMATION_ORDERS),
   setterAt: z.union([
     z.literal(1),
     z.literal(2),
@@ -132,7 +116,7 @@ const setLineupSchema = z.object({
         winner: z.enum(['us', 'them']),
         kind: z.enum(POINT_KINDS).optional(),
         playerId: id.optional(),
-        errorType: z.enum(ERROR_TYPES as [ErrorType, ...ErrorType[]]).optional(),
+        errorType: z.enum(ERROR_TYPES).optional(),
         at: z.string().optional(),
       }),
       z.object({ type: z.literal('sub'), outPlayerId: id, inPlayerId: id }),
@@ -147,7 +131,7 @@ const seasonSchema = z.object({
   id,
   teamId: id,
   name: z.string(),
-  kind: z.enum(SEASON_KINDS as [SeasonKind, ...SeasonKind[]]),
+  kind: z.enum(SEASON_KINDS),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   location: z.string().optional(),

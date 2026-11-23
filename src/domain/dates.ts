@@ -4,7 +4,8 @@
  * `d.m.yy`, `dd.mm.yyyy` and ISO. Two-digit years mean 20yy. Pure functions, no React.
  */
 
-const pad2 = (n: number) => String(n).padStart(2, '0');
+/** Two digits: `7` → `"07"` (a number, or a string of digits). */
+export const pad2 = (n: number | string) => String(n).padStart(2, '0');
 
 /** Years a date field accepts (4-digit years below 1900 are typos like "0026"). */
 const MIN_YEAR = 1900;
