@@ -636,3 +636,25 @@ No data change (store 10, export 9).
 - [x] Court chips of players with a photo show it faded behind the number / name in dark and light mode; players without a photo look as before; bench photos unchanged.
 - [x] Settings shows "Prioritise names" / "Namen bevorzugen"; the switch works as before.
 - [x] Lint, typecheck and tests pass; src/domain at 100 %; every other screen unchanged in the screenshot compare.
+
+## 38. v9.0 — Guided tour
+
+Owner request: a tutorial with popups and a small visual guide. On first start ask: **Full tour** (every screen,
+briefly: starters, presets, formations, libero, live scoring, subs, performance, stats, seasons, print, export, appearance,
+…), **Quick tour** (create a profile, a team, players, a season and a match, then set the lineup; every other screen asks
+once "Quick tip for <page>?") or **No tour** (no tips anywhere). Profile → Tutorial → Choose again restarts, switches or
+ends the tour. Data: store v11 adds the device settings `tourMode` and `tourSeen` (not exported). Details: DECISIONS
+#241–246.
+
+## 39. v9.0 acceptance checklist
+
+- [x] First start (and the first start after the update) asks Full / Quick / No tour; the choice can't be skipped by accident.
+- [x] Quick tour walks profile → team → players → season → match → lineup with a popup on each step, in order.
+- [x] Quick tour: every other screen offers its tips once (Show me / No thanks).
+- [x] Full tour: every screen shows short tips on the first visit, covering starters, presets, formations, libero, live, subs, performance, stats, seasons, print, export, appearance.
+- [x] No tour: no tips anywhere.
+- [x] Popups have a small visual guide, step dots, Back / Next and End tour; they fit at 375 px in German with the dyslexia font, dark + light.
+- [x] Only the shown screen / tab triggers tips (pagers keep neighbours mounted).
+- [x] Profile → Tutorial → Choose again: restart, switch or end; Cancel keeps.
+- [x] Store v10 → v11 migration; export unchanged (golden test); Delete all data keeps the tour setting.
+- [x] Lint, typecheck and tests pass; src/domain at 100 %; every other screen unchanged in the screenshot compare (only Profile has the new section).

@@ -151,6 +151,14 @@ opened by an older app.
 - **Spacing**: more room under the buttons at the top of the Roster, Matches and Presets tabs.
 - **"Prioritise names"**: the Settings → Player chips switch has a clearer name (DE "Namen bevorzugen").
 
+### v9.0: guided tour (store 11)
+
+- **Tour choice on first start**: Full tour (every screen, briefly), Quick tour (profile → team → players → season →
+  match → lineup; other screens ask "Quick tip for …?") or No tour.
+- **Tip popups**: a short card at the bottom with a small picture (the button to tap, a player dragged onto the court,
+  a swipe, …), step dots, Back / Next and End tour.
+- **Profile → Tutorial**: choose again to restart, switch or end the tour.
+
 ---
 
 ## Reference
