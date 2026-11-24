@@ -113,6 +113,7 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
       <LiveCourt
         view={court}
         playersById={playersById}
+        teamId={match.teamId}
         roles={state.roles}
         serverId={state.serverId}
         selectedId={sub.outId}

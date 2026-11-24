@@ -3,6 +3,7 @@ import { renderRouter } from 'expo-router/testing-library';
 
 import { PlayerChip } from '@/components';
 import { buildLineupSheetHtml } from '@/domain/lineupSheet';
+import { playerDescription } from '@/features/live/format';
 import { sheetLabels } from '@/features/print/sheetLabels';
 import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
@@ -51,6 +52,8 @@ describe('player form: Team captain switch (v9.1)', () => {
     const { team, anna } = seed();
     await openForm(team.id, anna.id);
     expect(screen.getByText(s.player.captainHint)).toBeTruthy();
+    // screen readers hear the hint with the switch
+    expect(captainSwitch(false).props.accessibilityHint).toBe(s.player.captainHint);
     await fireEvent.press(captainSwitch(false));
     expect(captainOf(team.id)).toBeUndefined(); // only on save
     await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
@@ -152,6 +155,16 @@ describe('captain badge and labels (v9.1)', () => {
     await screen.findByTestId('player-header');
     expect(screen.queryByTestId('player-captain')).toBeNull();
     expect(screen.queryByText(t.playerDetail.captain)).toBeNull();
+  });
+
+  it('live court descriptions name the captain', () => {
+    const { team, anna, bea } = seed();
+    store().setCaptain(team.id, anna.id, true);
+    const captainId = store().teams[0].captainId;
+    expect(playerDescription(t, anna, captainId)).toBe(
+      'Number 7, Anna Meier, captain, Outside Hitter',
+    );
+    expect(playerDescription(t, bea, captainId)).toBe('Number 3, Bea Meier, Outside Hitter');
   });
 
   it('the print sheet marks the captain (C) (golden data: Lea Schmid captains t1)', () => {

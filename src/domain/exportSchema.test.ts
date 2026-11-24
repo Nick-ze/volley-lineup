@@ -1299,8 +1299,8 @@ describe('v10 team captain', () => {
     expect(result.data.teams[1]).not.toHaveProperty('captainId');
   });
 
-  it('merge refuses a captain who would end up in another team', () => {
-    // nothing else of t2 refers to p4, so only the captain stands in the way
+  it('merge clears a captain the file moved to another team, and succeeds', () => {
+    // nothing else of t2 refers to p4, so only the captain is affected
     const existing = { ...v10(), presets: v10().presets.filter((p) => p.id !== 'ps3') };
     // the file moves p4 (t2's captain) into t1, without t2
     const incoming: TransferData = {
@@ -1312,8 +1312,12 @@ describe('v10 team captain', () => {
       seasons: [],
       opponents: [],
     };
-    expect(mergeData(existing, incoming)).toEqual({ ok: false, error: 'MERGE_CONFLICT' });
-    const noCaptain = { ...existing, teams: [existing.teams[0], fixture().teams[1]] };
-    expect(mergeData(noCaptain, incoming).ok).toBe(true);
+    // t2 is not in the file, but its captain p4 is now a player of t1: t2 has no captain
+    const result = mergeData(existing, incoming);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.teams[0].captainId).toBe('p1');
+    expect(result.data.teams[1]).toEqual(fixture().teams[1]);
+    expect(result.data.players.find((p) => p.id === 'p4')?.teamId).toBe('t1');
   });
 });

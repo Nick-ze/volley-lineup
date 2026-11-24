@@ -52,8 +52,9 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * the file has one, it wins. Photos are merged by id; orphans are dropped.
  *
  * v10: an incoming team's captain wins. An incoming team without a captain (e.g. a file from
- * before v10) keeps the existing team's captain, as long as that player is still a player of the
- * team after the merge (otherwise the team has none).
+ * before v10) keeps the existing team's captain. Afterwards every team's captain must still be a
+ * player of that team (the file may have moved them to another team); otherwise it is cleared, so
+ * a captain never makes a merge fail.
  *
  * If the combined data would be inconsistent (e.g. two different players with the same jersey
  * number in one team, an id that belongs to a different team in each data set, or two presets
@@ -83,12 +84,12 @@ export function mergeData(existing: TransferData, file: TransferData): MergeResu
       keepDescription(keepPhoto(p, oldPlayers.get(p.id)), oldPlayers.get(p.id)),
     ),
   );
+  // v10: a captain who is no longer a player of their team after the merge (e.g. the file moved
+  // them to another team) is cleared, so a captain never makes a merge fail.
   const teams = mergeById(
     existing.teams,
-    incoming.teams.map((t) =>
-      keepCaptain(keepPhoto(t, oldTeams.get(t.id)), oldTeams.get(t.id), players),
-    ),
-  );
+    incoming.teams.map((t) => keepCaptain(keepPhoto(t, oldTeams.get(t.id)), oldTeams.get(t.id))),
+  ).map((t) => withValidCaptain(t, players));
   const data: TransferData = {
     profiles,
     teams,
@@ -114,12 +115,13 @@ function keepPhoto<T extends { photoId?: string }>(incoming: T, old: T | undefin
 }
 
 /**
- * v10 merge: the incoming team, keeping the existing captain when the incoming team has none and
- * that player is still one of the team's `players` (the merged players).
+ * v10 merge: the incoming team, keeping the existing captain when the incoming team has none
+ * (checked against the merged players afterwards, like every merged team's captain).
  */
-function keepCaptain(incoming: Team, old: Team | undefined, players: readonly Player[]): Team {
-  if (incoming.captainId !== undefined || old?.captainId === undefined) return incoming;
-  return withValidCaptain({ ...incoming, captainId: old.captainId }, players);
+function keepCaptain(incoming: Team, old: Team | undefined): Team {
+  return incoming.captainId === undefined && old?.captainId !== undefined
+    ? { ...incoming, captainId: old.captainId }
+    : incoming;
 }
 
 /** v7 merge: the incoming player, keeping the existing description when the file has none. */

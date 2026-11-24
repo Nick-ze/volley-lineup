@@ -90,6 +90,7 @@ export function PlayerForm({
           label={s.captainLabel}
           value={captain}
           onChange={setCaptain}
+          accessibilityHint={s.captainHint}
           testID="player-captain-switch"
         />
         <Text style={formStyles.hint}>{s.captainHint}</Text>

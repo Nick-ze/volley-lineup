@@ -16,6 +16,8 @@ export interface LiveCourtProps {
   /** Court as shown (libero swap applied) and where the libero stands in. */
   view: LiveCourtView;
   playersById: Map<string, Player>;
+  /** v9.1: the match's team, whose captain the labels name. */
+  teamId: string;
   /** Roles of the players on court now (`LiveState.roles`: substitutes inherit the role). */
   roles: Readonly<PlayerRoles>;
   serverId: string | null;
@@ -34,6 +36,7 @@ export interface LiveCourtProps {
 export function LiveCourt({
   view,
   playersById,
+  teamId,
   roles,
   serverId,
   selectedId,
@@ -42,8 +45,8 @@ export function LiveCourt({
 }: LiveCourtProps) {
   const styles = useStyles();
   const t = useT();
-  // v9.1: every player here is of the match's team; its captain is named in the labels.
-  const captainId = useCaptainId(playersById.values().next().value?.teamId);
+  // v9.1: the team captain is named in the labels.
+  const captainId = useCaptainId(teamId);
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
     isFrontRow ? styles.front : styles.back,
     styles.slot,
