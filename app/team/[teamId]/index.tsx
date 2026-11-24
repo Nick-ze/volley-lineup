@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 
 import { HeaderTitle, NotFound, Screen, SwipeTabs, TeamAvatar } from '@/components';
+import { teamTabPage } from '@/domain/tour';
 import type { Team } from '@/domain/types';
 import { PresetsTab } from '@/features/presets/PresetsTab';
 import { StartersTab } from '@/features/presets/StartersTab';
@@ -11,6 +12,7 @@ import { StatsTab } from '@/features/stats/StatsTab';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { parseTeamTab, TEAM_TABS, type TeamTab } from '@/features/team/tabs';
 import { TeamNavBar } from '@/features/team/TeamNavBar';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useTeam } from '@/store';
 
@@ -29,6 +31,8 @@ export default function TeamScreen() {
   const team = useTeam(teamId);
   const tab = parseTeamTab(tabParam);
   useEffect(markStartupHandled, []);
+  // v9.0: the shown tab's tips (never in the tabs: the pager keeps their neighbours mounted).
+  useTourPage(team ? teamTabPage(tab) : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

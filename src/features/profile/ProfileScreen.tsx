@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 
 import { Button, ConfirmDialog, Screen, useConfirm } from '@/components';
 import { Section } from '@/features/settings/Section';
+import { TourSection, useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';
 import { makeStyles, typography } from '@/theme';
@@ -17,6 +18,7 @@ export function ProfileScreen() {
   const styles = useStyles();
   const t = useT();
   const profile = useAppStore(selectCurrentProfile);
+  useTourPage(profile ? 'profile' : null);
   const leaveProfile = useLeaveProfile();
   const { ask, dialogProps } = useConfirm();
   // While leaving, the navigation to the picker is already under way: don't redirect twice.
@@ -38,6 +40,7 @@ export function ProfileScreen() {
     <Screen testID="profile-screen">
       <ProfileCard profile={profile} />
       <AppearanceSection />
+      <TourSection />
       <Section title={t.profile.account} hint={t.profile.logoutHint}>
         <Button label={t.profile.logout} onPress={leave} testID="logout" />
         <Text style={styles.note}>{t.profile.logoutNote}</Text>

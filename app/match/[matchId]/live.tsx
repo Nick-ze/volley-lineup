@@ -5,11 +5,13 @@ import { StyleSheet } from 'react-native';
 import { Screen, SwipeTabs } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { liveSetNumber } from '@/domain/matchFlow';
+import { liveViewPage } from '@/domain/tour';
 import type { SetNumber } from '@/domain/types';
 import { LiveMatch } from '@/features/live/LiveMatch';
 import { LivePerformance } from '@/features/live/LivePerformance';
 import { LIVE_VIEWS, LiveViewToggle, type LiveView } from '@/features/live/LiveViewToggle';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
+import { useTourPage } from '@/features/tour';
 import { useMatch } from '@/store';
 import { spacing } from '@/theme';
 
@@ -22,6 +24,8 @@ export default function LiveScreen() {
   const router = useRouter();
   const match = useMatch(matchId);
   const [view, setView] = useState<LiveView>('live');
+  // v9.0: the shown view's tips (Live or Performance; the other one stays mounted beside it).
+  useTourPage(match ? liveViewPage(view) : null);
   const setNumber = match ? liveSetNumber(match, set) : parseSetNumber(set);
   const selectSet = useCallback((s: SetNumber) => router.setParams({ set: String(s) }), [router]);
   const editLineup = useCallback(

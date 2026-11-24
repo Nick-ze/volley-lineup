@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
 import { isPlayerInPlayedSet } from '@/domain/playerUsage';
 import { PlayerForm } from '@/features/roster/components/PlayerForm';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useAppStore, usePlayer, useTeam } from '@/store';
 
@@ -15,6 +16,7 @@ export default function PlayerEditorScreen() {
   const deleteBlocked = useAppStore((s) => !!playerId && isPlayerInPlayedSet(s.matches, playerId));
   const goBack = useGoBack(`/team/${teamId}`);
   const router = useRouter();
+  useTourPage(team ? 'playerForm' : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

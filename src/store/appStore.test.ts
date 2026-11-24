@@ -311,14 +311,18 @@ describe('whole data', () => {
  */
 /**
  * The migrated state without what later steps add to every old state: the empty seasons /
- * opponents (v9) and the v10 device settings (dark theme, platform font), which it checks.
+ * opponents (v9), the v10 device settings (dark theme, platform font) and the v11 tour settings
+ * (not chosen yet, nothing seen), which it checks.
  */
 function withoutEmptySeasons(state: unknown): unknown {
-  const { seasons, opponents, themeMode, dyslexiaFont, ...rest } = state as Record<string, unknown>;
+  const { seasons, opponents, themeMode, dyslexiaFont, tourMode, tourSeen, ...rest } =
+    state as Record<string, unknown>;
   expect(seasons).toEqual([]);
   expect(opponents).toEqual([]);
   expect(themeMode).toBe('dark');
   expect(dyslexiaFont).toBe(false);
+  expect(tourMode).toBeNull();
+  expect(tourSeen).toEqual([]);
   return rest;
 }
 
@@ -536,7 +540,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(10); // v8.0: theme and dyslexia font settings
+    expect(STORE_VERSION).toBe(11); // v9.0: tour settings
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -548,10 +552,70 @@ describe('migrations', () => {
       language: 'de',
       chipLabel: 'name',
     };
-    expect(migrateStore(v9, 9)).toEqual({ ...v9, themeMode: 'dark', dyslexiaFont: false });
+    // (v9.0: the v10 → v11 step adds the tour settings after it, see the next test)
+    const tour = { tourMode: null, tourSeen: [] };
+    expect(migrateStore(v9, 9)).toEqual({ ...v9, themeMode: 'dark', dyslexiaFont: false, ...tour });
     // a state that already has the settings keeps them
     const v10 = { ...v9, themeMode: 'light', dyslexiaFont: true };
-    expect(migrateStore(v10, 9)).toEqual(v10);
+    expect(migrateStore(v10, 9)).toEqual({ ...v10, ...tour });
+  });
+
+  it('migrates v10 data (v8 app): the tour is not chosen yet, nothing else changes', () => {
+    const v10 = {
+      teams: [{ id: 't1', profileId: 'p', name: 'Herren', createdAt: '2026-01-01' }],
+      matches: [],
+      seasons: [],
+      opponents: [],
+      language: 'de',
+      chipLabel: 'name',
+      themeMode: 'light',
+      dyslexiaFont: true,
+    };
+    expect(migrateStore(v10, 10)).toEqual({ ...v10, tourMode: null, tourSeen: [] });
+    // a state that already has the settings keeps them
+    const v11 = { ...v10, tourMode: 'quick', tourSeen: ['profiles'] };
+    expect(migrateStore(v11, 10)).toEqual(v11);
+    expect(migrateStore(null, 10)).toBeNull();
+  });
+
+  it('migrates old data (v1) through to v11 with the tour not chosen', () => {
+    const up = migrateStore({ profiles: [], teams: [], players: [], matches: [] }, 1) as Record<
+      string,
+      unknown
+    >;
+    expect(up.tourMode).toBeNull();
+    expect(up.tourSeen).toEqual([]);
+    expect(up.themeMode).toBe('dark');
+  });
+
+  it('remembers the tour choice and the seen pages, also after delete all', () => {
+    store().setTourMode('quick');
+    expect(store().tourMode).toBe('quick');
+    expect(store().tourSeen).toEqual([]);
+    store().markTourSeen('profiles');
+    store().markTourSeen('teams');
+    const before = store().tourSeen;
+    store().markTourSeen('teams'); // already seen: unchanged (same list)
+    expect(store().tourSeen).toBe(before);
+    expect(store().tourSeen).toEqual(['profiles', 'teams']);
+    store().resetAll();
+    expect(store().tourMode).toBe('quick');
+    expect(store().tourSeen).toEqual(['profiles', 'teams']);
+    // choosing a tour again starts it over
+    store().setTourMode('full');
+    expect(store().tourMode).toBe('full');
+    expect(store().tourSeen).toEqual([]);
+    store().setTourMode('none');
+  });
+
+  it('persists the tour settings', async () => {
+    store().setTourMode('full');
+    store().markTourSeen('roster');
+    await new Promise((r) => setTimeout(r, 0));
+    const parsed = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
+    expect(parsed.state.tourMode).toBe('full');
+    expect(parsed.state.tourSeen).toEqual(['roster']);
+    store().setTourMode('none');
   });
 
   it('remembers the theme and the dyslexia font, also after delete all', () => {

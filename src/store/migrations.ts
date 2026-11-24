@@ -20,6 +20,8 @@
  * for v7 export files); matches get `seasonId` + `opponentId`.
  * v9 → v10 (app 8.0): device settings `themeMode: 'dark'` (the look so far) and
  * `dyslexiaFont: false`; teams may have a `photoId` (optional, no data change).
+ * v10 → v11 (app 9.0): device settings `tourMode: null` (the app asks once which tour to show)
+ * and `tourSeen: []`.
  */
 import {
   addRoleDefaults,
@@ -31,7 +33,7 @@ import {
 } from '@/domain/legacyData';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
-export const STORE_VERSION = 10;
+export const STORE_VERSION = 11;
 
 function v1ToV2(state: Rec): Rec {
   return { language: 'en', ...state, matches: mapSets(state.matches, addSetLogDefaults) };
@@ -61,5 +63,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion < 9 && isRec(state)) state = upgradeToSeasons(state);
   if (fromVersion < 10 && isRec(state))
     state = { themeMode: 'dark', dyslexiaFont: false, ...state };
+  if (fromVersion < 11 && isRec(state)) state = { tourMode: null, tourSeen: [], ...state };
   return state;
 }

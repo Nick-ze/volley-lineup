@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { NotFound, Screen } from '@/components';
 import { MatchPerformance } from '@/features/performance/MatchPerformance';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useMatch } from '@/store';
 
@@ -14,6 +15,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ matchId: string; set?: string; player?: string }>();
   const match = useMatch(String(params.matchId));
+  useTourPage(match ? 'performance' : null);
 
   if (!match)
     return <NotFound message={t.performance.notFound} onBack={() => router.dismissTo('/teams')} />;

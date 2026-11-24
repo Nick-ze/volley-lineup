@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ConfirmDialog, NotFound, Screen, ScreenTitle, useConfirm, useGoBack } from '@/components';
 import { SeasonForm } from '@/features/seasons/SeasonForm';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useAppStore, useMatchesForSeason, useSeason, useTeam } from '@/store';
 
@@ -21,6 +22,7 @@ export default function SeasonFormScreen() {
   );
   const { ask, dialogProps } = useConfirm();
   const s = t.seasons.form;
+  useTourPage(team && (!seasonId || season?.teamId === team.id) ? 'seasonForm' : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

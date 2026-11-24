@@ -6,6 +6,7 @@ import { Button, NotFound, ScreenTitle } from '@/components';
 import type { PresetLineup } from '@/domain/presets';
 import { PresetLineupEditor } from '@/features/presets/PresetLineupEditor';
 import { PresetNameDialog } from '@/features/presets/PresetNameDialog';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useAppStore, usePreset } from '@/store';
 
@@ -17,6 +18,9 @@ export default function PresetScreen() {
   const preset = usePreset(presetId);
   const updatePreset = useAppStore((s) => s.updatePreset);
   const [renaming, setRenaming] = useState(false);
+  useTourPage(
+    preset && preset.teamId === teamId && preset.kind === 'preset' ? 'presetEditor' : null,
+  );
   const save = useCallback(
     (lineup: PresetLineup) => updatePreset(String(presetId), lineup),
     [presetId, updatePreset],

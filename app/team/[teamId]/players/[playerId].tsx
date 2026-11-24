@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
 import { fullName } from '@/domain/playerNames';
 import { PlayerDetail } from '@/features/playerDetail/PlayerDetail';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { usePlayer, useTeam } from '@/store';
 
@@ -15,6 +16,7 @@ export default function PlayerDetailScreen() {
   const team = useTeam(teamId);
   const player = usePlayer(playerId);
   const goBack = useGoBack(`/team/${teamId}`);
+  useTourPage(team && player?.teamId === team.id ? 'playerDetail' : null);
   // Deleted while this screen is open (or under the editor): go to the roster, not NotFound.
   const existed = useRef(false);
   useEffect(() => {
