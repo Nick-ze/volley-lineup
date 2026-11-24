@@ -29,13 +29,13 @@ match) or none; short popups show what to tap. Change your mind any time in Prof
 
 ## Install on Android (APK)
 
-1. On your Android phone, open this repository on GitHub and sign in. The repository is private, so you need access to
-   it.
-2. Tap **Releases** and open the newest one (for example `v8.4.0`).
-3. Under **Assets**, tap `volley-lineup-<version>.apk` to download it.
-4. Open the downloaded file. If Android asks, allow installing from this source (your browser or the Files app), then go
+1. On your Android phone, open the
+   [latest release](https://github.com/Nick-ze/volley-lineup/releases/latest) (or this repository on GitHub →
+   **Releases** → the newest one, for example `v9.0.0`). No GitHub account needed.
+2. Under **Assets**, tap `volley-lineup-<version>.apk` to download it.
+3. Open the downloaded file. If Android asks, allow installing from this source (your browser or the Files app), then go
    back.
-5. Tap **Install**, then **Open**. Volley Lineup is now on your home screen.
+4. Tap **Install**, then **Open**. Volley Lineup is now on your home screen.
 
 **Updating**: download the newer APK the same way, open it and tap **Update**. Your teams and players stay saved. It's
 a good idea to make a backup first (Settings → Export everything).

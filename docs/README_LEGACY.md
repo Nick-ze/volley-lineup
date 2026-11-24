@@ -194,8 +194,8 @@ Open the **Settings** tab.
 
 `.github/workflows/deploy-pages.yml` deploys the web build to **https://nick-ze.github.io/volley-lineup/** on every push
 to `main`, once the repository owner turns it on: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-GitHub Pages on a private repository needs a paid GitHub plan; on the free plan the repository must be public. Until
-then the workflow builds the site and skips the deploy with a warning.
+The repository is public since v9.0 (DECISIONS #247), so Pages and Actions are free. Until Pages is turned on the
+workflow builds the site and skips the deploy with a warning.
 
 ---
 
