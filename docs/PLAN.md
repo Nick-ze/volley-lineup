@@ -621,3 +621,18 @@ ranking and what was skipped (with reasons) are in `docs/AUDIT.md`.
 - [x] Fewer `as` casts and lint/type suppressions (before → after counts).
 - [x] WORKER_BRIEF.md and HANDOFF §3 are current.
 - [x] Lint, typecheck and tests pass in CI; src/domain at 100%; test count not lower. (QA on main 3e5c3a3: 117 suites / 1442 tests vs 1198; 496 screenshots / 0 px; golden + legacy v1–v9 + store v9 data identical in both builds; only screen-reader labels changed, 127 pairs, all start with the visible text.)
+
+## 36. v8.4 — owner polish
+
+1. Team tabs (Roster · Matches · Presets): room between the top button row and the cards below.
+2. Court chips: the player's picture faded behind the number (or name), so the number stays clear.
+3. Settings → Player chips: the switch reads "Prioritise names" (DE "Namen bevorzugen").
+
+No data change (store 10, export 9).
+
+## 37. v8.4 acceptance checklist
+
+- [x] The add buttons on Roster, Matches and Presets no longer touch the cards (375 + 1280, EN + DE, dark + light, font).
+- [x] Court chips of players with a photo show it faded behind the number / name in dark and light mode; players without a photo look as before; bench photos unchanged.
+- [x] Settings shows "Prioritise names" / "Namen bevorzugen"; the switch works as before.
+- [x] Lint, typecheck and tests pass; src/domain at 100 %; every other screen unchanged in the screenshot compare.

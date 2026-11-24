@@ -39,7 +39,7 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
 
   return (
     <>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, styles.tabHeader]}>
         <Text style={styles.subtitle}>{t.roster.team.playerCount(players.length)}</Text>
         <Button label={t.roster.roster.addPlayer} onPress={onAddPlayer} compact />
       </View>

@@ -8,6 +8,6 @@ export const language = {
   display: {
     title: 'Player chips',
     hint: 'On the court and the bench, show the player’s name in the circle and the number below it.',
-    namesInsteadOfNumbers: 'Show names instead of numbers',
+    namesInsteadOfNumbers: 'Prioritise names',
   },
 } as const;

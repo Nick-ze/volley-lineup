@@ -4,7 +4,7 @@ import { useAppStore } from '@/store';
 
 import { Section } from './Section';
 
-/** "Show names instead of numbers" on the player chips. Persisted, kept on "Delete all". */
+/** "Prioritise names" on the player chips (v8.4; was "Show names instead of numbers"). Persisted, kept on "Delete all". */
 export function DisplaySection() {
   const t = useT();
   const chipLabel = useAppStore((s) => s.chipLabel);

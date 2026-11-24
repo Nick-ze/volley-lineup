@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-24, after releasing **v8.3.0**.
+Last updated: 2026-11-24, after releasing **v8.4.0**.
 
 ---
 
@@ -29,10 +29,11 @@ Last updated: 2026-11-24, after releasing **v8.3.0**.
 | v8.1.1  | Swipe without flicker: real pager (neighbour tabs stay mounted, no swap on release), app tab bar moves the real scenes                                                                                                                     | `v8.1.1` |
 | v8.2.0  | Roster cards show the player's picture in full (square, card width) with the text below                                                                                                                                                    | `v8.2.0` |
 | v8.3.0  | Code health (no visible change): audit (`docs/AUDIT.md`), cached derived data, split domain files, shared UI kit, accessible names start with the visible text, export golden + screenshot harness, faster CI                              | `v8.3.0` |
+| v8.4.0  | Owner polish: faded player photo behind the number on court chips, room under the team tabs' add buttons, Settings switch renamed "Prioritise names"                                                                                       | `v8.4.0` |
 
-- `main` is green (CI), **1442 tests** (117 suites), `src/domain` at 100% coverage.
-- Current versions: app **8.3.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#236**. Continue at #237.
+- `main` is green (CI), **1444 tests** (117 suites), `src/domain` at 100% coverage.
+- Current versions: app **8.4.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
+- Last decision number in `docs/DECISIONS.md`: **#239**. Continue at #240.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -69,7 +70,7 @@ Last updated: 2026-11-24, after releasing **v8.3.0**.
 
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
-3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7, §31–33 v8, §34–35 v8.3). `docs/AUDIT.md` — the v8.3 code audit (ranked findings, results, what was skipped).
+3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7, §31–33 v8, §34–35 v8.3). PLAN §36–37 v8.4. `docs/AUDIT.md` — the v8.3 code audit (ranked findings, results, what was skipped).
 4. `docs/DECISIONS.md` — every choice made so far (#1–236). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Rewritten in v8.3 (conventions, tests, proof of no change).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**

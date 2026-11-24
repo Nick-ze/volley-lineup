@@ -50,7 +50,7 @@ export function PlayerChip({
   const { colors } = useTheme();
   const styles = useStyles();
   const t = useT();
-  // Settings → "Show names instead of numbers": the circle shows the name, the pill the number.
+  // Settings → "Prioritise names": the circle shows the name, the pill the number.
   const namesFirst = useAppStore((s) => s.chipLabel) === 'name';
   const d = Math.max(size, touchTarget);
   // v8: first name first ("Anna"; "Anna M." when a teammate is also called Anna).
@@ -59,7 +59,10 @@ export function PlayerChip({
   const label =
     accessibilityLabel ??
     t.player.chipLabel(player.number, fullName(player), primary ? t.positions[primary] : '');
-  const photoUri = usePhotoUri(showPhoto && showName ? player.photoId : undefined);
+  const storedPhoto = usePhotoUri(player.photoId);
+  const photoUri = showPhoto && showName ? storedPhoto : null;
+  // v8.4: chips that show the number / name (the court) show the picture faded behind it.
+  const backdropUri = photoUri === null ? storedPhoto : null;
   // Text-strength tokens: same as primary / highlight in dark mode, ≥ 3:1 outlines in light mode.
   const ringColor = selected
     ? colors.primaryText
@@ -74,6 +77,7 @@ export function PlayerChip({
         name={shortName}
         diameter={d}
         photoUri={photoUri}
+        backdropUri={backdropUri}
         namesFirst={namesFirst}
         ringColor={ringColor}
         thickRing={selected || highlighted}
