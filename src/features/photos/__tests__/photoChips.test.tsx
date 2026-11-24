@@ -40,24 +40,37 @@ describe('PlayerChip photos', () => {
     expect(screen.getByTestId('chip')).toHaveTextContent('#7 Ace', { exact: false });
   });
 
-  it('court chips keep the number (or the name with chipLabel "name")', async () => {
+  it('court chips keep the number (or the name with chipLabel "name") over the faded photo', async () => {
+    // v8.4: the photo sits behind the number at low opacity instead of replacing it.
     await render(<PlayerChip player={ana} testID="chip" />);
-    expect(screen.queryByTestId('photo', hidden)).toBeNull();
+    const backdrop = screen.getByTestId('chip-backdrop', hidden);
+    expect(within(backdrop).getByTestId('photo', hidden)).toBeTruthy();
+    expect(backdrop).toHaveStyle({ opacity: 0.3 });
+    expect(screen.getAllByTestId('photo', hidden)).toHaveLength(1);
     expect(screen.getByTestId('chip')).toHaveTextContent(/^7/);
 
     useAppStore.setState({ chipLabel: 'name' });
     await render(<PlayerChip player={ana} testID="chip" />);
-    expect(screen.queryByTestId('photo', hidden)).toBeNull();
+    expect(screen.getByTestId('chip-backdrop', hidden)).toBeTruthy();
     expect(screen.getByTestId('chip-name')).toHaveTextContent('Ace');
   });
 
-  it('falls back to the number without a photo or without a name line', async () => {
+  it('shows the number without a backdrop when the player has no photo', async () => {
     await render(<PlayerChip player={ben} showPhoto testID="chip" />);
     expect(screen.queryByTestId('photo', hidden)).toBeNull();
+    expect(screen.queryByTestId('chip-backdrop', hidden)).toBeNull();
     expect(screen.getByTestId('chip')).toHaveTextContent(/^8/);
+  });
 
+  it('without a name line, a photo chip shows the number over the faded photo', async () => {
     await render(<PlayerChip player={ana} showPhoto showName={false} testID="chip" />);
-    expect(screen.queryByTestId('photo', hidden)).toBeNull();
+    expect(screen.getByTestId('chip-backdrop', hidden)).toBeTruthy();
+    expect(screen.getByTestId('chip')).toHaveTextContent(/^7/);
+  });
+
+  it('the full photo on the bench has no backdrop', async () => {
+    await render(<PlayerChip player={ana} showPhoto testID="chip" />);
+    expect(screen.queryByTestId('chip-backdrop', hidden)).toBeNull();
   });
 });
 
@@ -83,7 +96,7 @@ describe('bench and substitution picker', () => {
     expect(onPickIn).toHaveBeenCalledWith('p7');
   });
 
-  it('the lineup bench shows photos; court chips do not', async () => {
+  it('the lineup bench shows photos; court chips show the number over the faded photo', async () => {
     const set1 = emptySetLineup(1);
     useAppStore.setState({
       profiles: [{ id: 'prof', name: 'Coach', color: '#FF6B00', createdAt: '' }],
@@ -109,8 +122,9 @@ describe('bench and substitution picker', () => {
     expect(within(bench).getByTestId('bench-player-7')).toHaveTextContent('#7 Ace', {
       exact: false,
     });
-    // #1 (same photo) is on court: number only.
-    expect(screen.getAllByTestId('photo', hidden)).toHaveLength(1);
+    // #1 (same photo) is on court: the number over the faded photo (v8.4).
+    expect(screen.getAllByTestId('photo', hidden)).toHaveLength(2);
+    expect(screen.getAllByTestId(/-backdrop$/, hidden).length).toBeGreaterThanOrEqual(1);
   });
 });
 

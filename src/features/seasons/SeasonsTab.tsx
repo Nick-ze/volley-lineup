@@ -30,7 +30,7 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
   const s = t.seasons.list;
   return (
     <>
-      <View style={listStyles.headerRow}>
+      <View style={[listStyles.headerRow, listStyles.tabHeader]}>
         <View />
         <Button label={s.newSeason} onPress={onNewSeason} compact />
       </View>

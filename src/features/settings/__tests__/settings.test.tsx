@@ -265,13 +265,13 @@ describe('delete all and version', () => {
 
   it('switches the player chips between numbers and names (EN + DE)', async () => {
     await renderSettings();
-    const toggle = screen.getByRole('switch', { name: 'Show names instead of numbers' });
+    const toggle = screen.getByRole('switch', { name: 'Prioritise names' });
     expect(store().chipLabel).toBe('number');
     await fireEvent.press(toggle);
     expect(store().chipLabel).toBe('name');
 
     store().setLanguage('de');
-    const de = await screen.findByRole('switch', { name: 'Namen statt Nummern anzeigen' });
+    const de = await screen.findByRole('switch', { name: 'Namen bevorzugen' });
     await fireEvent.press(de);
     expect(store().chipLabel).toBe('number');
     store().setLanguage('en');

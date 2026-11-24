@@ -120,7 +120,7 @@ New in **v3 — Match day & stats**:
 - **Stats** — a Stats tab in the team (season record, set ratio, per-rotation points won / lost, side-out % and break points, and per-player sets started / played, subs, serve turns and points on serve) and a Stats button on every match. All numbers come from the rallies you already record.
 - **Point details (optional)** — after a rally, one tap tags it: kill / ace / block / opponent error, or our error / their kill / their ace, with the player. Skip it by simply playing the next rally. Tags add kills, aces, blocks and errors to the player stats.
 
-- **Names instead of numbers** (v3.1) — Settings → Player chips: show the player's name in the circle and the number below it.
+- **Prioritise names** (v3.1, renamed in v8.4) — Settings → Player chips: show the player's name in the circle and the number below it.
 
 Data from v2 (on the phone or in v1–v3 export files) opens in v3 automatically. Files exported by v3 (schema version 4) can't be opened by older versions.
 
@@ -143,7 +143,7 @@ Data and files from v4 open automatically (the formation is worked out from wher
 
 New in **v6 — Players & performance**:
 
-- **Photos** — give each profile and player a picture: take one with the camera or pick one from the gallery, change it or remove it. Photos are shrunk to a small 256 px JPEG and stay on the device. They show on the profile, in the roster, on the player page and on the bench; court chips keep the number or name.
+- **Photos** — give each profile and player a picture: take one with the camera or pick one from the gallery, change it or remove it. Photos are shrunk to a small 256 px JPEG and stay on the device. They show on the profile, in the roster, on the player page and on the bench; court chips show the number or name over the picture, faded (v8.4).
 - **Player page** — tap a player in the roster for their season: sets started and played, rallies on court ("x of y"), subs, serves and points on serve, kills / aces / blocks, errors by type and plus/minus, plus one line per match.
 - **Confidential descriptions** — private notes per player, hidden until you unlock them with your fingerprint / face / device PIN (a confirmation on the web). They lock again when you press Lock, leave the app or restart it. They never show in lists or the print sheet, and go into an export file only if you tick **Include descriptions**.
 - **Performance** — a new link on the match screen shows every player for a set or the whole match: rallies on court, won–lost, kills / aces / blocks vs errors and a simple rating (▲ ● ▼). Tap a player for their error rate and where the errors happened ("3 reception errors, 5 attack errors").
@@ -172,6 +172,8 @@ New in **v8 — Look & feel**:
 - **New app icon**.
 
 New in **v8.2**: the roster cards show each player's picture in full, with the name below.
+
+New in **v8.4**: court chips show the player's picture faded behind the number (or name); more room under the buttons at the top of the team tabs; the Settings switch is now called "Prioritise names".
 
 New in **v8.1**: drag between tabs — the page follows your finger and the next tab slides in beside it; let go past a third (or flick) to switch, otherwise it springs back.
 

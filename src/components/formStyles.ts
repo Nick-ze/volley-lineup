@@ -60,6 +60,8 @@ export const useListStyles = makeStyles((theme) => ({
     gap: spacing.sm,
     flexWrap: 'wrap',
   },
+  /** v8.4: room between a team tab's header row (count + add button) and the list below it. */
+  tabHeader: { marginBottom: spacing.md },
   pressed: { opacity: 0.8 },
   actions: {
     flexDirection: 'row',

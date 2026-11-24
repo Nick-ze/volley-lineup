@@ -41,7 +41,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
 
   return (
     <>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, styles.tabHeader]}>
         <Text style={styles.subtitle}>{s.count(presets.length)}</Text>
         <Button
           label={s.add}

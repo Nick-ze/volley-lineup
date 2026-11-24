@@ -16,6 +16,8 @@ import { PositionBadge } from './PositionBadge';
 
 /** Room between a chip's picture and its outer edge: the thick selection ring on both sides. */
 const PHOTO_INSET = 2 * borderWidth.thick;
+/** v8.4: opacity of the faded picture behind a court chip's number / name (the text stays readable). */
+const BACKDROP_OPACITY = 0.3;
 
 export interface PlayerChipFaceProps {
   player: Player;
@@ -25,7 +27,9 @@ export interface PlayerChipFaceProps {
   diameter: number;
   /** The player's picture to show, or null for the number / name. */
   photoUri: string | null;
-  /** Settings → "Show names instead of numbers". */
+  /** v8.4: the player's picture shown faded behind the number / name (court chips), or null. */
+  backdropUri?: string | null;
+  /** Settings → "Prioritise names". */
   namesFirst: boolean;
   ringColor: string;
   thickRing: boolean;
@@ -40,6 +44,7 @@ export function PlayerChipFace({
   name,
   diameter: d,
   photoUri,
+  backdropUri = null,
   namesFirst,
   ringColor,
   thickRing,
@@ -58,6 +63,16 @@ export function PlayerChipFace({
         lifted && styles.lifted,
       ]}
     >
+      {photoUri === null && backdropUri !== null ? (
+        <View style={styles.backdrop} testID={testID ? `${testID}-backdrop` : undefined}>
+          <Photo
+            photoId={player.photoId}
+            uri={backdropUri}
+            size={d - PHOTO_INSET}
+            fallback={null}
+          />
+        </View>
+      ) : null}
       {photoUri !== null ? (
         <Photo photoId={player.photoId} uri={photoUri} size={d - PHOTO_INSET} fallback={null} />
       ) : namesFirst ? (
@@ -98,6 +113,16 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.xxs,
   },
   ringThick: { borderWidth: borderWidth.thick },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: BACKDROP_OPACITY,
+  },
   badgeOnPhoto: { position: 'absolute', bottom: spacing.xxs },
   lifted: {
     transform: [{ scale: 1.15 }],
