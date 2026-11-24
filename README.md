@@ -99,3 +99,8 @@ To move to a new phone: export on the old one, send yourself the file, import it
 
 The full version history, the development commands, the release steps and the notes for AI agents working on this app
 are in **[docs/README_LEGACY.md](docs/README_LEGACY.md)**. Project rules: [CLAUDE.md](CLAUDE.md).
+
+## Licence
+
+The code is public so you can read it and run the app for yourself, but it is **not open source**: all rights are
+reserved. Please don't copy, reuse, change or republish it without permission. See [LICENSE](LICENSE).

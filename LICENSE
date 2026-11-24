@@ -1,0 +1,16 @@
+Copyright (c) 2026 Nick-ze. All rights reserved.
+
+This repository is public so that its source code can be read. Reading it, and running the app
+for your own personal use, is allowed.
+
+Everything else is not allowed without the copyright holder's prior written permission. In
+particular, you may not copy, modify, merge, publish, distribute, sublicense or sell this code or
+any part of it, publish the app or a modified version of it (for example in an app store), or use
+it to build another product.
+
+The fonts in assets/fonts (OpenDyslexic) are under their own licence, the SIL Open Font License
+1.1, and the npm packages this project depends on keep their own licences.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+SOFTWARE OR ITS USE.

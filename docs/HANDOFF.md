@@ -34,7 +34,7 @@ Last updated: 2026-11-24, after releasing **v9.0.0**.
 
 - `main` is green (CI), **1503 tests** (120 suites), `src/domain` at 100% coverage.
 - Current versions: app **9.0.0** (`app.json` + `package.json`, must match), store **11**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont`, `tourMode`, `tourSeen` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#246**. Continue at #247.
+- Last decision number in `docs/DECISIONS.md`: **#247**. Continue at #248.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
