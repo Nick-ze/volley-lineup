@@ -613,11 +613,11 @@ ranking and what was skipped (with reasons) are in `docs/AUDIT.md`.
 
 ## 35. v8.3 acceptance checklist
 
-- [ ] docs/AUDIT.md lists the findings, ranked, with what was done and what was skipped (and why).
-- [ ] Before/after screenshots of every main screen are pixel-identical (375 + 1280, EN + DE, dark + light, dyslexia font).
-- [ ] Export golden test: identical output except `exportedAt`; old data and v1–v9 files open.
-- [ ] Measured improvements where performance work was done (numbers in the PR and AUDIT.md).
-- [ ] No component over ~150 lines without a recorded reason; the big domain files are split.
-- [ ] Fewer `as` casts and lint/type suppressions (before → after counts).
-- [ ] WORKER_BRIEF.md and HANDOFF §3 are current.
-- [ ] Lint, typecheck and tests pass in CI; src/domain at 100%; test count not lower.
+- [x] docs/AUDIT.md lists the findings, ranked, with what was done and what was skipped (and why).
+- [x] Before/after screenshots of every main screen are pixel-identical (375 + 1280, EN + DE, dark + light, dyslexia font).
+- [x] Export golden test: identical output except `exportedAt`; old data and v1–v9 files open.
+- [x] Measured improvements where performance work was done (numbers in the PR and AUDIT.md).
+- [x] No component over ~150 lines without a recorded reason; the big domain files are split.
+- [x] Fewer `as` casts and lint/type suppressions (before → after counts).
+- [x] WORKER_BRIEF.md and HANDOFF §3 are current.
+- [x] Lint, typecheck and tests pass in CI; src/domain at 100%; test count not lower. (QA on main 3e5c3a3: 117 suites / 1442 tests vs 1198; 496 screenshots / 0 px; golden + legacy v1–v9 + store v9 data identical in both builds; only screen-reader labels changed, 127 pairs, all start with the visible text.)
