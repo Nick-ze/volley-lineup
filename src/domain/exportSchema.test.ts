@@ -1251,7 +1251,7 @@ describe('v10 team captain', () => {
     expect(isConsistent(data)).toBe(false);
   });
 
-  it('merge: the incoming team’s captain wins, also when it has none', () => {
+  it('merge: an incoming captain wins', () => {
     const existing = v10();
     const incoming = fixture(); // no captains
     incoming.teams[0] = { ...incoming.teams[0], captainId: 'p2' };
@@ -1260,11 +1260,43 @@ describe('v10 team captain', () => {
     if (!result.ok) return;
     // t1 from the file (new captain p2); t2 is not in the file and keeps p4
     expect(result.data.teams.map((t) => t.captainId)).toEqual(['p2', 'p4']);
-    const cleared = mergeData(existing, buildExport(fixture()));
-    expect(cleared.ok && cleared.data.teams.map((t) => t.captainId)).toEqual([
-      undefined,
-      undefined,
-    ]);
+  });
+
+  it('merge: a pre-v10 backup (teams without captains) keeps the existing captains', () => {
+    const raw = JSON.parse(exportText(fixture()));
+    raw.schemaVersion = 9;
+    const parsed = parseObject(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const result = mergeData(v10(), parsed.file);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.teams).toEqual(v10().teams);
+    // the file's other team fields still win (here: a renamed team)
+    const renamed = { ...parsed.file, teams: [{ ...parsed.file.teams[0], name: 'Neu' }] };
+    const again = mergeData(v10(), renamed);
+    expect(again.ok && again.data.teams[0]).toEqual({ ...v10().teams[0], name: 'Neu' });
+  });
+
+  it('merge: an existing captain who is no longer a player of the team is dropped', () => {
+    // nothing else of t2 refers to p4, so only the captain is affected
+    const existing = { ...v10(), presets: v10().presets.filter((p) => p.id !== 'ps3') };
+    // the file has t2 without a captain and moves p4 (t2's captain) into t1
+    const incoming: TransferData = {
+      ...fixture(),
+      profiles: [fixture().profiles[1]],
+      teams: [fixture().teams[1]],
+      players: [player('p4', 't1', 44)],
+      matches: [],
+      presets: [],
+      seasons: [],
+      opponents: [],
+    };
+    const result = mergeData(existing, incoming);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.teams[0].captainId).toBe('p1');
+    expect(result.data.teams[1]).not.toHaveProperty('captainId');
   });
 
   it('merge refuses a captain who would end up in another team', () => {
