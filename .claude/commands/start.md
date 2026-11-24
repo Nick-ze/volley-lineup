@@ -10,7 +10,7 @@ You are continuing the **Volley Lineup** project in a fresh chat. Do this before
    - `docs/HANDOFF.md` (current state, how work is done here, release steps, gotchas)
    - `docs/PLAN.md` (features and data model, all versions)
    - `docs/DECISIONS.md` (skim all headings; read entries related to the task)
-   - `README.md`
+   - `docs/README_LEGACY.md` (version history + development; the short `README.md` is for app users)
    - `docs/WORKER_BRIEF.md` only if you will start worker agents (note the outdated parts listed in HANDOFF §2)
 2. Get the repo ready:
    - `git fetch origin main`, then check out or create the branch this session is told to use, based on `origin/main`.

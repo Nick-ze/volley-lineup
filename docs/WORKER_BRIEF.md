@@ -70,7 +70,7 @@ store fields, features and components: HANDOFF §3.
   page in `NoTabSwipe`. Put `touchAction` in the gesture config, not on `GestureDetector`.
 - **Live screen height**: court + Substitution must stay visible at 390 × 844 (DECISIONS #126, #164, #212).
 - Components small (aim < 150 lines); no `any`, no `@ts-ignore` / unexplained suppressions.
-- Don't edit `docs/DECISIONS.md`, `docs/PLAN.md`, `docs/HANDOFF.md`, `README.md` — list decisions in the PR.
+- Don't edit `docs/DECISIONS.md`, `docs/PLAN.md`, `docs/HANDOFF.md`, `README.md`, `docs/README_LEGACY.md` — list decisions in the PR.
 
 ## 5. Testing recipes
 

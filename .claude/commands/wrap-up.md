@@ -18,7 +18,7 @@ The owner is about to close this chat (context limit). Make sure the next chat c
    - §3 architecture: new routes, domain modules, features, data model changes.
    - §6 gotchas: anything new learned the hard way in this chat.
    - Keep it concise — facts the next chat needs, not a diary.
-3. Also make sure `docs/DECISIONS.md`, `docs/PLAN.md` (checklists ticked) and `README.md` reflect what was built in this chat.
+3. Also make sure `docs/DECISIONS.md`, `docs/PLAN.md` (checklists ticked) `docs/README_LEGACY.md` (a Version history section for every new version) and `README.md` ("What's new" line, install steps if they changed) reflect what was built in this chat.
 4. Commit on a branch (`docs/handoff-<date>`), push, open a PR into `main`, wait for green CI, merge it. Also push the session branch so it is in sync with `main`.
 5. Tell the owner, in a few lines:
    - the handoff is updated (link to `docs/HANDOFF.md` on GitHub),
