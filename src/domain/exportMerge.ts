@@ -50,6 +50,9 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * file exported without descriptions, or from before v6) keeps the existing description; when
  * the file has one, it wins. Photos are merged by id; orphans are dropped.
  *
+ * v10: the captain belongs to the team, so the incoming team's captain (or none) wins like its
+ * other fields.
+ *
  * If the combined data would be inconsistent (e.g. two different players with the same jersey
  * number in one team, an id that belongs to a different team in each data set, or two presets
  * of a team with the same name) the merge is refused with `MERGE_CONFLICT` (the user can choose

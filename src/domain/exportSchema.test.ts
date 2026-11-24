@@ -165,7 +165,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 9,
+      schemaVersion: 10,
       exportedAt: NOW.toISOString(),
       ...data,
     });
@@ -284,7 +284,7 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([10, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', undefined])(
+  it.each([11, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', undefined])(
     'schemaVersion %p',
     (version) => {
       expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
@@ -307,7 +307,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
     expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
   });
 
@@ -318,7 +318,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v2);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
     expect(result.file.presets).toEqual([]);
     expect(result.summary.presets).toBe(0);
     expect(result.file.matches).toEqual(fixture().matches);
@@ -338,7 +338,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v3);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file).toEqual({ ...v3, schemaVersion: 9 });
+    expect(result.file).toEqual({ ...v3, schemaVersion: 10 });
   });
 
   it('a current file without presets is rejected as INVALID_SHAPE', () => {
@@ -770,7 +770,7 @@ describe('v5 libero switch and v6 formations', () => {
       setterAt: 4,
     });
     expect('roles' in result.file.presets[1]).toBe(false);
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
   });
 
   it.each([
@@ -902,7 +902,7 @@ describe('v7 photos, descriptions and error types', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1004,7 +1004,7 @@ describe('v8 seasons and opponents', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
     expect(result.file.seasons.map((x) => [x.id, x.teamId, x.name])).toEqual([
       ['season-t1', 't1', '2026/27'],
       ['season-t2', 't2', '2026'],
@@ -1132,7 +1132,7 @@ describe('v9 team pictures', () => {
     const result = parseImport(exportText(data));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
     expect(replaceData(result.file)).toEqual(data);
     expect(result.summary.photos).toBe(3);
   });
@@ -1157,7 +1157,7 @@ describe('v9 team pictures', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(9);
+    expect(result.file.schemaVersion).toBe(10);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1183,5 +1183,105 @@ describe('v9 team pictures', () => {
     if (!result.ok) return;
     expect(result.data.teams.map((t) => t.photoId)).toEqual(['tp1', 'tp9']);
     expect(result.data.photos.map((p) => p.id)).toEqual(['tp1', 'pp1', 'tp9']);
+  });
+});
+
+describe('v10 team captain', () => {
+  /** The fixture with p1 as the captain of t1 and p4 of t2. */
+  function v10(): TransferData {
+    const data = fixture();
+    data.teams[0] = { ...data.teams[0], captainId: 'p1' };
+    data.teams[1] = { ...data.teams[1], captainId: 'p4' };
+    return data;
+  }
+
+  it('round trip restores the captains exactly', () => {
+    const data = v10();
+    const file = buildExport(data, { now: NOW });
+    expect(file.teams.map((t) => t.captainId)).toEqual(['p1', 'p4']);
+    const result = parseImport(serializeExport(file));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(10);
+    expect(replaceData(result.file)).toEqual(data);
+  });
+
+  it('a team export carries that team’s captain', () => {
+    expect(buildExport(v10(), { teamId: 't2' }).teams).toEqual([v10().teams[1]]);
+  });
+
+  it('imports a v9 file (no captains) without loss and with no captain', () => {
+    const raw = JSON.parse(exportText(fixture()));
+    raw.schemaVersion = 9;
+    const result = parseObject(raw);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(10);
+    expect(replaceData(result.file)).toEqual(fixture());
+    expect(result.file.teams.every((t) => !('captainId' in t))).toBe(true);
+  });
+
+  it.each([
+    ['a player of another team', 'p4'],
+    ['an unknown player', 'nobody'],
+  ])('drops a captain who is %s and keeps everything else', (_label, captainId) => {
+    const raw = JSON.parse(exportText(v10()));
+    raw.teams[0].captainId = captainId;
+    const result = parseObject(raw);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const expected = v10();
+    const { captainId: _dropped, ...t1 } = expected.teams[0];
+    expect(replaceData(result.file)).toEqual({ ...expected, teams: [t1, expected.teams[1]] });
+  });
+
+  it.each([
+    ['empty', ''],
+    ['a number', 7],
+  ])('rejects a captain id that is %s as INVALID_SHAPE', (_label, captainId) => {
+    const raw = JSON.parse(exportText(v10()));
+    raw.teams[0].captainId = captainId;
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it('isConsistent requires the captain to be a player of that team', () => {
+    expect(isConsistent(v10())).toBe(true);
+    const data = v10();
+    data.teams[0] = { ...data.teams[0], captainId: 'p4' };
+    expect(isConsistent(data)).toBe(false);
+  });
+
+  it('merge: the incoming team’s captain wins, also when it has none', () => {
+    const existing = v10();
+    const incoming = fixture(); // no captains
+    incoming.teams[0] = { ...incoming.teams[0], captainId: 'p2' };
+    const result = mergeData(existing, buildExport({ ...incoming, teams: [incoming.teams[0]] }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // t1 from the file (new captain p2); t2 is not in the file and keeps p4
+    expect(result.data.teams.map((t) => t.captainId)).toEqual(['p2', 'p4']);
+    const cleared = mergeData(existing, buildExport(fixture()));
+    expect(cleared.ok && cleared.data.teams.map((t) => t.captainId)).toEqual([
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it('merge refuses a captain who would end up in another team', () => {
+    // nothing else of t2 refers to p4, so only the captain stands in the way
+    const existing = { ...v10(), presets: v10().presets.filter((p) => p.id !== 'ps3') };
+    // the file moves p4 (t2's captain) into t1, without t2
+    const incoming: TransferData = {
+      ...fixture(),
+      teams: [fixture().teams[0]],
+      players: [player('p4', 't1', 44)],
+      matches: [],
+      presets: [],
+      seasons: [],
+      opponents: [],
+    };
+    expect(mergeData(existing, incoming)).toEqual({ ok: false, error: 'MERGE_CONFLICT' });
+    const noCaptain = { ...existing, teams: [existing.teams[0], fixture().teams[1]] };
+    expect(mergeData(noCaptain, incoming).ok).toBe(true);
   });
 });

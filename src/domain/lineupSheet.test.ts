@@ -28,6 +28,7 @@ const labels: LineupSheetLabels = {
   liberoReplaces: (numbers) => `Libero replaces ${numbers}`,
   liberoOff: 'Libero off',
   offPositionNote: '* = plays a role that is none of their positions',
+  captainMark: '(C)',
   serveFirst: 'First serve:',
   weServe: 'We serve',
   weReceive: 'We receive',
@@ -570,5 +571,25 @@ describe('formation roles on empty spots (v6)', () => {
       expect(cellOf(set, pos)).toContain('<span class="empty">—</span>');
     }
     expect(out).not.toContain('class="off-note"');
+  });
+});
+
+describe('team captain (v9.1)', () => {
+  it('marks the captain "(C)" after the name on court and in the roster', () => {
+    const out = buildLineupSheetHtml({ match, team: { ...team, captainId: 'c' }, players, labels });
+    expect(cellOf(sectionOf(out, 1), 3)).toContain('<span class="name">Cleo Middle (C)</span>');
+    expect(cellOf(sectionOf(out, 1), 2)).toContain('<span class="name">Bea Outside</span>');
+    const roster = out.slice(out.indexOf('<table class="roster">'));
+    expect(roster).toContain('<td class="n">3</td><td>Cleo Middle (C)</td>');
+    expect(out.match(/\(C\)/g)).toHaveLength(4); // 3 sets + roster
+  });
+
+  it('marks a captain who is the libero', () => {
+    const out = buildLineupSheetHtml({ match, team: { ...team, captainId: 'g' }, players, labels });
+    expect(sectionOf(out, 2)).toContain('<span class="name">Gina Libero (C)</span>');
+  });
+
+  it('marks nobody without a captain', () => {
+    expect(buildLineupSheetHtml({ match, team, players, labels })).not.toContain('(C)');
   });
 });

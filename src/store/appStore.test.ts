@@ -150,6 +150,51 @@ describe('players', () => {
   });
 });
 
+describe('team captain (v12)', () => {
+  const captainOf = (teamId: string) => store().teams.find((t) => t.id === teamId)?.captainId;
+
+  it('sets, moves and clears the captain', () => {
+    const { team, p1, p2 } = seed();
+    expect(captainOf(team.id)).toBeUndefined();
+    store().setCaptain(team.id, p1.id, true);
+    expect(captainOf(team.id)).toBe(p1.id);
+    store().setCaptain(team.id, p2.id, true); // p1 loses it
+    expect(captainOf(team.id)).toBe(p2.id);
+    store().setCaptain(team.id, p1.id, false); // not the captain: nothing changes
+    expect(captainOf(team.id)).toBe(p2.id);
+    store().setCaptain(team.id, p2.id, false);
+    expect(store().teams[0]).not.toHaveProperty('captainId');
+  });
+
+  it('only a player of that team can be its captain', () => {
+    const { team, profile, p1 } = seed();
+    const other = store().addTeam({ profileId: profile.id, name: 'Damen' });
+    store().setCaptain(other.id, p1.id, true);
+    store().setCaptain(team.id, 'nope', true);
+    expect(captainOf(other.id)).toBeUndefined();
+    expect(captainOf(team.id)).toBeUndefined();
+  });
+
+  it('deleting the captain clears it; deleting another player keeps it; the export imports', () => {
+    const { team, p1, p2 } = seed();
+    store().setCaptain(team.id, p1.id, true);
+    store().deletePlayer(p2.id);
+    expect(captainOf(team.id)).toBe(p1.id);
+    store().deletePlayer(p1.id);
+    expect(store().teams[0]).not.toHaveProperty('captainId');
+    const text = JSON.stringify(buildExport(withPhotos(selectAppData(store()))));
+    expect(parseImport(text).ok).toBe(true);
+  });
+
+  it('deleting the team takes its captain with it', () => {
+    const { team, p1 } = seed();
+    store().setCaptain(team.id, p1.id, true);
+    store().deleteTeam(team.id);
+    expect(store().teams).toEqual([]);
+    expect(store().players).toEqual([]);
+  });
+});
+
 describe('matches', () => {
   it('creates a match with set 1 by default', () => {
     const { match } = seed();
@@ -540,7 +585,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(11); // v9.0: tour settings
+    expect(STORE_VERSION).toBe(12); // v9.1: team captain (no data change)
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -576,6 +621,24 @@ describe('migrations', () => {
     const v11 = { ...v10, tourMode: 'quick', tourSeen: ['profiles'] };
     expect(migrateStore(v11, 10)).toEqual(v11);
     expect(migrateStore(null, 10)).toBeNull();
+  });
+
+  it('migrates v11 data (v9.0 app): the captain is optional, nothing changes', () => {
+    const v11 = {
+      teams: [{ id: 't1', profileId: 'p', name: 'Herren', createdAt: '2026-01-01' }],
+      players: [],
+      matches: [],
+      seasons: [],
+      opponents: [],
+      language: 'de',
+      chipLabel: 'name',
+      themeMode: 'light',
+      dyslexiaFont: true,
+      tourMode: 'quick',
+      tourSeen: ['profiles'],
+    };
+    expect(migrateStore(v11, 11)).toEqual(v11);
+    expect(migrateStore(null, 11)).toBeNull();
   });
 
   it('migrates old data (v1) through to v11 with the tour not chosen', () => {

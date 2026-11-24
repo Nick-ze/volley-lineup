@@ -10,6 +10,7 @@
  * (`exportUpgrades.ts`), the consistency checks (`exportConsistency.ts`) and replace / merge
  * (`exportMerge.ts`). Those modules import each other directly, never this barrel.
  */
+import { withValidCaptain } from './captain';
 import { pad2 } from './dates';
 import { isConsistent } from './exportConsistency';
 import {
@@ -171,9 +172,11 @@ export function parseImport(jsonText: string): ParseImportResult {
   const parsed = exportFileSchema.safeParse(upgradeToCurrent(raw));
   if (!parsed.success) return { ok: false, error: 'INVALID_SHAPE' };
   // The store keeps sets ordered by set number; do the same for imported files. Photos no
-  // profile, player or (v9) team refers to are dropped (v7).
+  // profile, player or (v9) team refers to are dropped (v7). v10: a captain who isn't a player of
+  // that team is dropped (only the captain mark; the team and its players import as they are).
   const file: ExportFile = {
     ...parsed.data,
+    teams: parsed.data.teams.map((team) => withValidCaptain(team, parsed.data.players)),
     matches: parsed.data.matches.map((m) => ({
       ...m,
       sets: [...m.sets].sort((a, b) => a.setNumber - b.setNumber),

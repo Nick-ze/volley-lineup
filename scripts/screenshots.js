@@ -95,7 +95,7 @@ function storage(variant) {
     tourSeen: [],
     ...variant,
   };
-  const items = { 'volley-lineup': JSON.stringify({ state, version: 11 }) };
+  const items = { 'volley-lineup': JSON.stringify({ state, version: 12 }) };
   for (const photo of DATA.photos) items[`volley-lineup-photo:${photo.id}`] = photo.dataUri;
   return items;
 }

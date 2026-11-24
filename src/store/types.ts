@@ -82,7 +82,13 @@ export interface AppActions {
   // players
   addPlayer(input: NewPlayer): Player;
   updatePlayer(id: string, patch: Partial<Omit<Player, 'id' | 'teamId'>>): void;
+  /** Deletes the player everywhere (v12: a captain leaves the team without one). */
   deletePlayer(id: string): void;
+  /**
+   * v12 (app 9.1): the player form's "Team captain" switch: on makes the player the team's captain
+   * (replacing the previous one); off clears it when this player was the captain.
+   */
+  setCaptain(teamId: string, playerId: string, on: boolean): void;
   // matches
   addMatch(input: NewMatch): Match;
   updateMatch(id: string, patch: Partial<Omit<Match, 'id' | 'teamId'>>): void;

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { chooseCaptain } from '@/domain/captain';
 import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
@@ -110,6 +111,10 @@ export const useAppStore = create<AppStore>()(
           const player = s.players.find((p) => p.id === id);
           return {
             players: s.players.filter((p) => p.id !== id),
+            // A deleted captain leaves the team without one.
+            teams: player
+              ? s.teams.map((t) => (t.id === player.teamId ? chooseCaptain(t, id, false) : t))
+              : s.teams,
             matches: player
               ? s.matches.map((m) =>
                   m.teamId === player.teamId ? removePlayerFromMatch(m, id) : m,
@@ -119,6 +124,13 @@ export const useAppStore = create<AppStore>()(
             presets: s.presets.map((p) => removePlayerFromPreset(p, id)),
           };
         }),
+      setCaptain: (teamId, playerId, on) =>
+        set((s) =>
+          // Only a player of that team can be its captain.
+          s.players.some((p) => p.id === playerId && p.teamId === teamId)
+            ? { teams: s.teams.map((t) => (t.id === teamId ? chooseCaptain(t, playerId, on) : t)) }
+            : {},
+        ),
 
       addMatch: (input) => {
         const { sets, ...rest } = input;
