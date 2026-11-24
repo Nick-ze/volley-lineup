@@ -10,7 +10,7 @@ Available in English and German.
 
 ## What you can do
 
-- **Teams and players**: keep your roster with jersey numbers, positions, photos and an injured flag.
+- **Teams and players**: keep your roster with jersey numbers, positions, photos, an injured flag and the team captain.
 - **Lineups**: drag players from the bench onto the court (or tap a player, then a spot) for every set. 5-1 and 6-2
   formations, libero, team starters and saved lineups ("presets") make it quick.
 - **Rotations**: step through all six rotations and see who serves and who is in the front row.
@@ -23,8 +23,8 @@ Available in English and German.
 - **Guided tour**: short tips with pictures show you around; choose the full or quick tour, or none.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 9.0**: a guided tour. On first start choose a full tour, a quick tour (from your profile to your first
-match) or none; short popups show what to tap. Change your mind any time in Profile → Tutorial.
+**What's new in 9.1**: mark your team captain (player form → "Team captain"); a small yellow "C" shows on their
+player everywhere. 9.0 added a guided tour (Profile → Tutorial).
 [All versions →](docs/README_LEGACY.md#version-history)
 
 ## Install on Android (APK)

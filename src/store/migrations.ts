@@ -22,6 +22,8 @@
  * `dyslexiaFont: false`; teams may have a `photoId` (optional, no data change).
  * v10 → v11 (app 9.0): device settings `tourMode: null` (the app asks once which tour to show)
  * and `tourSeen: []`.
+ * v11 → v12 (app 9.1): teams may have a `captainId` (the team captain) — optional, so no data
+ * changes.
  */
 import {
   addRoleDefaults,
@@ -33,7 +35,7 @@ import {
 } from '@/domain/legacyData';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
-export const STORE_VERSION = 11;
+export const STORE_VERSION = 12;
 
 function v1ToV2(state: Rec): Rec {
   return { language: 'en', ...state, matches: mapSets(state.matches, addSetLogDefaults) };
@@ -64,5 +66,6 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   if (fromVersion < 10 && isRec(state))
     state = { themeMode: 'dark', dyslexiaFont: false, ...state };
   if (fromVersion < 11 && isRec(state)) state = { tourMode: null, tourSeen: [], ...state };
+  // v11 → v12: `Team.captainId` is optional, so nothing changes.
   return state;
 }

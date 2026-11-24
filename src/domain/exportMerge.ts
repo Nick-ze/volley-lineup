@@ -3,11 +3,12 @@
  *
  * Sub-module of the `exportSchema.ts` barrel: import siblings directly, never the barrel.
  */
+import { withValidCaptain } from './captain';
 import { isConsistent } from './exportConsistency';
 import type { TransferData } from './exportFormat';
 import { keepReferencedPhotos } from './photos';
 import { alignIncomingByName } from './seasonMerge';
-import type { Player } from './types';
+import type { Player, Team } from './types';
 
 /** Replace: the imported data becomes the whole app data. */
 export function replaceData(incoming: TransferData): TransferData {
@@ -50,6 +51,11 @@ export type MergeResult = { ok: true; data: TransferData } | { ok: false; error:
  * file exported without descriptions, or from before v6) keeps the existing description; when
  * the file has one, it wins. Photos are merged by id; orphans are dropped.
  *
+ * v10: an incoming team's captain wins. An incoming team without a captain (e.g. a file from
+ * before v10) keeps the existing team's captain. Afterwards every team's captain must still be a
+ * player of that team (the file may have moved them to another team); otherwise it is cleared, so
+ * a captain never makes a merge fail.
+ *
  * If the combined data would be inconsistent (e.g. two different players with the same jersey
  * number in one team, an id that belongs to a different team in each data set, or two presets
  * of a team with the same name) the merge is refused with `MERGE_CONFLICT` (the user can choose
@@ -68,10 +74,6 @@ export function mergeData(existing: TransferData, file: TransferData): MergeResu
   const oldProfiles = new Map(existing.profiles.map((p) => [p.id, p]));
   const oldPlayers = new Map(existing.players.map((p) => [p.id, p]));
   const oldTeams = new Map(existing.teams.map((t) => [t.id, t]));
-  const teams = mergeById(
-    existing.teams,
-    incoming.teams.map((t) => keepPhoto(t, oldTeams.get(t.id))),
-  );
   const profiles = mergeById(
     existing.profiles,
     incoming.profiles.map((p) => keepPhoto(p, oldProfiles.get(p.id))),
@@ -82,6 +84,12 @@ export function mergeData(existing: TransferData, file: TransferData): MergeResu
       keepDescription(keepPhoto(p, oldPlayers.get(p.id)), oldPlayers.get(p.id)),
     ),
   );
+  // v10: a captain who is no longer a player of their team after the merge (e.g. the file moved
+  // them to another team) is cleared, so a captain never makes a merge fail.
+  const teams = mergeById(
+    existing.teams,
+    incoming.teams.map((t) => keepCaptain(keepPhoto(t, oldTeams.get(t.id)), oldTeams.get(t.id))),
+  ).map((t) => withValidCaptain(t, players));
   const data: TransferData = {
     profiles,
     teams,
@@ -103,6 +111,16 @@ export function mergeData(existing: TransferData, file: TransferData): MergeResu
 function keepPhoto<T extends { photoId?: string }>(incoming: T, old: T | undefined): T {
   return incoming.photoId === undefined && old?.photoId !== undefined
     ? { ...incoming, photoId: old.photoId }
+    : incoming;
+}
+
+/**
+ * v10 merge: the incoming team, keeping the existing captain when the incoming team has none
+ * (checked against the merged players afterwards, like every merged team's captain).
+ */
+function keepCaptain(incoming: Team, old: Team | undefined): Team {
+  return incoming.captainId === undefined && old?.captainId !== undefined
+    ? { ...incoming, captainId: old.captainId }
     : incoming;
 }
 

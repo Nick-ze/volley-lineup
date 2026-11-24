@@ -6,6 +6,7 @@
  * v4: every spot shows its role (e.g. "S", "OPP"; v6: from the set's formation, also on an empty
  * spot; "*" when it is none of the player's positions, explained in a note under the sets), and a
  * switched-off libero says so.
+ * v9.1: the team captain gets "(C)" after the name, on court, as libero and in the roster.
  *
  * Pure: no React, no i18n import. Translated labels come in through `labels`, and every piece of
  * user text (names, team, opponent, season, labels) is HTML-escaped.
@@ -49,6 +50,8 @@ export interface LineupSheetLabels {
   liberoOff: string;
   /** v4: explains the "*" next to a role; shown under the sets when any spot has one. */
   offPositionNote: string;
+  /** v9.1: after the team captain's name, e.g. "(C)". */
+  captainMark: string;
   serveFirst: string;
   weServe: string;
   weReceive: string;
@@ -79,12 +82,26 @@ export interface LineupSheetInput {
   withResults?: boolean;
 }
 
-function playerCell(player: Player | undefined, id: string | null, labels: LineupSheetLabels) {
+/** What the sheet needs besides the set: the players by id, the labels and the captain. */
+interface SheetContext {
+  byId: Map<string, Player>;
+  labels: LineupSheetLabels;
+  captainId: string | undefined;
+}
+
+/** The player's full name, with the captain mark for the team captain (v9.1). */
+function nameText(player: Player, ctx: SheetContext): string {
+  const name = fullName(player);
+  return player.id === ctx.captainId ? `${name} ${ctx.labels.captainMark}` : name;
+}
+
+function playerCell(player: Player | undefined, id: string | null, ctx: SheetContext) {
+  const { labels } = ctx;
   if (!id) return `<span class="empty">${escapeHtml(labels.emptySlot)}</span>`;
   if (!player) return `<span class="empty">${escapeHtml(labels.unknownPlayer)}</span>`;
   return (
     `<span class="num">${player.number}</span>` +
-    `<span class="name">${escapeHtml(fullName(player))}</span>`
+    `<span class="name">${escapeHtml(nameText(player, ctx))}</span>`
   );
 }
 
@@ -103,7 +120,8 @@ function hasOffPosition(set: SetLineup, byId: Map<string, Player>): boolean {
   });
 }
 
-function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupSheetLabels): string {
+function renderSet(set: SetLineup, ctx: SheetContext): string {
+  const { byId, labels } = ctx;
   const rows = COURT_ROWS.map((row) => {
     const cells = row.map((pos) => {
       const id = set.slots[pos];
@@ -114,14 +132,14 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
         `<td class="cell${serving ? ' serving' : ''}" data-position="${pos}">` +
         `<span class="pos">${roleTag(set, pos, player)}` +
         `${escapeHtml(labels.positionShort(pos))}${tag}</span>` +
-        `${playerCell(player, id, labels)}</td>`
+        `${playerCell(player, id, ctx)}</td>`
       );
     });
     return `<tr>${cells.join('')}</tr>`;
   }).join('');
 
   const libero = set.liberoId
-    ? playerCell(byId.get(set.liberoId), set.liberoId, labels)
+    ? playerCell(byId.get(set.liberoId), set.liberoId, ctx)
     : `<span class="empty">${escapeHtml(labels.noLibero)}</span>`;
   const serve = set.weServeFirst ? labels.weServe : labels.weReceive;
   const replaced = set.liberoReplaces
@@ -148,12 +166,13 @@ function renderSet(set: SetLineup, byId: Map<string, Player>, labels: LineupShee
   );
 }
 
-function renderRoster(players: Player[], labels: LineupSheetLabels): string {
+function renderRoster(players: Player[], ctx: SheetContext): string {
+  const { labels } = ctx;
   if (players.length === 0) return `<p class="empty">${escapeHtml(labels.noPlayers)}</p>`;
   const body = players
     .map(
       (p) =>
-        `<tr><td class="n">${p.number}</td><td>${escapeHtml(fullName(p))}</td>` +
+        `<tr><td class="n">${p.number}</td><td>${escapeHtml(nameText(p, ctx))}</td>` +
         `<td>${escapeHtml(p.positions.join(', '))}</td>` +
         `<td>${p.active ? '' : escapeHtml(labels.inactive)}</td></tr>`,
     )
@@ -169,6 +188,7 @@ function renderRoster(players: Player[], labels: LineupSheetLabels): string {
 export function buildLineupSheetHtml(input: LineupSheetInput): string {
   const { match, team, labels } = input;
   const byId = new Map(input.players.map((p) => [p.id, p]));
+  const ctx: SheetContext = { byId, labels, captainId: team.captainId };
   const roster = input.players
     .filter((p) => p.teamId === team.id)
     .sort((a, b) => a.number - b.number);
@@ -195,7 +215,7 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
     : '';
   const setsHtml =
     sets.length > 0
-      ? `<div class="sets">${sets.map((s) => renderSet(s, byId, labels)).join('')}</div>`
+      ? `<div class="sets">${sets.map((s) => renderSet(s, ctx)).join('')}</div>`
       : `<p class="empty">${escapeHtml(labels.noSets)}</p>`;
 
   return (
@@ -205,6 +225,6 @@ export function buildLineupSheetHtml(input: LineupSheetInput): string {
     `<header><h1>${escapeHtml(team.name)}</h1><dl class="meta">${metaHtml}</dl></header>` +
     `<main>${resultsHtml}${setsHtml}<section class="roster-section">${offNote}` +
     `<h2>${escapeHtml(labels.roster)}</h2>` +
-    `${renderRoster(roster, labels)}</section></main></body></html>`
+    `${renderRoster(roster, ctx)}</section></main></body></html>`
   );
 }

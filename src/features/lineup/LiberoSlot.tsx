@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { fullName } from '@/domain/playerNames';
 import { useT } from '@/i18n';
+import { useIsCaptain } from '@/store';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { COMPACT_CHIP_SIZE, EMPTY_SLOT_SIZE, LIBERO_BOX_MIN_WIDTH } from './constants';
@@ -22,6 +23,7 @@ export function LiberoSlot({
   const { set, selectedId, playerById, pressPlayer, pressTarget, validation } = editor;
   const { onRef: zoneRef, style: zoneStyle } = useDropZone({ kind: 'libero' });
   const libero = playerById(set.liberoId);
+  const captain = useIsCaptain(libero);
   const hasError = validation.errors.some((e) => e.code === 'LIBERO_ON_COURT');
 
   return (
@@ -39,7 +41,9 @@ export function LiberoSlot({
           selected={selectedId === libero.id}
           onPress={() => pressPlayer(libero.id)}
           size={compact ? COMPACT_CHIP_SIZE : undefined}
-          accessibilityLabel={t.lineup.liberoSlotLabel(`${libero.number} ${fullName(libero)}`)}
+          accessibilityLabel={t.lineup.liberoSlotLabel(
+            t.player.withCaptain(`${libero.number} ${fullName(libero)}`, captain),
+          )}
           testID="libero-player"
         />
       ) : (

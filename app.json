@@ -2,7 +2,7 @@
   "expo": {
     "name": "Volley Lineup",
     "slug": "volley-lineup",
-    "version": "9.0.0",
+    "version": "9.1.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "volleylineup",

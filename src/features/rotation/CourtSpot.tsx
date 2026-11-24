@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { PlayerChip } from '@/components';
 import type { CourtPosition, Player, Position } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
+import { useIsCaptain } from '@/store';
 import { makeStyles, typography } from '@/theme';
 
 import { CHIP_SIZE, COMPACT_CHIP_SIZE } from './layout';
@@ -41,12 +42,18 @@ export function CourtSpot({
   const size = compact ? COMPACT_CHIP_SIZE : CHIP_SIZE;
   const testID = `spot-${position}`;
   const shownRole = liberoFor ? 'L' : role;
+  const captain = useIsCaptain(player);
 
   let content;
   if (player) {
     const name = `${player.firstName} ${player.lastName}`.trim();
     const primary = player.positions[0];
-    const chip = t.player.chipLabel(player.number, name, primary ? t.positions[primary] : '');
+    const chip = t.player.chipLabel(
+      player.number,
+      name,
+      primary ? t.positions[primary] : '',
+      captain,
+    );
     const desc = liberoFor
       ? t.rotation.liberoForLabel(chip, describe(t, liberoFor.replaced))
       : role

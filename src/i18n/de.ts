@@ -81,9 +81,12 @@ export const de: Strings = {
     server: 'Aufschläger',
   },
   player: {
-    chipLabel: (number: number, name: string, position: string) =>
-      `Nummer ${number}, ${name}, ${position}`,
+    chipLabel: (number: number, name: string, position: string, captain = false) =>
+      `Nummer ${number}, ${name}, ${captain ? 'Kapitän, ' : ''}${position}`,
     numberTag: (number: number) => `#${number}`,
+    captainLetter: 'C',
+    captain: 'Kapitän',
+    withCaptain: (who: string, captain: boolean) => (captain ? `${who}, Kapitän` : who),
   },
   roster,
   lineup,

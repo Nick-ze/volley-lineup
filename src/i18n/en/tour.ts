@@ -118,7 +118,7 @@ export const tour = {
       },
       positions: {
         title: 'Positions',
-        text: 'Pick the positions the player plays. The first one is the main position. Then save.',
+        text: 'Pick the positions the player plays. The first one is the main position. Turn on Team captain for your captain. Then save.',
       },
     },
     matches: {

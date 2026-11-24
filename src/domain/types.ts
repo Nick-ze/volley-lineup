@@ -8,7 +8,8 @@
  * v7 / app 6.0: photos for profiles and players, confidential player descriptions, an optional
  * error type on "our error" tags, schemaVersion 7 — PLAN §26;
  * v8 / app 7.0: seasons / tournaments with their opponent teams; every match belongs to one,
- * schemaVersion 8 — PLAN §29).
+ * schemaVersion 8 — PLAN §29;
+ * v9.1: an optional team captain (`Team.captainId`), schemaVersion 10).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -55,6 +56,8 @@ export interface Team {
   createdAt: string;
   /** v9 (app 8.0): the team's picture (`Photo.id`); none = the team's initial. */
   photoId?: string;
+  /** v10 (app 9.1): the team captain, a player of this team (`Player.id`); none by default. */
+  captainId?: string;
 }
 
 /** v8: a season (league) or a tournament of a team. Every match belongs to one. */
@@ -194,7 +197,7 @@ export interface LineupPreset {
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 9;
+  schemaVersion: 10;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];

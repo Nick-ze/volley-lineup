@@ -6,7 +6,6 @@ import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
-import { playerDescription } from './format';
 import { BENCH_CHIP_SIZE, BENCH_ITEM_MAX_WIDTH } from './layout';
 
 export interface SubPanelProps {
@@ -84,7 +83,6 @@ export function SubPanel({
                 size={BENCH_CHIP_SIZE}
                 showPhoto
                 onPress={outRef ? () => onPickIn(p.id) : undefined}
-                accessibilityLabel={playerDescription(t, p)}
                 accessibilityHint={outRef ? t.live.benchPlayerHint(outRef, warning) : undefined}
                 testID={`live-bench-${p.number}`}
               />

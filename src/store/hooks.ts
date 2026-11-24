@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 
+import { isCaptain } from '@/domain/captain';
 import { shortName } from '@/domain/playerNames';
 import type { LineupPreset, Match, Opponent, Player, Season, Team } from '@/domain/types';
 
@@ -75,3 +76,18 @@ export const useOpponentsForSeason = (seasonId: string | null | undefined): Oppo
 /** v9: a season's matches, newest first. */
 export const useMatchesForSeason = (seasonId: string | null | undefined): Match[] =>
   useAppStore(useShallow((s) => (seasonId ? selectMatchesForSeason(s, seasonId) : [])));
+
+/** v9.1: the team's captain (a player id), or undefined when the team has none. */
+export const useCaptainId = (teamId: string | null | undefined): string | undefined =>
+  useAppStore((s) => (teamId ? s.teams.find((t) => t.id === teamId)?.captainId : undefined));
+
+/** v9.1: true when the player is their team's captain. */
+export const useIsCaptain = (player: Pick<Player, 'id' | 'teamId'> | undefined): boolean =>
+  useAppStore((s) =>
+    player
+      ? isCaptain(
+          s.teams.find((t) => t.id === player.teamId),
+          player.id,
+        )
+      : false,
+  );

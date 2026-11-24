@@ -2,6 +2,7 @@ export * from './Button';
 export * from './Dialog';
 export * from './Court';
 export * from './PlayerChip';
+export * from './CaptainBadge';
 export * from './PositionBadge';
 export * from './Screen';
 export * from './ScreenTitle';

@@ -12,10 +12,18 @@ export function playerRef(t: Strings, playersById: Map<string, Player>, id: stri
   return t.live.playerRef(p.number, shortName(p, [...playersById.values()]));
 }
 
-/** Full chip description for screen readers ("Number 8, Anna Smith, Outside Hitter"). */
-export function playerDescription(t: Strings, p: Player): string {
+/**
+ * Full chip description for screen readers ("Number 8, Anna Smith, Outside Hitter"; v9.1:
+ * "Number 8, Anna Smith, captain, Outside Hitter" when `captainId` is theirs).
+ */
+export function playerDescription(t: Strings, p: Player, captainId?: string): string {
   const primary = p.positions[0];
-  return t.player.chipLabel(p.number, fullName(p), primary ? t.positions[primary] : '');
+  return t.player.chipLabel(
+    p.number,
+    fullName(p),
+    primary ? t.positions[primary] : '',
+    p.id === captainId,
+  );
 }
 
 /**

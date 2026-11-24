@@ -1,19 +1,24 @@
 import { Text, View } from 'react-native';
 
 import { fullName } from '@/domain/playerNames';
-import { Button, Photo, PositionBadge } from '@/components';
+import { Button, CaptainBadge, CAPTAIN_BADGE_MIN_SIZE, Photo, PositionBadge } from '@/components';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
+import { useIsCaptain } from '@/store';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
 /** Diameter of the header picture / number circle. */
 const HEADER_PHOTO_SIZE = 72;
 
-/** Photo (or jersey number), name, number, positions, status and the Edit button. */
+/**
+ * Photo (or jersey number), name, number, positions (v9.1: and "Captain" for the team captain),
+ * status and the Edit button.
+ */
 export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () => void }) {
   const styles = useStyles();
   const t = useT();
   const name = fullName(player);
+  const captain = useIsCaptain(player);
   const status = player.active ? t.roster.roster.active : t.roster.roster.inactive;
   const positions = player.positions.map((p) => t.positions[p]).join(t.playerDetail.listSeparator);
   return (
@@ -21,7 +26,13 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () =>
       <View
         style={styles.main}
         accessible
-        accessibilityLabel={t.playerDetail.headerLabel(player.number, name, positions, status)}
+        accessibilityLabel={t.playerDetail.headerLabel(
+          player.number,
+          name,
+          positions,
+          status,
+          captain,
+        )}
         testID="player-header"
       >
         <Photo
@@ -46,6 +57,12 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () =>
             {player.positions.map((p) => (
               <PositionBadge key={p} position={p} />
             ))}
+            {captain ? (
+              <View style={styles.captain} testID="player-captain">
+                <CaptainBadge size={CAPTAIN_BADGE_MIN_SIZE} />
+                <Text style={styles.captainText}>{t.playerDetail.captain}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -78,5 +95,7 @@ const useStyles = makeStyles((theme) => ({
   meta: { ...typography.body, color: theme.colors.textMuted },
   active: { color: theme.colors.textMuted },
   injured: { color: theme.colors.error },
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs },
+  captain: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
+  captainText: { ...typography.label, color: theme.colors.text },
 }));

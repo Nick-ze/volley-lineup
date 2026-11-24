@@ -6,6 +6,7 @@ import { isOffPosition } from '@/domain/roles';
 import type { Player, PlayerRoles } from '@/domain/types';
 import { ChipWithBadge, RoleRow, SpotNumber } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
+import { useCaptainId } from '@/store';
 import { makeStyles, spacing, typography } from '@/theme';
 
 import { playerDescription, playerRef } from './format';
@@ -15,6 +16,8 @@ export interface LiveCourtProps {
   /** Court as shown (libero swap applied) and where the libero stands in. */
   view: LiveCourtView;
   playersById: Map<string, Player>;
+  /** v9.1: the match's team, whose captain the labels name. */
+  teamId: string;
   /** Roles of the players on court now (`LiveState.roles`: substitutes inherit the role). */
   roles: Readonly<PlayerRoles>;
   serverId: string | null;
@@ -33,6 +36,7 @@ export interface LiveCourtProps {
 export function LiveCourt({
   view,
   playersById,
+  teamId,
   roles,
   serverId,
   selectedId,
@@ -41,6 +45,8 @@ export function LiveCourt({
 }: LiveCourtProps) {
   const styles = useStyles();
   const t = useT();
+  // v9.1: the team captain is named in the labels.
+  const captainId = useCaptainId(teamId);
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
     isFrontRow ? styles.front : styles.back,
     styles.slot,
@@ -67,12 +73,12 @@ export function LiveCourt({
         const desc = player
           ? replacedId
             ? t.rotation.liberoForLabel(
-                playerDescription(t, player),
+                playerDescription(t, player, captainId),
                 playerRef(t, playersById, replacedId),
               )
             : role
-              ? `${playerDescription(t, player)}, ${t.roles.spotRole(t.positions[role], off)}`
-              : playerDescription(t, player)
+              ? `${playerDescription(t, player, captainId)}, ${t.roles.spotRole(t.positions[role], off)}`
+              : playerDescription(t, player, captainId)
           : '';
         return (
           <>

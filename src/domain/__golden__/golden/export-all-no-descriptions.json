@@ -1,6 +1,6 @@
 {
   "app": "volley-lineup",
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "exportedAt": "2026-11-23T12:00:00.000Z",
   "profiles": [
     {
@@ -24,7 +24,8 @@
       "name": "Herren 1 – Süd",
       "season": "2026/27",
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "photoId": "ph3"
+      "photoId": "ph3",
+      "captainId": "p3"
     },
     {
       "id": "t2",

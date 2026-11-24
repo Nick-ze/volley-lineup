@@ -31,7 +31,8 @@ const hasDuplicates = (values: readonly (string | number)[]): boolean =>
  *   type only on an "our error" tag (`isValidPointTag`);
  * - v8: every season's team exists, every opponent's season exists, and every match is in a
  *   season of its own team and plays an opponent of that season; season names are unique
- *   within a team and opponent names within a season (ignoring case and accents).
+ *   within a team and opponent names within a season (ignoring case and accents);
+ * - v10: a team's captain is a player of that team.
  */
 export function isConsistent(data: TransferData): boolean {
   const { profiles, teams, players, matches, presets, photos, seasons, opponents } = data;
@@ -58,6 +59,9 @@ export function isConsistent(data: TransferData): boolean {
   }
 
   const teamOfPlayer = new Map(players.map((p) => [p.id, p.teamId]));
+  const captainOk = (t: (typeof teams)[number]) =>
+    t.captainId === undefined || teamOfPlayer.get(t.captainId) === t.id;
+  if (!teams.every(captainOk)) return false;
   for (const teamId of teamIds) {
     const numbers = players.filter((p) => p.teamId === teamId).map((p) => p.number);
     if (hasDuplicates(numbers)) return false;

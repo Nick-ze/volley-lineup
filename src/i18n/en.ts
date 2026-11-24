@@ -82,9 +82,15 @@ export const en = {
     server: 'Server',
   },
   player: {
-    chipLabel: (number: number, name: string, position: string) =>
-      `Number ${number}, ${name}, ${position}`,
+    /** v9.1: `captain` adds ", captain" after the name. */
+    chipLabel: (number: number, name: string, position: string, captain = false) =>
+      `Number ${number}, ${name}, ${captain ? 'captain, ' : ''}${position}`,
     numberTag: (number: number) => `#${number}`,
+    /** v9.1: the team captain — the letter in the yellow badge and the word in screen-reader labels. */
+    captainLetter: 'C',
+    captain: 'captain',
+    /** "7 Anna Müller" with ", captain" for the captain (lineup builder spot labels). */
+    withCaptain: (who: string, captain: boolean) => (captain ? `${who}, captain` : who),
   },
   roster,
   lineup,

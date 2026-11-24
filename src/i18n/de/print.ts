@@ -35,6 +35,7 @@ export const print: Strings['print'] = {
     liberoReplaces: (numbers: string) => `Libero ersetzt ${numbers}`,
     liberoOff: 'Libero aus',
     offPositionNote: '* = spielt eine Rolle außerhalb der eigenen Positionen',
+    captainMark: '(C)',
     serveFirst: 'Erster Aufschlag:',
     weServe: 'Wir',
     weReceive: 'Gegner',

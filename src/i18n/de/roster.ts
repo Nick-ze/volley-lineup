@@ -59,8 +59,14 @@ export const roster: Strings['roster'] = {
       active
         ? `Aktiv: ${name}. Als verletzt oder inaktiv markieren`
         : `Verletzt: ${name}. Als aktiv markieren`,
-    cardLabel: (name: string, number: number, positions: string, active: boolean) =>
-      `${name}, Nummer ${number}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', verletzt oder inaktiv'}. Details öffnen`,
+    cardLabel: (
+      name: string,
+      number: number,
+      positions: string,
+      active: boolean,
+      captain = false,
+    ) =>
+      `${name}, Nummer ${number}${captain ? ', Kapitän' : ''}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', verletzt oder inaktiv'}. Details öffnen`,
   },
   player: {
     addTitle: 'Spieler hinzufügen',
@@ -73,6 +79,8 @@ export const roster: Strings['roster'] = {
     primary: 'Haupt',
     makePrimary: (position: string) => `${position} zur Hauptposition machen`,
     activeLabel: 'Aktiv (nicht verletzt)',
+    captainLabel: 'Kapitän',
+    captainHint: 'Einer pro Team: Einschalten ersetzt den bisherigen Kapitän.',
     delete: 'Spieler löschen',
     notFound: 'Diesen Spieler gibt es nicht mehr.',
     deleteBlocked:

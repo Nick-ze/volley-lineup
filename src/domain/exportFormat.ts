@@ -25,9 +25,9 @@ import { isPhotoDataUri, isValidDescription } from './photos';
 import { ALL_POSITIONS, ERROR_TYPES, POINT_KINDS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 9 as const;
+export const EXPORT_SCHEMA_VERSION = 10 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 /**
  * The persisted collections. Derived from `ExportFile` (the domain layer can't import the
@@ -60,6 +60,8 @@ const teamSchema = z.object({
   season: z.string().optional(),
   createdAt: z.string(),
   photoId: id.optional(),
+  /** v10: the team captain (a player of this team). */
+  captainId: id.optional(),
 });
 
 const playerSchema = z.object({

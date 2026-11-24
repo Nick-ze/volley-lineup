@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { isCaptain } from '@/domain/captain';
 import {
   validatePlayerForm,
   type FormErrors,
@@ -26,28 +27,37 @@ const fromPlayer = (p: Player): PlayerFormInput => ({
   active: p.active,
 });
 
-/** Form state (incl. the unsaved picture) + validation + save for the player editor. */
+/**
+ * Form state (incl. the unsaved picture and, v9.1, the "Team captain" switch) + validation + save
+ * for the player editor.
+ */
 export function usePlayerForm(teamId: string, player: Player | undefined) {
   const [form, setForm] = useState<PlayerFormInput>(() =>
     player ? fromPlayer(player) : emptyForm,
   );
   const [errors, setErrors] = useState<FormErrors<PlayerFormField>>({});
   const [photo, setPhoto] = useState<PhotoDraft>(KEEP_PHOTO);
+  const [captain, setCaptain] = useState(() => {
+    const team = useAppStore.getState().teams.find((t) => t.id === teamId);
+    return player !== undefined && isCaptain(team, player.id);
+  });
 
   const set = <K extends PlayerFormField>(key: K, value: PlayerFormInput[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   /** Validates and saves. Returns true on success. */
   const save = (): boolean => {
-    const { players, addPlayer, updatePlayer } = useAppStore.getState();
+    const { players, addPlayer, updatePlayer, setCaptain: saveCaptain } = useAppStore.getState();
     const result = validatePlayerForm(form, { players, teamId, playerId: player?.id });
     setErrors(result.errors);
     if (!result.ok) return false;
     const id = player ? player.id : addPlayer({ teamId, ...result.value }).id;
     if (player) updatePlayer(id, result.value);
+    // On: this player becomes the captain (replacing the previous one); off: cleared if it was them.
+    saveCaptain(teamId, id, captain);
     void applyPhotoDraft(photo, (photoId) => updatePlayer(id, { photoId }));
     return true;
   };
 
-  return { form, set, errors, save, photo, setPhoto };
+  return { form, set, errors, save, photo, setPhoto, captain, setCaptain };
 }

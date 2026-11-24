@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { Player } from '@/domain/types';
 import { useT } from '@/i18n';
 import { fullName } from '@/domain/playerNames';
-import { useAppStore, usePhotoUri, useShortName } from '@/store';
+import { useAppStore, useIsCaptain, usePhotoUri, useShortName } from '@/store';
 import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import { PlayerChipFace } from './PlayerChipFace';
@@ -56,9 +56,15 @@ export function PlayerChip({
   // v8: first name first ("Anna"; "Anna M." when a teammate is also called Anna).
   const shortName = useShortName(player);
   const primary = player.positions[0];
+  const captain = useIsCaptain(player);
   const label =
     accessibilityLabel ??
-    t.player.chipLabel(player.number, fullName(player), primary ? t.positions[primary] : '');
+    t.player.chipLabel(
+      player.number,
+      fullName(player),
+      primary ? t.positions[primary] : '',
+      captain,
+    );
   const storedPhoto = usePhotoUri(player.photoId);
   const photoUri = showPhoto && showName ? storedPhoto : null;
   // v8.4: chips that show the number / name (the court) show the picture faded behind it.
@@ -82,6 +88,7 @@ export function PlayerChip({
         ringColor={ringColor}
         thickRing={selected || highlighted}
         lifted={lifted}
+        captain={captain}
         testID={testID}
       />
       {showName ? (
