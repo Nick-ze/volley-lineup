@@ -159,6 +159,12 @@ opened by an older app.
   a swipe, …), step dots, Back / Next and End tour.
 - **Profile → Tutorial**: choose again to restart, switch or end the tour.
 
+### v9.1: team captain (store 12, export schema 10)
+
+- **Captain**: one per team, set with the "Team captain" switch in the player form. A small yellow circle with a "C"
+  at the top right of the captain's chip (court, bench, rotation, live, starters, presets) and roster card; "Captain" on
+  the player page; "(C)" on the print sheet.
+
 ---
 
 ## Reference

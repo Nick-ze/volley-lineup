@@ -658,3 +658,18 @@ ends the tour. Data: store v11 adds the device settings `tourMode` and `tourSeen
 - [x] Profile → Tutorial → Choose again: restart, switch or end; Cancel keeps.
 - [x] Store v10 → v11 migration; export unchanged (golden test); Delete all data keeps the tour setting.
 - [x] Lint, typecheck and tests pass; src/domain at 100 %; every other screen unchanged in the screenshot compare (only Profile has the new section).
+
+## 40. v9.1 — Team captain
+
+Owner request: mark the team captain with a small "C" in a small yellow circle at the top right of the player. One
+captain per team (`Team.captainId`), set in the player form; shown on every player chip (court, bench, libero, rotation,
+live, starters, presets) and on the roster cards; "Captain" on the player page; "(C)" on the print sheet. Store v12,
+export `schemaVersion` 10. Details: DECISIONS #248–250.
+
+## 41. v9.1 acceptance checklist
+
+- [x] The player form has a "Team captain" switch; turning it on moves the captain, off clears it; Cancel changes nothing.
+- [x] The captain's chips everywhere and roster card show a yellow circle with a dark "C" at the top right, readable in dark + light and with the dyslexia font, not covering the number, position badge or "*".
+- [x] Player page shows "Captain"; screen readers hear "captain"; print sheet marks "(C)".
+- [x] Export v10 keeps the captain; v1–v9 files and old data open; merge keeps the device's captain when the file has none; an invalid captain is dropped.
+- [x] Lint, typecheck and tests pass; src/domain at 100 %; only captain-related screenshots changed.
