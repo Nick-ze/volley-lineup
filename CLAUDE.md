@@ -11,11 +11,13 @@ Expo (React Native + web) app for volleyball team managers: roster, per-set line
 - `npm install`: install dependencies
 - `npx expo start`: dev server (press `w` for web; scan the QR code with Expo Go)
 - `npm run lint`: ESLint
+- `npm run format:check`: Prettier (`npm run format` fixes)
 - `npm run typecheck`: `tsc --noEmit`
+- `npm run check`: all of lint, format, typecheck and tests
 - `npm test`: Jest
 - `npx expo export -p web`: production web build
 
-Before every commit: `npm run lint && npm run typecheck && npm test` must pass.
+Before every commit: `npm run check` (lint, format:check, typecheck, tests) must pass.
 
 ## Folder structure
 
@@ -26,8 +28,9 @@ src/store/            Zustand stores + persistence
 src/components/       Reusable UI (Court, PlayerChip, Bench, Button, ...)
 src/features/<name>/  Feature-specific components and hooks
 src/theme/            colors.ts, spacing.ts, typography.ts
-src/i18n/en.ts        All user-facing strings
+src/i18n/en/*, de/*   All user-facing strings (German typed from English)
 src/lib/              Platform helpers (file export/import for web vs native)
+src/test-utils/       Shared test helpers and fixtures
 __tests__/ or *.test.ts(x) next to the code
 docs/                 PLAN.md, DECISIONS.md
 ```
@@ -37,7 +40,7 @@ docs/                 PLAN.md, DECISIONS.md
 - TypeScript strict mode; no `any` and no `@ts-ignore` without a comment explaining why.
 - Business logic lives in `src/domain` as pure functions with unit tests. Screens never contain rotation or validation logic.
 - Components are functional with hooks, small and focused (aim for under 150 lines).
-- Never hard-code colours, spacing or user-facing text: use `src/theme` and `src/i18n/en.ts`.
+- Never hard-code colours, spacing or user-facing text: use `src/theme` and `src/i18n` (`useT()`).
 - Types from the data model in `docs/PLAN.md` live in `src/domain/types.ts`; do not redefine them elsewhere.
 - Changing the persisted data shape requires bumping `schemaVersion` and adding a migration.
 - Code that differs per platform goes in `src/lib` using `.web.ts` / `.native.ts` files, never `Platform.OS` checks scattered through screens.
