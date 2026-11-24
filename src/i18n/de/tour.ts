@@ -32,8 +32,8 @@ export const tour: Strings['tour'] = {
   },
   offer: {
     title: (page: string) => `Kurzer Tipp zu ${page}?`,
-    show: 'Zeig mir',
-    showLabel: (page: string) => `Zeig mir: Tipps zu ${page}`,
+    show: 'Anzeigen',
+    showLabel: (page: string) => `Anzeigen: Tipps zu ${page}`,
     no: 'Nein danke',
     noLabel: (page: string) => `Nein danke: Tipps zu ${page} überspringen`,
   },
@@ -125,13 +125,13 @@ export const tour: Strings['tour'] = {
       },
       open: {
         title: 'Saison öffnen',
-        text: 'Tippe auf eine Saison für ihre Spiele, Gegner und Statistik.',
+        text: '„Neue Saison / Turnier“ öffnet sie. Später tippst du auf die Saison, um zu ihren Spielen, Gegnern und der Statistik zurückzukehren.',
       },
     },
     seasonForm: {
       form: {
         title: 'Saison oder Turnier',
-        text: 'Gib einen Namen ein und wähle Saison oder Turnier. Daten und Ort sind optional.',
+        text: 'Gib einen Namen ein und wähle Saison oder Turnier. Start- und Enddatum und Ort sind optional.',
       },
     },
     seasonMatches: {
@@ -161,7 +161,7 @@ export const tour: Strings['tour'] = {
       },
       serve: {
         title: 'Wer schlägt auf?',
-        text: 'Wähle, wer zuerst aufschlägt. Jeder Satz hat seinen Tab; mit Live zählst du das Spiel.',
+        text: 'Wähle, wer zuerst aufschlägt. Jeder Satz hat seinen Tab; mit Live zählst du das Spiel, mit Drucken / PDF druckst du die Aufstellung.',
       },
     },
     profile: {
@@ -205,7 +205,7 @@ export const tour: Strings['tour'] = {
     playerDetail: {
       detail: {
         title: 'Spielerdetails',
-        text: 'Foto, Spiele und eine private Notiz. Mit Bearbeiten änderst du Name, Nummer oder Positionen.',
+        text: 'Foto, Spiele und vertrauliche Notizen (gesperrt, bis du sie entsperrst). Mit Bearbeiten änderst du Name, Nummer oder Positionen.',
       },
     },
     presetEditor: {

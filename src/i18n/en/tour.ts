@@ -128,7 +128,7 @@ export const tour = {
       },
       open: {
         title: 'Open the season',
-        text: 'Tap a season to see its matches, opponents and stats.',
+        text: '“New season / tournament” opens it. Later, tap a season box to get back to its matches, opponents and stats.',
       },
     },
     seasonForm: {
@@ -160,11 +160,11 @@ export const tour = {
       },
       libero: {
         title: 'Libero and formation',
-        text: 'Put your libero in the libero spot. Choose 5-1 or 6-2 and rotate so the setter starts where you want.',
+        text: 'Put your libero in the libero slot. Choose 5-1 or 6-2 and rotate so the setter starts where you want.',
       },
       serve: {
         title: 'Who serves first',
-        text: 'Choose who serves first. Each set has its own tab; tap Live to score the match.',
+        text: 'Choose who serves first. Each set has its own tab; tap Live to score the match, or Print / PDF for the lineup sheet.',
       },
     },
     profile: {
@@ -208,7 +208,7 @@ export const tour = {
     playerDetail: {
       detail: {
         title: 'Player details',
-        text: 'Photo, matches and a private note. Tap Edit to change name, number or positions.',
+        text: 'Photo, matches and confidential notes (locked until you unlock them). Tap Edit to change name, number or positions.',
       },
     },
     presetEditor: {

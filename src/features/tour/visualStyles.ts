@@ -6,7 +6,7 @@ export const MINI = {
   frame: 112,
   chip: 30,
   spot: 24,
-  finger: 22,
+  finger: 16,
   switchWidth: 36,
   switchHeight: 20,
   thumb: 14,
@@ -47,8 +47,9 @@ export const useVisualStyles = makeStyles((theme) => ({
   outlined: { borderWidth: borderWidth.thin, borderColor: theme.colors.border },
   finger: {
     position: 'absolute',
-    right: -spacing.sm,
-    bottom: -spacing.sm,
+    // Mostly outside the control's corner, so its label stays readable.
+    right: -spacing.md,
+    bottom: -spacing.md,
     width: MINI.finger,
     height: MINI.finger,
     borderRadius: radius.round,

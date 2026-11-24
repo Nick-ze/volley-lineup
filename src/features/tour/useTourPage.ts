@@ -15,8 +15,8 @@ export function useTourPage(page: TourPage | null): void {
   useFocusEffect(
     useCallback(() => {
       if (page === null) return undefined;
-      focusTourPage(page);
-      return () => blurTourPage(page);
+      const token = focusTourPage(page);
+      return () => blurTourPage(token);
     }, [page]),
   );
 }
