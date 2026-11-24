@@ -32,7 +32,7 @@ src/i18n/en/*, de/*   All user-facing strings (German typed from English)
 src/lib/              Platform helpers (file export/import for web vs native)
 src/test-utils/       Shared test helpers and fixtures
 __tests__/ or *.test.ts(x) next to the code
-docs/                 PLAN.md, DECISIONS.md
+docs/                 PLAN.md, DECISIONS.md, HANDOFF.md, README_LEGACY.md (version history + dev guide)
 ```
 
 ## Code rules
@@ -67,6 +67,11 @@ docs/                 PLAN.md, DECISIONS.md
 - Stay inside the files your task owns. If you must change a shared file (`src/domain/types.ts`, `src/theme/*`, `src/store/*`), keep the change minimal and mention it in the PR description.
 - Don't refactor code outside your task.
 - When you finish, report: branch name, PR link, what's done, what's not done, and any open questions.
+
+## READMEs
+
+- `README.md` is for people using the app: what it is, install (APK), Expo Go, browser, backup. Keep it short and plain; update its "What's new" line when users see a change.
+- `docs/README_LEGACY.md` is for developers and AI agents: the full version history and the development guide. Add a "Version history" section for every new version.
 
 ## Definition of done
 

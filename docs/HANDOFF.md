@@ -33,7 +33,7 @@ Last updated: 2026-11-24, after releasing **v8.4.0**.
 
 - `main` is green (CI), **1444 tests** (117 suites), `src/domain` at 100% coverage.
 - Current versions: app **8.4.0** (`app.json` + `package.json`, must match), store **10**, export `schemaVersion` **9** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#239**. Continue at #240.
+- Last decision number in `docs/DECISIONS.md`: **#240**. Continue at #241.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -74,7 +74,7 @@ Last updated: 2026-11-24, after releasing **v8.4.0**.
 4. `docs/DECISIONS.md` — every choice made so far (#1–236). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Rewritten in v8.3 (conventions, tests, proof of no change).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
-7. `README.md` — user-facing features, install, release steps.
+7. `docs/README_LEGACY.md` — version history (what every version added), export / import details, release steps, development guide. `README.md` is the short guide for app users (install, Expo Go, backup).
 
 ---
 
@@ -110,7 +110,7 @@ The owner gives short requests and is usually not watching. The pattern that wor
 4. **Independent reviewer** agent per PR (didn't write the code): runs lint/typecheck/tests/web export, verifies rules by hand, Playwright at 375 and 1280 px, EN + DE. Forward findings to the worker via SendMessage.
 5. **Merge** only with green CI (check `pull_request_read get_check_runs`). Squash when intermediate commits don't build.
 6. **QA agent** over the acceptance checklist after a version's features are in.
-7. **Docs**: add DECISIONS entries centrally (one PR), tick PLAN checklists, update README.
+7. **Docs**: add DECISIONS entries centrally (one PR), tick PLAN checklists, add the version to `docs/README_LEGACY.md` (Version history) and update the "What's new" line in `README.md`.
 8. **Release** (§5), then report to the owner: link, what's new, what's verified, what isn't.
 
 Small requests (layout tweaks) are faster done yourself; still use a branch + PR + green CI.
@@ -173,5 +173,5 @@ Small requests (layout tweaks) are faster done yourself; still use a branch + PR
 - [ ] Write the version's plan into `docs/PLAN.md` (new section with features, data model changes, acceptance checklist).
 - [ ] Foundation PR (types/store/export migrations + version bump if the data shape changes).
 - [ ] Workers → reviews → merges → QA → fixes.
-- [ ] DECISIONS + README + PLAN ticks → release (§5).
+- [ ] DECISIONS + `docs/README_LEGACY.md` version history + `README.md` "What's new" + PLAN ticks → release (§5).
 - [ ] `/wrap-up` before the chat ends.
