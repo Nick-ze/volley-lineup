@@ -11,6 +11,7 @@ import {
   useTheme,
 } from '@/theme';
 
+import { CaptainBadge, captainBadgeOnChip, captainBadgeSize } from './CaptainBadge';
 import { Photo } from './Photo';
 import { PositionBadge } from './PositionBadge';
 
@@ -34,11 +35,16 @@ export interface PlayerChipFaceProps {
   ringColor: string;
   thickRing: boolean;
   lifted: boolean;
+  /** v9.1: the team captain gets the yellow "C" badge at the top right. */
+  captain?: boolean;
   /** For the name text (`<testID>-name`). */
   testID?: string;
 }
 
-/** The round part of a `PlayerChip`: photo, number or name, and the primary position badge. */
+/**
+ * The round part of a `PlayerChip`: photo, number or name, the primary position badge and (v9.1)
+ * the captain badge.
+ */
 export function PlayerChipFace({
   player,
   name,
@@ -49,6 +55,7 @@ export function PlayerChipFace({
   ringColor,
   thickRing,
   lifted,
+  captain = false,
   testID,
 }: PlayerChipFaceProps) {
   const styles = useStyles();
@@ -99,6 +106,13 @@ export function PlayerChipFace({
         <View style={photoUri !== null && styles.badgeOnPhoto}>
           <PositionBadge position={primary} />
         </View>
+      ) : null}
+      {captain ? (
+        <CaptainBadge
+          size={captainBadgeSize(d)}
+          style={captainBadgeOnChip(d)}
+          testID={testID ? `${testID}-captain` : undefined}
+        />
       ) : null}
     </View>
   );

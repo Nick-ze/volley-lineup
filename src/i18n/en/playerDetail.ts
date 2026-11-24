@@ -10,8 +10,10 @@ export const playerDetail = {
   separator: ' · ',
   sentenceSeparator: '. ',
   listSeparator: ', ',
-  headerLabel: (number: number, name: string, positions: string, status: string) =>
-    `Number ${number}, ${name}, ${positions}, ${status}`,
+  headerLabel: (number: number, name: string, positions: string, status: string, captain = false) =>
+    `Number ${number}, ${name}, ${captain ? 'captain, ' : ''}${positions}, ${status}`,
+  /** v9.1: shown next to the positions of the team captain. */
+  captain: 'Captain',
   /** "+3", "0", "−2" (plus/minus). */
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),
   season: {

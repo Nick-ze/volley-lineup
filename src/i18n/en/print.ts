@@ -32,6 +32,8 @@ export const print = {
     liberoReplaces: (numbers: string) => `Libero replaces ${numbers}`,
     liberoOff: 'Libero off',
     offPositionNote: '* = plays a role that is none of their positions',
+    /** v9.1: after the team captain's name. */
+    captainMark: '(C)',
     serveFirst: 'First serve:',
     weServe: 'We serve',
     weReceive: 'We receive',

@@ -6,6 +6,7 @@ import { isOffPosition } from '@/domain/roles';
 import type { Player, PlayerRoles } from '@/domain/types';
 import { ChipWithBadge, RoleRow, SpotNumber } from '@/features/rotation/SpotTags';
 import { useT } from '@/i18n';
+import { useCaptainId } from '@/store';
 import { makeStyles, spacing, typography } from '@/theme';
 
 import { playerDescription, playerRef } from './format';
@@ -41,6 +42,8 @@ export function LiveCourt({
 }: LiveCourtProps) {
   const styles = useStyles();
   const t = useT();
+  // v9.1: every player here is of the match's team; its captain is named in the labels.
+  const captainId = useCaptainId(playersById.values().next().value?.teamId);
   const slotStyle = ({ isFrontRow }: CourtSlotInfo) => [
     isFrontRow ? styles.front : styles.back,
     styles.slot,
@@ -67,12 +70,12 @@ export function LiveCourt({
         const desc = player
           ? replacedId
             ? t.rotation.liberoForLabel(
-                playerDescription(t, player),
+                playerDescription(t, player, captainId),
                 playerRef(t, playersById, replacedId),
               )
             : role
-              ? `${playerDescription(t, player)}, ${t.roles.spotRole(t.positions[role], off)}`
-              : playerDescription(t, player)
+              ? `${playerDescription(t, player, captainId)}, ${t.roles.spotRole(t.positions[role], off)}`
+              : playerDescription(t, player, captainId)
           : '';
         return (
           <>

@@ -115,7 +115,7 @@ export const tour: Strings['tour'] = {
       },
       positions: {
         title: 'Positionen',
-        text: 'Wähle die Positionen, die der Spieler spielt. Die erste ist die Hauptposition. Dann speichern.',
+        text: 'Wähle die Positionen, die der Spieler spielt. Die erste ist die Hauptposition. Für deinen Kapitän schalte „Kapitän“ ein. Dann speichern.',
       },
     },
     matches: {

@@ -57,8 +57,14 @@ export const roster = {
     toggleActive: (name: string, active: boolean) =>
       active ? `Active: ${name}. Mark as injured or inactive` : `Injured: ${name}. Mark as active`,
     /** v8: a player card (starts with the name shown on it). */
-    cardLabel: (name: string, number: number, positions: string, active: boolean) =>
-      `${name}, number ${number}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', injured or inactive'}. Open details`,
+    cardLabel: (
+      name: string,
+      number: number,
+      positions: string,
+      active: boolean,
+      captain = false,
+    ) =>
+      `${name}, number ${number}${captain ? ', captain' : ''}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', injured or inactive'}. Open details`,
   },
   player: {
     addTitle: 'Add player',
@@ -71,6 +77,9 @@ export const roster = {
     primary: 'Primary',
     makePrimary: (position: string) => `Make ${position} the primary position`,
     activeLabel: 'Active (not injured)',
+    /** v9.1: the team captain switch and its hint. */
+    captainLabel: 'Team captain',
+    captainHint: 'One per team: turning it on replaces the current captain.',
     delete: 'Delete player',
     notFound: 'This player no longer exists.',
     deleteBlocked:

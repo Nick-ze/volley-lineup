@@ -1,14 +1,17 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { Photo, PositionBadge } from '@/components';
+import { CaptainBadge, Photo, PositionBadge } from '@/components';
 import { fullName } from '@/domain/playerNames';
 import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
 import { useT } from '@/i18n';
+import { useIsCaptain } from '@/store';
 import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** v8.2: the jersey number on a card without a picture, as a share of the picture's side. */
 const CARD_NUMBER_SCALE = 0.36;
+/** v9.1: the captain badge's diameter on a card (px). */
+const CARD_CAPTAIN_SIZE = 28;
 
 export interface PlayerCardProps {
   player: Player;
@@ -22,13 +25,14 @@ export interface PlayerCardProps {
  * v8: one player in the roster grid: picture (or the jersey number), name (first name first),
  * (v8.2: the picture fills the card's width as a square, the text sits below it)
  * number, position badges (first = primary) and the active / injured toggle. Descriptions are
- * never shown here.
+ * never shown here. v9.1: the team captain has the yellow "C" badge at the picture's top right.
  */
 export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCardProps) {
   const styles = useStyles();
   const t = useT();
   const s = t.roster.roster;
   const name = fullName(player);
+  const captain = useIsCaptain(player);
   const positions = player.positions.map((p) => t.positions[p]).join(', ');
   const toggleText = player.active ? s.active : s.inactive;
   // The picture spans the card inside its border; its top corners follow the card's.
@@ -41,7 +45,7 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={s.cardLabel(name, player.number, positions, player.active)}
+        accessibilityLabel={s.cardLabel(name, player.number, positions, player.active, captain)}
         onPress={onPress}
         testID={`player-${player.number}`}
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
@@ -65,6 +69,13 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
               />
             }
           />
+          {captain ? (
+            <CaptainBadge
+              size={CARD_CAPTAIN_SIZE}
+              style={styles.captain}
+              testID={`player-${player.number}-captain`}
+            />
+          ) : null}
         </View>
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={2} testID={`player-${player.number}-name`}>
@@ -115,6 +126,7 @@ const useStyles = makeStyles((theme) => ({
   // Grows so the toggles of a row line up at the bottom of equally tall cards.
   main: { flexGrow: 1 },
   picture: { overflow: 'hidden' },
+  captain: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   info: {
     alignItems: 'center',
     gap: spacing.xs,

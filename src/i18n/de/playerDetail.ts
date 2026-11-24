@@ -12,8 +12,9 @@ export const playerDetail: Strings['playerDetail'] = {
   separator: ' · ',
   sentenceSeparator: '. ',
   listSeparator: ', ',
-  headerLabel: (number: number, name: string, positions: string, status: string) =>
-    `Nummer ${number}, ${name}, ${positions}, ${status}`,
+  headerLabel: (number: number, name: string, positions: string, status: string, captain = false) =>
+    `Nummer ${number}, ${name}, ${captain ? 'Kapitän, ' : ''}${positions}, ${status}`,
+  captain: 'Kapitän',
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),
   season: {
     heading: 'Alle Saisons',

@@ -39,7 +39,10 @@ export function PlayerForm({
 }: PlayerFormProps) {
   const formStyles = useFormStyles();
   const t = useT();
-  const { form, set, errors, save, photo, setPhoto } = usePlayerForm(teamId, player);
+  const { form, set, errors, save, photo, setPhoto, captain, setCaptain } = usePlayerForm(
+    teamId,
+    player,
+  );
   const { ask, dialogProps } = useConfirm();
   // A picked picture is still being prepared: saving now would drop it.
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -82,6 +85,15 @@ export function PlayerForm({
         error={errorText(t, errors.positions)}
       />
       <ToggleRow label={s.activeLabel} value={form.active} onChange={(v) => set('active', v)} />
+      <View>
+        <ToggleRow
+          label={s.captainLabel}
+          value={captain}
+          onChange={setCaptain}
+          testID="player-captain-switch"
+        />
+        <Text style={formStyles.hint}>{s.captainHint}</Text>
+      </View>
       <View style={formStyles.actions}>
         {player && onDelete && (
           <Button

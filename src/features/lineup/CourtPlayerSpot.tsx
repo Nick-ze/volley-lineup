@@ -5,6 +5,7 @@ import { OffPositionMark, RoleTag } from '@/components';
 import { isOffPosition, roleOf } from '@/domain/roles';
 import type { CourtPosition, Player } from '@/domain/types';
 import { useT } from '@/i18n';
+import { useIsCaptain } from '@/store';
 import { spacing, touchTarget } from '@/theme';
 
 import { COMPACT_CHIP_SIZE, ROLE_PRESS_MAX_MOVE } from './constants';
@@ -46,7 +47,11 @@ export function CourtPlayerSpot({
   const role = roleOf(set, player.id);
   const off = isOffPosition(player, role);
   const name = `${player.firstName} ${player.lastName}`.trim();
-  const base = t.lineup.slotLabel(position, `${player.number} ${name}`);
+  const captain = useIsCaptain(player);
+  const base = t.lineup.slotLabel(
+    position,
+    t.player.withCaptain(`${player.number} ${name}`, captain),
+  );
   const label = role ? `${base}, ${t.roles.spotRole(t.positions[role], off)}` : base;
 
   const onRoleTagPress = (e: GestureResponderEvent) => {
