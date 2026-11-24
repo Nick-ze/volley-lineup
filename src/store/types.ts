@@ -7,6 +7,8 @@ import type {
   Season,
   SetLineup,
   Team,
+  TourMode,
+  TourPage,
 } from '@/domain/types';
 import type { PresetLineup } from '@/domain/presets';
 import type { ThemeMode } from '@/theme/theme';
@@ -42,6 +44,13 @@ export interface AppState extends AppData {
   themeMode: ThemeMode;
   /** v8 (store v10): all text in the dyslexia-friendly font (OpenDyslexic). */
   dyslexiaFont: boolean;
+  /**
+   * v9.0 (store v11): the chosen tour (null = not chosen yet, so the app asks) and the pages whose
+   * tips were shown or offered. Device settings like the theme: kept on "Delete all data", not
+   * exported.
+   */
+  tourMode: TourMode | null;
+  tourSeen: TourPage[];
   /** True once persisted state has been loaded from storage. Not persisted. */
   hydrated: boolean;
 }
@@ -105,6 +114,10 @@ export interface AppActions {
   setChipLabel(chipLabel: ChipLabel): void;
   setThemeMode(themeMode: ThemeMode): void;
   setDyslexiaFont(on: boolean): void;
+  /** v9.0: chooses a tour and starts it over (clears `tourSeen`). */
+  setTourMode(mode: TourMode): void;
+  /** v9.0: the page's tips were shown (or offered and answered); they don't come again. */
+  markTourSeen(page: TourPage): void;
   setHydrated(value: boolean): void;
 }
 

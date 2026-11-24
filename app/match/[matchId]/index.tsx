@@ -12,6 +12,7 @@ import { MatchResultLine } from '@/features/live/MatchResultLine';
 import { MatchSeasonLine } from '@/features/matchForm/MatchSeasonLine';
 import { PresetApply } from '@/features/lineup/PresetApply';
 import { SetTabs } from '@/features/lineup/SetTabs';
+import { useTourPage } from '@/features/tour';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { useT } from '@/i18n';
@@ -30,6 +31,7 @@ export default function MatchScreen() {
   const setNumber = parseSetNumber(params.set);
   const editor = useLineupEditor(matchId, setNumber);
   const { match } = editor;
+  useTourPage(match ? 'builder' : null);
   useCorrectSetParam(params.set, match ? setNumber : undefined, (n) =>
     router.setParams({ set: String(n) }),
   );

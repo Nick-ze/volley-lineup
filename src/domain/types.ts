@@ -208,6 +208,41 @@ export interface ExportFile {
   opponents: Opponent[];
 }
 
+/* ---- v9.0 tutorial (device settings in the app store; not exported) ---- */
+
+/** v9.0 (store v11): which tour the user chose: tips on every screen, the quick path, or none. */
+export type TourMode = 'full' | 'quick' | 'none';
+
+/**
+ * v9.0: a screen (or tab) with its own tour tips. The quick tour covers profiles → … → builder;
+ * the order and the lists live in `tour.ts`.
+ */
+export type TourPage =
+  | 'profiles'
+  | 'teams'
+  | 'roster'
+  | 'playerForm'
+  | 'matches'
+  | 'seasonForm'
+  | 'seasonMatches'
+  | 'matchForm'
+  | 'builder'
+  | 'profile'
+  | 'settings'
+  | 'presets'
+  | 'starters'
+  | 'teamStats'
+  | 'playerDetail'
+  | 'presetEditor'
+  | 'startersEditor'
+  | 'seasonOpponents'
+  | 'seasonStats'
+  | 'rotation'
+  | 'matchStarters'
+  | 'live'
+  | 'performance'
+  | 'matchStats';
+
 /* ---- Derived helper types (not part of the persisted shape) ---- */
 
 /** Court position number 1–6. */

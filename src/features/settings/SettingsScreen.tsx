@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 
 import { Screen } from '@/components';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { makeStyles, typography } from '@/theme';
 
@@ -17,6 +18,7 @@ import { Section } from './Section';
 export function SettingsScreen() {
   const styles = useStyles();
   const t = useT();
+  useTourPage('settings');
   const version = Constants.expoConfig?.version ?? t.transfer.about.unknownVersion;
   // Bumped by "Delete all data": remounts export / import so their old messages disappear.
   const [generation, setGeneration] = useState(0);

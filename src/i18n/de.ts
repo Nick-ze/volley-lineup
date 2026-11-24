@@ -22,6 +22,7 @@ import { seasons } from './de/seasons';
 import { appearance } from './de/appearance';
 import { teamPhoto } from './de/teamPhoto';
 import { motion } from './de/motion';
+import { tour } from './de/tour';
 import type { Strings } from './en';
 
 export const de: Strings = {
@@ -104,4 +105,5 @@ export const de: Strings = {
   appearance,
   teamPhoto,
   motion,
+  tour,
 };

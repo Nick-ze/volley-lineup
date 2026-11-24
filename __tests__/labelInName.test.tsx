@@ -289,6 +289,30 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
   ['performance set', (t) => t.performance.filter.set(1), (t) => t.performance.filter.setLabel(1)],
   ['performance all', (t) => t.performance.filter.all, (t) => t.performance.filter.allLabel],
   ['preset editor rename', (t) => t.presets.editor.rename, (t) => t.presets.editor.renameLabel],
+  // v9.0 tutorial: the tour choice, the tip popup and the quick tour's offer.
+  [
+    'tour full',
+    (t) => t.tour.choice.full,
+    (t) => t.tour.choice.optionLabel(t.tour.choice.full, t.tour.choice.fullHint),
+  ],
+  [
+    'tour quick',
+    (t) => t.tour.choice.quick,
+    (t) => t.tour.choice.optionLabel(t.tour.choice.quick, t.tour.choice.quickHint),
+  ],
+  [
+    'tour none',
+    (t) => t.tour.choice.none,
+    (t) => t.tour.choice.optionLabel(t.tour.choice.none, t.tour.choice.noneHint),
+  ],
+  ['tour choice cancel', (t) => t.tour.choice.cancel, (t) => t.tour.choice.cancelLabel],
+  ['tour back', (t) => t.tour.popup.back, (t) => t.tour.popup.backLabel],
+  ['tour next', (t) => t.tour.popup.next, (t) => t.tour.popup.nextLabel],
+  ['tour done', (t) => t.tour.popup.done, (t) => t.tour.popup.doneLabel],
+  ['tour end', (t) => t.tour.popup.end, (t) => t.tour.popup.endLabel],
+  ['tour offer show', (t) => t.tour.offer.show, (t) => t.tour.offer.showLabel('Starters')],
+  ['tour offer no', (t) => t.tour.offer.no, (t) => t.tour.offer.noLabel('Starters')],
+  ['tour choose again', (t) => t.tour.profile.button, (t) => t.tour.profile.buttonLabel],
 ];
 
 /* Tag chips and libero chips, built with the components' own helpers, for every kind. */

@@ -1,8 +1,9 @@
 {
   "name": "volley-lineup",
-  "version": "8.4.0",
+  "version": "9.0.0",
   "main": "expo-router/entry",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",

@@ -20,10 +20,11 @@ Available in English and German.
   tournament.
 - **Seasons and tournaments**: group your matches and keep a record against every opponent.
 - **Print**: a lineup sheet to print or share as a PDF.
+- **Guided tour**: short tips with pictures show you around; choose the full or quick tour, or none.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 8.4**: players' photos show faded behind their number on the court, more room under the buttons at the
-top of the team tabs, and the Settings switch is now called "Prioritise names".
+**What's new in 9.0**: a guided tour. On first start choose a full tour, a quick tour (from your profile to your first
+match) or none; short popups show what to tap. Change your mind any time in Profile → Tutorial.
 [All versions →](docs/README_LEGACY.md#version-history)
 
 ## Install on Android (APK)
@@ -98,3 +99,8 @@ To move to a new phone: export on the old one, send yourself the file, import it
 
 The full version history, the development commands, the release steps and the notes for AI agents working on this app
 are in **[docs/README_LEGACY.md](docs/README_LEGACY.md)**. Project rules: [CLAUDE.md](CLAUDE.md).
+
+## Licence
+
+The code is public so you can read it and run the app for yourself, but it is **not open source**: all rights are
+reserved. Please don't copy, reuse, change or republish it without permission. See [LICENSE](LICENSE).

@@ -2,11 +2,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import { NotFound, Screen, ScreenTitle, SwipeTabs } from '@/components';
+import { seasonTabPage } from '@/domain/tour';
 import { SeasonHeader } from '@/features/seasons/SeasonHeader';
 import { SeasonMatches } from '@/features/seasons/SeasonMatches';
 import { SeasonOpponents } from '@/features/seasons/SeasonOpponents';
 import { SeasonStats } from '@/features/seasons/SeasonStats';
 import { parseSeasonTab, SEASON_TABS, type SeasonTab } from '@/features/seasons/seasonTabs';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useOpponentsForSeason, useSeason, useTeam } from '@/store';
 
@@ -26,6 +28,8 @@ export default function SeasonScreen() {
   const tab = parseSeasonTab(params.tab);
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const opponent = opponents.find((o) => o.id === opponentId);
+  // v9.0: the shown tab's tips (never in the tabs: the pager keeps their neighbours mounted).
+  useTourPage(team && season?.teamId === team.id ? seasonTabPage(tab) : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

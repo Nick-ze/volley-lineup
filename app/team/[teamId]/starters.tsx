@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { NotFound } from '@/components';
 import { emptyPresetLineup, type PresetLineup } from '@/domain/presets';
 import { PresetLineupEditor } from '@/features/presets/PresetLineupEditor';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useAppStore, useStarters, useTeam } from '@/store';
 
@@ -16,6 +17,7 @@ export default function TeamStartersScreen() {
   const starters = useStarters(teamId);
   const setStarters = useAppStore((s) => s.setStarters);
   const empty = useMemo(() => emptyPresetLineup(), []);
+  useTourPage(team ? 'startersEditor' : null);
   const save = useCallback(
     (lineup: PresetLineup) => setStarters(String(teamId), lineup),
     [teamId, setStarters],

@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
+import { withSeen } from '@/domain/tour';
 import type { LineupPreset, Match, Opponent, Season } from '@/domain/types';
 import { createId } from '@/lib/id';
 
@@ -30,6 +31,8 @@ const initialState = (): AppState => ({
   chipLabel: 'number',
   themeMode: 'dark',
   dyslexiaFont: false,
+  tourMode: null,
+  tourSeen: [],
   hydrated: false,
 });
 
@@ -218,6 +221,9 @@ export const useAppStore = create<AppStore>()(
       setChipLabel: (chipLabel) => set({ chipLabel }),
       setThemeMode: (themeMode) => set({ themeMode }),
       setDyslexiaFont: (dyslexiaFont) => set({ dyslexiaFont }),
+      setTourMode: (tourMode) => set({ tourMode, tourSeen: [] }),
+      markTourSeen: (page) =>
+        set((s) => (s.tourSeen.includes(page) ? {} : { tourSeen: withSeen(s.tourSeen, page) })),
     }),
     {
       name: STORAGE_KEY,
@@ -237,6 +243,8 @@ export const useAppStore = create<AppStore>()(
         chipLabel: s.chipLabel,
         themeMode: s.themeMode,
         dyslexiaFont: s.dyslexiaFont,
+        tourMode: s.tourMode,
+        tourSeen: s.tourSeen,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);

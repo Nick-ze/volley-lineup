@@ -90,9 +90,12 @@ function storage(variant) {
     opponents: DATA.opponents,
     currentProfileId: 'pr1',
     chipLabel: 'number',
+    // v9.0: no tour, so no tip popups over the screens.
+    tourMode: 'none',
+    tourSeen: [],
     ...variant,
   };
-  const items = { 'volley-lineup': JSON.stringify({ state, version: 10 }) };
+  const items = { 'volley-lineup': JSON.stringify({ state, version: 11 }) };
   for (const photo of DATA.photos) items[`volley-lineup-photo:${photo.id}`] = photo.dataUri;
   return items;
 }

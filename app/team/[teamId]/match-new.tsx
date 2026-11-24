@@ -4,6 +4,7 @@ import { NotFound, Screen, useGoBack } from '@/components';
 import { firstSetForNewMatch } from '@/domain/presets';
 import { findOpponentByName, foldName, seasonsForTeam } from '@/domain/seasons';
 import { MatchForm } from '@/features/matchForm/MatchForm';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectPlayersForTeam, useAppStore, useTeam } from '@/store';
 
@@ -21,6 +22,7 @@ export default function NewMatchScreen() {
   const goBack = useGoBack(
     seasonId ? `/team/${teamId}/season/${seasonId}` : `/team/${teamId}?tab=matches`,
   );
+  useTourPage(team ? 'matchForm' : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

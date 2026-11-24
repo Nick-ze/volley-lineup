@@ -50,3 +50,14 @@ require('react-native-gesture-handler/jestSetup');
 
 // Route-level tests (renderRouter) compile the whole app tree; cold CI runs can exceed 5 s.
 jest.setTimeout(30000);
+
+/*
+ * v9.0: a fresh app asks which tour to show (`tourMode: null`), and tour tips are popups over the
+ * screens. Tests run with "No tour" unless they choose one themselves (the tour's own tests do),
+ * so the other tests see the screens as before. Loaded here, in `beforeEach`, so a test file's
+ * own `jest.mock` calls apply to the store's imports first.
+ */
+beforeEach(() => {
+  const { useAppStore } = require('@/store/appStore') as typeof import('@/store/appStore');
+  useAppStore.setState({ tourMode: 'none', tourSeen: [] });
+});
