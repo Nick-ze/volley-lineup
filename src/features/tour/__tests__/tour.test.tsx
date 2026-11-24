@@ -53,7 +53,7 @@ describe('first start', () => {
     // The focused screen's tips right away, with the visual guide.
     expect(popup()).toBeTruthy();
     expect(screen.getByText(tips.profiles.create.title)).toBeTruthy();
-    expect(screen.getByTestId('tour-visual-tap', includeHidden)).toBeTruthy();
+    expect(screen.getByTestId('tour-visual-form', includeHidden)).toBeTruthy();
     expect(screen.getByLabelText(t.tour.popup.stepOf(1, 2))).toBeTruthy();
     expect(screen.queryByTestId('tour-back')).toBeNull();
 

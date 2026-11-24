@@ -84,11 +84,11 @@ export const tour = {
     profiles: {
       create: {
         title: 'Create your profile',
-        text: 'Your profile holds your teams. Tap “New profile”, type your name and create it.',
+        text: 'Your profile holds your teams. Type your name and tap “Create profile” (“New profile” adds another).',
       },
       open: {
-        title: 'Open it',
-        text: 'Tap your profile to open its teams. Other managers can have their own profile.',
+        title: 'Your profiles',
+        text: 'Later, tap your profile here to open its teams. Other managers can have their own profile.',
       },
     },
     teams: {

@@ -32,90 +32,77 @@ export function TourStepPopup({ page, step }: { page: TourPage; step: number }) 
   return (
     <TourSheet onClose={closeTips} label={tip.title} testID="tour-popup">
       <TourVisual spec={tip.visual} />
-      <View style={styles.head}>
-        <Text style={styles.title} accessibilityRole="header">
-          {tip.title}
-        </Text>
-        {steps.length > 1 ? (
-          <View
-            style={styles.dots}
-            accessible
-            accessibilityLabel={p.stepOf(index + 1, steps.length)}
-          >
-            {steps.map((_, i) => (
-              <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
-            ))}
-          </View>
-        ) : null}
-      </View>
+      {steps.length > 1 ? (
+        <View style={styles.dots} accessible accessibilityLabel={p.stepOf(index + 1, steps.length)}>
+          {steps.map((_, i) => (
+            <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
+          ))}
+        </View>
+      ) : null}
+      <Text style={styles.title} accessibilityRole="header">
+        {tip.title}
+      </Text>
       <Text style={styles.text}>{tip.text}</Text>
       {quick && last && page === LAST_QUICK_PAGE ? (
         <Text style={styles.note} testID="tour-quick-done">
           {p.quickDone}
         </Text>
       ) : null}
-      <View style={styles.actions}>
-        <Button
-          label={p.end}
-          accessibilityLabel={p.endLabel}
-          variant="ghost"
-          compact
-          onPress={endTour}
-          testID="tour-end"
-        />
-        <View style={styles.nav}>
-          {index > 0 ? (
-            <Button
-              label={p.back}
-              accessibilityLabel={p.backLabel}
-              variant="secondary"
-              compact
-              onPress={() => showTourStep(index - 1)}
-              testID="tour-back"
-            />
-          ) : null}
-          {last ? (
-            <Button
-              label={p.done}
-              accessibilityLabel={p.doneLabel}
-              compact
-              onPress={closeTips}
-              testID="tour-done"
-            />
-          ) : (
-            <Button
-              label={p.next}
-              accessibilityLabel={p.nextLabel}
-              compact
-              onPress={() => showTourStep(index + 1)}
-              testID="tour-next"
-            />
-          )}
-        </View>
+      {/* Back / Next first: the dialog's first control (it gets the focus) moves the tour on. */}
+      <View style={styles.nav}>
+        {index > 0 ? (
+          <Button
+            label={p.back}
+            accessibilityLabel={p.backLabel}
+            variant="secondary"
+            compact
+            onPress={() => showTourStep(index - 1)}
+            testID="tour-back"
+          />
+        ) : null}
+        {last ? (
+          <Button
+            label={p.done}
+            accessibilityLabel={p.doneLabel}
+            compact
+            onPress={closeTips}
+            testID="tour-done"
+          />
+        ) : (
+          <Button
+            label={p.next}
+            accessibilityLabel={p.nextLabel}
+            compact
+            onPress={() => showTourStep(index + 1)}
+            testID="tour-next"
+          />
+        )}
       </View>
+      <Button
+        label={p.end}
+        accessibilityLabel={p.endLabel}
+        variant="ghost"
+        compact
+        onPress={endTour}
+        testID="tour-end"
+        style={styles.end}
+      />
     </TourSheet>
   );
 }
 
 const useStyles = makeStyles((theme) => ({
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  title: { ...typography.subheading, color: theme.colors.text, flexShrink: 1 },
-  dots: { flexDirection: 'row', gap: spacing.xs, marginLeft: 'auto' },
+  dots: { flexDirection: 'row', gap: spacing.xs, alignSelf: 'center' },
   dot: {
     width: DOT,
     height: DOT,
     borderRadius: radius.round,
-    backgroundColor: theme.colors.border,
+    backgroundColor: theme.colors.textMuted,
   },
   dotActive: { backgroundColor: theme.colors.primaryText },
+  title: { ...typography.subheading, color: theme.colors.text },
   text: { ...typography.body, color: theme.colors.text },
   note: { ...typography.body, color: theme.colors.highlightText, fontWeight: '600' },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  nav: { flexDirection: 'row', gap: spacing.sm, marginLeft: 'auto' },
+  nav: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
+  end: { alignSelf: 'flex-start', marginTop: -spacing.sm },
 }));

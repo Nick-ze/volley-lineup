@@ -81,11 +81,11 @@ export const tour: Strings['tour'] = {
     profiles: {
       create: {
         title: 'Profil anlegen',
-        text: 'In deinem Profil liegen deine Teams. Tippe auf „Neues Profil“, gib deinen Namen ein und lege es an.',
+        text: 'In deinem Profil liegen deine Teams. Gib deinen Namen ein und tippe auf „Profil anlegen“ („Neues Profil“ legt ein weiteres an).',
       },
       open: {
-        title: 'Profil öffnen',
-        text: 'Tippe auf dein Profil, um seine Teams zu öffnen. Andere Trainer können ein eigenes Profil haben.',
+        title: 'Deine Profile',
+        text: 'Später tippst du hier auf dein Profil, um seine Teams zu öffnen. Andere Trainer können ein eigenes Profil haben.',
       },
     },
     teams: {

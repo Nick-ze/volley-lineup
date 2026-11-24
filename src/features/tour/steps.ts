@@ -41,7 +41,12 @@ const POSITION_CODES: readonly Position[] = ['S', 'OH', 'MB', 'OPP', 'L'];
 
 const STEPS: Record<TourPage, (t: Strings) => TourStep[]> = {
   profiles: (t) => [
-    step(t.tour.steps.profiles.create, { kind: 'tap', label: t.roster.profiles.new }),
+    step(t.tour.steps.profiles.create, {
+      kind: 'form',
+      field: t.roster.profiles.name,
+      value: t.tour.sample.profile,
+      button: t.roster.profiles.create,
+    }),
     step(t.tour.steps.profiles.open, { kind: 'row', label: t.tour.sample.profile }),
   ],
   teams: (t) => [
@@ -94,7 +99,7 @@ const STEPS: Record<TourPage, (t: Strings) => TourStep[]> = {
   builder: (t) => [
     step(t.tour.steps.builder.drag, { kind: 'drag' }),
     step(t.tour.steps.builder.libero, { kind: 'court' }),
-    step(t.tour.steps.builder.serve, { kind: 'toggle', label: t.lineup.weServe }),
+    step(t.tour.steps.builder.serve, { kind: 'tap', label: t.lineup.weServe }),
   ],
   profile: (t) => [
     step(t.tour.steps.profile.look, { kind: 'toggle', label: t.appearance.dyslexiaFont }),
