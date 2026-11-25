@@ -313,6 +313,32 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
   ['tour offer show', (t) => t.tour.offer.show, (t) => t.tour.offer.showLabel('Starters')],
   ['tour offer no', (t) => t.tour.offer.no, (t) => t.tour.offer.noLabel('Starters')],
   ['tour choose again', (t) => t.tour.profile.button, (t) => t.tour.profile.buttonLabel],
+  // v10 (E2): sync badge, notices, Join a team, the shared-team delete dialog.
+  ['sync badge', (t) => t.sync.status.synced, (t) => t.sync.badge.label(t.sync.status.synced)],
+  [
+    'sync badge offline',
+    (t) => t.sync.badge.offlinePending(3),
+    (t) => t.sync.badge.label(t.sync.badge.offlinePending(3)),
+  ],
+  ['sync notice dismiss', (t) => t.sync.notices.dismiss, (t) => t.sync.notices.dismissLabel('A')],
+  ['join a team', (t) => t.sync.team.join, (t) => t.sync.team.joinLabel],
+  [
+    'shared team remove here',
+    (t) => t.sync.teamDelete.removeHere,
+    (t) => t.sync.teamDelete.removeHereLabel('A'),
+  ],
+  [
+    'shared team delete everywhere',
+    (t) => t.sync.teamDelete.deleteEverywhere,
+    (t) => t.sync.teamDelete.deleteEverywhereLabel('A'),
+  ],
+  ['shared team leave', (t) => t.sync.teamDelete.leave, (t) => t.sync.teamDelete.leaveLabel('A')],
+  ['shared team cancel', (t) => t.sync.teamDelete.cancel, (t) => t.sync.teamDelete.cancelLabel],
+  [
+    'shared team row',
+    () => 'Herren 1',
+    (t) => t.sync.team.rowLabel(t.roster.teams.open('Herren 1'), t.sync.viewOnly),
+  ],
 ];
 
 /* Tag chips and libero chips, built with the components' own helpers, for every kind. */
