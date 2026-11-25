@@ -31,7 +31,8 @@ export default function SeasonScreen() {
   const opponent = opponents.find((o) => o.id === opponentId);
   const access = useTeamAccess(params.teamId);
   // v9.0: the shown tab's tips (never in the tabs: the pager keeps their neighbours mounted).
-  useTourPage(team && season?.teamId === team.id ? seasonTabPage(tab) : null);
+  // v10: none for view-only members (the tips point at controls they don't have).
+  useTourPage(team && season?.teamId === team.id && access.canEdit ? seasonTabPage(tab) : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;

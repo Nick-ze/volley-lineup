@@ -26,16 +26,21 @@ export function SharedTeamDeleteDialog({ team, role, onClose }: SharedTeamDelete
     onClose,
   );
   const manager = role === 'manager';
+  const title = manager ? s.title(team.name) : s.removeTitle(team.name);
+  // While a request runs, the dialog can't be closed (its result removes the team or explains).
+  const close = () => {
+    if (!busy) onClose();
+  };
   return (
     <Dialog
-      onClose={onClose}
-      title={s.title(team.name)}
+      onClose={close}
+      title={title}
       testID="shared-team-delete"
       cardProps={{
         role: 'dialog',
         'aria-modal': true,
-        accessibilityLabel: s.title(team.name),
-        'aria-label': s.title(team.name),
+        accessibilityLabel: title,
+        'aria-label': title,
       }}
     >
       <Text style={styles.body}>{manager ? s.managerBody : s.playerBody}</Text>
@@ -81,7 +86,8 @@ export function SharedTeamDeleteDialog({ team, role, onClose }: SharedTeamDelete
           label={s.cancel}
           accessibilityLabel={s.cancelLabel}
           variant="ghost"
-          onPress={onClose}
+          disabled={busy}
+          onPress={close}
           testID="team-delete-cancel"
         />
       </View>

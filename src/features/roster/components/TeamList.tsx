@@ -39,6 +39,12 @@ export function TeamList({
   );
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.teams;
+  // v10: the team being edited became view-only (role changed by a sync) → close, don't save.
+  const editingViewOnly = useAppStore(
+    (st) => editing?.mode === 'edit' && st.sync.teams[editing.id]?.role === 'player',
+  );
+  // Adjusting state while rendering (React's pattern for state derived from a change).
+  if (editingViewOnly) setEditing(null);
 
   const onDelete = (team: Team) => {
     if (useAppStore.getState().sync.teams[team.id]) setSharedDelete(team);
@@ -69,7 +75,7 @@ export function TeamList({
 
       <View style={styles.list}>
         {teams.map((team) =>
-          editing?.mode === 'edit' && editing.id === team.id ? (
+          editing?.mode === 'edit' && editing.id === team.id && !editingViewOnly ? (
             <TeamForm
               key={team.id}
               initial={team}

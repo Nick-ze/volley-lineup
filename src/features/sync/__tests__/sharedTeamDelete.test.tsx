@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import type { SyncErrorCode, TeamRole } from '@/domain/types';
 import { t } from '@/i18n/en';
@@ -61,21 +61,49 @@ describe('deleting a shared team as a manager', () => {
     expect(screen.queryByRole('button', { name: s.leaveLabel(NAME) })).toBeNull();
   });
 
-  it('Remove from this device deletes locally and unlinks (no server call)', async () => {
+  it('Remove from this device unlinks first, then deletes locally (no server call)', async () => {
+    // At unlink time the team must still be on the device (never a linked, empty team).
+    let presentAtUnlink: boolean | null = null;
+    jest
+      .mocked(sync.unlinkTeam)
+      .mockImplementationOnce((id) => (presentAtUnlink = teamIds().includes(id)));
     await openDelete();
+    expect(screen.getByText(s.title(NAME))).toBeTruthy();
     await press(s.removeHereLabel(NAME));
+    expect(presentAtUnlink).toBe(true);
     expect(teamIds()).toEqual([]);
     expect(sync.unlinkTeam).toHaveBeenCalledWith('team1');
     expect(sync.deleteTeamEverywhere).not.toHaveBeenCalled();
     expect(screen.queryByTestId('shared-team-delete')).toBeNull();
   });
 
-  it('Delete for everyone deletes in the cloud, then here', async () => {
+  it('Delete for everyone deletes in the cloud, then unlinks and deletes here', async () => {
+    let presentAtUnlink: boolean | null = null;
+    jest
+      .mocked(sync.unlinkTeam)
+      .mockImplementationOnce((id) => (presentAtUnlink = teamIds().includes(id)));
     await openDelete();
     await press(s.deleteEverywhereLabel(NAME));
     expect(sync.deleteTeamEverywhere).toHaveBeenCalledWith('team1');
+    expect(presentAtUnlink).toBe(true);
     expect(teamIds()).toEqual([]);
     expect(screen.queryByTestId('shared-team-delete')).toBeNull();
+  });
+
+  it('can’t be cancelled while the request runs', async () => {
+    let answer: (r: { ok: true; value: undefined }) => void = () => undefined;
+    jest
+      .mocked(sync.deleteTeamEverywhere)
+      .mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    await openDelete();
+    await press(s.deleteEverywhereLabel(NAME));
+    const cancel = screen.getByRole('button', { name: s.cancelLabel });
+    expect(cancel).toBeDisabled();
+    await fireEvent.press(cancel);
+    expect(screen.getByTestId('shared-team-delete')).toBeTruthy();
+    await act(async () => answer({ ok: true, value: undefined }));
+    expect(screen.queryByTestId('shared-team-delete')).toBeNull();
+    expect(teamIds()).toEqual([]);
   });
 
   it('Delete for everyone offline says it needs a connection and keeps the team', async () => {
@@ -97,15 +125,21 @@ describe('deleting a shared team as a player', () => {
 
   it('offers this device / Leave team; no Delete for everyone', async () => {
     await openDelete();
+    expect(screen.getByText(s.removeTitle(NAME))).toBeTruthy();
     expect(screen.getByText(s.playerBody)).toBeTruthy();
     expect(screen.queryByRole('button', { name: s.deleteEverywhereLabel(NAME) })).toBeNull();
   });
 
-  it('Leave team leaves in the cloud, then removes the team here', async () => {
+  it('Leave team leaves in the cloud, then unlinks and removes the team here', async () => {
+    let presentAtUnlink: boolean | null = null;
+    jest
+      .mocked(sync.unlinkTeam)
+      .mockImplementationOnce((id) => (presentAtUnlink = teamIds().includes(id)));
     await openDelete();
     await press(s.leaveLabel(NAME));
     expect(sync.leaveTeam).toHaveBeenCalledWith('team1');
     expect(sync.unlinkTeam).toHaveBeenCalledWith('team1');
+    expect(presentAtUnlink).toBe(true);
     expect(teamIds()).toEqual([]);
   });
 

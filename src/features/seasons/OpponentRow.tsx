@@ -33,8 +33,11 @@ export function OpponentRow({ record, editable, deletable, onOpen, onDelete }: O
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(opponent.name);
   const [error, setError] = useState<OpponentNameError | undefined>();
+  // v10: the role changed to view-only while renaming (a sync) → close without saving.
+  // Adjusting state while rendering (React's pattern for state derived from a change).
+  if (editing && !editable) setEditing(false);
 
-  if (editing) {
+  if (editing && editable) {
     const save = () => {
       const { opponents } = useAppStore.getState();
       const result = validateOpponentName(name, opponents, opponent.seasonId, opponent.id);

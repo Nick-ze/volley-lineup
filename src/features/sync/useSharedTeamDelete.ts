@@ -6,10 +6,13 @@ import { useAppStore } from '@/store';
 
 import { teamCommandErrorText } from './syncErrorText';
 
-/** Removes the team from this device and stops syncing it (the cloud copy is untouched). */
+/**
+ * Stops syncing the team, then removes it from this device (the cloud copy is untouched). Unlinked
+ * first, so a still-linked team never sits empty locally (the engine must not see it as deleted).
+ */
 function removeLocally(teamId: string): void {
-  useAppStore.getState().deleteTeam(teamId);
   unlinkTeam(teamId);
+  useAppStore.getState().deleteTeam(teamId);
 }
 
 /**

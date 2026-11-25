@@ -2,9 +2,11 @@
  * v10: a view-only member (player role of a shared team) sees the team side read-only with the
  * reason; managers of a shared team and local teams keep every control (design §7.3, E2).
  */
-import { screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
+import { seasonTabPage } from '@/domain/tour';
 import type { TeamRole } from '@/domain/types';
+import { resetTourSession, useTourSession } from '@/features/tour/tourSession';
 import { t } from '@/i18n/en';
 import { useAppStore } from '@/store';
 import { makePlayer, makeSet, renderApp, seedApp } from '@/test-utils';
@@ -19,8 +21,12 @@ type Access = 'viewer' | 'manager' | 'local';
 
 function seed(access: Access) {
   seedApp({ players, matches: [match] });
+  resetTourSession();
   if (access === 'local') return;
-  const role: TeamRole = access === 'viewer' ? 'player' : 'manager';
+  setRole(access === 'viewer' ? 'player' : 'manager');
+}
+
+function setRole(role: TeamRole) {
   useAppStore.setState({
     sync: {
       deviceId: 'dev1',
@@ -87,6 +93,11 @@ describe('view-only member', () => {
     expect(screen.getByText(t.roster.matches.vs(opponentName))).toBeTruthy();
   });
 
+  it('the season screen sets no tour page (its tips point at missing controls)', async () => {
+    await renderApp(`/team/team1/season/${seasonId()}?tab=matches`);
+    expect(useTourSession.getState().focused).toBeNull();
+  });
+
   it('opponents: no Add, Rename or Delete', async () => {
     await renderApp(`/team/team1/season/${seasonId()}?tab=opponents`);
     expect(screen.queryByTestId('opponent-name')).toBeNull();
@@ -130,5 +141,41 @@ describe.each<Access>(['manager', 'local'])('%s: unchanged', (access) => {
     await renderApp(`/team/team1/season/${seasonId()}?tab=opponents`);
     expect(button(t.seasons.opponents.renameLabel(opponentName))).toBeTruthy();
     expect(screen.getByTestId('opponent-name')).toBeTruthy();
+  });
+});
+
+describe('the role changes to view-only while a form is open', () => {
+  beforeEach(() => seed('manager'));
+
+  it('closes the team edit form without saving', async () => {
+    await renderApp('/teams');
+    await fireEvent.press(screen.getByRole('button', { name: t.roster.teams.rename('Herren 1') }));
+    await fireEvent.changeText(screen.getByLabelText(t.roster.teams.name), 'Renamed');
+    await act(async () => setRole('player'));
+    expect(screen.queryByLabelText(t.roster.teams.name)).toBeNull();
+    expect(button(t.common.save)).toBeNull();
+    expect(useAppStore.getState().teams[0]!.name).toBe('Herren 1');
+    // Back to manager: the form stays closed.
+    await act(async () => setRole('manager'));
+    expect(screen.queryByLabelText(t.roster.teams.name)).toBeNull();
+  });
+
+  it('closes the opponent rename without saving', async () => {
+    await renderApp(`/team/team1/season/${seasonId()}?tab=opponents`);
+    await fireEvent.press(
+      screen.getByRole('button', { name: t.seasons.opponents.renameLabel(opponentName) }),
+    );
+    const field = screen.getByLabelText(t.seasons.opponents.newName(opponentName));
+    await fireEvent.changeText(field, 'Tigers');
+    await act(async () => setRole('player'));
+    expect(screen.queryByLabelText(t.seasons.opponents.newName(opponentName))).toBeNull();
+    expect(useAppStore.getState().opponents.map((o) => o.name)).toContain(opponentName);
+    await act(async () => setRole('manager'));
+    expect(screen.queryByLabelText(t.seasons.opponents.newName(opponentName))).toBeNull();
+  });
+
+  it('the season screen sets its tour page for managers', async () => {
+    await renderApp(`/team/team1/season/${seasonId()}?tab=matches`);
+    expect(useTourSession.getState().focused).toBe(seasonTabPage('matches'));
   });
 });
