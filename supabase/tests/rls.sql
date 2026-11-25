@@ -87,6 +87,7 @@ begin
     '[{"kind":"team","id":"team-b","at":"2026-01-01T10:00:00Z","payload":{"name":"B"}}]');
   perform pg_temp.check((select count(*) from public.team_records) = 1, 'T1 MB reads its record');
   perform pg_temp.expect_error('T1 bad team id', $q$select public.create_team('a/b', 'x')$q$, '23514');
+  perform pg_temp.expect_error('T1 dots-only team id', $q$select public.create_team('..', 'x')$q$, '23514');
 end $$;
 
 -- ---------------------------------------------------------------------------------------------
@@ -108,8 +109,12 @@ begin
   perform pg_temp.check(not (r -> 0 ? 'payload'), 'T2 applied result has no payload');
   perform pg_temp.check((r -> 0 ->> 'version')::bigint < (r -> 1 ->> 'version')::bigint
                         and (r -> 1 ->> 'version')::bigint < (r -> 2 ->> 'version')::bigint, 'T2 versions increase');
-  perform pg_temp.check((r -> 1 ->> 'at')::timestamptz = '2026-01-01T10:00:00Z', 'T2 at echoed');
+  perform pg_temp.check(r -> 1 ->> 'at' = '2026-01-01T10:00:00.000Z', 'T2 at echoed with milliseconds');
+  perform pg_temp.check(r -> 1 ->> 'updated_at' ~ '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$', 'T2 updated_at in ISO ms format');
+  perform pg_temp.check(r -> 1 ->> 'device_id' = 'dev1', 'T2 result has device_id');
   perform pg_temp.check((select count(*) from public.team_records) = 3, 'T2 MA reads 3 rows');
+  -- updated_at is the clock time of the write (taken after the version), not the transaction start
+  perform pg_temp.check((select bool_and(updated_at > now()) from public.team_records), 'T2 updated_at is clock time');
   perform pg_temp.check((select bool_and(updated_by = 'a0000000-0000-4000-8000-000000000001' and device_id = 'dev1')
                          from public.team_records), 'T2 updated_by and device_id');
   perform set_config('test.v_p1', r -> 1 ->> 'version', true);
@@ -117,7 +122,8 @@ begin
   p := public.pull_changes('team-a', 0);
   perform pg_temp.check(jsonb_array_length(p -> 'rows') = 3, 'T2 pull returns 3 rows');
   perform pg_temp.check(p -> 'rows' -> 0 ->> 'kind' = 'team' and p -> 'rows' -> 2 ->> 'id' = 'm1/1', 'T2 pull ordered by version');
-  perform pg_temp.check(p ? 'server_now', 'T2 pull has server_now');
+  perform pg_temp.check(p ->> 'server_now' ~ '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$', 'T2 pull has server_now');
+  perform pg_temp.check(p -> 'rows' -> 1 ->> 'at' = '2026-01-01T10:00:00.000Z', 'T2 pulled at in ISO ms format');
   perform pg_temp.check(jsonb_array_length(public.pull_changes('team-a', (r -> 1 ->> 'version')::bigint) -> 'rows') = 1, 'T2 pull after cursor');
   perform pg_temp.check(jsonb_array_length(public.pull_changes('team-a', 0, 1) -> 'rows') = 1, 'T2 pull limit');
 
@@ -136,6 +142,7 @@ begin
   i := public.create_invite('team-a', 'player', 7);
   perform pg_temp.check(i ->> 'code' ~ '^[A-HJ-NP-Z2-9]{10}$' and i ->> 'role' = 'player', 'T3 invite code shape');
   perform pg_temp.check((i ->> 'expires_at')::timestamptz = now() + interval '7 days', 'T3 invite expiry');
+  perform pg_temp.check(i -> 'max_uses' = 'null'::jsonb, 'T3 player codes are multi-use');
   perform set_config('test.code_player', i ->> 'code', true);
   perform set_config('test.invite_player', i ->> 'id', true);
 end $$;
@@ -219,6 +226,9 @@ begin
   perform pg_temp.expect_error('T9 insert hold', $q$insert into public.match_holds (team_id, match_id, device_id, held_until) values ('team-a', 'm9', 'x', now())$q$, '42501');
   perform pg_temp.expect_error('T9 delete hold', $q$delete from public.match_holds$q$, '42501');
   perform pg_temp.expect_error('T9 sequence', $q$select nextval('public.team_records_version_seq')$q$, '42501');
+  perform pg_temp.expect_error('T9 read removals', $q$select * from private.team_removals$q$, '42501');
+  perform pg_temp.expect_error('T9 delete removals', $q$delete from private.team_removals$q$, '42501');
+  perform pg_temp.expect_error('T9 update team budget', $q$update public.teams set payload_bytes = 0$q$, '42501');
 end $$;
 
 -- ---------------------------------------------------------------------------------------------
@@ -302,6 +312,23 @@ begin
   insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/x2');
 end $$;
 
+-- T13b at most 500 photos per team: fill team-a to 499 as postgres, MA adds the 500th.
+reset role;
+insert into storage.objects (bucket_id, name)
+select 'team-photos', 'team-a/bulk-' || g from generate_series(1, 498) g;
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/bulk-499');
+  perform pg_temp.check(private.team_photo_count('team-a') = 500, 'T13b team-a has 500 photos');
+  perform pg_temp.expect_error('T13b the 501st photo', $q$insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/bulk-500')$q$, '42501');
+end $$;
+reset role;
+select set_config('storage.allow_delete_query', 'true', true);
+delete from storage.objects where bucket_id = 'team-photos' and name like 'team-a/bulk-%';
+select set_config('storage.allow_delete_query', 'false', true);
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000001'); set local role authenticated;
+
 -- ---------------------------------------------------------------------------------------------
 -- T14 / T15 / T16 last write wins, clamp, tombstones (MA)
 -- ---------------------------------------------------------------------------------------------
@@ -333,11 +360,17 @@ begin
   -- T15 a clock a day ahead is clamped to now() + 1 minute
   r := public.push_records('team-a', 'dev1', jsonb_build_array(jsonb_build_object(
          'kind', 'player', 'id', 'p2', 'at', now() + interval '1 day', 'payload', '{}'::jsonb))) -> 0;
-  perform pg_temp.check((r ->> 'applied')::boolean and (r ->> 'at')::timestamptz = now() + interval '1 minute', 'T15 clamped at returned');
+  perform pg_temp.check((r ->> 'applied')::boolean
+                        and (r ->> 'at')::timestamptz = date_trunc('milliseconds', now()) + interval '1 minute', 'T15 clamped at returned');
   perform pg_temp.check((select client_updated_at from public.team_records where kind = 'player' and id = 'p2') <= now() + interval '1 minute', 'T15 clamped at stored');
   r := public.push_records('team-a', 'dev1', jsonb_build_array(jsonb_build_object(
          'kind', 'player', 'id', 'p2', 'at', now() + interval '2 days', 'payload', '{"x":1}'::jsonb))) -> 0;
   perform pg_temp.check(not (r ->> 'applied')::boolean, 'T15 clamped twice: same time, not applied');
+  -- client times are kept to the millisecond, so `at` comes back exactly as JavaScript sends it
+  r := public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p6","at":"2026-01-01T10:00:00.123456Z","payload":{}}]') -> 0;
+  perform pg_temp.check(r ->> 'at' = '2026-01-01T10:00:00.123Z', 'T15 at truncated to milliseconds');
+  r := public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p6","at":"2026-01-01T10:00:00.123Z","payload":{"x":1}}]') -> 0;
+  perform pg_temp.check(not (r ->> 'applied')::boolean, 'T15 the same millisecond is the same time');
 
   -- T16 tombstone (a payload sent with it is dropped), visible in pull, then resurrected
   r := public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p1","at":"2026-01-01T12:00:00Z","deleted":true,"payload":{"x":1}}]') -> 0;
@@ -374,6 +407,11 @@ begin
   perform pg_temp.expect_error('T17 missing at', $q$select public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p3","payload":{}}]')$q$, '22023');
   perform pg_temp.expect_error('T17 bad at', $q$select public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p3","at":"soon","payload":{}}]')$q$, '22023');
   perform pg_temp.expect_error('T17 bad deleted', $q$select public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p3","at":"2026-01-01T10:00:00Z","deleted":"yes"}]')$q$, '22023');
+  perform pg_temp.expect_error('T17 -infinity at', $q$select public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p3","at":"-infinity","payload":{}}]')$q$, '22023');
+  perform pg_temp.expect_error('T17 infinity at', $q$select public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p3","at":"infinity","payload":{}}]')$q$, '22023');
+  perform pg_temp.expect_error('T17 70 kB payload (cap 64 kB)', $q$select public.push_records('team-a', 'dev1', jsonb_build_array(jsonb_build_object('kind', 'player', 'id', 'big', 'at', '2026-01-01T10:00:00Z', 'payload', jsonb_build_object('x', repeat('x', 70000)))))$q$, '23514');
+  r := public.push_records('team-a', 'dev1', jsonb_build_array(jsonb_build_object('kind', 'player', 'id', 'p60', 'at', '2026-01-01T10:00:00Z', 'payload', jsonb_build_object('x', repeat('x', 60000)))));
+  perform pg_temp.check((r -> 0 ->> 'applied')::boolean, 'T17 60 kB payload accepted');
   perform pg_temp.check((select count(*) from public.team_records where id in ('c1', 'big', 'other', 's1', 'p3', '')) = 0, 'T17 nothing written by rejected batches');
 
   -- a batch of exactly 200 is fine
@@ -384,11 +422,32 @@ begin
   perform pg_temp.expect_error('T17 invite 0 days', $q$select public.create_invite('team-a', 'player', 0)$q$, '22023');
   perform pg_temp.expect_error('T17 invite 31 days', $q$select public.create_invite('team-a', 'player', 31)$q$, '22023');
   perform pg_temp.expect_error('T17 invite bad role', $q$select public.create_invite('team-a', 'coach', 7)$q$, '22023');
+  perform pg_temp.expect_error('T17 manager invite 8 days', $q$select public.create_invite('team-a', 'manager', 8)$q$, '22023');
   perform pg_temp.expect_error('T17 bad member role', $q$select public.set_member_role('team-a', 'a0000000-0000-4000-8000-000000000003', 'coach')$q$, '22023');
 end $$;
 
--- Team full (VL007): fill team-a to 20 000 records as postgres.
+-- Team full by bytes (VL007): teams.payload_bytes follows every write; growing past 20 MB fails.
 reset role;
+do $$
+begin
+  perform pg_temp.check((select payload_bytes from public.teams where id = 'team-a')
+                        = (select sum(octet_length(payload::text)) from public.team_records where team_id = 'team-a'),
+                        'T17 payload_bytes is the sum of the payloads');
+end $$;
+update public.teams set payload_bytes = 20 * 1024 * 1024 - 10 where id = 'team-a';
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T17 team full (bytes)', $q$select public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p5","at":"2026-01-01T10:00:00Z","payload":{"name":"too much"}}]')$q$, 'VL007');
+  perform pg_temp.check((public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p60","at":"2026-01-01T10:00:01Z","deleted":true}]') -> 0 ->> 'applied')::boolean,
+                        'T17 a shrinking write passes the budget');
+end $$;
+reset role;
+update public.teams
+set payload_bytes = (select coalesce(sum(octet_length(payload::text)), 0) from public.team_records where team_id = 'team-a')
+where id = 'team-a';
+
+-- Team full by count (VL007): fill team-a to 20 000 records as postgres.
 insert into public.team_records (team_id, kind, id, payload, client_updated_at)
 select 'team-a', 'opponent', 'fill' || g, '{}', now()
 from generate_series(1, 20000 - (select count(*) from public.team_records where team_id = 'team-a')) g;
@@ -400,23 +459,23 @@ begin
   perform pg_temp.check((public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p2","at":"2026-01-01T10:00:00Z","deleted":true}]') -> 0) ? 'applied', 'T17 a full team still accepts updates');
 end $$;
 reset role;
+-- Records are only ever removed with their team; here the filler goes and the budget is re-synced.
 delete from public.team_records where team_id = 'team-a' and id like 'fill%';
+update public.teams
+set payload_bytes = (select coalesce(sum(octet_length(payload::text)), 0) from public.team_records where team_id = 'team-a')
+where id = 'team-a';
 
--- Too many teams (VL006): MB manages 50 teams.
-insert into public.teams (id) select 'fill-' || g from generate_series(1, 49) g;
-insert into public.team_members (team_id, user_id, role)
-select 'fill-' || g, 'a0000000-0000-4000-8000-000000000002', 'manager' from generate_series(1, 49) g;
+-- Too many teams (VL006): MB has created 10 teams (team-b + 9 more as postgres).
+insert into public.teams (id, created_by)
+select 'fill-' || g, 'a0000000-0000-4000-8000-000000000002' from generate_series(1, 9) g;
 select pg_temp.as_user('a0000000-0000-4000-8000-000000000002'); set local role authenticated;
 do $$
 begin
   perform pg_temp.expect_error('T17 too many teams', $q$select public.create_team('team-z', 'Ben')$q$, 'VL006');
+  perform pg_temp.check(public.create_team('team-b', 'Ben') = 'member', 'T17 re-uploading an existing team is not limited');
 end $$;
 reset role;
 delete from public.teams where id like 'fill-%';
-do $$
-begin
-  perform pg_temp.check((select count(*) from public.team_members where team_id like 'fill-%') = 0, 'T17 filler teams cleaned up');
-end $$;
 
 -- ---------------------------------------------------------------------------------------------
 -- T18 last manager (MA, while PA is a member)
@@ -494,7 +553,18 @@ begin
   perform pg_temp.check(public.join_team(current_setting('test.code_manager'), 'Ben') ->> 'role' = 'manager', 'T22 manager code upgrades MB');
   perform pg_temp.check(public.join_team(current_setting('test.code_player'), 'Ben') ->> 'role' = 'manager', 'T22 player code doesn''t downgrade MB');
   perform pg_temp.check((select uses from public.invites where code = current_setting('test.code_player')) = 4, 'T22 uses counted');
+  perform pg_temp.check((select max_uses = 1 and expires_at <= created_at + interval '7 days' from public.invites
+                         where code = current_setting('test.code_manager')), 'T22 manager codes: single use, at most 7 days');
 end $$;
+
+-- T22b a manager code works once: the next person gets VL002
+reset role; select pg_temp.as_user('a0000000-0000-4000-8000-000000000004'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T22b manager code used up', format('select public.join_team(%L, %L)', current_setting('test.code_manager'), 'S'), 'VL002');
+  perform pg_temp.check((select count(*) from public.team_members) = 0, 'T22b S joined nothing');
+end $$;
+reset role; select pg_temp.as_user('a0000000-0000-4000-8000-000000000002'); set local role authenticated;
 
 -- ---------------------------------------------------------------------------------------------
 -- T24 live holds (MA holds m1 on dev1 since T2; MB is now a second manager)
@@ -540,6 +610,22 @@ do $$
 begin
   perform pg_temp.check((select count(*) from public.match_holds) = 2, 'T24 PA sees the holds');
 end $$;
+
+-- T24b at most 50 active holds per team; holds expired more than a day ago are pruned.
+reset role;
+insert into public.match_holds (team_id, match_id, device_id, held_until)
+select 'team-a', 'h' || g, 'dev9', now() + interval '10 minutes' from generate_series(1, 48) g;
+insert into public.match_holds (team_id, match_id, device_id, held_until)
+values ('team-a', 'old', 'dev9', now() - interval '2 days');
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T24b 51st active hold', $q$select public.hold_match('team-a', 'm4', 'dev1', 'Anna')$q$, 'VL007');
+  perform pg_temp.check((public.hold_match('team-a', 'm3', 'dev1', 'Anna') ->> 'granted')::boolean, 'T24b refreshing a held match still works');
+  perform pg_temp.check(not exists (select 1 from public.match_holds where match_id = 'old'), 'T24b long-expired hold pruned');
+end $$;
+reset role;
+delete from public.match_holds where match_id like 'h%';
 
 -- ---------------------------------------------------------------------------------------------
 -- T19 promote, then leave: the leaver loses access
@@ -593,7 +679,42 @@ reset role;
 do $$
 begin
   perform pg_temp.check((select count(*) from public.match_holds where match_id = 'm2') = 0, 'T20 the removed member''s hold is gone');
+  perform pg_temp.check(exists (select 1 from private.team_removals
+                                where team_id = 'team-a' and user_id = 'a0000000-0000-4000-8000-000000000002'), 'T20 removal recorded');
 end $$;
+
+-- T20b a removed member can't come back with a code created before the removal; a new code works.
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000002'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T20b MB rejoins with the old code', format('select public.join_team(%L, %L)', current_setting('test.code_player'), 'Ben'), 'VL002');
+end $$;
+reset role;
+-- make the timeline explicit (inside one transaction now() doesn't move): code, then removal
+update public.invites set created_at = now() - interval '2 minutes' where code = current_setting('test.code_player');
+update private.team_removals set removed_at = now() - interval '1 minute' where team_id = 'team-a';
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000003'); set local role authenticated;
+do $$
+begin
+  perform set_config('test.code_reinvite', public.create_invite('team-a', 'player', 7) ->> 'code', true);
+end $$;
+reset role; select pg_temp.as_user('a0000000-0000-4000-8000-000000000002'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T20b old code still refused', format('select public.join_team(%L, %L)', current_setting('test.code_player'), 'Ben'), 'VL002');
+  perform pg_temp.check(public.join_team(current_setting('test.code_reinvite'), 'Ben') ->> 'role' = 'player', 'T20b a new code re-invites MB');
+end $$;
+reset role;
+do $$
+begin
+  perform pg_temp.check(not exists (select 1 from private.team_removals where team_id = 'team-a'), 'T20b a join clears the removal');
+end $$;
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000003'); set local role authenticated;
+do $$
+begin
+  perform public.remove_member('team-a', 'a0000000-0000-4000-8000-000000000002');
+end $$;
+reset role;
 
 -- ---------------------------------------------------------------------------------------------
 -- T23 the only member can't leave
@@ -675,6 +796,11 @@ do $$
 begin
   perform pg_temp.check((select count(*) from public.invites where team_id = 'team-a') > 0, 'T27 team-a has invites');
   perform public.hold_match('team-a', 'm1', 'dev3', 'Pia');
+  -- photos first: while team-a/x2 is stored, delete_team refuses (VL008)
+  perform pg_temp.expect_error('T27 photos remain', $q$select public.delete_team('team-a')$q$, 'VL008');
+  perform set_config('storage.allow_delete_query', 'true', true); -- what the Storage API does
+  delete from storage.objects where bucket_id = 'team-photos' and name like 'team-a/%';
+  perform set_config('storage.allow_delete_query', 'false', true);
   perform public.delete_team('team-a');
 end $$;
 
@@ -689,10 +815,36 @@ begin
   perform pg_temp.check(coalesce(current_setting('app.bypass_member_guard', true), 'off') = 'off', 'T27 guard bypass reset');
 end $$;
 
--- PA now deletes the account: team-c (sole member) goes with it.
-select pg_temp.as_user('a0000000-0000-4000-8000-000000000003'); set local role authenticated;
+-- T27b photos left behind by an earlier team with the same id: the id counts as taken.
+insert into storage.objects (bucket_id, name) values ('team-photos', 'team-old/leftover');
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000004'); set local role authenticated;
 do $$
 begin
+  perform pg_temp.check(public.create_team('team-old', 'Sam') = 'taken', 'T27b leftover photos: taken');
+  perform pg_temp.check((select count(*) from storage.objects where bucket_id = 'team-photos') = 0, 'T27b S can''t see the leftover photo');
+end $$;
+reset role;
+select set_config('storage.allow_delete_query', 'true', true);
+delete from storage.objects where bucket_id = 'team-photos' and name = 'team-old/leftover';
+select set_config('storage.allow_delete_query', 'false', true);
+
+-- PA now deletes the account: team-c (sole member) goes with it, once its photos are gone.
+select pg_temp.as_user('a0000000-0000-4000-8000-000000000003'); set local role authenticated;
+do $$
+declare
+  v_detail text;
+begin
+  insert into storage.objects (bucket_id, name) values ('team-photos', 'team-c/p');
+  begin
+    perform public.delete_my_account();
+    raise exception 'FAIL T25 delete_my_account with photos succeeded';
+  exception when sqlstate 'VL008' then
+    get stacked diagnostics v_detail = pg_exception_detail;
+    perform pg_temp.check(v_detail = 'team-c', 'T25 VL008 names the team with photos');
+  end;
+  perform set_config('storage.allow_delete_query', 'true', true);
+  delete from storage.objects where bucket_id = 'team-photos' and name = 'team-c/p';
+  perform set_config('storage.allow_delete_query', 'false', true);
   perform pg_temp.check(public.delete_my_account() = array['team-c'], 'T25 PA deletes the account');
 end $$;
 
@@ -788,6 +940,23 @@ begin
   select string_agg(t, ', ') into v_bad from unnest(v_tables) t
   where not exists (select 1 from pg_policy where polrelid = t::regclass);
   perform pg_temp.check(v_bad is null, 'T30 every table has a policy: ' || coalesce(v_bad, ''));
+
+  perform pg_temp.check(not has_table_privilege('authenticated', 'private.team_removals', 'SELECT,INSERT,UPDATE,DELETE')
+                        and not has_table_privilege('anon', 'private.team_removals', 'SELECT,INSERT,UPDATE,DELETE')
+                        and (select relrowsecurity from pg_class where oid = 'private.team_removals'::regclass),
+                        'T30 team_removals closed');
+
+  perform pg_temp.check((select not public and file_size_limit = 262144
+                                and allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']
+                         from storage.buckets where id = 'team-photos'), 'T30 team-photos bucket is private and limited');
+
+  -- Member changes lock the team row (the race itself needs two sessions; this checks the code).
+  select string_agg(f, ', ') into v_bad
+  from unnest(array['private.guard_last_manager()', 'public.leave_team(text)',
+                    'public.set_member_role(text,uuid,text)', 'public.remove_member(text,uuid)',
+                    'public.delete_my_account()']) f
+  where pg_get_functiondef(f::regprocedure) !~* 'from public\.teams t\s.*for update';
+  perform pg_temp.check(v_bad is null, 'T30 team row locked in: ' || coalesce(v_bad, ''));
 
   raise notice 'ALL RLS TESTS PASSED';
 end $$;
