@@ -35,6 +35,9 @@ export function getClient(): SupabaseClient {
       detectSessionInUrl: false,
     },
     global: { fetch: fetchWithTimeout() },
+    // No postgrest retries (it retries failed GETs ~3 times over ~7 s): the engine has its own
+    // offline back-off, and the retries kept the badge on "Syncing…" while offline.
+    db: { retry: false },
   });
   client = next;
   keepTokenFresh(next.auth);

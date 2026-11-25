@@ -3,15 +3,18 @@ import type { ComponentProps } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
-import type { SyncPhase, SyncStatus } from '@/domain/types';
+import type { SyncStatusKey } from '@/domain/syncStatusKey';
+import type { SyncStatus } from '@/domain/types';
+import { useSyncStatusKey } from '@/features/account';
 import { useT, type Strings } from '@/i18n';
 import { useSyncAccount, useSyncStatus } from '@/store';
 import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-const ICONS: Record<SyncPhase, IconName> = {
+const ICONS: Record<SyncStatusKey, IconName> = {
   off: 'cloud-outline',
+  noTeams: 'cloud-outline',
   synced: 'cloud-done-outline',
   syncing: 'cloud-upload-outline',
   offline: 'cloud-offline-outline',
@@ -21,12 +24,15 @@ const ICONS: Record<SyncPhase, IconName> = {
 /** Size of the cloud mark (px). */
 const ICON_SIZE = 18;
 
-/** The badge's text: "Synced", "Syncing…", "Offline (3)", "Sync error", "Not signed in". */
-export function syncBadgeText(t: Strings, status: SyncStatus): string {
-  if (status.phase === 'offline' && status.pending > 0) {
+/**
+ * The badge's text: "Synced", "Syncing…", "Offline (3)", "Sync error", "No shared teams" (signed
+ * in, nothing shared) or "Not signed in".
+ */
+export function syncBadgeText(t: Strings, status: SyncStatus, key: SyncStatusKey): string {
+  if (key === 'offline' && status.pending > 0) {
     return t.sync.badge.offlinePending(status.pending);
   }
-  return t.sync.status[status.phase];
+  return t.sync.status[key];
 }
 
 /**
@@ -40,9 +46,10 @@ export function SyncBadge() {
   const router = useRouter();
   const status = useSyncStatus();
   const account = useSyncAccount();
+  const key = useSyncStatusKey();
   if (status.phase === 'off' && !account) return null;
-  const text = syncBadgeText(t, status);
-  const isError = status.phase === 'error';
+  const text = syncBadgeText(t, status, key);
+  const isError = key === 'error';
   return (
     <Pressable
       accessibilityRole="button"
@@ -52,7 +59,7 @@ export function SyncBadge() {
       style={({ pressed }) => [styles.badge, pressed && styles.pressed]}
     >
       <Ionicons
-        name={ICONS[status.phase]}
+        name={ICONS[key]}
         size={ICON_SIZE}
         color={isError ? colors.error : colors.secondaryText}
         accessibilityElementsHidden

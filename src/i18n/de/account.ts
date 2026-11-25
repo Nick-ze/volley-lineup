@@ -7,7 +7,7 @@ const signOutNote = 'Du wirst abgemeldet; geteilte Teams bleiben in der Cloud.';
 
 /** v10: Konto, Anmeldung mit E-Mail-Code, Cloud-Teams (hochladen / herunterladen), Konto löschen. */
 export const account: Strings['account'] = {
-  title: 'Konto',
+  title: 'Cloud-Sync',
   signIn: {
     title: 'Anmelden',
     email: 'E-Mail',
@@ -52,12 +52,13 @@ export const account: Strings['account'] = {
     signIn: 'Anmelden',
     signInLabel: 'Anmelden, um deine Teams zu synchronisieren',
     signedIn: (email) => `Angemeldet als ${email}`,
-    open: 'Konto',
-    openLabel: 'Konto: Sync-Status und geteilte Teams',
+    open: 'Cloud-Sync öffnen',
+    openLabel: 'Cloud-Sync öffnen: Sync-Status und geteilte Teams',
     otherProfile: (email, profile) =>
       `${email} ist auf diesem Gerät mit dem Profil „${profile}“ angemeldet. Öffne dieses Profil, um das Konto zu nutzen.`,
   },
   screen: {
+    status: 'Sync-Status',
     lastSynced: (when) => `Zuletzt synchronisiert ${when}`,
     notSynced: 'Noch nicht synchronisiert',
     sharedTeams: 'Geteilte Teams',

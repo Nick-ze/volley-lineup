@@ -50,6 +50,9 @@ describe('client', () => {
         detectSessionInUrl: false,
       },
       global: { fetch: expect.any(Function) },
+      // The engine retries with its own back-off; postgrest's retries of failed GETs kept the
+      // badge on "Syncing…" for ~7 s per try while offline (v10 QA).
+      db: { retry: false },
     });
     // Native: the token refresh follows the app state (started or stopped at once).
     const { startAutoRefresh, stopAutoRefresh } = jest.mocked(client.auth);

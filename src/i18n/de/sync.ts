@@ -4,6 +4,7 @@ import type { Strings } from '../en';
 export const sync: Strings['sync'] = {
   status: {
     off: 'Nicht angemeldet',
+    noTeams: 'Keine geteilten Teams',
     synced: 'Synchronisiert',
     syncing: 'Synchronisiere …',
     offline: 'Offline',
@@ -20,7 +21,7 @@ export const sync: Strings['sync'] = {
   // E2: Status-Anzeige, Hinweise, geteiltes Team löschen, Import, Teamliste.
   badge: {
     offlinePending: (n: number) => `Offline (${n})`,
-    label: (text: string) => `${text}: Konto öffnen`,
+    label: (text: string) => `${text}: Cloud-Sync öffnen`,
   },
   notices: {
     removed: (team: string) =>
@@ -60,7 +61,7 @@ export const sync: Strings['sync'] = {
       lastManager: 'Mach zuerst jemand anderen zum Trainer.',
       lastMember: 'Du bist das einzige Mitglied: Lösche das Team stattdessen für alle.',
       forbidden: 'Das können nur Trainer.',
-      signIn: 'Melde dich zuerst an (Profil → Konto).',
+      signIn: 'Melde dich zuerst an (Profil → Cloud-Sync).',
       unknown: 'Das hat nicht geklappt. Versuch es noch einmal.',
     },
   },

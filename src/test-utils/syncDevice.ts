@@ -33,6 +33,7 @@ const emptyRuntime = (): SyncRuntimeState => ({
   session: null,
   holds: {},
   notices: [],
+  restoring: false,
 });
 
 export class TestDevice {

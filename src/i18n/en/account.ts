@@ -8,7 +8,8 @@ const teams = (n: number) => (n === 1 ? '1 team' : `${n} teams`);
 const signOutNote = 'You’ll be signed out; shared teams stay in the cloud.';
 
 export const account = {
-  title: 'Account',
+  /** The screen's title (`/account`), like the Profile tab card that opens it. */
+  title: 'Cloud sync',
   signIn: {
     title: 'Sign in',
     email: 'Email',
@@ -51,12 +52,14 @@ export const account = {
     signIn: 'Sign in',
     signInLabel: 'Sign in to sync your teams',
     signedIn: (email: string) => `Signed in as ${email}`,
-    open: 'Account',
-    openLabel: 'Account: sync status and shared teams',
+    open: 'Open cloud sync',
+    openLabel: 'Open cloud sync: sync status and shared teams',
     otherProfile: (email: string, profile: string) =>
       `${email} is signed in with the profile “${profile}” on this device. Open that profile to use the account.`,
   },
   screen: {
+    /** The section with the email, the status and Sync now. */
+    status: 'Sync status',
     lastSynced: (when: string) => `Last synced ${when}`,
     notSynced: 'Not synced yet',
     sharedTeams: 'Shared teams',

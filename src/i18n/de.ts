@@ -67,7 +67,7 @@ export const de: Strings = {
     season: 'Saison',
     newSeason: 'Neue Saison',
     settings: 'Einstellungen',
-    account: 'Konto',
+    account: 'Cloud-Sync',
     signIn: 'Anmelden',
     cloudTeams: 'Cloud-Teams',
     members: 'Mitglieder',

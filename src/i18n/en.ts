@@ -68,7 +68,7 @@ export const en = {
     season: 'Season',
     newSeason: 'New season',
     settings: 'Settings',
-    account: 'Account',
+    account: 'Cloud sync',
     signIn: 'Sign in',
     cloudTeams: 'Cloud teams',
     members: 'Members',

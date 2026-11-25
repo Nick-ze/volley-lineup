@@ -39,7 +39,10 @@ export function AccountScreen() {
     return (
       <Screen testID="account-screen">
         {notice}
-        <Section title={t.account.title} hint={link.kind === 'signedOut' ? s.signedOut : undefined}>
+        <Section
+          title={t.account.signIn.title}
+          hint={link.kind === 'signedOut' ? s.signedOut : undefined}
+        >
           <SignedOutPanel link={link} testID="account-sign-in" />
         </Section>
       </Screen>
