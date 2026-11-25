@@ -102,6 +102,18 @@ describe('parentRoute', () => {
     expect(parentRoute('team/[teamId]/starters', undefined, lookup)).toBe('/teams');
   });
 
+  it('v10: account screens go back to the profile / account, members to the team', () => {
+    expect(parentRoute('account/index', {}, lookup)).toBe('/profile');
+    expect(parentRoute('account/sign-in', {}, lookup)).toBe('/profile');
+    expect(parentRoute('account/teams', {}, lookup)).toBe('/account');
+    expect(parentRoute('team/[teamId]/members', { teamId: 't1' }, lookup)).toEqual({
+      pathname: '/team/[teamId]',
+      params: { teamId: 't1' },
+    });
+    expect(parentRoute('team/[teamId]/members', {}, lookup)).toBe('/teams');
+    expect(parentRoute('join', {}, lookup)).toBe('/teams');
+  });
+
   it('falls back to /teams when params or the match are missing', () => {
     expect(parentRoute('team/[teamId]/player', {}, lookup)).toBe('/teams');
     expect(parentRoute('team/[teamId]/match-new', { teamId: '' }, lookup)).toBe('/teams');

@@ -9,7 +9,9 @@
  * error type on "our error" tags, schemaVersion 7 — PLAN §26;
  * v8 / app 7.0: seasons / tournaments with their opponent teams; every match belongs to one,
  * schemaVersion 8 — PLAN §29;
- * v9.1: an optional team captain (`Team.captainId`), schemaVersion 10).
+ * v9.1: an optional team captain (`Team.captainId`), schemaVersion 10;
+ * v10 / app 10.0: device-only sync bookkeeping (store v13 `sync`) — the export is unchanged, see
+ * docs/V10_SYNC_DESIGN.md §3).
  * These types are the single source of truth; never redefine them elsewhere.
  */
 
@@ -244,7 +246,111 @@ export type TourPage =
   | 'matchStarters'
   | 'live'
   | 'performance'
-  | 'matchStats';
+  | 'matchStats'
+  // v10.0: accounts and shared teams
+  | 'account'
+  | 'signIn'
+  | 'cloudTeams'
+  | 'members'
+  | 'join';
+
+/* ---- v10.0 accounts and cloud sync (store v13 `sync`; device-only, never exported) ---- */
+
+/** v10: a member's role in a shared team. Managers edit everything; players only view. */
+export type TeamRole = 'manager' | 'player';
+
+/** v10: the account signed in on this device, linked to one local profile. */
+export interface SyncAccount {
+  userId: string;
+  email: string;
+  /** The local profile the account belongs to; shared teams live under it. */
+  profileId: string;
+}
+
+/**
+ * v10: what this device last saw on the server for one record: server version, payload hash
+ * (`''` when deleted), the (clamped) save time, and whether it is a tombstone.
+ */
+export interface SyncBase {
+  v: number;
+  h: string;
+  at: string;
+  del?: true;
+}
+
+/** v10: a local change waiting to be pushed: the save time and payload hash (`''` = deletion). */
+export interface SyncEdit {
+  at: string;
+  h: string;
+}
+
+/** v10: sync bookkeeping for one shared team on this device. Keys are `${kind}:${id}`. */
+export interface SyncedTeam {
+  /** The account this team syncs through on this device. */
+  userId: string;
+  /** Cached role (refreshed every sync), so view-only also works offline. */
+  role: TeamRole;
+  /** Highest gap-free server version pulled. */
+  cursor: number;
+  base: Record<string, SyncBase>;
+  edits: Record<string, SyncEdit>;
+  /** Photo ids known to exist in the team's cloud folder. */
+  photos: string[];
+}
+
+/** v10 (store v13): device-only sync state, persisted with the data so both are written at once. */
+export interface SyncData {
+  /** Random id of this installation (set on first sync start). */
+  deviceId: string | null;
+  account: SyncAccount | null;
+  /** Shared (linked) teams by team id. A team missing here is a local-only team. */
+  teams: Record<string, SyncedTeam>;
+}
+
+/** v10: the sync engine's state for the status badge (runtime only, not persisted). */
+export type SyncPhase = 'off' | 'synced' | 'syncing' | 'offline' | 'error';
+
+/** v10: why a sync command or cycle failed (mapped to i18n text by the UI). */
+export type SyncErrorCode =
+  | 'offline'
+  | 'forbidden'
+  | 'lastManager'
+  | 'lastMember'
+  | 'inviteInvalid'
+  | 'notSignedIn'
+  | 'signedOut'
+  | 'invalidCode'
+  | 'rateLimited'
+  | 'tooMany'
+  | 'unknown';
+
+export interface SyncStatus {
+  phase: SyncPhase;
+  /** Local changes not yet on the server (shared teams this device may edit). */
+  pending: number;
+  lastSyncedAt: string | null;
+  error: SyncErrorCode | null;
+  /** When the next automatic try is due after going offline / an error. */
+  retryAt: string | null;
+}
+
+/** v10: something the user should know after a sync (shown once as a banner). */
+export type SyncNotice =
+  | { kind: 'removed'; teamId: string; teamName: string }
+  | { kind: 'deleted'; teamId: string; teamName: string }
+  | { kind: 'demoted'; teamId: string; teamName: string; undone: number }
+  | { kind: 'skipped'; teamId: string; teamName: string; count: number };
+
+/** v10: an advisory lease on a match while one device scores it live (`match_holds`). */
+export interface MatchHold {
+  matchId: string;
+  teamId: string;
+  deviceId: string;
+  userId: string;
+  holderName: string;
+  /** ISO time the lease ends unless refreshed. */
+  heldUntil: string;
+}
 
 /* ---- Derived helper types (not part of the persisted shape) ---- */
 

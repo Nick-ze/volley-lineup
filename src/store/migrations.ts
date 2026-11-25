@@ -24,6 +24,8 @@
  * and `tourSeen: []`.
  * v11 → v12 (app 9.1): teams may have a `captainId` (the team captain) — optional, so no data
  * changes.
+ * v12 → v13 (app 10.0): device-only sync state `sync: { deviceId: null, account: null, teams: {} }`
+ * (no account, no shared teams — the app behaves exactly as before until someone signs in).
  */
 import {
   addRoleDefaults,
@@ -35,7 +37,7 @@ import {
 } from '@/domain/legacyData';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
-export const STORE_VERSION = 12;
+export const STORE_VERSION = 13;
 
 function v1ToV2(state: Rec): Rec {
   return { language: 'en', ...state, matches: mapSets(state.matches, addSetLogDefaults) };
@@ -67,5 +69,7 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
     state = { themeMode: 'dark', dyslexiaFont: false, ...state };
   if (fromVersion < 11 && isRec(state)) state = { tourMode: null, tourSeen: [], ...state };
   // v11 → v12: `Team.captainId` is optional, so nothing changes.
+  if (fromVersion < 13 && isRec(state))
+    state = { sync: { deviceId: null, account: null, teams: {} }, ...state };
   return state;
 }

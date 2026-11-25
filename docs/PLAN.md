@@ -687,3 +687,54 @@ only. From the match's Print / PDF and the team's Roster tab. No data change. De
 - [x] From a match the sheet shows opponent, date (dd.mm.yy), season and home / away; one A4 page for up to 20 players.
 - [x] The lineup sheet prints exactly as before; no data change (store 12, export 10, golden unchanged).
 - [x] Lint, typecheck and tests pass; src/domain at 100 %; only the Roster tab changed in the screenshot compare.
+
+## 44. v10.0 — Accounts and cloud sync (Supabase)
+
+Owner request: team managers and players create an account, log in, and see the same team data on every device.
+Managers edit; players view. The app keeps working fully offline and without an account, exactly like 9.2. This is the
+app's first backend (until now local-only on purpose, DECISIONS #55). The full design (SQL schema, RLS, sync
+algorithm, modules, UI, work breakdown) is in [`V10_SYNC_DESIGN.md`](V10_SYNC_DESIGN.md); the backend guide for
+developers and the owner is `docs/SUPABASE.md`.
+
+Owner's choices (asked at the start): sign in with a **6-digit code by email**; roles **manager + player** only;
+confidential descriptions **stay on the device**; team and player photos sync to a **private bucket readable only by
+the team's members**.
+
+1. **Backend**: the hosted Supabase project "Volleylineup manager" (`qzeergfqfwovcvdarwua`, Zurich eu-central-2,
+   free tier). Schema as SQL migrations in `supabase/migrations/`; RLS on every table (members read, managers write
+   through RPCs); RLS test script `supabase/tests/rls.sql`; a keepalive workflow every 3 days.
+2. **Offline-first sync**: the local store stays what the UI reads. Records (team, player, season, opponent, match,
+   lineup set, preset, starters) sync in the background; the most recent save wins per record; deletions are
+   tombstones. Sync status (synced / syncing / offline / error) with "Sync now". All backend code is in
+   `src/lib/sync/` (ESLint-enforced); the merge rules are pure code in `src/domain/sync*.ts`.
+3. **Accounts**: optional. Profile → Account: sign in with an email code, linked to the current local profile; on
+   first sign-in the user picks which local teams to upload (none by default) and which cloud teams to download.
+   Account screen: email, status, Sync now, sign out, delete account (server data only; local data stays).
+4. **Teams, roles, invites**: a shared team has managers and players. Managers create invite codes (and a
+   `volleylineup://join?code=` / web `/join?code=` link) for a role, revoke them (they expire), change roles and
+   remove members; the last manager can't leave or demote themselves. Players see everything read-only, with a short
+   reason on every edit control.
+5. **Live match hold**: the device scoring a shared match live holds it (15-minute lease, refreshed); other devices
+   see the match read-only ("Being scored live on Anna's device"), managers can take over. Viewers follow the score
+   (15 s poll). Advisory: scoring offline always works; if two devices score the same set, the later save wins.
+6. **Data model**: store **v13** adds the device-only `sync` state (account link, shared teams' bookkeeping). The
+   export file is unchanged (`schemaVersion` **10**, golden byte-identical): sync bookkeeping is device-only.
+
+## 45. v10.0 acceptance checklist
+
+- [ ] Without signing in the app behaves like 9.2: no network calls; screens unchanged except Profile → Account, the team header's Members button and the Teams tab's sync / join entries.
+- [ ] Sign in with a 6-digit email code (EN + DE); wrong / expired code and offline messages; resend after 60 s.
+- [ ] First sign-in offers Upload (nothing pre-selected) and Download; nothing uploads without a tap.
+- [ ] Edits on device A appear on device B after Sync now / focus / ≤ 60 s; the same record edited on both → the later save wins per record (player, match, set, preset, starters, season, opponent, team fields).
+- [ ] Deletions sync (tombstones); a deleted season with a newer match added elsewhere comes back instead of losing the match.
+- [ ] Descriptions never leave the device and survive pulls; team and player photos sync (private bucket); profile photos stay local.
+- [ ] Offline or paused project: the app works, the badge says Offline with the pending count, no error screen, nothing lost; it syncs when back.
+- [ ] Roles: a player sees everything read-only, with a reason on every edit control (builder drag + tap, live, presets, starters, roster, seasons, opponents, matches, team rename / photo, import of that team).
+- [ ] Managers create, share and revoke invite codes (they expire); joining by code and by link works; roles change; members can be removed; the last manager can't leave or demote themselves.
+- [ ] A removed member's team stops syncing and stays as a local copy with a notice.
+- [ ] Live: the scoring device holds the match; other managers see "Being scored live on …" + Take over; viewers see the score update within ~15 s.
+- [ ] Delete team: "this device" vs "for everyone"; Leave team. Delete all data and deleting the linked profile sign out and keep the cloud teams. Delete account removes the server data (blocked while the user is the last manager of a team with other members) and keeps local data.
+- [ ] Import Replace / Merge never removes a shared team; viewer teams are skipped.
+- [ ] Store v12 → v13 migration (and v1 → v13); export schema 10 unchanged; golden byte-identical; old files import.
+- [ ] RLS script passes on the real project (stranger can't read, player can't write, manager of A can't touch B, removed member loses access); Supabase security / performance advisors clean or each warning explained; keepalive workflow green on dispatch.
+- [ ] `@supabase/*` imported only in `src/lib/sync` (lint); lint, format, typecheck and tests pass; `src/domain` at 100 %; a component test per feature; new screens have tour pages; 375 / 1280 px, EN + DE, dark + light, dyslexia font.

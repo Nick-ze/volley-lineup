@@ -23,6 +23,9 @@ import { appearance } from './de/appearance';
 import { teamPhoto } from './de/teamPhoto';
 import { motion } from './de/motion';
 import { tour } from './de/tour';
+import { account } from './de/account';
+import { members } from './de/members';
+import { sync } from './de/sync';
 import type { Strings } from './en';
 
 export const de: Strings = {
@@ -64,6 +67,11 @@ export const de: Strings = {
     season: 'Saison',
     newSeason: 'Neue Saison',
     settings: 'Einstellungen',
+    account: 'Konto',
+    signIn: 'Anmelden',
+    cloudTeams: 'Cloud-Teams',
+    members: 'Mitglieder',
+    join: 'Team beitreten',
   },
   positions: {
     S: 'Zuspieler',
@@ -109,4 +117,7 @@ export const de: Strings = {
   teamPhoto,
   motion,
   tour,
+  account,
+  members,
+  sync,
 };

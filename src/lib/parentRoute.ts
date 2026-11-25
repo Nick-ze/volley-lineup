@@ -61,6 +61,14 @@ export function parentRoute(
       return set
         ? { pathname: '/match/[matchId]', params: { matchId, set } }
         : { pathname: '/match/[matchId]', params: { matchId } };
+    // v10: accounts and shared teams.
+    case 'account/index':
+    case 'account/sign-in':
+      return '/profile';
+    case 'account/teams':
+      return '/account';
+    case 'team/[teamId]/members':
+      return teamId ? { pathname: '/team/[teamId]', params: { teamId } } : '/teams';
     default:
       return '/teams';
   }

@@ -6,6 +6,8 @@ import type {
   Player,
   Season,
   SetLineup,
+  SyncAccount,
+  SyncData,
   Team,
   TourMode,
   TourPage,
@@ -51,6 +53,12 @@ export interface AppState extends AppData {
    */
   tourMode: TourMode | null;
   tourSeen: TourPage[];
+  /**
+   * v10 (store v13): device-only sync bookkeeping (account link, shared teams, what the server
+   * has). Persisted with the data so records and their sync state are written together; never
+   * exported. See docs/V10_SYNC_DESIGN.md §3.2.
+   */
+  sync: SyncData;
   /** True once persisted state has been loaded from storage. Not persisted. */
   hydrated: boolean;
 }
@@ -125,6 +133,15 @@ export interface AppActions {
   /** v9.0: the page's tips were shown (or offered and answered); they don't come again. */
   markTourSeen(page: TourPage): void;
   setHydrated(value: boolean): void;
+  /**
+   * v10: one atomic update of data and sync state together. Only the sync engine uses it (it
+   * writes pulled records and their bookkeeping in the same `set`).
+   */
+  syncTransaction(fn: (s: AppState) => Partial<AppState>): void;
+  /** v10: links (or with null unlinks) the signed-in account; shared team meta stays. */
+  setSyncAccount(account: SyncAccount | null): void;
+  /** v10: this installation's random id (set once by the sync engine). */
+  setDeviceId(id: string): void;
 }
 
 export type AppStore = AppState & AppActions;

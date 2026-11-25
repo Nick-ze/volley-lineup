@@ -359,9 +359,13 @@ describe('whole data', () => {
  * opponents (v9), the v10 device settings (dark theme, platform font) and the v11 tour settings
  * (not chosen yet, nothing seen), which it checks.
  */
+/** v10 (store v13): what the v12 → v13 step adds — no account, no shared teams. */
+const NO_SYNC = { deviceId: null, account: null, teams: {} };
+
 function withoutEmptySeasons(state: unknown): unknown {
-  const { seasons, opponents, themeMode, dyslexiaFont, tourMode, tourSeen, ...rest } =
+  const { seasons, opponents, themeMode, dyslexiaFont, tourMode, tourSeen, sync, ...rest } =
     state as Record<string, unknown>;
+  expect(sync).toEqual(NO_SYNC);
   expect(seasons).toEqual([]);
   expect(opponents).toEqual([]);
   expect(themeMode).toBe('dark');
@@ -585,7 +589,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(12); // v9.1: team captain (no data change)
+    expect(STORE_VERSION).toBe(13); // v10.0: device-only sync state
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -599,10 +603,17 @@ describe('migrations', () => {
     };
     // (v9.0: the v10 → v11 step adds the tour settings after it, see the next test)
     const tour = { tourMode: null, tourSeen: [] };
-    expect(migrateStore(v9, 9)).toEqual({ ...v9, themeMode: 'dark', dyslexiaFont: false, ...tour });
+    const sync = { sync: NO_SYNC }; // v10.0: the v12 → v13 step
+    expect(migrateStore(v9, 9)).toEqual({
+      ...v9,
+      themeMode: 'dark',
+      dyslexiaFont: false,
+      ...tour,
+      ...sync,
+    });
     // a state that already has the settings keeps them
     const v10 = { ...v9, themeMode: 'light', dyslexiaFont: true };
-    expect(migrateStore(v10, 9)).toEqual({ ...v10, ...tour });
+    expect(migrateStore(v10, 9)).toEqual({ ...v10, ...tour, ...sync });
   });
 
   it('migrates v10 data (v8 app): the tour is not chosen yet, nothing else changes', () => {
@@ -616,10 +627,15 @@ describe('migrations', () => {
       themeMode: 'light',
       dyslexiaFont: true,
     };
-    expect(migrateStore(v10, 10)).toEqual({ ...v10, tourMode: null, tourSeen: [] });
+    expect(migrateStore(v10, 10)).toEqual({
+      ...v10,
+      tourMode: null,
+      tourSeen: [],
+      sync: NO_SYNC,
+    });
     // a state that already has the settings keeps them
     const v11 = { ...v10, tourMode: 'quick', tourSeen: ['profiles'] };
-    expect(migrateStore(v11, 10)).toEqual(v11);
+    expect(migrateStore(v11, 10)).toEqual({ ...v11, sync: NO_SYNC });
     expect(migrateStore(null, 10)).toBeNull();
   });
 
@@ -637,7 +653,7 @@ describe('migrations', () => {
       tourMode: 'quick',
       tourSeen: ['profiles'],
     };
-    expect(migrateStore(v11, 11)).toEqual(v11);
+    expect(migrateStore(v11, 11)).toEqual({ ...v11, sync: NO_SYNC });
     expect(migrateStore(null, 11)).toBeNull();
   });
 

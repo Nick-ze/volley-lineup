@@ -50,6 +50,8 @@ export const tour: Strings['tour'] = {
     season: '2026/27',
     opponent: 'Lions',
     player: 'Anna',
+    email: 'anna@example.com',
+    inviteCode: 'ABCDE-FGHJK',
   },
   pages: {
     profiles: 'Profile',
@@ -76,6 +78,11 @@ export const tour: Strings['tour'] = {
     live: 'Live-Zählung',
     performance: 'Leistung',
     matchStats: 'Spielstatistik',
+    account: 'Konto',
+    signIn: 'Anmelden',
+    cloudTeams: 'Cloud-Teams',
+    members: 'Mitglieder',
+    join: 'Team beitreten',
   },
   steps: {
     profiles: {
@@ -268,6 +275,36 @@ export const tour: Strings['tour'] = {
       stats: {
         title: 'Spielstatistik',
         text: 'Punkte pro Rotation und pro Spieler. Nach Satz filtern. Drucken kannst du die Aufstellungen im Spiel-Bildschirm.',
+      },
+    },
+    account: {
+      sync: {
+        title: 'Dein Konto',
+        text: 'Angemeldet werden deine geteilten Teams zwischen deinen Geräten synchronisiert. Offline funktioniert alles weiter; „Jetzt synchronisieren“ synchronisiert sofort.',
+      },
+    },
+    signIn: {
+      code: {
+        title: 'Mit Code anmelden',
+        text: 'Gib deine E-Mail ein und tippe auf „Code senden“. Gib den 6-stelligen Code aus der E-Mail ein. Kein Passwort nötig.',
+      },
+    },
+    cloudTeams: {
+      choose: {
+        title: 'Teams auswählen',
+        text: 'Hake die Teams an, die du von diesem Gerät hochladen willst, und die Cloud-Teams zum Herunterladen. Hochgeladen wird nur, was du anhakst.',
+      },
+    },
+    members: {
+      invite: {
+        title: 'Lade dein Team ein',
+        text: 'Trainer erstellen einen Einladungscode für Trainer oder Spieler und teilen ihn. Spieler können das Team nur ansehen.',
+      },
+    },
+    join: {
+      code: {
+        title: 'Mit Code beitreten',
+        text: 'Gib den Einladungscode ein, den du von einem Trainer bekommen hast, und tippe auf „Beitreten“. Das Team erscheint dann in deiner Teamliste.',
       },
     },
   },

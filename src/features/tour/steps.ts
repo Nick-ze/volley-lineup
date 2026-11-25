@@ -138,6 +138,27 @@ const STEPS: Record<TourPage, (t: Strings) => TourStep[]> = {
   ],
   performance: (t) => [step(t.tour.steps.performance.overview, { kind: 'stats' })],
   matchStats: (t) => [step(t.tour.steps.matchStats.stats, { kind: 'stats' })],
+  account: (t) => [step(t.tour.steps.account.sync, { kind: 'tap', label: t.sync.status.syncNow })],
+  signIn: (t) => [
+    step(t.tour.steps.signIn.code, {
+      kind: 'form',
+      field: t.account.signIn.email,
+      value: t.tour.sample.email,
+      button: t.account.signIn.sendCode,
+    }),
+  ],
+  cloudTeams: (t) => [
+    step(t.tour.steps.cloudTeams.choose, { kind: 'toggle', label: t.tour.sample.team }),
+  ],
+  members: (t) => [step(t.tour.steps.members.invite, { kind: 'tap', label: t.members.newInvite })],
+  join: (t) => [
+    step(t.tour.steps.join.code, {
+      kind: 'form',
+      field: t.members.join.code,
+      value: t.tour.sample.inviteCode,
+      button: t.members.join.submit,
+    }),
+  ],
 };
 
 /** The page's tips in the current language. */

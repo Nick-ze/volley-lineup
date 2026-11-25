@@ -90,6 +90,17 @@ export async function putPhotos(list: readonly Photo[]): Promise<void> {
   await persist(added, []);
 }
 
+/**
+ * v10: photo ids that shared teams refer to but that haven't been downloaded yet. The prune
+ * leaves those `photoId`s alone (otherwise a manager device would push "no photo" to everyone).
+ * Set by the sync engine; replaced as a whole on every call.
+ */
+let pendingRemotePhotos: ReadonlySet<string> = new Set();
+
+export function setPendingRemotePhotos(ids: ReadonlySet<string>): void {
+  pendingRemotePhotos = new Set(ids);
+}
+
 /** All photos as a list (for export). */
 export function photoList(): Photo[] {
   return Object.entries(usePhotoStore.getState().photos).map(([id, dataUri]) => ({ id, dataUri }));
@@ -108,7 +119,8 @@ export async function prunePhotos(): Promise<void> {
   const app = useAppStore.getState();
   const { photos, hydrated } = usePhotoStore.getState();
   if (!hydrated || !app.hydrated) return;
-  const dangling = (x: { photoId?: string }) => x.photoId !== undefined && !(x.photoId in photos);
+  const dangling = (x: { photoId?: string }) =>
+    x.photoId !== undefined && !(x.photoId in photos) && !pendingRemotePhotos.has(x.photoId);
   for (const p of app.profiles.filter(dangling)) app.updateProfile(p.id, { photoId: undefined });
   for (const p of app.players.filter(dangling)) app.updatePlayer(p.id, { photoId: undefined });
   for (const x of app.teams.filter(dangling)) app.updateTeam(x.id, { photoId: undefined });
@@ -149,6 +161,7 @@ export function whenPhotosLoaded(): Promise<void> {
 /** Tests only: forget the photos and load again on the next `whenPhotosLoaded()`. */
 export function resetPhotoStoreForTests(): void {
   loading = null;
+  pendingRemotePhotos = new Set();
   usePhotoStore.setState({ photos: {}, hydrated: false });
 }
 
