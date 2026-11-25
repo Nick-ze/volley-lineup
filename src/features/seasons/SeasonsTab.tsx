@@ -1,10 +1,10 @@
 import { Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button, useListStyles } from '@/components';
+import { Button, ReadOnlyNote, useListStyles } from '@/components';
 import type { Match, Season } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useMatchesForTeam, useSeasonsForTeam } from '@/store';
+import { useMatchesForTeam, useSeasonsForTeam, useTeamAccess } from '@/store';
 import { makeStyles, spacing } from '@/theme';
 import { useIsWide } from '@/lib/useIsWide';
 
@@ -18,7 +18,8 @@ export interface SeasonsTabProps {
 
 /**
  * v7.0: the team's Matches tab — one box per season / tournament (newest first). Matches live
- * inside a season; tapping a box opens the season screen.
+ * inside a season; tapping a box opens the season screen. v10: no New season for view-only
+ * members.
  */
 export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProps) {
   const listStyles = useListStyles();
@@ -27,13 +28,15 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
   const seasons = useSeasonsForTeam(teamId);
   const matches = useMatchesForTeam(teamId);
   const wide = useIsWide();
+  const access = useTeamAccess(teamId);
   const s = t.seasons.list;
   return (
     <>
       <View style={[listStyles.headerRow, listStyles.tabHeader]}>
         <View />
-        <Button label={s.newSeason} onPress={onNewSeason} compact />
+        {access.canEdit ? <Button label={s.newSeason} onPress={onNewSeason} compact /> : null}
       </View>
+      <ReadOnlyNote block={access.block} />
       {seasons.length === 0 ? (
         <Text style={listStyles.empty} testID="seasons-empty">
           {s.empty}

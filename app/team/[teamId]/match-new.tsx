@@ -4,15 +4,16 @@ import { NotFound, Screen, useGoBack } from '@/components';
 import { firstSetForNewMatch } from '@/domain/presets';
 import { findOpponentByName, foldName, seasonsForTeam } from '@/domain/seasons';
 import { MatchForm } from '@/features/matchForm/MatchForm';
+import { ViewOnlyScreen } from '@/features/sync/ViewOnlyScreen';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { selectPlayersForTeam, useAppStore, useTeam } from '@/store';
+import { selectPlayersForTeam, useAppStore, useCanEdit, useTeam } from '@/store';
 
 /**
  * `/team/[teamId]/match-new?seasonId=` — create a match in a season, then open it. Modal.
  * v7.0: the form picks the season (fixed by `seasonId`, else a choice defaulting to the newest,
  * else a new one named in the form) and the opponent (one of the season's, or a new name, which
- * is added to the season first).
+ * is added to the season first). v10: view-only members get the reason instead of the form.
  */
 export default function NewMatchScreen() {
   const t = useT();
@@ -22,10 +23,20 @@ export default function NewMatchScreen() {
   const goBack = useGoBack(
     seasonId ? `/team/${teamId}/season/${seasonId}` : `/team/${teamId}?tab=matches`,
   );
-  useTourPage(team ? 'matchForm' : null);
+  const canEdit = useCanEdit(teamId);
+  useTourPage(team && canEdit ? 'matchForm' : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
+
+  if (!canEdit)
+    return (
+      <ViewOnlyScreen
+        title={t.nav.newMatch}
+        backLabel={t.seasons.form.backToTeam}
+        onBack={goBack}
+      />
+    );
 
   return (
     <Screen>
