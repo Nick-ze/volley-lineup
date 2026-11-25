@@ -3,8 +3,9 @@
 **Volley Lineup** is an app for volleyball coaches and team managers. Plan the starting lineup for every set, see all six
 rotations, keep the score live during the match and look at the stats afterwards.
 
-It runs on Android phones and in the browser, works fully offline, and needs no account: everything is saved on your
-device. You can back up your data or move it to another device with a file.
+It runs on Android phones and in the browser and works fully offline. An account is optional: without one everything
+is saved on your device, as before. With an account your teams sync between your devices and you can share a team with
+your players and other coaches. You can always back up your data or move it to another device with a file.
 
 Available in English and German.
 
@@ -21,10 +22,13 @@ Available in English and German.
 - **Seasons and tournaments**: group your matches and keep a record against every opponent.
 - **Print**: a lineup sheet, and a player list (numbers and names) for the scorer, to print or share as a PDF.
 - **Guided tour**: short tips with pictures show you around; choose the full or quick tour, or none.
+- **Accounts and shared teams (optional)**: sign in with a code sent by email, see the same teams on every device and
+  invite your players (view only) and other coaches (can edit) with a code.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 9.2**: a player list for the scorer — every player's number and name (C = captain, L = libero) as a
-PDF, from a match's Print / PDF or the team's Roster tab. 9.1 added the team captain, 9.0 a guided tour.
+**What's new in 10.0**: accounts and cloud sync. Sign in (optional) to see your teams on all your devices; share a team
+with an invite code — managers edit, players view. Everything still works offline and without an account. 9.2 added a
+player list for the scorer, 9.1 the team captain.
 [All versions →](docs/README_LEGACY.md#version-history)
 
 ## Install on Android (APK)
@@ -83,6 +87,36 @@ If the phone can't connect (for example on a work or school network), start it w
   this repository.
 
 In the browser your data is saved in that browser only.
+
+## Accounts and shared teams (optional)
+
+You don't need an account. If you want your teams on more than one device, or want to share a team:
+
+1. **Sign in**: Profile → **Cloud sync** → **Sign in**. Type your email, tap **Send code** and enter the 6-digit code
+   from the email (no password). The account belongs to the profile you are in; **Log out** of the profile also signs
+   you out.
+2. **Choose your teams**: right after the first sign-in the app asks which teams on this device to upload (none are
+   ticked — nothing is uploaded unless you tick it) and which of your cloud teams to download.
+3. **Share a team**: open the team → **Members** (or **Share**) → **New invite**. A **player** code lets players view the
+   team (they can't change anything); a **manager** code (used once, valid up to 7 days) lets another coach edit it.
+   Send the code or link; the other person signs in and taps **Join a team** on the Teams tab.
+4. **Syncing**: changes are saved on the phone first and sync in the background when you're online (the small cloud on
+   the Teams tab shows Synced / Syncing / Offline). If two devices change the same thing, the later change wins. While
+   a match is scored live on one device, the others show it read-only (managers can **Take over**).
+5. **Account screen** (Profile → Cloud sync → **Account**): sync now, sign out, or **delete your account** (removes your
+   data from the server; what's on your phone stays).
+
+**Privacy**: team data is stored on a Supabase server in **Zurich, Switzerland** (eu-central-2). Player photos are
+stored privately and only the team's members can see them; profile photos and the confidential player descriptions
+never leave your device. Other members see your profile name, never your email.
+
+**If sync says "Offline" for days**: the free server pauses after about a week without any use. Your data on the phone
+is safe and the app keeps working. The owner can wake the server up in the Supabase dashboard (project → **Restore**);
+see [docs/SUPABASE.md](docs/SUPABASE.md).
+
+To prevent the pause, a GitHub Actions workflow (**Supabase keep-alive**) reads from the server every 3 days. GitHub
+switches scheduled workflows off in public repositories after **60 days without a commit**; then the owner opens
+**Actions → Supabase keep-alive → Enable workflow** (and **Run workflow** once).
 
 ## Back up and move your data
 

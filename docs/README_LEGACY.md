@@ -10,8 +10,9 @@ using the app is [`../README.md`](../README.md).
 Rules for contributors and AI agents: [`CLAUDE.md`](../CLAUDE.md). Current state and how work is done here:
 [`HANDOFF.md`](HANDOFF.md). Full plan: [`PLAN.md`](PLAN.md). Every choice made: [`DECISIONS.md`](DECISIONS.md).
 
-Built with Expo (React Native + react-native-web), TypeScript, Expo Router and Zustand. No backend: data is stored on
-the device (AsyncStorage / localStorage) and moved between devices with a JSON export / import.
+Built with Expo (React Native + react-native-web), TypeScript, Expo Router and Zustand. Data is stored on the device
+(AsyncStorage / localStorage) and moved between devices with a JSON export / import. Since v10 an optional Supabase
+backend syncs shared teams between devices (see [Backend](#backend)).
 
 ---
 
@@ -170,6 +171,50 @@ opened by an older app.
 - **Player list (PDF)**: one page with every active player's number, last and first name, C for the captain and L for
   liberos (plus opponent, date and season when printed from a match) — to hand to the scorer. Match → Print / PDF →
   "Player list for the scorer", or Team → Roster → "Player list (PDF)". Print / PDF now always asks what to print.
+
+### v10.0: accounts and cloud sync (store 13)
+
+- **Optional accounts**: Profile → Cloud sync → Sign in with a 6-digit code sent by email. Without an account the app
+  works exactly as before. The account belongs to one local profile; logging out of the profile signs out.
+- **Shared teams**: upload your teams (you pick which) and download your cloud teams on another device. Changes are
+  saved on the device first and sync in the background; the most recent save wins per player, match, set, preset,
+  season, opponent and team; deletions sync too. Sync status (Synced / Syncing / Offline / error) on the Teams tab,
+  "Sync now" on the Account screen.
+- **Roles and invites**: managers edit, players only view (every edit control is hidden with a short note). Managers
+  create invite codes / links (player codes many uses up to 30 days, manager codes once up to 7 days), revoke them,
+  change roles and remove members; the last manager can't leave.
+- **Live scoring across devices**: the device scoring a match holds it; others see it read-only and follow the score;
+  managers can take over.
+- **Privacy**: data in Zurich (eu-central-2); team and player photos in a private bucket for members only;
+  confidential descriptions and profile photos never leave the device; delete account removes the server data.
+- Store v13 adds the device-only `sync` state. The export file is unchanged (schema 10).
+
+---
+
+## Backend
+
+Since v10 the app can sync shared teams through **Supabase** (hosted project "Volleylineup manager",
+`qzeergfqfwovcvdarwua`, region eu-central-2 Zurich, Postgres 17, free tier). Everything about it — schema, RLS model,
+RPCs, error codes, limits, applying migrations, tests, keep-alive and the owner's dashboard steps — is in
+[`SUPABASE.md`](SUPABASE.md); the sync design is [`V10_SYNC_DESIGN.md`](V10_SYNC_DESIGN.md).
+
+- **Schema as code**: `supabase/migrations/*.sql` (applied in file order). Every change to the live database goes
+  through a new migration file in a PR. RLS on every table; tables are read-only for signed-in users and every write
+  goes through RPCs that check the caller's role.
+- **Tests**: `supabase/tests/rls.sql` (runs in a rolled-back transaction: stranger can't read, player can't write, a
+  manager of team A can't touch team B, a removed member loses access, …); `scripts/sync-live-check.mjs` runs the main
+  flows against the real project with test users (`supabase/tests/test-users.sql`, then `test-users-cleanup.sql`). Not
+  in CI. Jest mocks the sync module (`src/lib/sync/__mocks__`); the engine tests use an in-memory fake backend.
+- **App side**: all backend code is in `src/lib/sync/` (ESLint forbids `@supabase/*` elsewhere); the merge rules are
+  pure code in `src/domain/sync*.ts`. The app uses only the **publishable** key, in `supabase/public-config.json`
+  (public by design; RLS protects the data). The service-role / secret key is never used.
+- **Keep-alive**: `.github/workflows/supabase-keepalive.yml` reads a one-row table every 3 days (re-enable it under
+  Actions after 60 days without commits).
+- **Self-hosting later**: run a self-hosted Supabase (or any Postgres with PostgREST + GoTrue + Storage), apply the
+  migrations in order (`supabase db push` or psql), keep `statement_timeout = 8s` on the `authenticated` role, set up the
+  email OTP templates (`supabase/templates/`), and build the app with `EXPO_PUBLIC_SUPABASE_URL` /
+  `EXPO_PUBLIC_SUPABASE_KEY` pointing at the new server. Users move their data with the JSON export / import or by
+  uploading their teams again.
 
 ---
 
