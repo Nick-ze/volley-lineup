@@ -36,9 +36,10 @@ begin
 end $$;
 
 -- delete_my_account: deletes the caller's account. VL001 (detail: the blocked team ids, comma
--- separated) while the caller is the last manager of a team with other members. Otherwise it
--- deletes the teams where the caller is the only member, then the auth user (sessions,
--- identities, memberships and holds cascade). Returns the deleted team ids.
+-- separated) while the caller is the last manager of a team with other members; VL008 (detail:
+-- team ids) while photos of a team it would delete remain. Otherwise it deletes the teams where
+-- the caller is the only member, then the auth user (sessions, identities, memberships, holds and
+-- removal entries cascade). Returns the deleted team ids.
 create function public.delete_my_account()
   returns text[]
   language plpgsql security definer set search_path = '' as $$
@@ -51,9 +52,12 @@ begin
     raise exception 'forbidden' using errcode = '42501';
   end if;
 
-  -- Lock the caller's memberships so a concurrent role change or removal can't slip in between
-  -- the check and the delete.
-  perform 1 from public.team_members m where m.user_id = v_uid for update;
+  -- Lock the caller's teams (in id order, so two deletions can't deadlock) like every member
+  -- change does: no concurrent role change or removal can slip in between check and delete.
+  perform 1 from public.teams t
+  where t.id in (select m.team_id from public.team_members m where m.user_id = v_uid)
+  order by t.id
+  for update;
 
   select coalesce(array_agg(m.team_id order by m.team_id), '{}') into v_blocked
   from public.team_members m
@@ -72,6 +76,12 @@ begin
   where m.user_id = v_uid
     and not exists (select 1 from public.team_members o
                     where o.team_id = m.team_id and o.user_id <> v_uid);
+  if exists (select 1 from unnest(v_sole) s (team_id)
+             where private.team_photo_count(s.team_id) > 0) then
+    raise exception 'photos_remain' using errcode = 'VL008',
+      detail = (select string_agg(s.team_id, ',' order by s.team_id) from unnest(v_sole) s (team_id)
+                where private.team_photo_count(s.team_id) > 0);
+  end if;
 
   perform set_config('app.bypass_member_guard', 'on', true);
   delete from public.teams t where t.id = any (v_sole);

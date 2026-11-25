@@ -41,7 +41,8 @@ create trigger team_members_drop_holds
 
 -- hold_match: managers claim or refresh the hold for 15 minutes. If another device holds it and
 -- the hold hasn't expired, it is granted only with p_take_over. Returns
--- {granted, holder_name, held_until} — the current holder when not granted.
+-- {granted, holder_name, held_until} — the current holder when not granted. Holds that expired
+-- more than a day ago are pruned; a team has at most 50 active holds (VL007).
 create function public.hold_match(p_team_id text, p_match_id text, p_device_id text,
                                   p_holder_name text, p_take_over boolean default false)
   returns jsonb
@@ -51,6 +52,13 @@ declare
 begin
   if not private.is_team_manager(p_team_id) then
     raise exception 'forbidden' using errcode = '42501';
+  end if;
+
+  delete from public.match_holds h
+  where h.team_id = p_team_id and h.held_until < now() - interval '1 day';
+  if (select count(*) from public.match_holds h
+      where h.team_id = p_team_id and h.match_id <> p_match_id and h.held_until > now()) >= 50 then
+    raise exception 'too_many_holds' using errcode = 'VL007', detail = 'holds';
   end if;
 
   -- One statement, so two devices claiming at the same moment can't both win.

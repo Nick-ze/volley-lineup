@@ -1,8 +1,9 @@
 -- v10.0 — invite codes (see docs/SUPABASE.md).
 --
--- A manager creates a code for a role; anyone signed in who knows an unexpired, unrevoked code
--- joins the team with that role. Codes are 10 characters from a 32-letter alphabet (50 bits),
--- shown as "ABCDE-FGHJK". Only managers can list a team's invites.
+-- A manager creates a code for a role; anyone signed in who knows a valid code joins the team
+-- with that role. Codes are 10 characters from a 32-letter alphabet (50 bits), shown as
+-- "ABCDE-FGHJK". Player codes can be used many times for up to 30 days; manager codes once, for
+-- up to 7 days. Only managers can list a team's invites.
 
 create table public.invites (
   id uuid primary key default gen_random_uuid(),
@@ -14,7 +15,11 @@ create table public.invites (
   expires_at timestamptz not null,
   revoked_at timestamptz,
   uses integer not null default 0,
-  check (expires_at > created_at and expires_at <= created_at + interval '30 days')
+  max_uses integer check (max_uses > 0), -- null = unlimited
+  check (expires_at > created_at and expires_at <= created_at + interval '30 days'),
+  constraint invites_manager_single_use check (
+    role = 'player'
+    or (max_uses = 1 and expires_at <= created_at + interval '7 days'))
 );
 create index invites_team_id_idx on public.invites (team_id);
 create index invites_created_by_idx on public.invites (created_by);
@@ -44,8 +49,9 @@ begin
 end $$;
 revoke all on function private.new_invite_code() from public, anon, authenticated;
 
--- create_invite: managers create a code for `p_role`, valid 1–30 days (else 22023). At most 20
--- active invites per team (VL007). Returns {id, code, role, expires_at}.
+-- create_invite: managers create a code for `p_role`, valid 1–30 days for players and 1–7 days
+-- (single use) for managers (else 22023). At most 20 usable invites per team (VL007).
+-- Returns {id, code, role, expires_at, max_uses}.
 create function public.create_invite(p_team_id text, p_role text, p_days integer default 7)
   returns jsonb
   language plpgsql security definer set search_path = '' as $$
@@ -55,23 +61,26 @@ begin
   if not private.is_team_manager(p_team_id) then
     raise exception 'forbidden' using errcode = '42501';
   end if;
-  if p_role is null or p_role not in ('manager', 'player')
-     or p_days is null or p_days not between 1 and 30 then
+  if p_role is null or p_role not in ('manager', 'player') or p_days is null
+     or p_days not between 1 and (case when p_role = 'manager' then 7 else 30 end) then
     raise exception 'bad_invite' using errcode = '22023';
   end if;
   if (select count(*) from public.invites i
-      where i.team_id = p_team_id and i.revoked_at is null and i.expires_at > now()) >= 20 then
+      where i.team_id = p_team_id and i.revoked_at is null and i.expires_at > now()
+        and (i.max_uses is null or i.uses < i.max_uses)) >= 20 then
     raise exception 'too_many_invites' using errcode = 'VL007';
   end if;
 
   for attempt in 1..5 loop
     begin
-      insert into public.invites (team_id, code, role, created_by, expires_at)
+      insert into public.invites (team_id, code, role, created_by, expires_at, max_uses)
       values (p_team_id, private.new_invite_code(), p_role, (select auth.uid()),
-              now() + make_interval(days => p_days))
+              now() + make_interval(days => p_days),
+              case when p_role = 'manager' then 1 end)
       returning * into v_invite;
       return jsonb_build_object('id', v_invite.id, 'code', v_invite.code,
-                                'role', v_invite.role, 'expires_at', v_invite.expires_at);
+                                'role', v_invite.role, 'expires_at', v_invite.expires_at,
+                                'max_uses', v_invite.max_uses);
     exception when unique_violation then
       if attempt = 5 then
         raise;
@@ -97,9 +106,10 @@ begin
   where id = p_invite_id and revoked_at is null;
 end $$;
 
--- join_team: join with a code (spaces, dashes and case are ignored). An unknown, expired or
--- revoked code is VL002. A code never downgrades: a manager using a player code stays manager.
--- Returns {team_id, role} with the caller's role after joining.
+-- join_team: join with a code (spaces, dashes and case are ignored). VL002 when the code is
+-- unknown, expired, revoked or used up, or when the caller was removed from the team after the
+-- code was created (a new code is a deliberate re-invite). A code never downgrades: a manager
+-- using a player code stays manager. Returns {team_id, role} with the caller's role.
 create function public.join_team(p_code text, p_display_name text)
   returns jsonb
   language plpgsql security definer set search_path = '' as $$
@@ -113,9 +123,15 @@ begin
   if v_uid is null then
     raise exception 'forbidden' using errcode = '42501';
   end if;
+  -- FOR UPDATE: two people can't both use the last use of a single-use code.
   select * into v_invite from public.invites i
-  where i.code = v_code and i.revoked_at is null and i.expires_at > now();
-  if not found then
+  where i.code = v_code and i.revoked_at is null and i.expires_at > now()
+  for update;
+  if not found
+     or (v_invite.max_uses is not null and v_invite.uses >= v_invite.max_uses)
+     or exists (select 1 from private.team_removals r
+                where r.team_id = v_invite.team_id and r.user_id = v_uid
+                  and r.removed_at >= v_invite.created_at) then
     raise exception 'invite_invalid' using errcode = 'VL002';
   end if;
 
@@ -128,6 +144,7 @@ begin
   returning m.role into v_role;
 
   update public.invites set uses = uses + 1 where id = v_invite.id;
+  delete from private.team_removals r where r.team_id = v_invite.team_id and r.user_id = v_uid;
   return jsonb_build_object('team_id', v_invite.team_id, 'role', v_role);
 end $$;
 
