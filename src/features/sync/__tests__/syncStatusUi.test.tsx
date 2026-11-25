@@ -50,6 +50,29 @@ describe('sync badge (Teams tab)', () => {
     expect(screen.getByRole('button', { name: t.sync.badge.label(text) })).toBeTruthy();
   });
 
+  it('signed in without shared teams: “No shared teams”, not “Not signed in” (v10 QA)', async () => {
+    useAppStore.setState({ sync: { deviceId: 'dev1', account: ACCOUNT, teams: {} } });
+    useSyncRuntime.setState({ session: { userId: 'u1', email: ACCOUNT.email } });
+    status('off');
+    await renderApp('/teams');
+    const text = t.sync.status.noTeams;
+    expect(text).toBe('No shared teams');
+    expect(screen.getByTestId('sync-badge')).toHaveTextContent(text, { exact: false });
+    expect(screen.getByRole('button', { name: t.sync.badge.label(text) })).toBeTruthy();
+    expect(screen.queryByText(t.sync.status.off)).toBeNull();
+  });
+
+  it('while the stored session is restored: not “Not signed in” either', async () => {
+    link('manager');
+    useSyncRuntime.setState({ restoring: true });
+    status('off');
+    await renderApp('/teams');
+    // A shared team: the first cycle runs right after the session is back.
+    expect(screen.getByTestId('sync-badge')).toHaveTextContent(t.sync.status.syncing, {
+      exact: false,
+    });
+  });
+
   it('shows the state without an account too, and opens the account screen', async () => {
     status('synced');
     await renderApp('/teams');

@@ -4,6 +4,7 @@ import type { Strings } from '../en';
 export const sync: Strings['sync'] = {
   status: {
     off: 'Nicht angemeldet',
+    noTeams: 'Keine geteilten Teams',
     synced: 'Synchronisiert',
     syncing: 'Synchronisiere …',
     offline: 'Offline',

@@ -86,6 +86,14 @@ describe('account screen', () => {
     expect(screen.getByText(s.notSynced)).toBeTruthy();
   });
 
+  it('signed in without shared teams: “No shared teams”, not “Not signed in” (v10 QA)', async () => {
+    signIn();
+    useAppStore.setState((st) => ({ sync: { ...st.sync, teams: {} } }));
+    useSyncRuntime.setState({ status: initialSyncStatus() });
+    await renderApp('/account');
+    expect(screen.getByTestId('account-status')).toHaveTextContent(t.sync.status.noTeams);
+  });
+
   it('Sign out asks only with unsynced changes', async () => {
     signIn();
     await renderApp('/account');

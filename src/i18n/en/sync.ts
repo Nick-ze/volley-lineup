@@ -2,6 +2,8 @@
 export const sync = {
   status: {
     off: 'Not signed in',
+    /** Signed in, but no team of the account is shared on this device. */
+    noTeams: 'No shared teams',
     synced: 'Synced',
     syncing: 'Syncing…',
     offline: 'Offline',
