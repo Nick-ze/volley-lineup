@@ -13,13 +13,20 @@ export interface ReadOnlyNoteProps {
   holder?: string;
   /** With 'held': shows "Take over" (managers only). */
   onTakeOver?: () => void;
+  /** Take over is disabled while one is in progress. */
+  takeOverBusy?: boolean;
 }
 
 /**
  * v10: a short line saying why controls are missing — a view-only member (player role) or a
  * match being scored live on another device — with "Take over" for a held match.
  */
-export function ReadOnlyNote({ block, holder = '', onTakeOver }: ReadOnlyNoteProps) {
+export function ReadOnlyNote({
+  block,
+  holder = '',
+  onTakeOver,
+  takeOverBusy = false,
+}: ReadOnlyNoteProps) {
   const t = useT();
   const styles = useStyles();
   if (!block) return null;
@@ -28,7 +35,13 @@ export function ReadOnlyNote({ block, holder = '', onTakeOver }: ReadOnlyNotePro
     <View style={styles.box} testID="read-only-note">
       <Text style={styles.text}>{text}</Text>
       {block === 'held' && onTakeOver ? (
-        <Button label={t.sync.readOnly.takeOver} onPress={onTakeOver} variant="secondary" compact />
+        <Button
+          label={t.sync.readOnly.takeOver}
+          onPress={onTakeOver}
+          disabled={takeOverBusy}
+          variant="secondary"
+          compact
+        />
       ) : null}
     </View>
   );

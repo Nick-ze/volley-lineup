@@ -24,6 +24,15 @@ describe('ReadOnlyNote', () => {
     expect(onTakeOver).toHaveBeenCalledTimes(1);
   });
 
+  it('disables Take over while one is in progress', async () => {
+    const onTakeOver = jest.fn();
+    await render(<ReadOnlyNote block="held" holder="Anna" onTakeOver={onTakeOver} takeOverBusy />);
+    const button = screen.getByRole('button', { name: t.sync.readOnly.takeOver });
+    expect(button.props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(button);
+    expect(onTakeOver).not.toHaveBeenCalled();
+  });
+
   it('held without Take over (players) and without a name', async () => {
     await render(<ReadOnlyNote block="held" />);
     expect(screen.getByText(t.sync.readOnly.held(''))).toBeTruthy();
