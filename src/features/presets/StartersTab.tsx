@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button, useListStyles } from '@/components';
+import { Button, ReadOnlyNote, useListStyles } from '@/components';
 import { fullName } from '@/domain/playerNames';
 import { emptySetLineup } from '@/domain/lineup';
 import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
@@ -9,7 +9,7 @@ import { isOffPosition, spotRoles } from '@/domain/roles';
 import { COURT_POSITIONS, type CourtPosition, type Player, type Position } from '@/domain/types';
 import { RotationCourt } from '@/features/rotation';
 import { useT, type Strings } from '@/i18n';
-import { usePlayersForTeam, useStarters } from '@/store';
+import { usePlayersForTeam, useStarters, useTeamAccess } from '@/store';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
 export interface StartersTabProps {
@@ -40,7 +40,10 @@ function courtSummary(
   }).join(', ');
 }
 
-/** The team's starting six + libero on a compact court, with "Set / Edit starters". */
+/**
+ * The team's starting six + libero on a compact court, with "Set / Edit starters".
+ * v10: view-only members see the court without the edit button.
+ */
 export function StartersTab({ teamId, onEdit }: StartersTabProps) {
   const styles = useStyles();
   const listStyles = useListStyles();
@@ -49,17 +52,22 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
   const starters = useStarters(teamId);
   const players = usePlayersForTeam(teamId);
   const byId = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
+  const { canEdit, block } = useTeamAccess(teamId);
+  const note = <ReadOnlyNote block={block} />;
 
   if (!starters) {
     return (
       <View style={styles.wrap}>
+        {note}
         <Text style={listStyles.empty}>{s.empty}</Text>
-        <Button
-          label={s.set}
-          accessibilityLabel={s.setLabel}
-          onPress={onEdit}
-          testID="edit-starters"
-        />
+        {canEdit ? (
+          <Button
+            label={s.set}
+            accessibilityLabel={s.setLabel}
+            onPress={onEdit}
+            testID="edit-starters"
+          />
+        ) : null}
       </View>
     );
   }
@@ -77,17 +85,20 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
       : s.complete;
   return (
     <View style={styles.wrap}>
+      {note}
       <View style={listStyles.headerRow}>
         <Text style={listStyles.heading} accessibilityRole="header">
           {s.heading}
         </Text>
-        <Button
-          label={s.edit}
-          accessibilityLabel={s.editLabel}
-          onPress={onEdit}
-          compact
-          testID="edit-starters"
-        />
+        {canEdit ? (
+          <Button
+            label={s.edit}
+            accessibilityLabel={s.editLabel}
+            onPress={onEdit}
+            compact
+            testID="edit-starters"
+          />
+        ) : null}
       </View>
       <View
         style={styles.card}

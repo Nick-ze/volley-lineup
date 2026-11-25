@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button, ConfirmDialog, ListRow, useConfirm, useListStyles } from '@/components';
+import {
+  Button,
+  ConfirmDialog,
+  ListRow,
+  ReadOnlyNote,
+  useConfirm,
+  useListStyles,
+} from '@/components';
 import {
   filledCount,
   nextPresetName,
@@ -11,7 +18,7 @@ import {
 } from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useAppStore, usePresetsForTeam } from '@/store';
+import { useAppStore, usePresetsForTeam, useTeamAccess } from '@/store';
 
 import { PresetNameDialog } from './PresetNameDialog';
 
@@ -22,7 +29,10 @@ export interface PresetsTabProps {
 
 type Dialog = { mode: 'new' } | { mode: 'rename'; preset: LineupPreset } | null;
 
-/** The team's saved lineups: create (asks for a name, then opens it), rename, copy, delete. */
+/**
+ * The team's saved lineups: create (asks for a name, then opens it), rename, copy, delete.
+ * v10: view-only members only open them (no add / rename / copy / delete).
+ */
 export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
   const styles = useListStyles();
   const t = useT();
@@ -31,6 +41,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
   const { addPreset, updatePreset, deletePreset } = useAppStore.getState();
   const { ask, dialogProps } = useConfirm();
   const [dialog, setDialog] = useState<Dialog>(null);
+  const { canEdit, block } = useTeamAccess(teamId);
 
   const duplicate = (p: LineupPreset) => {
     const all = useAppStore.getState().presets;
@@ -41,15 +52,18 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
 
   return (
     <>
+      <ReadOnlyNote block={block} />
       <View style={[styles.headerRow, styles.tabHeader]}>
         <Text style={styles.subtitle}>{s.count(presets.length)}</Text>
-        <Button
-          label={s.add}
-          accessibilityLabel={s.addLabel}
-          onPress={() => setDialog({ mode: 'new' })}
-          compact
-          testID="new-preset"
-        />
+        {canEdit ? (
+          <Button
+            label={s.add}
+            accessibilityLabel={s.addLabel}
+            onPress={() => setDialog({ mode: 'new' })}
+            compact
+            testID="new-preset"
+          />
+        ) : null}
       </View>
       {presets.length === 0 && <Text style={styles.empty}>{s.empty}</Text>}
       <View style={styles.list}>
@@ -65,29 +79,31 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
               accessibilityLabel={`${s.open(p.name)}, ${s.summaryLabel(filled, libero)}`}
               testID={`preset-row-${p.name}`}
               actions={
-                <>
-                  <Button
-                    label={t.common.rename}
-                    accessibilityLabel={s.renameLabel(p.name)}
-                    variant="secondary"
-                    compact
-                    onPress={() => setDialog({ mode: 'rename', preset: p })}
-                  />
-                  <Button
-                    label={s.duplicate}
-                    accessibilityLabel={s.duplicateLabel(p.name)}
-                    variant="secondary"
-                    compact
-                    onPress={() => duplicate(p)}
-                  />
-                  <Button
-                    label={t.common.delete}
-                    accessibilityLabel={s.deleteLabel(p.name)}
-                    variant="danger"
-                    compact
-                    onPress={() => ask(s.confirmDelete(p.name), () => deletePreset(p.id))}
-                  />
-                </>
+                canEdit ? (
+                  <>
+                    <Button
+                      label={t.common.rename}
+                      accessibilityLabel={s.renameLabel(p.name)}
+                      variant="secondary"
+                      compact
+                      onPress={() => setDialog({ mode: 'rename', preset: p })}
+                    />
+                    <Button
+                      label={s.duplicate}
+                      accessibilityLabel={s.duplicateLabel(p.name)}
+                      variant="secondary"
+                      compact
+                      onPress={() => duplicate(p)}
+                    />
+                    <Button
+                      label={t.common.delete}
+                      accessibilityLabel={s.deleteLabel(p.name)}
+                      variant="danger"
+                      compact
+                      onPress={() => ask(s.confirmDelete(p.name), () => deletePreset(p.id))}
+                    />
+                  </>
+                ) : undefined
               }
             />
           );

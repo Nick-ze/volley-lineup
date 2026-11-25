@@ -35,10 +35,21 @@ export interface LiveSetViewProps {
   onUndo: () => void;
   /** Optional content under the point buttons (e.g. point tagging after a rally). */
   belowPointButtons?: ReactNode;
+  /**
+   * v10: watch only (a view-only member, or the match is scored on another device): score,
+   * banners and court, without rally, undo and substitution controls.
+   */
+  readOnly?: boolean;
 }
 
 /** One set played live: score, serve, rally buttons (or "set won"), court, undo and subs. */
-export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSetViewProps) {
+export function LiveSetView({
+  live,
+  onNext,
+  onUndo,
+  belowPointButtons,
+  readOnly = false,
+}: LiveSetViewProps) {
   const t = useT();
   const wide = useIsWide();
   const sub = useSubFlow();
@@ -52,6 +63,8 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
       : t.live.theyServe(match.opponent);
   const next = nextSetNumber(set.setNumber);
   const last = set.events[set.events.length - 1];
+  // A watcher can only go to a next set that is already on its way (never start one).
+  const nextExists = match.sets.some((s) => s.setNumber === next);
 
   // The set's winning rally can still be tagged: the tag row stays under the "set won" panel.
   const play = won ? (
@@ -61,15 +74,15 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
         winner={won}
         score={state.score}
         opponent={match.opponent}
-        next={next}
-        nextPlayed={match.sets.some((s) => s.setNumber === next && s.events.length > 0)}
+        next={readOnly && !nextExists ? null : next}
+        nextPlayed={readOnly || match.sets.some((s) => s.setNumber === next && s.events.length > 0)}
         onNext={onNext}
-        onUndo={hasLaterPlay(match, set.setNumber) ? null : onUndo}
+        onUndo={readOnly || hasLaterPlay(match, set.setNumber) ? null : onUndo}
         tagDetail={last?.type === 'point' ? tagDetail(t, playersById, last) : null}
       />
       {belowPointButtons}
     </>
-  ) : (
+  ) : readOnly ? null : (
     <RallyControls
       opponent={match.opponent}
       last={last}
@@ -118,9 +131,9 @@ export function LiveSetView({ live, onNext, onUndo, belowPointButtons }: LiveSet
         serverId={state.serverId}
         selectedId={sub.outId}
         onPressPlayer={sub.pickOut}
-        readOnly={!!won}
+        readOnly={!!won || readOnly}
       />
-      {won ? null : (
+      {won || readOnly ? null : (
         <SubPanel
           subsUsed={state.subsUsed}
           active={sub.active}
