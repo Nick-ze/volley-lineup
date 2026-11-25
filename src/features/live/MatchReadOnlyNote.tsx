@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { ReadOnlyNote } from '@/components';
@@ -36,12 +36,26 @@ export function MatchReadOnlyNote({
   const access = useMatchAccess(matchId);
   const teamId = useMatch(matchId)?.teamId;
   const [error, setError] = useState<SyncErrorCode | 'denied' | null>(null);
+  // A failed Take over belongs to the block it was tried for: drop it when the reason changes.
+  const [errorBlock, setErrorBlock] = useState(access.block);
+  if (errorBlock !== access.block) {
+    setErrorBlock(access.block);
+    setError(null);
+  }
+  // One Take over at a time (a double tap must not open live twice); the ref also stops a
+  // second tap that lands before the disabled button has rendered.
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
   if (access.canEdit) return null;
 
   const takeOver = async () => {
-    if (!teamId || !matchId) return;
+    if (!teamId || !matchId || pending.current) return;
+    pending.current = true;
+    setBusy(true);
     setError(null);
     const result = await holdMatch(teamId, matchId, true);
+    pending.current = false;
+    setBusy(false);
     if (!result.ok) setError(result.error);
     else if (!result.value.granted) setError('denied');
     else onTakenOver?.();
@@ -53,6 +67,7 @@ export function MatchReadOnlyNote({
         block={access.block}
         holder={access.holder}
         onTakeOver={access.block === 'held' ? () => void takeOver() : undefined}
+        takeOverBusy={busy}
       />
       {error ? (
         <Text style={styles.error} accessibilityLiveRegion="polite" testID="take-over-error">

@@ -186,4 +186,43 @@ describe('lineup builder, view only (v10)', () => {
     expect(screen.queryByTestId('take-over-error')).toBeNull();
     expect(screen).toHavePathname('/match/m1/live');
   });
+
+  it('Take over is disabled while it runs, so a double tap takes over once', async () => {
+    seed('manager');
+    holdElsewhere();
+    let finish: (value: { ok: true; value: { granted: boolean } }) => void = () => undefined;
+    jest.mocked(sync.holdMatch).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
+    const takeOver = await screen.findByRole('button', { name: t.sync.readOnly.takeOver });
+    await fireEvent.press(takeOver);
+    await fireEvent.press(takeOver);
+    expect(sync.holdMatch).toHaveBeenCalledTimes(1);
+    expect(takeOver.props.accessibilityState.disabled).toBe(true);
+    await act(async () => finish({ ok: true, value: { granted: true } }));
+    expect(screen).toHavePathname('/match/m1/live');
+    expect(sync.holdMatch).toHaveBeenCalledWith('team1', 'm1', true);
+    expect(jest.mocked(sync.holdMatch).mock.calls.filter((c) => c.length === 3)).toHaveLength(1);
+  });
+
+  it('a failed Take over message goes away when the reason changes', async () => {
+    seed('manager');
+    holdElsewhere();
+    await renderRouter('./app', { initialUrl: '/match/m1?set=1' });
+    jest.mocked(sync.holdMatch).mockResolvedValueOnce({ ok: false, error: 'offline' });
+    await fireEvent.press(await screen.findByRole('button', { name: t.sync.readOnly.takeOver }));
+    expect(screen.getByTestId('take-over-error')).toBeTruthy();
+    // Demoted to player meanwhile: the reason is now "view only", the old error is stale.
+    await act(async () =>
+      useAppStore.setState((s) => ({
+        sync: { ...s.sync, teams: { team1: { ...s.sync.teams.team1, role: 'player' } } },
+      })),
+    );
+    expect(screen.getByText(t.sync.readOnly.viewer)).toBeTruthy();
+    expect(screen.queryByTestId('take-over-error')).toBeNull();
+  });
 });
