@@ -43,5 +43,10 @@ export function useJoin() {
   }, []);
 
   const clearError = useCallback(() => setError(null), []);
-  return { busy, error, joined, join, clearError };
+  /** Back to the empty form (a new invite link was opened). */
+  const reset = useCallback(() => {
+    setError(null);
+    setJoined(null);
+  }, []);
+  return { busy, error, joined, join, clearError, reset };
 }

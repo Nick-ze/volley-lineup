@@ -13,10 +13,6 @@ jest.mock('@/lib/share', () => ({
   webAppBase: jest.fn(() => undefined),
 }));
 
-// Expo Router warns about modal routes rendered as the first screen; not what this tests.
-beforeAll(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
-afterAll(() => jest.restoreAllMocks());
-
 const URL = '/team/team1/members';
 
 function signIn() {
@@ -211,6 +207,21 @@ describe('members: manager', () => {
     expect(await screen.findByText(t.members.invites.shareFailed)).toBeTruthy();
   });
 
+  it('clears "Copied." on the next action', async () => {
+    jest.mocked(share.shareText).mockResolvedValueOnce('copied');
+    await renderManager();
+    await fireEvent.press(screen.getByTestId('invite-share-inv-1'));
+    expect(await screen.findByText(t.members.invites.copied)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('member-role-u2'));
+    await waitFor(() => expect(screen.queryByText(t.members.invites.copied)).toBeNull());
+
+    jest.mocked(share.shareText).mockResolvedValueOnce('copied');
+    await fireEvent.press(screen.getByTestId('invite-share-inv-1'));
+    expect(await screen.findByText(t.members.invites.copied)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('members-new-invite'));
+    expect(screen.queryByText(t.members.invites.copied)).toBeNull();
+  });
+
   it('revokes an invite after confirming', async () => {
     await renderManager();
     await fireEvent.press(screen.getByLabelText(t.members.invites.revokeLabel('ABCDE-FGHJK')));
@@ -283,6 +294,25 @@ describe('members: player', () => {
     await fireEvent.press(screen.getByLabelText(t.members.leave.confirmButton));
     expect(sync.leaveTeam).toHaveBeenCalledWith('team1');
     await waitFor(() => expect(screen).toHavePathname('/teams'));
+  });
+});
+
+describe('members: leaving removes the team from the device', () => {
+  it('ends on the team list without crashing when the engine drops the team first', async () => {
+    await renderManager();
+    jest.mocked(sync.leaveTeam).mockImplementationOnce(async () => {
+      // What the sync engine does on success: unlink and remove the team locally.
+      useAppStore.setState((s) => ({
+        teams: s.teams.filter((team) => team.id !== 'team1'),
+        sync: { ...s.sync, teams: {} },
+      }));
+      return { ok: true, value: undefined };
+    });
+    await fireEvent.press(screen.getByTestId('members-leave'));
+    await fireEvent.press(screen.getByTestId('confirm'));
+    await waitFor(() => expect(screen).toHavePathname('/teams'));
+    expect(sync.leaveTeam).toHaveBeenCalledWith('team1');
+    expect(screen.queryByText(t.roster.teamNotFound)).toBeNull();
   });
 });
 

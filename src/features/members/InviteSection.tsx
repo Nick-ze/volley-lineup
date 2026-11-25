@@ -30,6 +30,12 @@ export function InviteSection({ teamId, teamName, invites, busy, run, ask }: Inv
   const s = t.members.invites;
   const [creating, setCreating] = useState(false);
   const [shared, setShared] = useState<ShareOutcome | null>(null);
+  // "Copied." belongs to the last share only: any next action (one starts `busy`) clears it.
+  const [wasBusy, setWasBusy] = useState(busy);
+  if (busy !== wasBusy) {
+    setWasBusy(busy);
+    if (busy) setShared(null);
+  }
 
   const share = async (invite: Invite) => {
     setShared(null);
@@ -37,10 +43,12 @@ export function InviteSection({ teamId, teamName, invites, busy, run, ask }: Inv
     const link = joinLink(invite.code, webAppBase());
     setShared(await shareText(s.shareMessage(teamName, code, link), s.shareTitle(teamName)));
   };
-  const revoke = (invite: Invite) =>
+  const revoke = (invite: Invite) => {
+    setShared(null);
     ask(s.revokeConfirm(formatInviteCode(invite.code)), s.revoke, () => {
       void run(() => revokeInvite(invite.id));
     });
+  };
   const create = (role: TeamRole, days: InviteDays) => {
     setCreating(false);
     void run(() => createInvite(teamId, role, days));
@@ -69,7 +77,10 @@ export function InviteSection({ teamId, teamName, invites, busy, run, ask }: Inv
       <Button
         label={t.members.newInvite}
         accessibilityLabel={t.members.newInviteLabel}
-        onPress={() => setCreating(true)}
+        onPress={() => {
+          setShared(null);
+          setCreating(true);
+        }}
         disabled={busy}
         testID="members-new-invite"
       />

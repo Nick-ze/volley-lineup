@@ -1,13 +1,10 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import { en as t } from '@/i18n/en';
 import * as sync from '@/lib/sync';
 import { useAppStore, useSyncRuntime } from '@/store';
 import { renderApp, seedApp } from '@/test-utils';
-
-// Expo Router warns about modal routes rendered as the first screen; not what this tests.
-beforeAll(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
-afterAll(() => jest.restoreAllMocks());
 
 const signIn = () =>
   useSyncRuntime.setState({ session: { userId: 'me', email: 'anna@example.test' } });
@@ -75,6 +72,41 @@ describe('join a team', () => {
     // Typing again clears the message.
     await fireEvent.changeText(codeField(), 'ABCDE-FGHJ');
     expect(screen.queryByText(t.members.errors.inviteInvalid)).toBeNull();
+  });
+
+  it('the code field is set up for codes (no autocorrect, caps, spelling) and takes links', async () => {
+    signIn();
+    await renderApp('/join');
+    const field = codeField();
+    expect(field.props).toMatchObject({
+      autoCapitalize: 'characters',
+      autoCorrect: false,
+      autoComplete: 'off',
+      spellCheck: false,
+    });
+    expect(field.props.maxLength).toBeUndefined();
+  });
+
+  it('reads the code again when a new link opens the screen', async () => {
+    signIn();
+    jest.mocked(sync.joinTeam).mockResolvedValueOnce({ ok: false, error: 'inviteInvalid' });
+    await renderApp('/join?code=ABCDEFGHJK');
+    await fireEvent.press(screen.getByTestId('join-submit'));
+    expect(await screen.findByText(t.members.errors.inviteInvalid)).toBeTruthy();
+    await act(async () => router.setParams({ code: 'yz234-56789' }));
+    expect(codeField().props.value).toBe('YZ234-56789');
+    expect(screen.queryByText(t.members.errors.inviteInvalid)).toBeNull();
+  });
+
+  it('the server saying "not signed in" offers "Sign in first"', async () => {
+    signIn();
+    jest.mocked(sync.joinTeam).mockResolvedValueOnce({ ok: false, error: 'notSignedIn' });
+    await renderApp('/join?code=ABCDEFGHJK');
+    await fireEvent.press(screen.getByTestId('join-submit'));
+    expect(await screen.findByText(t.members.errors.notSignedIn)).toBeTruthy();
+    expect(screen.queryByTestId('join-submit')).toBeNull();
+    await fireEvent.press(screen.getByLabelText(t.members.local.signInLabel));
+    expect(screen).toHavePathname('/account/sign-in');
   });
 
   it('a code in the wrong format is not sent', async () => {

@@ -129,6 +129,18 @@ describe('sortMembers', () => {
     expect(list[0]?.userId).toBe('u1'); // a copy is sorted
   });
 
+  it('puts members without a name last within their role', () => {
+    const list = [
+      m('u1', '', 'player'),
+      m('u2', 'Zoe', 'player'),
+      m('u3', '  ', 'manager'),
+      m('u4', 'Anna', 'player'),
+      m('u5', 'Bea', 'manager'),
+      m('u0', '', 'player'),
+    ];
+    expect(sortMembers(list).map((x) => x.userId)).toEqual(['u5', 'u3', 'u4', 'u2', 'u0', 'u1']);
+  });
+
   it('keeps a stable order for the same name and role', () => {
     const list = [m('b', 'Anna', 'player'), m('a', 'Anna', 'player'), m('a', 'Anna', 'player')];
     expect(sortMembers(list).map((x) => x.userId)).toEqual(['a', 'a', 'b']);

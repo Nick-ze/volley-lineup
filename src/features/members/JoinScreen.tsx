@@ -8,7 +8,7 @@ import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore, useSession, useTeam } from '@/store';
 
-import { SignInFirst } from './MembersNotes';
+import { needsSignIn, SignInFirst } from './MembersNotes';
 import { useMembersStyles } from './membersStyles';
 import { useJoin, type Joined } from './useJoin';
 
@@ -30,12 +30,22 @@ export function JoinScreen() {
   const profile = useAppStore(selectCurrentProfile);
   const session = useSession();
   const [code, setCode] = useState(() => initialCode(params.code));
-  const { busy, error, joined, join, clearError } = useJoin();
+  const [codeParam, setCodeParam] = useState(params.code);
+  const { busy, error, joined, join, clearError, reset } = useJoin();
+  // A new invite link while the screen is open (e.g. tapped in another app): start over with it.
+  if (params.code !== codeParam) {
+    setCodeParam(params.code);
+    setCode(initialCode(params.code));
+    reset();
+  }
   useTourPage(profile ? 'join' : null);
 
   if (!profile) return <Redirect href="/" />;
   const s = t.members.join;
-  const errorText = error === 'format' ? s.badFormat : error ? t.members.errors[error] : undefined;
+  // Signed out (or the server says so): "Sign in first" instead of "Join".
+  const signIn = !session || needsSignIn(error);
+  const errorText =
+    error === 'format' ? s.badFormat : error && !signIn ? t.members.errors[error] : undefined;
   return (
     <Screen>
       {joined ? (
@@ -52,10 +62,18 @@ export function JoinScreen() {
             }}
             placeholder={s.placeholder}
             error={errorText}
-            onSubmitEditing={session ? () => void join(code) : undefined}
+            // A code, not a word: no capitalisation fixes, autocorrect or spelling marks. No
+            // maxLength, because people paste whole invite links.
+            autoCapitalize="characters"
+            autoCorrect={false}
+            autoComplete="off"
+            spellCheck={false}
+            onSubmitEditing={signIn ? undefined : () => void join(code)}
             testID="join-code"
           />
-          {session ? (
+          {signIn ? (
+            <SignInFirst message={needsSignIn(error) ? t.members.errors[error] : s.signInNeeded} />
+          ) : (
             <Button
               label={busy ? s.joining : s.submit}
               accessibilityLabel={busy ? s.joining : s.submitLabel}
@@ -63,8 +81,6 @@ export function JoinScreen() {
               disabled={busy || code.trim() === ''}
               testID="join-submit"
             />
-          ) : (
-            <SignInFirst message={s.signInNeeded} />
           )}
         </View>
       )}

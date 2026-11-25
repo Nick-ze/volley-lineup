@@ -84,11 +84,17 @@ export interface MemberSortKey {
 
 const ROLE_ORDER: Record<TeamRole, number> = { manager: 0, player: 1 };
 
-/** Managers first, then by name (case-insensitive), then by user id so the order is stable. */
+const unnamed = (member: MemberSortKey): number => (member.displayName.trim() === '' ? 1 : 0);
+
+/**
+ * Managers first, then by name (case-insensitive; members without a name last within their
+ * role), then by user id so the order is stable.
+ */
 export function sortMembers<T extends MemberSortKey>(members: readonly T[]): T[] {
   return [...members].sort(
     (a, b) =>
       ROLE_ORDER[a.role] - ROLE_ORDER[b.role] ||
+      unnamed(a) - unnamed(b) ||
       a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }) ||
       (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0),
   );

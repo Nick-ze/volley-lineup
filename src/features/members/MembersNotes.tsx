@@ -38,5 +38,5 @@ export function SignInFirst({ message }: { message: string }) {
 }
 
 /** Errors that mean "sign in (again)" rather than "try again". */
-export const needsSignIn = (error: SyncErrorCode | null): boolean =>
+export const needsSignIn = (error: string | null): error is 'notSignedIn' | 'signedOut' =>
   error === 'notSignedIn' || error === 'signedOut';
