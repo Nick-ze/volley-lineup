@@ -3,6 +3,7 @@ import { Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-n
 
 import { Button, useListStyles } from '@/components';
 import { rosterCardWidth, rosterColumns } from '@/domain/rosterGrid';
+import { ScorerListButton } from '@/features/print/ScorerListButton';
 import { useT } from '@/i18n';
 import { useAppStore, usePlayersForTeam } from '@/store';
 import { makeStyles, maxContentWidth, spacing } from '@/theme';
@@ -41,7 +42,11 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
     <>
       <View style={[styles.headerRow, styles.tabHeader]}>
         <Text style={styles.subtitle}>{t.roster.team.playerCount(players.length)}</Text>
-        <Button label={t.roster.roster.addPlayer} onPress={onAddPlayer} compact />
+        {/* v9.2: wraps below the count when both buttons don't fit (375 px, German, dyslexia font). */}
+        <View style={grid.actions}>
+          {players.length > 0 ? <ScorerListButton teamId={teamId} /> : null}
+          <Button label={t.roster.roster.addPlayer} onPress={onAddPlayer} compact />
+        </View>
       </View>
       {players.length === 0 && <Text style={styles.empty}>{t.roster.roster.empty}</Text>}
       <View style={grid.grid} onLayout={onLayout} testID="roster-grid">
@@ -61,4 +66,5 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
 
 const useGridStyles = makeStyles(() => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: spacing.sm },
 }));

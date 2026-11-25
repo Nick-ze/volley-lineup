@@ -4,14 +4,21 @@ import { Button, Dialog } from '@/components';
 import { useT } from '@/i18n';
 import { makeStyles, spacing, typography } from '@/theme';
 
+/** What to print: the lineup sheet (with / without results) or the player list for the scorer. */
+export type PrintChoice = 'lineups' | 'results' | 'scorer';
+
 export interface PrintChoiceDialogProps {
-  /** Called with the choice: `true` prints with the results section. */
-  onChoose: (withResults: boolean) => void;
+  /** v3: the match has results — offers "With results" and "Lineups only". */
+  hasResults: boolean;
+  onChoose: (choice: PrintChoice) => void;
   onCancel: () => void;
 }
 
-/** In-app dialog "Lineups only" / "With results" (Alert.alert does nothing on web). Mount to show. */
-export function PrintChoiceDialog({ onChoose, onCancel }: PrintChoiceDialogProps) {
+/**
+ * In-app dialog (Alert.alert does nothing on web). Mount to show. With results: "With results" /
+ * "Lineups only"; before: "Lineup sheet". v9.2: always also "Player list for the scorer".
+ */
+export function PrintChoiceDialog({ hasResults, onChoose, onCancel }: PrintChoiceDialogProps) {
   const styles = useStyles();
   const t = useT();
   const s = t.print.choice;
@@ -27,20 +34,38 @@ export function PrintChoiceDialog({ onChoose, onCancel }: PrintChoiceDialogProps
         'aria-label': s.title,
       }}
     >
-      <Text style={styles.body}>{s.body}</Text>
+      <Text style={styles.body}>{hasResults ? s.body : s.bodyNoResults}</Text>
       <View style={styles.actions}>
+        {hasResults ? (
+          <>
+            <Button
+              label={s.withResults}
+              accessibilityLabel={s.withResultsLabel}
+              onPress={() => onChoose('results')}
+              testID="print-with-results"
+            />
+            <Button
+              label={s.lineupsOnly}
+              accessibilityLabel={s.lineupsOnlyLabel}
+              variant="secondary"
+              onPress={() => onChoose('lineups')}
+              testID="print-lineups-only"
+            />
+          </>
+        ) : (
+          <Button
+            label={s.lineupSheet}
+            accessibilityLabel={s.lineupSheetLabel}
+            onPress={() => onChoose('lineups')}
+            testID="print-lineup-sheet"
+          />
+        )}
         <Button
-          label={s.withResults}
-          accessibilityLabel={s.withResultsLabel}
-          onPress={() => onChoose(true)}
-          testID="print-with-results"
-        />
-        <Button
-          label={s.lineupsOnly}
-          accessibilityLabel={s.lineupsOnlyLabel}
+          label={s.scorer}
+          accessibilityLabel={s.scorerLabel}
           variant="secondary"
-          onPress={() => onChoose(false)}
-          testID="print-lineups-only"
+          onPress={() => onChoose('scorer')}
+          testID="print-scorer"
         />
         <Button
           label={s.cancel}
@@ -56,6 +81,6 @@ export function PrintChoiceDialog({ onChoose, onCancel }: PrintChoiceDialogProps
 
 const useStyles = makeStyles((theme) => ({
   body: { ...typography.body, color: theme.colors.textMuted },
-  // The three choices stacked, each as wide as the card.
+  // The choices stacked, each as wide as the card.
   actions: { gap: spacing.sm },
 }));

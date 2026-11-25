@@ -104,7 +104,7 @@ export const tour = {
     roster: {
       add: {
         title: 'Add your players',
-        text: 'Tap “Add player” for everyone on the team. A lineup needs at least 6.',
+        text: 'Tap “Add player” for everyone on the team. A lineup needs at least 6. “Player list (PDF)” prints the numbers for the scorer.',
       },
       sections: {
         title: 'Team sections',
@@ -164,7 +164,7 @@ export const tour = {
       },
       serve: {
         title: 'Who serves first',
-        text: 'Choose who serves first. Each set has its own tab; tap Live to score the match, or Print / PDF for the lineup sheet.',
+        text: 'Choose who serves first. Each set has its own tab; tap Live to score the match, or Print / PDF for the lineup sheet or the scorer’s player list.',
       },
     },
     profile: {

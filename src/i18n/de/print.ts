@@ -3,12 +3,19 @@ import type { Strings } from '../en';
 /** Druckbarer Aufstellungsbogen. */
 export const print: Strings['print'] = {
   button: 'Drucken / PDF',
-  buttonLabel: 'Drucken / PDF: Aufstellungsbogen dieses Spiels drucken oder als PDF speichern',
+  buttonLabel:
+    'Drucken / PDF: Aufstellungsbogen oder Spielerliste für den Schreiber drucken oder als PDF speichern',
   failed: 'Drucken fehlgeschlagen. Bitte versuche es noch einmal.',
   dialogTitle: 'Aufstellungsbogen teilen',
   choice: {
     title: 'Was möchtest du drucken?',
     body: 'Dieses Spiel hat Ergebnisse. Du kannst sie auf den Bogen setzen.',
+    bodyNoResults:
+      'Den Aufstellungsbogen oder die Liste mit Spielern und Nummern für den Schreiber.',
+    lineupSheet: 'Aufstellungsbogen',
+    lineupSheetLabel: 'Aufstellungsbogen: die Aufstellungen dieses Spiels drucken',
+    scorer: 'Spielerliste für den Schreiber',
+    scorerLabel: 'Spielerliste für den Schreiber: Spieler und Nummern drucken',
     lineupsOnly: 'Nur Aufstellungen',
     lineupsOnlyLabel: 'Nur Aufstellungen drucken',
     withResults: 'Mit Ergebnissen',
@@ -16,6 +23,30 @@ export const print: Strings['print'] = {
       'Mit Ergebnissen: die Aufstellungen mit Spielergebnis und Satzständen drucken',
     cancel: 'Abbrechen',
     cancelLabel: 'Abbrechen: nicht drucken',
+  },
+  scorer: {
+    rosterButton: 'Spielerliste (PDF)',
+    rosterButtonLabel: 'Spielerliste (PDF): Spieler und Nummern für den Schreiber drucken',
+    dialogTitle: 'Spielerliste teilen',
+    sheet: {
+      documentTitle: (team: string) => `Spielerliste · ${team}`,
+      title: 'Spielerliste',
+      versus: (opponent: string) => `gegen ${opponent}`,
+      home: 'Heim',
+      away: 'Auswärts',
+      number: 'Nr.',
+      lastName: 'Name',
+      firstName: 'Vorname',
+      marks: 'C / L',
+      captain: 'C',
+      libero: 'L',
+      legend: 'C = Kapitän · L = Libero',
+      leftOut: (count: number) =>
+        count === 1
+          ? '1 verletzter Spieler nicht aufgeführt'
+          : `${count} verletzte Spieler nicht aufgeführt`,
+      noPlayers: 'Keine aktiven Spieler.',
+    },
   },
   sheet: {
     documentTitle: (team: string, opponent: string) => `Aufstellung · ${team} gegen ${opponent}`,

@@ -70,6 +70,12 @@ function seed() {
   });
 }
 
+/** v9.2: Print / PDF on an unplayed match, then "Lineup sheet" in the choice dialog. */
+async function printLineupSheet() {
+  await fireEvent.press(await screen.findByTestId('print-sheet'));
+  await fireEvent.press(await screen.findByTestId('print-lineup-sheet'));
+}
+
 describe('print lineup sheet', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -82,6 +88,12 @@ describe('print lineup sheet', () => {
     const button = await screen.findByTestId('print-sheet');
     expect(button.props.accessibilityLabel).toMatch(/print the lineup sheet/i);
     await fireEvent.press(button);
+    // v9.2: an unplayed match asks "Lineup sheet" / "Player list for the scorer" (no results).
+    await screen.findByTestId('print-choice');
+    expect(screen.queryByTestId('print-with-results')).toBeNull();
+    expect(screen.getByTestId('print-scorer')).toBeTruthy();
+    expect(mockPrint).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByLabelText('Lineup sheet: print the lineups of this match'));
 
     await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
     const [html, options] = mockPrint.mock.calls[0] as [string, Record<string, string>];
@@ -95,7 +107,7 @@ describe('print lineup sheet', () => {
     expect(html).toContain('First serve:</span> We receive');
     expect(html).toContain('<span class="name">First7 Last7</span>');
     expect(html).not.toContain('class="results"');
-    expect(screen.queryByTestId('print-choice')).toBeNull(); // unplayed: no choice to make
+    expect(screen.queryByTestId('print-choice')).toBeNull(); // closed after the choice
     expect(screen.queryByTestId('print-error')).toBeNull();
   });
 
@@ -104,6 +116,17 @@ describe('print lineup sheet', () => {
     try {
       await renderRouter('./app', { initialUrl: '/match/m1' });
       await fireEvent.press(await screen.findByTestId('print-sheet'));
+      await screen.findByTestId('print-choice');
+      // Label in name (WCAG 2.5.3): every accessibility label starts with the visible text.
+      for (const [id, text] of [
+        ['print-lineup-sheet', 'Aufstellungsbogen'],
+        ['print-scorer', 'Spielerliste für den Schreiber'],
+        ['print-cancel', 'Abbrechen'],
+      ]) {
+        expect(screen.getByTestId(id)).toHaveTextContent(text);
+        expect(screen.getByTestId(id).props.accessibilityLabel.startsWith(text)).toBe(true);
+      }
+      await fireEvent.press(screen.getByText('Aufstellungsbogen'));
       await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
       const [html, options] = mockPrint.mock.calls[0] as [string, Record<string, string>];
       expect(options).toEqual({
@@ -209,7 +232,7 @@ describe('print lineup sheet', () => {
   it('prints the roles, the "*" note and "Libero off" (v4)', async () => {
     rolesAndLiberoOff();
     await renderRouter('./app', { initialUrl: '/match/m1' });
-    await fireEvent.press(await screen.findByTestId('print-sheet'));
+    await printLineupSheet();
     await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
     const [html] = mockPrint.mock.calls[0] as [string];
     expect(html).toContain('<span class="role">S<span class="off">*</span></span>P2');
@@ -223,7 +246,7 @@ describe('print lineup sheet', () => {
     useAppStore.getState().setLanguage('de');
     try {
       await renderRouter('./app', { initialUrl: '/match/m1' });
-      await fireEvent.press(await screen.findByTestId('print-sheet'));
+      await printLineupSheet();
       await waitFor(() => expect(mockPrint).toHaveBeenCalledTimes(1));
       const [html] = mockPrint.mock.calls[0] as [string];
       expect(html).toContain('<div class="libero-off">Libero aus</div>');
@@ -236,7 +259,7 @@ describe('print lineup sheet', () => {
   it('shows an error when printing fails', async () => {
     mockPrint.mockRejectedValueOnce(new Error('no printer'));
     await renderRouter('./app', { initialUrl: '/match/m1' });
-    await fireEvent.press(await screen.findByTestId('print-sheet'));
+    await printLineupSheet();
     expect(await screen.findByText('Printing failed. Please try again.')).toBeTruthy();
   });
 });

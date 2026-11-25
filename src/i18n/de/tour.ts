@@ -101,7 +101,7 @@ export const tour: Strings['tour'] = {
     roster: {
       add: {
         title: 'Spieler hinzufügen',
-        text: 'Tippe für alle im Team auf „Spieler hinzufügen“. Eine Aufstellung braucht mindestens 6.',
+        text: 'Tippe für alle im Team auf „Spieler hinzufügen“. Eine Aufstellung braucht mindestens 6. „Spielerliste (PDF)“ druckt die Nummern für den Schreiber.',
       },
       sections: {
         title: 'Team-Bereiche',
@@ -161,7 +161,7 @@ export const tour: Strings['tour'] = {
       },
       serve: {
         title: 'Wer schlägt auf?',
-        text: 'Wähle, wer zuerst aufschlägt. Jeder Satz hat seinen Tab; mit Live zählst du das Spiel, mit Drucken / PDF druckst du die Aufstellung.',
+        text: 'Wähle, wer zuerst aufschlägt. Jeder Satz hat seinen Tab; mit Live zählst du das Spiel, mit Drucken / PDF druckst du die Aufstellung oder die Spielerliste für den Schreiber.',
       },
     },
     profile: {

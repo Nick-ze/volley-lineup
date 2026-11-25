@@ -1,18 +1,50 @@
 /** Strings for the printable lineup sheet (v2 feature 5). */
 export const print = {
   button: 'Print / PDF',
-  buttonLabel: 'Print / PDF: print the lineup sheet of this match or save it as a PDF',
+  buttonLabel:
+    'Print / PDF: print the lineup sheet of this match or the player list for the scorer, or save it as a PDF',
   failed: 'Printing failed. Please try again.',
   dialogTitle: 'Share lineup sheet',
   choice: {
     title: 'What do you want to print?',
     body: 'This match has results. You can add them to the sheet.',
+    /** v9.2: before the match has results. */
+    bodyNoResults: 'The lineup sheet, or the list of players and numbers for the scorer.',
+    /** v9.2: the lineup sheet when the match has no results yet. */
+    lineupSheet: 'Lineup sheet',
+    lineupSheetLabel: 'Lineup sheet: print the lineups of this match',
+    /** v9.2: the scorer's player list. */
+    scorer: 'Player list for the scorer',
+    scorerLabel: 'Player list for the scorer: print the players and their numbers',
     lineupsOnly: 'Lineups only',
     lineupsOnlyLabel: 'Lineups only: print the lineups without results',
     withResults: 'With results',
     withResultsLabel: 'With results: print the lineups with the match result and set scores',
     cancel: 'Cancel',
     cancelLabel: 'Cancel: don’t print',
+  },
+  /** v9.2: the player list for the scorer (match Print / PDF and the team's Roster tab). */
+  scorer: {
+    rosterButton: 'Player list (PDF)',
+    rosterButtonLabel: 'Player list (PDF): print the players and their numbers for the scorer',
+    dialogTitle: 'Share player list',
+    sheet: {
+      documentTitle: (team: string) => `Player list · ${team}`,
+      title: 'Player list',
+      versus: (opponent: string) => `vs ${opponent}`,
+      home: 'Home',
+      away: 'Away',
+      number: 'No.',
+      lastName: 'Last name',
+      firstName: 'First name',
+      marks: 'C / L',
+      captain: 'C',
+      libero: 'L',
+      legend: 'C = captain · L = libero',
+      leftOut: (count: number) =>
+        count === 1 ? '1 injured player not listed' : `${count} injured players not listed`,
+      noPlayers: 'No active players.',
+    },
   },
   sheet: {
     documentTitle: (team: string, opponent: string) => `Lineup · ${team} vs ${opponent}`,
