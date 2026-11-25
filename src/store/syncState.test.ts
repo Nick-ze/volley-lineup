@@ -16,6 +16,7 @@ import { useCanEdit, useMatchAccess, useSharedTeamIds, useTeamAccess } from './s
 import { useSyncRuntime } from './syncRuntime';
 
 const store = () => useAppStore.getState();
+const NOW = new Date('2026-11-26T00:00:00Z');
 
 const linked = (role: SyncedTeam['role']): SyncedTeam => ({
   userId: 'u1',
@@ -122,9 +123,9 @@ describe('sync state in the store', () => {
 
   it('the export ignores the sync state (schema 10 unchanged)', () => {
     seedApp({ players: [makePlayer(1, 'Anna', ['S'])] });
-    const before = buildExport({ ...selectAppData(store()), photos: [] }, '2026-11-26T00:00:00Z');
+    const before = buildExport({ ...selectAppData(store()), photos: [] }, { now: NOW });
     useAppStore.setState({ sync: shared() });
-    const after = buildExport({ ...selectAppData(store()), photos: [] }, '2026-11-26T00:00:00Z');
+    const after = buildExport({ ...selectAppData(store()), photos: [] }, { now: NOW });
     expect(JSON.stringify(after)).toBe(JSON.stringify(before));
     expect(after.schemaVersion).toBe(10);
   });
