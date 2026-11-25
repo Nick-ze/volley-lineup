@@ -71,6 +71,9 @@ const useGridStyles = makeStyles(() => ({
     flexWrap: 'wrap',
     flexShrink: 1,
     alignItems: 'flex-start',
+    // v9.2 review: when the row wraps, keep the buttons (and the primary "Add player") at the right edge.
+    justifyContent: 'flex-end',
+    marginLeft: 'auto',
     gap: spacing.sm,
   },
 }));

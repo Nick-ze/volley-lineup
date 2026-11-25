@@ -673,3 +673,17 @@ export `schemaVersion` 10. Details: DECISIONS #248–250.
 - [x] Player page shows "Captain"; screen readers hear "captain"; print sheet marks "(C)".
 - [x] Export v10 keeps the captain; v1–v9 files and old data open; merge keeps the device's captain when the file has none; an invalid captain is dropped.
 - [x] Lint, typecheck and tests pass; src/domain at 100 %; only captain-related screenshots changed.
+
+## 42. v9.2 — Player list for the scorer
+
+Owner request: a PDF of all players and their numbers to hand to the scorer ("Schreiber"). One A4 page: team (and
+match: opponent, date, season, home / away), table No. · Last name · First name · C / L, sorted by number, active players
+only. From the match's Print / PDF and the team's Roster tab. No data change. Details: DECISIONS #251–252.
+
+## 43. v9.2 acceptance checklist
+
+- [x] Match → Print / PDF → "Player list for the scorer" and Roster → "Player list (PDF)" print the list (PDF on phones, print dialog on web).
+- [x] Sorted by number, active players only (injured left out, with a note), C for the captain, L for liberos; EN + DE.
+- [x] From a match the sheet shows opponent, date (dd.mm.yy), season and home / away; one A4 page for up to 20 players.
+- [x] The lineup sheet prints exactly as before; no data change (store 12, export 10, golden unchanged).
+- [x] Lint, typecheck and tests pass; src/domain at 100 %; only the Roster tab changed in the screenshot compare.

@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-24, after releasing **v9.1.0**.
+Last updated: 2026-11-24, after releasing **v9.2.0**.
 
 ---
 
@@ -32,10 +32,11 @@ Last updated: 2026-11-24, after releasing **v9.1.0**.
 | v8.4.0  | Owner polish: faded player photo behind the number on court chips, room under the team tabs' add buttons, Settings switch renamed "Prioritise names"                                                                                       | `v8.4.0` |
 | v9.0.0  | Guided tour: Full / Quick / No tour on first start, tip popups with a small visual guide, quick-tour offers on other screens, Profile → Tutorial; store v11                                                                                | `v9.0.0` |
 | v9.1.0  | Team captain: "Team captain" switch in the player form, yellow "C" badge on the captain's chips and roster card, "(C)" on the print sheet; store v12, export v10                                                                           | `v9.1.0` |
+| v9.2.0  | Player list for the scorer: one-page PDF (No. · name · C / L, active players) from the match's Print / PDF and the Roster tab; Print / PDF always asks                                                                                     | `v9.2.0` |
 
-- `main` is green (CI), **1543 tests** (122 suites), `src/domain` at 100% coverage.
-- Current versions: app **9.1.0** (`app.json` + `package.json`, must match), store **12**, export `schemaVersion` **10** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont`, `tourMode`, `tourSeen` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#250**. Continue at #251.
+- `main` is green (CI), **1558 tests** (124 suites), `src/domain` at 100% coverage.
+- Current versions: app **9.2.0** (`app.json` + `package.json`, must match), store **12**, export `schemaVersion` **10** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont`, `tourMode`, `tourSeen` aren't exported; photos live outside the store but are exported, incl. team photos).
+- Last decision number in `docs/DECISIONS.md`: **#252**. Continue at #253.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -74,7 +75,7 @@ Last updated: 2026-11-24, after releasing **v9.1.0**.
 
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
-3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7, §31–33 v8, §34–35 v8.3). PLAN §36–37 v8.4, §38–39 v9.0, §40–41 v9.1. `docs/AUDIT.md` — the v8.3 code audit (ranked findings, results, what was skipped).
+3. `docs/PLAN.md` — features and data model (§1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7, §31–33 v8, §34–35 v8.3). PLAN §36–37 v8.4, §38–39 v9.0, §40–41 v9.1, §42–43 v9.2. `docs/AUDIT.md` — the v8.3 code audit (ranked findings, results, what was skipped).
 4. `docs/DECISIONS.md` — every choice made so far (#1–236). Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Rewritten in v8.3 (conventions, tests, proof of no change).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
@@ -99,6 +100,7 @@ Last updated: 2026-11-24, after releasing **v9.1.0**.
 - **Shared UI (v8.3)** in `src/components`: `Dialog` + `useDialogStyles`, `ConfirmDialog` / `useConfirm`, `ChoiceChip`, `TextField`, `ListRow`, `NotFound`, `SetChipFilter`, `ScreenTitle`, `formStyles.ts`, `useGoBack`; `CourtSlot` / `courtStyle`, `useCourtMotion`; app tab bar in `src/features/appTabs`; `parseTab` in `src/lib`. Test helpers in `src/test-utils/` (`seedApp`, `seedGolden`, `renderApp`, `resetStores`, `makePlayer`, `makeSet`, `seasonRefs`, …).
 - **Guided tour (v9)**: `src/domain/tour.ts` (pages, quick pages, `tourAction`, tab → page helpers), `src/features/tour/` (non-persisted session store with per-screen focus tokens, `useTourPage(page)` — call once per screen with the _shown_ tab's page, `TourHost` in `app/_layout.tsx`, choice dialog, step popup + `TourVisual`, offer, Profile `TourSection`; tip texts in `steps.ts` + `src/i18n/{en,de}/tour.ts`). Store v11 device settings `tourMode` / `tourSeen`. **New screens need a tour page**: add it to `TourPage`, the page lists, steps and strings, and call `useTourPage`.
 - **Team captain (v9.1)**: `Team.captainId`, `src/domain/captain.ts` (`setCaptain`, `chooseCaptain`, `withValidCaptain`), store `setCaptain`, hooks `useCaptainId` / `useIsCaptain`, `CaptainBadge` drawn inside `PlayerChipFace` (so every chip has it) and on `PlayerCard`. Merge keeps / validates captains (`exportMerge.ts`).
+- **Scorer list (v9.2)**: `src/domain/scorerSheet.ts` (pure HTML builder, labels passed in), `src/features/print/useScorerSheet.ts` + `ScorerListButton` (Roster tab), option in `PrintChoiceDialog`; output via `src/lib/print*` (native ignores the document title, so the shared PDF has expo-print's file name — possible follow-up).
 - **Platform code** only in `src/lib/*.web.ts` / `*.native.ts` (file transfer, print, drag activation, switch props, document language).
 - **Theme (v8)**: `src/theme/` — `darkColors` / `lightColors` (same tokens; use `primaryText` / `highlightText` / `secondaryText` for coloured text and outlines on backgrounds, `on*` for text on fills, `onCourt` on the orange court), `darkPositionColors` / `lightPositionColors`, `ThemeProvider` (props `mode`, `dyslexiaFont`, wired from the store in `app/_layout.tsx` → `ThemedRoot`), `useTheme()`, `makeStyles((theme) => ({...}))` → `useStyles()` (cached per theme; injects the OpenDyslexic family at 0.85× size into every text style; `inlineFontSize()` for inline sizes), `navigationTheme.ts`. No colour literals outside `src/theme` (a test enforces it). `print.ts` stays the light print theme. Fonts: `assets/fonts/OpenDyslexic-*.otf` (OFL), loaded by `src/lib/fonts.ts` (`useAppFonts`, waits only when the font is on, max 3 s).
 - **v8 domain helpers**: `dates.ts` (`formatDate` dd.mm.yy, `parseDateInput` d.m.yy / dd.mm.yyyy / ISO → ISO, `formatDateInput`, `formatTimestampDate`, `todayInput`), `playerNames.ts` (`fullName`, `shortName` "Anna" / "Anna M.", `numberAndName`), `rosterGrid.ts`, `teamAvatar.ts`, `tabMotion.ts` (barrel over `slideMotion` / `tabDrag` / `pagerLayout`), `courtMotion.ts` (which court changes are rotations that slide).

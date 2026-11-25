@@ -101,7 +101,7 @@ export const tour: Strings['tour'] = {
     roster: {
       add: {
         title: 'Spieler hinzufügen',
-        text: 'Tippe für alle im Team auf „Spieler hinzufügen“. Eine Aufstellung braucht mindestens 6. „Spielerliste (PDF)“ druckt die Nummern für den Schreiber.',
+        text: 'Tippe für alle im Team auf „Spieler hinzufügen“. Eine Aufstellung braucht mindestens 6. Sobald Spieler da sind, druckt „Spielerliste (PDF)“ die Nummern für den Schreiber.',
       },
       sections: {
         title: 'Team-Bereiche',

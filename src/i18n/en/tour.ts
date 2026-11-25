@@ -104,7 +104,7 @@ export const tour = {
     roster: {
       add: {
         title: 'Add your players',
-        text: 'Tap “Add player” for everyone on the team. A lineup needs at least 6. “Player list (PDF)” prints the numbers for the scorer.',
+        text: 'Tap “Add player” for everyone on the team. A lineup needs at least 6. Once you have players, “Player list (PDF)” prints the numbers for the scorer.',
       },
       sections: {
         title: 'Team sections',

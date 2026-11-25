@@ -165,6 +165,12 @@ opened by an older app.
   at the top right of the captain's chip (court, bench, rotation, live, starters, presets) and roster card; "Captain" on
   the player page; "(C)" on the print sheet.
 
+### v9.2: player list for the scorer
+
+- **Player list (PDF)**: one page with every active player's number, last and first name, C for the captain and L for
+  liberos (plus opponent, date and season when printed from a match) — to hand to the scorer. Match → Print / PDF →
+  "Player list for the scorer", or Team → Roster → "Player list (PDF)". Print / PDF now always asks what to print.
+
 ---
 
 ## Reference
