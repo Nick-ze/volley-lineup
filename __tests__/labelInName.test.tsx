@@ -18,7 +18,8 @@ import type { Player, PointEvent, PointKind, SetNumber, Side } from '@/domain/ty
 import { playerDescription, playerRef } from '@/features/live/format';
 import { dictionaries, type Strings } from '@/i18n';
 import { en } from '@/i18n/en';
-import type { Language } from '@/store';
+import * as sync from '@/lib/sync';
+import { type Language, useAppStore, useSyncRuntime } from '@/store';
 import {
   includeHidden,
   makePlayer,
@@ -63,6 +64,10 @@ const SCREENS: [string, string][] = [
   ['performance', '/match/m1/performance?set=all'],
   ['performance-player', '/match/m1/performance?set=1&player=p1'],
   ['match-stats', '/match/m1/stats'],
+  // v10: the account screens (signed out here; the signed-in controls are in PAIRS below).
+  ['account', '/account'],
+  ['sign-in', '/account/sign-in'],
+  ['cloud-teams', '/account/teams'],
   // v10: a local team's members screen and joining (signed out: "Sign in first").
   ['members-local', '/team/t1/members'],
   ['join', '/join?code=ABCDEFGHJK'],
@@ -180,6 +185,31 @@ describe.each<Language>(['en', 'de'])('label in name on the screens (%s)', (lang
   it.each(SCREENS)('%s: control labels start with the shown text', async (_name, url) => {
     seedGolden(language);
     await renderApp(url);
+    expect(failures(language)).toEqual([]);
+  });
+});
+
+/* v10: the account screens signed in, with shared teams and cloud teams to pick. */
+describe.each<Language>(['en', 'de'])('label in name on the account screens (%s)', (language) => {
+  it.each([['/account'], ['/account/teams'], ['/profile']])('%s signed in', async (url) => {
+    seedGolden(language);
+    const teamId = useAppStore.getState().teams[0]!.id;
+    useAppStore.setState((st) => ({
+      sync: {
+        ...st.sync,
+        account: { userId: 'u1', email: 'coach@example.com', profileId: 'pr1' },
+        teams: {
+          [teamId]: { userId: 'u1', role: 'player', cursor: 0, base: {}, edits: {}, photos: [] },
+        },
+      },
+    }));
+    useSyncRuntime.setState({ session: { userId: 'u1', email: 'coach@example.com' } });
+    jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'c1', name: 'U18', role: 'player', onDevice: false }],
+    });
+    await renderApp(url);
+    if (url === '/account/teams') expect(await screen.findByText('U18')).toBeTruthy();
     expect(failures(language)).toEqual([]);
   });
 });
@@ -316,6 +346,27 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
   ['tour offer show', (t) => t.tour.offer.show, (t) => t.tour.offer.showLabel('Starters')],
   ['tour offer no', (t) => t.tour.offer.no, (t) => t.tour.offer.noLabel('Starters')],
   ['tour choose again', (t) => t.tour.profile.button, (t) => t.tour.profile.buttonLabel],
+  // v10: accounts.
+  [
+    'profile sign in',
+    (t) => t.account.profileSection.signIn,
+    (t) => t.account.profileSection.signInLabel,
+  ],
+  [
+    'profile account',
+    (t) => t.account.profileSection.open,
+    (t) => t.account.profileSection.openLabel,
+  ],
+  [
+    'account shared team',
+    () => 'Herren 1',
+    (t) => t.account.screen.openTeamLabel('Herren 1', t.account.screen.roles.player),
+  ],
+  [
+    'delete account members',
+    (t) => t.account.deleteAccount.members,
+    (t) => t.account.deleteAccount.membersLabel('Herren 1'),
+  ],
   // v10: team header button, members, invites and joining (signed in / shared team).
   ['team members', (t) => t.members.header.members, (t) => t.members.header.membersLabel('A')],
   ['team share', (t) => t.members.header.share, (t) => t.members.header.shareLabel('A')],
