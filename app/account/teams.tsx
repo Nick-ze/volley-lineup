@@ -1,4 +1,4 @@
-// v10: cloud teams — upload / download pickers (worker C) — placeholder from the foundation.
-export default function CloudTeamsScreen() {
-  return null;
-}
+// v10: cloud teams — upload / download pickers (`?setup=1` after the first sign-in).
+import { CloudTeamsScreen } from '@/features/account';
+
+export default CloudTeamsScreen;
