@@ -81,7 +81,7 @@ export const tour = {
     live: 'Live scoring',
     performance: 'Performance',
     matchStats: 'Match stats',
-    account: 'Account',
+    account: 'Cloud sync',
     signIn: 'Sign in',
     cloudTeams: 'Cloud teams',
     members: 'Members',
@@ -282,7 +282,7 @@ export const tour = {
     },
     account: {
       sync: {
-        title: 'Your account',
+        title: 'Cloud sync',
         text: 'Signed in, your shared teams sync between your devices. Everything still works offline; “Sync now” syncs at once.',
       },
     },

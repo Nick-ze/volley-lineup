@@ -196,6 +196,63 @@ describe('a signed-in device with a shared team', () => {
       stop();
     });
   });
+
+  it('says "restoring" from start until the stored session is read (offline: until online)', async () => {
+    const { d } = await started();
+    d.runtime = { ...d.runtime, session: null };
+    const restore = d.backend.getSession.bind(d.backend);
+    d.backend.getSession = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await d.act(async (engine) => {
+      engine.setSession(null);
+      const stop = engine.start();
+      expect(useSyncRuntime.getState().restoring).toBe(true);
+      await jest.advanceTimersByTimeAsync(2000);
+      expect(useSyncRuntime.getState()).toMatchObject({ restoring: true, session: null });
+      d.backend.getSession = restore;
+      await engine.syncNow();
+      expect(useSyncRuntime.getState().restoring).toBe(false);
+      expect(useSyncRuntime.getState().session?.email).toBe('anna@example.test');
+      stop();
+    });
+  });
+
+  it('restoring ends at once without a stored session, and when the engine stops', async () => {
+    const cloud = new FakeCloud();
+    const d = new TestDevice(cloud, 'dev-a', t1());
+    await d.act(async (engine) => {
+      engine.start();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(useSyncRuntime.getState().restoring).toBe(false);
+      engine.stop();
+    });
+    const e = new TestDevice(cloud, 'dev-b', t1());
+    await e.act(async (engine) => {
+      useAppStore
+        .getState()
+        .setSyncAccount({ userId: 'x', email: 'x@example.test', profileId: 'pr1' });
+      engine.start();
+      expect(useSyncRuntime.getState().restoring).toBe(true);
+      engine.stop();
+      expect(useSyncRuntime.getState().restoring).toBe(false);
+    });
+  });
+
+  it('a match followed before the session is restored is polled every 15 s once it is', async () => {
+    const { cloud, d } = await started();
+    d.runtime = { ...d.runtime, session: null };
+    await d.act(async (engine) => {
+      engine.setSession(null);
+      engine.followMatch('m1'); // the live screen mounts before SyncHost starts the engine
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(2000);
+      const pulls = count(cloud, 'pullChanges');
+      await jest.advanceTimersByTimeAsync(30_000);
+      expect(count(cloud, 'pullChanges')).toBe(pulls + 2);
+      stop();
+    });
+  });
 });
 
 describe('live match holds', () => {

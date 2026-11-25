@@ -18,6 +18,11 @@ export interface SyncRuntimeState {
   /** Holds of matches of shared teams, by match id (refreshed every sync). */
   holds: Record<string, MatchHold>;
   notices: SyncNotice[];
+  /**
+   * The engine is still reading the stored session (app start, or offline since): no session
+   * doesn't mean "signed out" yet, so screens that need one show their loading state.
+   */
+  restoring: boolean;
 }
 
 export const initialSyncStatus = (): SyncStatus => ({
@@ -33,6 +38,7 @@ const initialRuntime = (): SyncRuntimeState => ({
   session: null,
   holds: {},
   notices: [],
+  restoring: false,
 });
 
 export const useSyncRuntime = create<SyncRuntimeState>()(() => initialRuntime());

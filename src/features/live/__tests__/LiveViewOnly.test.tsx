@@ -1,4 +1,4 @@
-import { act, fireEvent, renderHook, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 
@@ -8,6 +8,7 @@ import * as sync from '@/lib/sync';
 import { useAppStore, useSyncRuntime } from '@/store';
 import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
 
+import { MatchReadOnlyNote } from '../MatchReadOnlyNote';
 import { HOLD_REFRESH_MS, useFollowMatch, useMatchHold } from '../useMatchHold';
 
 /* v10: live mode for watchers (view-only members, a match scored elsewhere) and the live hold. */
@@ -44,6 +45,10 @@ function seed(role: TeamRole | null, sets: SetLineup[] = [lineupSet(1, points(3)
         ? { team1: { userId: 'u1', role, cursor: 0, base: {}, edits: {}, photos: [] } }
         : {},
     },
+  });
+  // A shared team's device is signed in (holds need the session).
+  useSyncRuntime.setState({
+    session: role ? { userId: 'u1', email: 'a@example.test' } : null,
   });
 }
 
@@ -101,6 +106,56 @@ describe('live mode, watching (v10)', () => {
     expect(sync.followMatch).toHaveBeenLastCalledWith(null);
   });
 
+  it('a Take over granted after the note closed: does not open live, releases the hold', async () => {
+    seed('manager');
+    holdElsewhere();
+    let grant: (r: { ok: true; value: { granted: boolean } }) => void = () => undefined;
+    jest.mocked(sync.holdMatch).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          grant = resolve;
+        }),
+    );
+    const onTakenOver = jest.fn();
+    const view = await render(<MatchReadOnlyNote matchId="m1" onTakenOver={onTakenOver} />);
+    await fireEvent.press(screen.getByRole('button', { name: t.sync.readOnly.takeOver }));
+    await view.unmount(); // the user left the screen while the take-over waited
+    await act(async () => grant({ ok: true, value: { granted: true } }));
+    expect(onTakenOver).not.toHaveBeenCalled();
+    expect(sync.releaseMatch).toHaveBeenCalledWith('team1', 'm1');
+  });
+
+  it('a Take over granted while the note is shown opens live and keeps the hold', async () => {
+    seed('manager');
+    holdElsewhere();
+    const onTakenOver = jest.fn();
+    await render(<MatchReadOnlyNote matchId="m1" onTakenOver={onTakenOver} />);
+    await fireEvent.press(screen.getByRole('button', { name: t.sync.readOnly.takeOver }));
+    expect(onTakenOver).toHaveBeenCalledTimes(1);
+    expect(sync.releaseMatch).not.toHaveBeenCalled();
+  });
+
+  it('on live, the grant itself hides the note: the live screen keeps the hold', async () => {
+    seed('manager');
+    holdElsewhere();
+    // Like the real command: the granted hold is in the runtime holds before it resolves.
+    jest.mocked(sync.holdMatch).mockImplementation(async (_team, _match, takeOver) => {
+      if (takeOver) useSyncRuntime.setState({ holds: {} });
+      return { ok: true, value: { granted: true } };
+    });
+    try {
+      await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+      await fireEvent.press(await screen.findByRole('button', { name: t.sync.readOnly.takeOver }));
+      expect(await screen.findByTestId('point-us')).toBeTruthy();
+      expect(sync.releaseMatch).not.toHaveBeenCalled();
+    } finally {
+      jest.mocked(sync.holdMatch).mockImplementation(async () => ({
+        ok: true,
+        value: { granted: true },
+      }));
+    }
+  });
+
   it('a won set offers only "Go to set" for a set that exists; summary without Undo', async () => {
     seed('player', [lineupSet(1, points(25))]);
     const view = await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
@@ -150,6 +205,30 @@ describe('live hold (v10)', () => {
     expect(sync.followMatch).not.toHaveBeenCalled();
     await view.unmount();
     expect(sync.releaseMatch).toHaveBeenCalledWith('team1', 'm1');
+  });
+
+  it('live as the first screen: claims the hold once the session is restored (v10 QA)', async () => {
+    seed('manager');
+    // A web reload / deep link: the store is hydrated, the stored session not restored yet.
+    useSyncRuntime.setState({ session: null });
+    const hook = await renderHook(() => useMatchHold('m1'));
+    expect(sync.holdMatch).not.toHaveBeenCalled();
+    await act(async () =>
+      useSyncRuntime.setState({ session: { userId: 'u1', email: 'a@example.test' } }),
+    );
+    expect(sync.holdMatch).toHaveBeenCalledTimes(1);
+    expect(sync.holdMatch).toHaveBeenCalledWith('team1', 'm1');
+    await hook.unmount();
+    expect(sync.releaseMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('live as the first screen of a watcher: follows without waiting for the session', async () => {
+    seed('player');
+    useSyncRuntime.setState({ session: null });
+    const hook = await renderHook(() => useFollowMatch('m1'));
+    // The engine keeps the followed match and polls fast once the session is there.
+    expect(sync.followMatch).toHaveBeenCalledWith('m1');
+    await hook.unmount();
   });
 
   it('a local team never holds, releases or follows', async () => {

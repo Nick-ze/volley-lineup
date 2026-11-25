@@ -1,12 +1,14 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { ReadOnlyNote } from '@/components';
 import type { SyncErrorCode } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { holdMatch } from '@/lib/sync';
+import { holdMatch, releaseMatch } from '@/lib/sync';
 import { useMatch, useMatchAccess } from '@/store';
 import { makeStyles, spacing, typography } from '@/theme';
+
+import { isHeldByLiveScreen } from './useMatchHold';
 
 /** The short message for a failed "Take over". */
 function takeOverError(t: Strings, error: SyncErrorCode | 'denied'): string {
@@ -23,6 +25,7 @@ function takeOverError(t: Strings, error: SyncErrorCode | 'denied'): string {
  * when this device may edit the match (every local team).
  * `onTakenOver` runs after a granted Take over: off the live screen it opens live, whose
  * `useMatchHold` then refreshes and releases the hold (taking over only makes sense to score).
+ * A grant that arrives after the note has closed opens nothing and is released again.
  */
 export function MatchReadOnlyNote({
   matchId,
@@ -46,6 +49,13 @@ export function MatchReadOnlyNote({
   // second tap that lands before the disabled button has rendered.
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   if (access.canEdit) return null;
 
   const takeOver = async () => {
@@ -55,6 +65,13 @@ export function MatchReadOnlyNote({
     setError(null);
     const result = await holdMatch(teamId, matchId, true);
     pending.current = false;
+    if (!mounted.current) {
+      // The user left before the grant: don't open live; give the hold back unless a live
+      // screen of the match (which owns the hold) is open, e.g. the grant itself hid this note.
+      if (result.ok && result.value.granted && !isHeldByLiveScreen(teamId, matchId))
+        void releaseMatch(teamId, matchId);
+      return;
+    }
     setBusy(false);
     if (!result.ok) setError(result.error);
     else if (!result.value.granted) setError('denied');

@@ -2,7 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { activeInvites, sortMembers } from '@/domain/invites';
 import type { SyncErrorCode, TeamRole } from '@/domain/types';
-import { listInvites, listMembers, type Invite, type Member, type SyncResult } from '@/lib/sync';
+import {
+  listInvites,
+  listMembers,
+  syncNow,
+  type Invite,
+  type Member,
+  type SyncResult,
+} from '@/lib/sync';
+import { useSession, useSessionRestoring, useSyncStatus } from '@/store';
 
 interface Lists {
   members: Member[] | null;
@@ -47,31 +55,68 @@ export interface MembersState {
   run: (command: () => Promise<SyncResult<unknown>>, reloadAfter?: boolean) => Promise<boolean>;
 }
 
-/** v10: the members (and, for managers, the invites) of a shared team, with actions. */
+/**
+ * v10: the members (and, for managers, the invites) of a shared team, with actions. Loads again
+ * when the session changes; while the stored session is still being restored (the screen opened
+ * first after a reload) it stays loading instead of saying "Sign in first" (offline: offline).
+ */
 export function useMembers(teamId: string, cachedRole: TeamRole | null): MembersState {
-  const [lists, setLists] = useState<Lists>({ members: null, invites: null, error: null });
+  const userId = useSession()?.userId;
+  const waiting = useSessionRestoring() && !userId;
+  const offline = useSyncStatus().phase === 'offline';
+  // What the lists were loaded for: a new session (or team / role) loads them again.
+  const key = `${teamId}|${cachedRole ?? ''}|${userId ?? ''}`;
+  const [lists, setLists] = useState<Lists & { key: string | null }>({
+    members: null,
+    invites: null,
+    error: null,
+    key: null,
+  });
   const [actionError, setActionError] = useState<SyncErrorCode | null>(null);
-  const [busy, setBusy] = useState(true);
+  const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
-
-  const apply = useCallback((next: Lists) => {
-    if (!mounted.current) return;
-    setLists(next);
-    setBusy(false);
-  }, []);
+  // The latest key: a load that answers after the key changed is dropped (it would leave the
+  // lists marked as loaded for an old key, i.e. loading for good).
+  const keyRef = useRef(key);
 
   useEffect(() => {
     mounted.current = true;
-    void fetchLists(teamId, cachedRole).then(apply);
     return () => {
       mounted.current = false;
     };
-  }, [teamId, cachedRole, apply]);
+  }, []);
+
+  useEffect(() => {
+    keyRef.current = key;
+  }, [key]);
+
+  const load = useCallback(async () => {
+    const next = await fetchLists(teamId, cachedRole);
+    return { ...next, key };
+  }, [teamId, cachedRole, key]);
+
+  useEffect(() => {
+    if (waiting) return undefined;
+    // A load started for an earlier session must not overwrite this one's.
+    let current = true;
+    void load().then((next) => {
+      if (current && mounted.current && next.key === keyRef.current) setLists(next);
+    });
+    return () => {
+      current = false;
+    };
+  }, [load, waiting]);
 
   const reload = useCallback(async () => {
     setBusy(true);
-    apply(await fetchLists(teamId, cachedRole));
-  }, [teamId, cachedRole, apply]);
+    // Still waiting for the stored session (e.g. offline with an expired token): ask the engine
+    // to sync, which restores it once the connection is back.
+    if (waiting) void syncNow();
+    const next = await load();
+    if (!mounted.current) return;
+    if (next.key === keyRef.current) setLists(next);
+    setBusy(false);
+  }, [load, waiting]);
 
   const run = useCallback(
     async (command: () => Promise<SyncResult<unknown>>, reloadAfter = true) => {
@@ -91,14 +136,15 @@ export function useMembers(teamId: string, cachedRole: TeamRole | null): Members
     [reload],
   );
 
+  const loaded = lists.key === key;
   const myRole = lists.members?.find((m) => m.isMe)?.role ?? cachedRole;
   return {
     members: lists.members,
     invites: lists.invites,
     myRole,
-    loadError: lists.error,
+    loadError: waiting ? (offline ? 'offline' : null) : loaded ? lists.error : null,
     actionError,
-    busy,
+    busy: busy || (waiting ? !offline : !loaded),
     reload,
     run,
   };

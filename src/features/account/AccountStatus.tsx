@@ -21,7 +21,7 @@ export function AccountStatus({ email }: { email: string }) {
     ? t.account.screen.lastSynced(formatSyncTime(status.lastSyncedAt))
     : t.account.screen.notSynced;
   return (
-    <Section title={t.account.title}>
+    <Section title={t.account.screen.status}>
       <Text style={styles.email} testID="account-email">
         {t.account.profileSection.signedIn(email)}
       </Text>
