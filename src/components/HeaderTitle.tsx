@@ -9,12 +9,21 @@ export const HEADER_SIDE_ROOM = touchTarget * 3;
 /**
  * Header title on one line: long titles (e.g. "vs <long opponent>") end in "…" instead of
  * running past the screen edge. The header's title container doesn't shrink on the web, so the
- * title limits its own width to the window minus the room for the back button.
+ * title limits its own width to the window minus the room for the back button (and, v10, the
+ * measured width of a header-right button: `trailingRoom`).
  */
-export function HeaderTitle({ children, leading }: { children: string; leading?: ReactNode }) {
+export function HeaderTitle({
+  children,
+  leading,
+  trailingRoom = 0,
+}: {
+  children: string;
+  leading?: ReactNode;
+  trailingRoom?: number;
+}) {
   const styles = useStyles();
   const { width } = useWindowDimensions();
-  const maxWidth = Math.max(touchTarget, width - HEADER_SIDE_ROOM);
+  const maxWidth = Math.max(touchTarget, width - HEADER_SIDE_ROOM - trailingRoom);
   const title = (
     <Text
       accessibilityRole="header"
