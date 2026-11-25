@@ -1,0 +1,354 @@
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+
+import type { TeamRole } from '@/domain/types';
+import { en as t } from '@/i18n/en';
+import * as share from '@/lib/share';
+import * as sync from '@/lib/sync';
+import { useAppStore, useSyncRuntime } from '@/store';
+import { renderApp, seedApp } from '@/test-utils';
+
+jest.mock('@/lib/share', () => ({
+  canShareText: jest.fn(() => true),
+  shareText: jest.fn(async () => 'shared'),
+  webAppBase: jest.fn(() => undefined),
+}));
+
+// Expo Router warns about modal routes rendered as the first screen; not what this tests.
+beforeAll(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
+afterAll(() => jest.restoreAllMocks());
+
+const URL = '/team/team1/members';
+
+function signIn() {
+  useSyncRuntime.setState({ session: { userId: 'me', email: 'coach@example.test' } });
+}
+
+function linkTeam(role: TeamRole) {
+  useAppStore.setState({
+    sync: {
+      deviceId: 'dev1',
+      account: { userId: 'me', email: 'coach@example.test', profileId: 'prof1' },
+      teams: { team1: { userId: 'me', role, cursor: 0, base: {}, edits: {}, photos: [] } },
+    },
+  });
+}
+
+const member = (userId: string, displayName: string, role: TeamRole, isMe = false) => ({
+  userId,
+  displayName,
+  role,
+  joinedAt: '2026-11-01T10:00:00.000Z',
+  isMe,
+});
+
+const MEMBERS = [
+  member('u3', 'Zoe', 'player'),
+  member('me', 'Coach', 'manager', true),
+  member('u2', 'Bob', 'player'),
+];
+
+const invite = (id: string, code: string, expiresAt: string, role: TeamRole = 'player') => ({
+  id,
+  code,
+  role,
+  expiresAt,
+  revokedAt: null,
+  uses: 2,
+});
+
+const INVITES = [
+  invite('inv-1', 'ABCDEFGHJK', '2099-12-03T12:00:00.000Z'),
+  invite('inv-old', 'ZZZZZZZZZZ', '2020-01-01T00:00:00.000Z'),
+];
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.mocked(sync.listMembers).mockResolvedValue({ ok: true, value: [] });
+  jest.mocked(sync.listInvites).mockResolvedValue({ ok: true, value: [] });
+  jest.mocked(sync.isSyncConfigured).mockReturnValue(true);
+  jest.mocked(share.canShareText).mockReturnValue(true);
+  seedApp();
+});
+
+async function renderManager() {
+  signIn();
+  linkTeam('manager');
+  jest.mocked(sync.listMembers).mockResolvedValue({ ok: true, value: MEMBERS });
+  jest.mocked(sync.listInvites).mockResolvedValue({ ok: true, value: INVITES });
+  await renderApp(URL);
+  await screen.findByText('Bob');
+}
+
+describe('members: local team', () => {
+  it('signed out: explains sharing and offers "Sign in first"', async () => {
+    await renderApp(URL);
+    expect(screen.getByText(t.members.local.intro)).toBeTruthy();
+    expect(screen.queryByTestId('members-share-team')).toBeNull();
+    await fireEvent.press(screen.getByLabelText(t.members.local.signInLabel));
+    expect(screen).toHavePathname('/account/sign-in');
+    expect(sync.uploadTeams).not.toHaveBeenCalled();
+  });
+
+  it('signed in: "Share this team" uploads it and then shows its members', async () => {
+    signIn();
+    jest.mocked(sync.listMembers).mockResolvedValue({
+      ok: true,
+      value: [member('me', 'Coach', 'manager', true)],
+    });
+    jest.mocked(sync.uploadTeams).mockImplementationOnce(async () => {
+      linkTeam('manager'); // what the sync engine does on 'created'
+      return { ok: true, value: [{ teamId: 'team1', result: 'created' as const }] };
+    });
+    await renderApp(URL);
+    await fireEvent.press(screen.getByLabelText(t.members.local.shareLabel('Herren 1')));
+    expect(sync.uploadTeams).toHaveBeenCalledWith(['team1']);
+    expect(await screen.findByText(`Coach ${t.members.list.you}`)).toBeTruthy();
+    expect(screen.getByTestId('invite-section')).toBeTruthy();
+  });
+
+  it('a new team id ("rekeyed") goes back to the team list', async () => {
+    signIn();
+    jest.mocked(sync.uploadTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'team1', result: 'rekeyed' }],
+    });
+    await renderApp(URL);
+    await fireEvent.press(screen.getByTestId('members-share-team'));
+    await waitFor(() => expect(screen).toHavePathname('/teams'));
+  });
+
+  it('shows why sharing failed', async () => {
+    signIn();
+    jest.mocked(sync.uploadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
+    await renderApp(URL);
+    await fireEvent.press(screen.getByTestId('members-share-team'));
+    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+
+    jest.mocked(sync.uploadTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'team1', result: 'failed' }],
+    });
+    await fireEvent.press(screen.getByTestId('members-share-team'));
+    expect(await screen.findByText(t.members.errors.unknown)).toBeTruthy();
+  });
+});
+
+describe('members: manager', () => {
+  it('lists managers first with "(you)", and only the active invites', async () => {
+    await renderManager();
+    const names = screen.getAllByText(/^(Coach|Bob|Zoe)/).map((n) => n.props.children);
+    expect(names).toEqual([`Coach ${t.members.list.you}`, 'Bob', 'Zoe']);
+    expect(screen.getByText('ABCDE-FGHJK')).toBeTruthy();
+    expect(screen.getByText(t.members.invites.details('Player', '03.12.99', 2))).toBeTruthy();
+    expect(screen.queryByText('ZZZZZ-ZZZZZ')).toBeNull();
+    // No controls on the manager's own row.
+    expect(screen.queryByTestId('member-role-me')).toBeNull();
+    expect(sync.listInvites).toHaveBeenCalledWith('team1');
+  });
+
+  it('changes a role and reloads the list', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.list.makeManagerLabel('Bob')));
+    expect(sync.setMemberRole).toHaveBeenCalledWith('team1', 'u2', 'manager');
+    await waitFor(() => expect(sync.listMembers).toHaveBeenCalledTimes(2));
+  });
+
+  it('removes a member after confirming', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.list.removeLabel('Zoe')));
+    expect(screen.getByText(t.members.list.removeConfirm('Zoe'))).toBeTruthy();
+    expect(sync.removeMember).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('confirm'));
+    expect(sync.removeMember).toHaveBeenCalledWith('team1', 'u3');
+  });
+
+  it('creates an invite for a manager, valid 30 days', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.newInviteLabel));
+    expect(screen.getByTestId('new-invite-role-player')).toBeChecked();
+    expect(screen.getByTestId('new-invite-days-7')).toBeChecked();
+    await fireEvent.press(screen.getByTestId('new-invite-role-manager'));
+    await fireEvent.press(screen.getByText(t.members.newInviteDialog.dayOption(30)));
+    expect(screen.getByTestId('new-invite-role-manager')).toBeChecked();
+    expect(screen.getByTestId('new-invite-days-30')).toBeChecked();
+    expect(screen.getByText(t.members.newInviteDialog.roleHint.manager)).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText(t.members.newInviteDialog.createLabel));
+    expect(sync.createInvite).toHaveBeenCalledWith('team1', 'manager', 30);
+    await waitFor(() => expect(sync.listInvites).toHaveBeenCalledTimes(2));
+  });
+
+  it('cancels a new invite without creating it', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByTestId('members-new-invite'));
+    await fireEvent.press(screen.getByText(t.common.cancel));
+    expect(screen.queryByTestId('new-invite-dialog')).toBeNull();
+    expect(sync.createInvite).not.toHaveBeenCalled();
+  });
+
+  it('shares an invite with the code and the join link', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.invites.shareLabel('ABCDE-FGHJK')));
+    expect(share.shareText).toHaveBeenCalledWith(
+      t.members.invites.shareMessage(
+        'Herren 1',
+        'ABCDE-FGHJK',
+        'volleylineup://join?code=ABCDEFGHJK',
+      ),
+      t.members.invites.shareTitle('Herren 1'),
+    );
+    expect(screen.queryByTestId('invite-share-result')).toBeNull();
+  });
+
+  it('copies an invite where there is no share sheet', async () => {
+    jest.mocked(share.canShareText).mockReturnValue(false);
+    jest.mocked(share.shareText).mockResolvedValueOnce('copied');
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.invites.copyLabel('ABCDE-FGHJK')));
+    expect(await screen.findByText(t.members.invites.copied)).toBeTruthy();
+
+    jest.mocked(share.shareText).mockResolvedValueOnce('failed');
+    await fireEvent.press(screen.getByText(t.members.invites.copy));
+    expect(await screen.findByText(t.members.invites.shareFailed)).toBeTruthy();
+  });
+
+  it('revokes an invite after confirming', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.invites.revokeLabel('ABCDE-FGHJK')));
+    expect(screen.getByText(t.members.invites.revokeConfirm('ABCDE-FGHJK'))).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('confirm'));
+    expect(sync.revokeInvite).toHaveBeenCalledWith('inv-1');
+  });
+
+  it('says so when there are no active invites', async () => {
+    signIn();
+    linkTeam('manager');
+    jest.mocked(sync.listMembers).mockResolvedValue({ ok: true, value: MEMBERS });
+    jest.mocked(sync.listInvites).mockResolvedValue({ ok: true, value: [] });
+    await renderApp(URL);
+    expect(await screen.findByText(t.members.invites.none)).toBeTruthy();
+  });
+
+  it('the last manager is told to make someone else manager before leaving', async () => {
+    await renderManager();
+    jest.mocked(sync.leaveTeam).mockResolvedValueOnce({ ok: false, error: 'lastManager' });
+    await fireEvent.press(screen.getByLabelText(t.members.leave.label('Herren 1')));
+    await fireEvent.press(screen.getByTestId('confirm'));
+    expect(sync.leaveTeam).toHaveBeenCalledWith('team1');
+    expect(await screen.findByText(t.members.errors.lastManager)).toBeTruthy();
+    expect(screen).toHavePathname(URL);
+  });
+
+  it('the only member is told to delete the team instead', async () => {
+    await renderManager();
+    jest.mocked(sync.leaveTeam).mockResolvedValueOnce({ ok: false, error: 'lastMember' });
+    await fireEvent.press(screen.getByTestId('members-leave'));
+    await fireEvent.press(screen.getByTestId('confirm'));
+    expect(await screen.findByText(t.members.errors.lastMember)).toBeTruthy();
+  });
+
+  it('shows a failed action (e.g. a forbidden role change)', async () => {
+    await renderManager();
+    jest.mocked(sync.setMemberRole).mockResolvedValueOnce({ ok: false, error: 'forbidden' });
+    await fireEvent.press(screen.getByTestId('member-role-u2'));
+    expect(await screen.findByText(t.members.errors.forbidden)).toBeTruthy();
+  });
+});
+
+describe('members: player', () => {
+  beforeEach(() => {
+    signIn();
+    linkTeam('player');
+    jest.mocked(sync.listMembers).mockResolvedValue({
+      ok: true,
+      value: [member('boss', 'Coach', 'manager'), member('me', 'Anna', 'player', true)],
+    });
+  });
+
+  it('sees the members read-only and no invites', async () => {
+    await renderApp(URL);
+    expect(await screen.findByText(`Anna ${t.members.list.you}`)).toBeTruthy();
+    expect(screen.getByText('Coach')).toBeTruthy();
+    expect(screen.queryByTestId('invite-section')).toBeNull();
+    expect(screen.queryByTestId('members-new-invite')).toBeNull();
+    expect(screen.queryByTestId('member-role-boss')).toBeNull();
+    expect(screen.queryByTestId('member-remove-boss')).toBeNull();
+    expect(sync.listInvites).not.toHaveBeenCalled();
+  });
+
+  it('leaves the team and goes to the team list', async () => {
+    await renderApp(URL);
+    await screen.findByText('Coach');
+    await fireEvent.press(screen.getByLabelText(t.members.leave.label('Herren 1')));
+    expect(screen.getByText(t.members.leave.confirm('Herren 1'))).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText(t.members.leave.confirmButton));
+    expect(sync.leaveTeam).toHaveBeenCalledWith('team1');
+    await waitFor(() => expect(screen).toHavePathname('/teams'));
+  });
+});
+
+describe('members: loading', () => {
+  beforeEach(() => linkTeam('manager'));
+
+  it('offline: says so and loads again on "Try again"', async () => {
+    signIn();
+    jest.mocked(sync.listMembers).mockResolvedValueOnce({ ok: false, error: 'offline' });
+    jest.mocked(sync.listMembers).mockResolvedValueOnce({ ok: true, value: MEMBERS });
+    jest.mocked(sync.listInvites).mockResolvedValue({ ok: true, value: [] });
+    await renderApp(URL);
+    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText(t.members.list.retryLabel));
+    expect(await screen.findByText('Bob')).toBeTruthy();
+    expect(screen.queryByText(t.members.errors.offline)).toBeNull();
+  });
+
+  it('a manager whose invites fail to load still sees the members', async () => {
+    signIn();
+    jest.mocked(sync.listMembers).mockResolvedValue({ ok: true, value: MEMBERS });
+    jest.mocked(sync.listInvites).mockResolvedValueOnce({ ok: false, error: 'unknown' });
+    await renderApp(URL);
+    expect(await screen.findByText(t.members.errors.unknown)).toBeTruthy();
+    expect(screen.getByText('Bob')).toBeTruthy();
+    expect(screen.queryByTestId('invite-section')).toBeNull();
+  });
+
+  it('signed out: "Sign in first" instead of "Try again"', async () => {
+    jest.mocked(sync.listMembers).mockResolvedValueOnce({ ok: false, error: 'notSignedIn' });
+    await renderApp(URL);
+    expect(await screen.findByText(t.members.errors.notSignedIn)).toBeTruthy();
+    expect(screen.queryByTestId('members-retry')).toBeNull();
+    expect(screen.getByTestId('members-sign-in')).toBeTruthy();
+  });
+
+  it('an unknown team shows "not found"', async () => {
+    await renderApp('/team/nope/members');
+    expect(screen.getByText(t.roster.teamNotFound)).toBeTruthy();
+  });
+});
+
+describe('team header button', () => {
+  it('"Share" on a local team opens the members screen', async () => {
+    await renderApp('/team/team1');
+    await fireEvent.press(screen.getByLabelText(t.members.header.shareLabel('Herren 1')));
+    expect(screen).toHavePathname(URL);
+  });
+
+  it('"Members" on a shared team', async () => {
+    linkTeam('player');
+    await renderApp('/team/team1');
+    expect(screen.getByText(t.members.header.members)).toBeTruthy();
+    expect(screen.getByLabelText(t.members.header.membersLabel('Herren 1'))).toBeTruthy();
+  });
+
+  it('is hidden without a backend', async () => {
+    jest.mocked(sync.isSyncConfigured).mockReturnValue(false);
+    await renderApp('/team/team1');
+    expect(screen.queryByTestId('team-members-button')).toBeNull();
+  });
+
+  it('switches from "Share" to "Members" when the team gets shared', async () => {
+    await renderApp('/team/team1');
+    expect(screen.getByText(t.members.header.share)).toBeTruthy();
+    await act(async () => linkTeam('manager'));
+    expect(screen.getByText(t.members.header.members)).toBeTruthy();
+  });
+});

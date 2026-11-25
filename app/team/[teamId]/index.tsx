@@ -9,6 +9,7 @@ import { StartersTab } from '@/features/presets/StartersTab';
 import { RosterTab } from '@/features/roster/components/RosterTab';
 import { SeasonsTab } from '@/features/seasons/SeasonsTab';
 import { StatsTab } from '@/features/stats/StatsTab';
+import { MembersHeaderButton } from '@/features/members/MembersHeaderButton';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { parseTeamTab, TEAM_TABS, type TeamTab } from '@/features/team/tabs';
 import { TeamNavBar } from '@/features/team/TeamNavBar';
@@ -96,6 +97,8 @@ function TeamHeader({ team }: { team: Team }) {
           {team.name}
         </HeaderTitle>
       ),
+      // v10: "Members" / "Share" (only when the app has a backend configured).
+      headerRight: () => <MembersHeaderButton teamId={team.id} teamName={team.name} />,
     }),
     [team],
   );
