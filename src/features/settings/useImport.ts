@@ -11,7 +11,8 @@ import type { ExportFile } from '@/domain/types';
 import { pickTextFile } from '@/lib/fileTransfer';
 import { putPhotos, replacePhotos, transferSnapshot, useAppStore } from '@/store';
 
-export type ImportError = ImportErrorCode | 'MERGE_CONFLICT' | 'READ_FAILED';
+/** v10: `SHARED_CONFLICT` = Replace clashes with a team shared on this device. */
+export type ImportError = ImportErrorCode | 'MERGE_CONFLICT' | 'SHARED_CONFLICT' | 'READ_FAILED';
 export type ImportMode = 'merge' | 'replace';
 
 export type ImportState =
@@ -94,7 +95,9 @@ export function useImport() {
         mode === 'merge' || shared.length > 0 ? await transferSnapshot() : emptyTransfer();
       const result = importWithSharedTeams(current, state.file, mode, shared);
       if (!result.ok) {
-        setState({ step: 'error', error: result.error });
+        // Replace only fails because of a kept shared team ("use Replace instead" wouldn't help).
+        const error = mode === 'replace' ? 'SHARED_CONFLICT' : result.error;
+        setState({ step: 'error', error });
         return;
       }
       // Photos first: they are pruned as soon as nobody refers to them (photoStore.ts).

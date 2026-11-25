@@ -10,7 +10,13 @@ import { StatusMessage, type Status } from './StatusMessage';
 import { useImport, type ImportState } from './useImport';
 
 function statusOf(t: Strings, state: ImportState): Status | null {
-  if (state.step === 'error') return { tone: 'error', text: t.transfer.import.errors[state.error] };
+  if (state.step === 'error') {
+    const text =
+      state.error === 'SHARED_CONFLICT'
+        ? t.sync.import.sharedConflict
+        : t.transfer.import.errors[state.error];
+    return { tone: 'error', text };
+  }
   if (state.step === 'done') {
     const text =
       state.mode === 'merge' ? t.transfer.import.doneMerge : t.transfer.import.doneReplace;

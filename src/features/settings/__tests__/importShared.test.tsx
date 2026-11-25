@@ -34,12 +34,12 @@ function link(role: TeamRole) {
 }
 
 /** A backup with both teams renamed (and without the device's newer player `px`). */
-function fileText(): string {
+function fileText(change: (file: TransferData) => TransferData = (file) => file): string {
   const data = goldenData();
-  const file: TransferData = {
+  const file: TransferData = change({
     ...data,
     teams: data.teams.map((x) => ({ ...x, name: `${x.name} (file)` })),
-  };
+  });
   return serializeExport(buildExport(file, { now: new Date('2026-11-21T12:00:00Z') }));
 }
 
@@ -49,8 +49,8 @@ const t1Players = () =>
     .players.filter((p) => p.teamId === 't1')
     .map((p) => p.id);
 
-async function preview() {
-  mockPick.mockResolvedValue({ name: 'backup.json', text: fileText() });
+async function preview(text = fileText()) {
+  mockPick.mockResolvedValue({ name: 'backup.json', text });
   await renderRouter(
     { index: () => <Text>Profile picker</Text>, settings: SettingsScreen },
     { initialUrl: '/settings' },
@@ -112,6 +112,17 @@ describe('import with a manager’s shared team', () => {
     expect(teamName('t1')).toBe('Herren 1 – Süd (file)');
     expect(t1Players()).toContain('px');
     expect(store().teams.find((x) => x.id === 't1')?.profileId).toBe('pr1');
+  });
+
+  it('Replace with a reused jersey number explains the clash and changes nothing', async () => {
+    // The backup still has "Old" with #99, which this device has given to `px` since.
+    const old = { ...goldenData().players[1]!, id: 'p-old', number: 99 };
+    const before = selectAppData(store());
+    await preview(fileText((file) => ({ ...file, players: [...file.players, old] })));
+    await fireEvent.press(screen.getByLabelText(t.transfer.import.replace));
+    expect(screen.getByTestId('import-status')).toHaveTextContent(t.sync.import.sharedConflict);
+    expect(screen.queryByText(t.transfer.import.errors.MERGE_CONFLICT)).toBeNull();
+    expect(selectAppData(store())).toEqual(before);
   });
 });
 

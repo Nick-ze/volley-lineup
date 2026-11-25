@@ -42,6 +42,7 @@ export const sync: Strings['sync'] = {
   },
   teamDelete: {
     title: (team: string) => `${team} löschen?`,
+    removeTitle: (team: string) => `${team} entfernen?`,
     managerBody:
       'Dieses Team ist geteilt. Entferne es nur von diesem Gerät (in der Cloud bleibt es für alle) oder lösche es für alle.',
     playerBody:
@@ -68,6 +69,8 @@ export const sync: Strings['sync'] = {
       `Geteilte Teams: ${names.join(', ')} (Änderungen werden mit allen Mitgliedern synchronisiert).`,
     skipped: (names: string[]) => `Übersprungene Teams (nur ansehen): ${names.join(', ')}.`,
     replaceKeeps: 'Ersetzen behält die auf diesem Gerät geteilten Teams.',
+    sharedConflict:
+      'Diese Datei passt nicht zu einem auf diesem Gerät geteilten Team (zum Beispiel zwei Spieler mit derselben Trikotnummer). Es wurde nichts geändert.',
   },
   team: {
     rowLabel: (open: string, mark: string) => `${open}. ${mark}`,

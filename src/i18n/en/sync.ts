@@ -41,6 +41,8 @@ export const sync = {
   },
   teamDelete: {
     title: (team: string) => `Delete ${team}?`,
+    /** The player role's title (they can only remove the team here or leave it). */
+    removeTitle: (team: string) => `Remove ${team}?`,
     managerBody:
       'This team is shared. Remove it from this device only (it stays in the cloud for everyone), or delete it for everyone.',
     playerBody:
@@ -66,6 +68,8 @@ export const sync = {
     shared: (names: string[]) => `Shared teams: ${names.join(', ')} (changes sync to all members).`,
     skipped: (names: string[]) => `View-only teams skipped: ${names.join(', ')}.`,
     replaceKeeps: 'Replace keeps the teams shared on this device.',
+    sharedConflict:
+      'This file clashes with a team shared on this device (for example two players with the same jersey number). Nothing was changed.',
   },
   team: {
     /** A team row's accessibility label plus its "Shared" / "View only" mark. */

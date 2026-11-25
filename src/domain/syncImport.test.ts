@@ -180,6 +180,25 @@ describe('importWithSharedTeams: Replace', () => {
       error: 'MERGE_CONFLICT',
     });
   });
+
+  it('refuses an older backup where a jersey number was given to a new player since', () => {
+    // Backup: "Old" wore #99. Since then Old left and "New" got #99 on this device.
+    const backup = goldenData();
+    const old = { ...backup.players[1]!, id: 'p-old', firstName: 'Old', number: 99 };
+    const file = { ...backup, players: [...backup.players, old] };
+    const current = goldenData();
+    const fresh = { ...current.players[1]!, id: 'p-new', firstName: 'New', number: 99 };
+    const now = { ...current, players: [...current.players, fresh] };
+    // Managers: the backup's players are merged into the kept team (nothing is deleted).
+    expect(importWithSharedTeams(now, file, 'replace', MANAGER)).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+    // Viewers: the backup's copy is skipped, so there is nothing to clash with.
+    expect(importWithSharedTeams(now, file, 'replace', VIEWER).ok).toBe(true);
+    // Without shared teams Replace never clashes.
+    expect(importWithSharedTeams(now, file, 'replace', []).ok).toBe(true);
+  });
 });
 
 describe('importWithSharedTeams: Merge', () => {
