@@ -21,7 +21,7 @@ export const sync = {
   badge: {
     offlinePending: (n: number) => `Offline (${n})`,
     /** Starts with the badge's visible text. */
-    label: (text: string) => `${text}: open account`,
+    label: (text: string) => `${text}: open cloud sync`,
   },
   notices: {
     removed: (team: string) =>
@@ -62,7 +62,7 @@ export const sync = {
       lastManager: 'Make someone else manager first.',
       lastMember: 'You’re the only member: delete the team for everyone instead.',
       forbidden: 'Only managers can do that.',
-      signIn: 'Sign in first (Profile → Account).',
+      signIn: 'Sign in first (Profile → Cloud sync).',
       unknown: 'That didn’t work. Try again.',
     },
   },

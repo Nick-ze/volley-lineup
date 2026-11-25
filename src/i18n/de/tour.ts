@@ -78,7 +78,7 @@ export const tour: Strings['tour'] = {
     live: 'Live-Zählung',
     performance: 'Leistung',
     matchStats: 'Spielstatistik',
-    account: 'Konto',
+    account: 'Cloud-Sync',
     signIn: 'Anmelden',
     cloudTeams: 'Cloud-Teams',
     members: 'Mitglieder',
@@ -279,7 +279,7 @@ export const tour: Strings['tour'] = {
     },
     account: {
       sync: {
-        title: 'Dein Konto',
+        title: 'Cloud-Sync',
         text: 'Angemeldet werden deine geteilten Teams zwischen deinen Geräten synchronisiert. Offline funktioniert alles weiter; „Jetzt synchronisieren“ synchronisiert sofort.',
       },
     },

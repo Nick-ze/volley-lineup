@@ -69,6 +69,19 @@ describe('account screen', () => {
     expect(screen).toHavePathname('/account/teams');
   });
 
+  it.each([
+    ['signed in', true],
+    ['signed out', false],
+  ])('%s: titled “Cloud sync” once, like the card that opens it (v10 QA)', async (_, signedIn) => {
+    if (signedIn) signIn();
+    await renderApp('/account');
+    expect(t.nav.account).toBe(t.account.profileSection.title);
+    expect(t.account.title).toBe('Cloud sync');
+    // The header only: no section repeats the screen's title.
+    expect(screen.getAllByText(t.account.title)).toHaveLength(1);
+    expect(screen.queryByText('Account')).toBeNull();
+  });
+
   it('Join a team opens /join', async () => {
     signIn();
     await renderApp('/account');
