@@ -23,9 +23,16 @@ export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
   const [done, setDone] = useState(false);
   const signedIn = useSession() !== null;
   const linked = useSyncAccount() !== null;
+  // v10: while signing out first, the confirm button can't be pressed again.
+  const [busy, setBusy] = useState(false);
 
   const deleteAll = async () => {
-    if (signedIn || linked) await signOut();
+    if (busy) return;
+    if (signedIn || linked) {
+      setBusy(true);
+      await signOut();
+      setBusy(false);
+    }
     resetAll();
     setConfirming(false);
     setDone(true);
@@ -47,6 +54,7 @@ export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
               label={t.transfer.danger.confirm}
               variant="danger"
               onPress={() => void deleteAll()}
+              disabled={busy}
             />
             <Button
               label={t.transfer.danger.cancel}

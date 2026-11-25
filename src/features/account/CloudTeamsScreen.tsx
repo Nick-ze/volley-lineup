@@ -2,25 +2,42 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text } from 'react-native';
 
 import { Button, Screen, useGoBack } from '@/components';
+import { Section } from '@/features/settings/Section';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { makeStyles, typography } from '@/theme';
 
 import { DownloadPanel } from './DownloadPanel';
+import { SignedOutPanel } from './SignedOutPanel';
 import { UploadPanel } from './UploadPanel';
+import { useAccountLink } from './useAccountLink';
 import { useCloudTeams } from './useCloudTeams';
 
 /**
  * v10: `/account/teams` (`?setup=1` right after the first sign-in): upload this profile's teams
  * (unchecked) and download the account's cloud teams (checked). "Done" goes to the Account screen.
+ * Only for the account signed in with this profile; otherwise Sign in (or why not).
  */
 export function CloudTeamsScreen() {
+  const t = useT();
+  useTourPage('cloudTeams');
+  const link = useAccountLink();
+  if (link.kind === 'signedIn') return <CloudTeamsPickers />;
+  return (
+    <Screen testID="cloud-teams-screen">
+      <Section title={t.account.cloudTeams.title}>
+        <SignedOutPanel link={link} testID="cloud-teams-sign-in" />
+      </Section>
+    </Screen>
+  );
+}
+
+function CloudTeamsPickers() {
   const styles = useStyles();
   const t = useT();
   const router = useRouter();
   const goBack = useGoBack('/account');
   const { setup } = useLocalSearchParams<{ setup?: string }>();
-  useTourPage('cloudTeams');
   const cloud = useCloudTeams();
 
   return (

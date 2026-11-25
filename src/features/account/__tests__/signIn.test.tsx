@@ -80,6 +80,18 @@ describe('sign in with an email code', () => {
     expect(await screen.findByText(t.account.errors.rateLimited)).toBeTruthy();
   });
 
+  it('sends one request while one is under way (double Enter)', async () => {
+    let resolve: (value: { ok: true; value: undefined }) => void = () => {};
+    jest.mocked(sync.requestCode).mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await renderApp('/account/sign-in');
+    await typeEmail('coach@example.com');
+    await fireEvent(screen.getByTestId('sign-in-email'), 'submitEditing');
+    await fireEvent(screen.getByTestId('sign-in-email'), 'submitEditing');
+    expect(sync.requestCode).toHaveBeenCalledTimes(1);
+    await act(async () => resolve({ ok: true, value: undefined }));
+    expect(await screen.findByTestId('sign-in-code')).toBeTruthy();
+  });
+
   it('Change email goes back to the email step', async () => {
     await toCodeStep();
     await press('sign-in-change-email');

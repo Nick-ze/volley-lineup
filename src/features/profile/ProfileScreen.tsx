@@ -50,7 +50,7 @@ export function ProfileScreen() {
       : leave();
   const deleteMessage = t.roster.confirm.deleteProfile(profile.name);
   const deleteProfile = () =>
-    ask(linked ? `${deleteMessage} ${t.account.signOutNote}` : deleteMessage, () => {
+    ask(linked && signedIn ? `${deleteMessage} ${t.account.signOutNote}` : deleteMessage, () => {
       deleteProfileSignedOut(profile.id);
       leave();
     });

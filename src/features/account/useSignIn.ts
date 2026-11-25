@@ -32,6 +32,8 @@ export function useSignIn() {
   const resend = useResendTimer();
 
   const send = async () => {
+    // A second Enter / tap while a request is under way sends nothing.
+    if (busy) return;
     if (!isPlausibleEmail(email)) {
       setError('emailInvalid');
       return;

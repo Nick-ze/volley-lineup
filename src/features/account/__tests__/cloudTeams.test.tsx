@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import type { SyncedTeam } from '@/domain/types';
 import { t } from '@/i18n/en';
 import * as sync from '@/lib/sync';
-import { useAppStore } from '@/store';
+import { useAppStore, useSyncRuntime } from '@/store';
 import { PROFILE_ID, renderApp, seedApp } from '@/test-utils';
 
 const s = t.account.cloudTeams;
@@ -26,8 +26,13 @@ beforeEach(() => {
       { id: 't2', profileId: PROFILE_ID, name: 'Damen 2', createdAt: '' },
       { id: 't3', profileId: 'other', name: 'Not mine', createdAt: '' },
     ],
-    sync: { ...st.sync, teams: { t2: linked } },
+    sync: {
+      ...st.sync,
+      account: { userId: 'user-1', email: 'coach@example.com', profileId: PROFILE_ID },
+      teams: { t2: linked },
+    },
   }));
+  useSyncRuntime.setState({ session: { userId: 'user-1', email: 'coach@example.com' } });
   jest.mocked(sync.listCloudTeams).mockResolvedValue({
     ok: true,
     value: [
@@ -109,5 +114,15 @@ describe('cloud teams setup', () => {
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({ ok: true, value: [] });
     await fireEvent.press(screen.getByRole('button', { name: s.retry }));
     expect(await screen.findByText(s.download.empty)).toBeTruthy();
+  });
+
+  it('signed out: Sign in instead of the pickers', async () => {
+    useSyncRuntime.setState({ session: null });
+    await renderApp('/account/teams');
+    expect(screen.getByText(t.account.profileSection.signedOut)).toBeTruthy();
+    expect(screen.queryByTestId('upload-selected')).toBeNull();
+    expect(sync.listCloudTeams).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('cloud-teams-sign-in'));
+    expect(screen).toHavePathname('/account/sign-in');
   });
 });

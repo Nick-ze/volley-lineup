@@ -34,13 +34,13 @@ export const account: Strings['account'] = {
   errors: {
     offline: 'Keine Verbindung. Prüfe dein Internet und versuch es nochmal.',
     forbidden: 'Das darfst du nicht.',
-    lastManager: 'Mach zuerst jemand anderen zum Manager.',
+    lastManager: 'Mach zuerst jemand anderen zum Trainer.',
     lastMember: 'Du bist das letzte Mitglied dieses Teams.',
     inviteInvalid: 'Dieser Einladungscode ist falsch oder abgelaufen.',
     notSignedIn: 'Melde dich zuerst an.',
     signedOut: 'Du wurdest abgemeldet. Melde dich nochmal an.',
     invalidCode:
-      'Falscher oder abgelaufener Code. Prüf die E-Mail oder lass dir einen neuen Code schicken.',
+      'Falscher oder abgelaufener Code. Prüfe die E-Mail oder lass dir einen neuen Code schicken.',
     rateLimited: 'Zu viele Versuche. Warte kurz und versuch es nochmal.',
     tooMany: 'Zu viele auf einmal. Versuch es mit weniger.',
     unknown: 'Etwas ist schiefgelaufen. Versuch es nochmal.',
@@ -55,19 +55,19 @@ export const account: Strings['account'] = {
     open: 'Konto',
     openLabel: 'Konto: Sync-Status und geteilte Teams',
     otherProfile: (email, profile) =>
-      `${email} ist auf diesem Gerät mit dem Profil «${profile}» angemeldet. Öffne dieses Profil, um das Konto zu nutzen.`,
+      `${email} ist auf diesem Gerät mit dem Profil „${profile}“ angemeldet. Öffne dieses Profil, um das Konto zu nutzen.`,
   },
   screen: {
     lastSynced: (when) => `Zuletzt synchronisiert ${when}`,
     notSynced: 'Noch nicht synchronisiert',
     sharedTeams: 'Geteilte Teams',
     noSharedTeams: 'Noch keine geteilten Teams auf diesem Gerät.',
-    roles: { manager: 'Manager', player: 'Spieler · nur ansehen' },
+    roles: { manager: 'Trainer', player: 'Spieler · nur ansehen' },
     openTeamLabel: (name, role) => `${name}: ${role}`,
     cloudTeams: 'Cloud-Teams',
     cloudTeamsHint: 'Lade Teams von diesem Gerät hoch oder deine Teams aus der Cloud herunter.',
     join: 'Team beitreten',
-    signOut: 'Abmelden',
+    signOut: 'Vom Konto abmelden',
     signOutHint:
       'Deine Daten bleiben auf diesem Gerät. Geteilte Teams werden wieder synchronisiert, wenn du dich anmeldest.',
     signOutConfirm: (pending) =>
@@ -85,7 +85,7 @@ export const account: Strings['account'] = {
         : '') +
       ' Deine Daten auf diesem Gerät bleiben.',
     blocked:
-      'Du bist der letzte Manager dieser Teams. Mach zuerst jemand anderen zum Manager oder lösche das Team:',
+      'Du bist der letzte Trainer dieser Teams. Mach zuerst jemand anderen zum Trainer oder lösche das Team:',
     members: 'Mitglieder',
     membersLabel: (team) => `Mitglieder: ${team}`,
     notOnDevice: 'Ein Team, das nicht auf diesem Gerät ist',

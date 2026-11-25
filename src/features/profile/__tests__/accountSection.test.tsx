@@ -90,7 +90,7 @@ describe('Log out and delete profile sign out', () => {
   });
 
   it('deleting the linked profile says so and signs out; the account link is cleared', async () => {
-    link(false);
+    link(true);
     await renderApp('/profile');
     await fireEvent.press(screen.getByLabelText(t.profile.deleteLabel('Coach')));
     expect(
@@ -101,6 +101,19 @@ describe('Log out and delete profile sign out', () => {
     });
     expect(sync.signOut).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().profiles).toEqual([]);
+    expect(useAppStore.getState().sync.account).toBeNull();
+  });
+
+  it('signed out, deleting the linked profile adds no sentence but still signs out', async () => {
+    link(false);
+    await renderApp('/profile');
+    await fireEvent.press(screen.getByLabelText(t.profile.deleteLabel('Coach')));
+    expect(screen.getByText(t.roster.confirm.deleteProfile('Coach'))).toBeTruthy();
+    expect(screen.queryByText(t.account.signOutNote, { exact: false })).toBeNull();
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('confirm'));
+    });
+    expect(sync.signOut).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().sync.account).toBeNull();
   });
 });
