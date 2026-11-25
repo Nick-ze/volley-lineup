@@ -10,7 +10,16 @@ import { fontSize, makeStyles, radius, spacing, touchTarget, typography } from '
  * v10: the team header's button (top right) to the members screen: "Members" for a shared team,
  * "Share" for a local one. Hidden when the app has no backend configured.
  */
-export function MembersHeaderButton({ teamId, teamName }: { teamId: string; teamName: string }) {
+export function MembersHeaderButton({
+  teamId,
+  teamName,
+  onWidth,
+}: {
+  teamId: string;
+  teamName: string;
+  /** The room the button takes (with its margins), so the header title can leave it free. */
+  onWidth?: (width: number) => void;
+}) {
   const t = useT();
   const styles = useStyles();
   const router = useRouter();
@@ -23,6 +32,7 @@ export function MembersHeaderButton({ teamId, teamName }: { teamId: string; team
       accessibilityLabel={shared ? s.membersLabel(teamName) : s.shareLabel(teamName)}
       onPress={() => router.push({ pathname: '/team/[teamId]/members', params: { teamId } })}
       hitSlop={spacing.xs}
+      onLayout={(e) => onWidth?.(Math.ceil(e.nativeEvent.layout.width) + BUTTON_MARGIN * 2)}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       testID="team-members-button"
     >
@@ -33,13 +43,15 @@ export function MembersHeaderButton({ teamId, teamName }: { teamId: string; team
   );
 }
 
+const BUTTON_MARGIN = spacing.sm;
+
 const useStyles = makeStyles((theme) => ({
   button: {
     minWidth: touchTarget,
     minHeight: touchTarget,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-    marginHorizontal: spacing.sm,
+    marginHorizontal: BUTTON_MARGIN,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: theme.colors.primary,

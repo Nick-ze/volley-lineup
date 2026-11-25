@@ -28,6 +28,13 @@ export const useMembersStyles = makeStyles((theme) => ({
   rowTitle: { ...typography.subheading, color: theme.colors.text },
   rowDetail: { ...typography.label, color: theme.colors.textMuted },
   code: { ...typography.subheading, color: theme.colors.text, letterSpacing: 1 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  // Never wider than the row: long labels (German, dyslexia font) wrap onto their own lines.
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    maxWidth: '100%',
+  },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 }));
