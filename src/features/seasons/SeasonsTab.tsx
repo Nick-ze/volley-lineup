@@ -32,11 +32,16 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
   const s = t.seasons.list;
   return (
     <>
-      <View style={[listStyles.headerRow, listStyles.tabHeader]}>
-        <View />
-        {access.canEdit ? <Button label={s.newSeason} onPress={onNewSeason} compact /> : null}
-      </View>
-      <ReadOnlyNote block={access.block} />
+      {access.canEdit ? (
+        <View style={[listStyles.headerRow, listStyles.tabHeader]}>
+          <View />
+          <Button label={s.newSeason} onPress={onNewSeason} compact />
+        </View>
+      ) : (
+        <View style={listStyles.tabHeader}>
+          <ReadOnlyNote block={access.block} />
+        </View>
+      )}
       {seasons.length === 0 ? (
         <Text style={listStyles.empty} testID="seasons-empty">
           {s.empty}

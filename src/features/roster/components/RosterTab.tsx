@@ -54,7 +54,11 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
           ) : null}
         </View>
       </View>
-      <ReadOnlyNote block={access.block} />
+      {access.block ? (
+        <View style={styles.tabHeader}>
+          <ReadOnlyNote block={access.block} />
+        </View>
+      ) : null}
       {players.length === 0 && <Text style={styles.empty}>{t.roster.roster.empty}</Text>}
       <View style={grid.grid} onLayout={onLayout} testID="roster-grid">
         {players.map((p) => (
