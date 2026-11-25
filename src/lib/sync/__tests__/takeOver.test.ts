@@ -10,7 +10,7 @@ import { FakeCloud } from '@/test-utils/fakeBackend';
 import { goldenTeamData } from '@/test-utils/syncFixtures';
 import { TestDevice } from '@/test-utils/syncDevice';
 
-import { holdMatch } from '../holdCommands';
+import { holdMatch, releaseMatch } from '../holdCommands';
 import { createInvite } from '../memberCommands';
 import { joinTeam, uploadTeams } from '../teamCommands';
 
@@ -145,5 +145,36 @@ describe('take over (v10 QA)', () => {
     const held = await b.act((e) => holdMatch(e, T1, M));
     expect(held).toEqual({ ok: true, value: { granted: true } });
     expect(cloud.calls.filter((c) => c === 'pullChanges').length).toBe(before);
+  });
+
+  it('hold commands run in the order called: a release after a take-over leaves no hold', async () => {
+    const { cloud, a, b } = await twoManagers();
+    await a.act((e) => holdMatch(e, T1, M));
+    cloud.clock.tick(2000);
+    await b.act(async (e) => {
+      void e.runCycle(); // the take-over waits behind this cycle
+      const taken = holdMatch(e, T1, M, true);
+      // The screen closes meanwhile: its release must not overtake the take-over.
+      await releaseMatch(e, T1, M);
+      expect(await taken).toEqual({ ok: true, value: { granted: true } });
+    });
+    expect([...cloud.holds.values()].map((h) => h.deviceId)).not.toContain('dev-b');
+    expect(b.runtime.holds[M]?.deviceId).not.toBe('dev-b');
+  });
+
+  it('the take-over pull honours a pending reset (the cloud replaces the team), like a cycle', async () => {
+    const { cloud, a, b } = await twoManagers();
+    await a.act((e) => holdMatch(e, T1, M));
+    cloud.clock.tick(2000);
+    const cloudName = b.data.players.find((p) => p.id === 'p1')?.firstName;
+    // An unsynced change on B, then a demotion-style reset is pending for the team.
+    await b.edit((s) => ({
+      players: s.players.map((p) => (p.id === 'p1' ? { ...p, firstName: 'Local only' } : p)),
+    }));
+    b.engine.resetPending.add(T1);
+    const taken = await b.act((e) => holdMatch(e, T1, M, true));
+    expect(taken).toEqual({ ok: true, value: { granted: true } });
+    expect(b.data.players.find((p) => p.id === 'p1')?.firstName).toBe(cloudName);
+    expect(b.engine.resetPending.has(T1)).toBe(false);
   });
 });

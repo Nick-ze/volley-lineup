@@ -7,6 +7,10 @@
  * reached the server after this device's last pull, and scoring on the stale copy would save the
  * whole set without them. The match stays read-only here (the other device's hold is still in the
  * runtime holds) until that pull has been tried; offline, the take-over is still granted.
+ *
+ * Every hold command (claim, take-over, release) runs through `engine.exclusive`, so they reach
+ * the server in the order they were called and never between a sync cycle's steps: a release
+ * called while a take-over waits behind a cycle can't overtake it and leave a stale hold.
  */
 import type { MatchHold } from '@/domain/types';
 import { useSyncRuntime } from '@/store';
@@ -14,17 +18,22 @@ import { useSyncRuntime } from '@/store';
 import type { SyncEngine } from './engine';
 import { attempt, requireSession } from './result';
 import { appState, displayName } from './storeOps';
-import { pullTeam } from './teamSync';
+import { needsReset, pullTeam } from './teamSync';
 import type { SyncResult } from './types';
 
 function putHold(hold: MatchHold): void {
   useSyncRuntime.setState((r) => ({ holds: { ...r.holds, [hold.matchId]: hold } }));
 }
 
-/** Brings the team up to date before this device scores (never fails: offline scores anyway). */
+/**
+ * Brings the team up to date before this device scores, like a cycle's pull (a pending reset
+ * included). Never fails: offline, this device scores anyway.
+ */
 async function catchUp(engine: SyncEngine, teamId: string): Promise<void> {
   try {
-    await pullTeam(engine, teamId);
+    const reset = needsReset(engine, teamId);
+    const report = await pullTeam(engine, teamId, reset);
+    if (reset && report.present) engine.resetPending.delete(teamId);
   } catch {
     // Offline or a server error: the take-over still counts; the next cycle pulls again.
   }
@@ -65,8 +74,9 @@ async function claim(
 }
 
 /**
- * Claims (or, with `takeOver`, takes over) the match's hold. A take-over runs while no sync
- * cycle runs, so no cycle can make the match editable between the grant and the pull.
+ * Claims (or, with `takeOver`, takes over) the match's hold, in order with the other hold
+ * commands and never during a sync cycle (so no cycle can make the match editable between a
+ * take-over's grant and its pull).
  */
 export const holdMatch = (
   engine: SyncEngine,
@@ -74,27 +84,24 @@ export const holdMatch = (
   matchId: string,
   takeOver = false,
 ): Promise<SyncResult<{ granted: boolean; holder?: string }>> =>
-  attempt(() =>
-    takeOver
-      ? engine.exclusive(() => claim(engine, teamId, matchId, true))
-      : claim(engine, teamId, matchId, false),
-  );
+  attempt(() => engine.exclusive(() => claim(engine, teamId, matchId, takeOver)));
 
-/** Ends this device's hold (best effort; never fails). */
+/** Ends this device's hold (best effort; never fails), after any hold command called before. */
 export async function releaseMatch(
   engine: SyncEngine,
   teamId: string,
   matchId: string,
 ): Promise<void> {
-  const deviceId = appState().sync.deviceId ?? '';
-  const released = await attempt(async () => {
-    requireSession(engine);
-    await engine.backend.releaseMatch(teamId, matchId, deviceId);
-  });
-  if (!released.ok) return;
-  useSyncRuntime.setState((r) => {
-    if (r.holds[matchId]?.deviceId !== deviceId) return r;
-    const { [matchId]: _released, ...holds } = r.holds;
-    return { holds };
-  });
+  await attempt(() =>
+    engine.exclusive(async () => {
+      requireSession(engine);
+      const deviceId = appState().sync.deviceId ?? '';
+      await engine.backend.releaseMatch(teamId, matchId, deviceId);
+      useSyncRuntime.setState((r) => {
+        if (r.holds[matchId]?.deviceId !== deviceId) return r;
+        const { [matchId]: _released, ...holds } = r.holds;
+        return { holds };
+      });
+    }),
+  );
 }
