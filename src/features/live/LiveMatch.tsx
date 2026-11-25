@@ -13,10 +13,12 @@ import type { SetNumber } from '@/domain/types';
 import { Message } from '@/features/rotation/Message';
 import { SetPicker } from '@/features/rotation/SetPicker';
 import { useT } from '@/i18n';
+import { useMatchAccess } from '@/store';
 import { spacing } from '@/theme';
 
 import { tagDetail } from './format';
 import { LiveSetView } from './LiveSetView';
+import { MatchReadOnlyNote } from './MatchReadOnlyNote';
 import { MatchSummary } from './MatchSummary';
 import { NextSetSetup } from './NextSetSetup';
 import { useLiveSet } from './useLiveSet';
@@ -48,8 +50,11 @@ export function LiveMatch({
   previousSet = null,
 }: LiveMatchProps) {
   const t = useT();
-  const { live, row: tagRow } = usePointTagging(useLiveSet(matchId, setNumber));
+  const { live, row } = usePointTagging(useLiveSet(matchId, setNumber));
   const { match, set, state, court, matchState } = live;
+  // v10: a view-only member, or another device scoring this match: watch only, no controls.
+  const readOnly = !useMatchAccess(matchId).canEdit;
+  const tagRow = readOnly ? null : row;
 
   if (!match || !matchState || setNumber === undefined) {
     return <Message text={t.live.matchNotFound} />;
@@ -67,13 +72,14 @@ export function LiveMatch({
 
   /** Start (or go to) the next set; reached from the previous set, it gets the default serve. */
   const goToNext = (next: SetNumber) => {
-    const prepared = withDefaultServe(match, next);
+    const prepared = readOnly ? null : withDefaultServe(match, next);
     if (prepared) live.saveSet(prepared);
     onSelectSet(next);
   };
   const screen = (content: ReactNode) => (
     <>
       {title}
+      {readOnly ? <MatchReadOnlyNote matchId={matchId} /> : null}
       {picker}
       {/* v8: another set slides in from the side of its tab. */}
       <SlideTransition index={setNumber} fromIndex={previousSet} contentStyle={styles.content}>
@@ -91,7 +97,7 @@ export function LiveMatch({
           state={matchState}
           opponent={match.opponent}
           onBack={onBackToMatch}
-          onUndo={undo}
+          onUndo={readOnly ? null : undo}
           tagDetail={last?.type === 'point' ? tagDetail(t, live.playersById, last) : null}
         />
         {tagRow}
@@ -100,7 +106,10 @@ export function LiveMatch({
   }
   if (isAfterDecision(matchState, setNumber))
     return screen(<Message text={t.live.afterDecision} />);
+  // A watcher sees a set that isn't being played yet as "not started" (setting it up is scoring).
+  const notStarted = <Message text={t.sync.match.notStarted(setNumber)} />;
   if (needsSetup(match, setNumber)) {
+    if (readOnly) return screen(notStarted);
     return screen(
       <NextSetSetup
         match={match}
@@ -112,14 +121,16 @@ export function LiveMatch({
       />,
     );
   }
-  if (!set || !state || !court) return screen(<Message text={t.live.noSet} />);
-  if (!live.complete) return screen(<Message text={t.live.incomplete} />);
+  if (!set || !state || !court)
+    return screen(readOnly ? notStarted : <Message text={t.live.noSet} />);
+  if (!live.complete) return screen(readOnly ? notStarted : <Message text={t.live.incomplete} />);
   return screen(
     <LiveSetView
       live={{ ...live, match, set, state, court, matchState }}
       onNext={goToNext}
       onUndo={undo}
       belowPointButtons={tagRow}
+      readOnly={readOnly}
     />,
   );
 }
