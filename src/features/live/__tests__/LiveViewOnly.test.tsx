@@ -1,4 +1,5 @@
 import { act, fireEvent, renderHook, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 
 import type { SetEvent, SetLineup, SetNumber, TeamRole } from '@/domain/types';
@@ -7,7 +8,7 @@ import * as sync from '@/lib/sync';
 import { useAppStore, useSyncRuntime } from '@/store';
 import { fullLineup, seedTeam } from '@/test-utils/presetsTeam';
 
-import { HOLD_REFRESH_MS, useMatchHold } from '../useMatchHold';
+import { HOLD_REFRESH_MS, useFollowMatch, useMatchHold } from '../useMatchHold';
 
 /* v10: live mode for watchers (view-only members, a match scored elsewhere) and the live hold. */
 
@@ -179,5 +180,60 @@ describe('live hold (v10)', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('stacked live screens share one hold: only the last one closing releases it', async () => {
+    jest.useFakeTimers();
+    try {
+      seed('manager');
+      const first = await renderHook(() => useMatchHold('m1'));
+      const second = await renderHook(() => useMatchHold('m1'));
+      expect(sync.holdMatch).toHaveBeenCalledTimes(1);
+      await second.unmount();
+      expect(sync.releaseMatch).not.toHaveBeenCalled();
+      // The first screen still refreshes the hold.
+      await act(async () => jest.advanceTimersByTime(HOLD_REFRESH_MS));
+      expect(sync.holdMatch).toHaveBeenCalledTimes(2);
+      await first.unmount();
+      expect(sync.releaseMatch).toHaveBeenCalledTimes(1);
+      await act(async () => jest.advanceTimersByTime(HOLD_REFRESH_MS));
+      expect(sync.holdMatch).toHaveBeenCalledTimes(2);
+      // A later live screen claims it again.
+      const again = await renderHook(() => useMatchHold('m1'));
+      expect(sync.holdMatch).toHaveBeenCalledTimes(3);
+      await again.unmount();
+      expect(sync.releaseMatch).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('stacked live screens of a watcher follow until the last one closes', async () => {
+    seed('player');
+    const first = await renderHook(() => useFollowMatch('m1'));
+    const second = await renderHook(() => useFollowMatch('m1'));
+    expect(sync.followMatch).toHaveBeenCalledTimes(1);
+    expect(sync.followMatch).toHaveBeenCalledWith('m1');
+    await second.unmount();
+    expect(sync.followMatch).toHaveBeenCalledTimes(1);
+    await first.unmount();
+    expect(sync.followMatch).toHaveBeenLastCalledWith(null);
+    expect(sync.followMatch).toHaveBeenCalledTimes(2);
+  });
+
+  it('live → builder → live → Back keeps the hold of the first live screen', async () => {
+    seed('manager');
+    await renderRouter('./app', { initialUrl: '/match/m1/live?set=1' });
+    expect(await screen.findByTestId('point-us')).toBeTruthy();
+    await act(async () => router.push('/match/m1?set=1'));
+    await act(async () => router.push('/match/m1/live?set=1'));
+    expect(screen).toHavePathname('/match/m1/live');
+    await act(async () => router.back());
+    expect(screen).toHavePathname('/match/m1');
+    expect(sync.releaseMatch).not.toHaveBeenCalled();
+    await act(async () => router.back());
+    expect(screen).toHavePathname('/match/m1/live');
+    expect(sync.releaseMatch).not.toHaveBeenCalled();
+    expect(sync.holdMatch).toHaveBeenCalledTimes(1);
   });
 });
