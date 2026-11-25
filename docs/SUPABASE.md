@@ -39,18 +39,41 @@ Files:
 - Each synced entity is one row in **`team_records`**, keyed by `(team_id, kind, id)`. `kind` is
   one of `team`, `player`, `season`, `opponent`, `match`, `set` (id `<matchId>/<n>`), `preset`,
   `starters` (`team` and `starters` use the team id). `payload` is the JSON of the entity, at
-  most 100 kB; a deletion is a tombstone (`deleted = true`, `payload` null). Player descriptions
+  most 64 kB; a deletion is a tombstone (`deleted = true`, `payload` null). Player descriptions
   and profile data never leave the device.
 - **Last write wins** per record: the server keeps the write with the newer
-  `(client_updated_at, device_id)`. The client time is clamped to at most one minute ahead of
-  the server. Every write gets a new `version` from a sequence; clients pull with
-  `version > cursor`.
-- **`invites`**: 10-character codes for a role, valid 1–30 days, revocable. Only managers see
-  them.
+  `(client_updated_at, device_id)`. The client time is truncated to milliseconds and clamped to
+  at most one minute ahead of the server. Timestamps come back as ISO strings with milliseconds
+  (`2026-01-01T10:00:00.000Z`, like `Date.toISOString()`), so `at` is exactly what the client
+  sent unless it was clamped.
+- **Pull cursor**: every write gets a new `version` from a sequence and, right after it, its
+  `updated_at` from the clock. Clients pull `version > cursor` and only move the cursor past rows
+  older than `server_now − 10 s`. This is safe because a write can't run longer than the
+  `authenticated` role's **statement_timeout of 8 s** (the Supabase default), so a version that
+  isn't committed yet always belongs to a row less than 8 s old. **Self-hosted projects must set
+  it too**: `alter role authenticated set statement_timeout = '8s';`.
+- **`invites`**: 10-character codes for a role, revocable. Player codes: many uses, 1–30 days.
+  Manager codes: **one use**, 1–7 days. Only managers see them. A member who was removed can't
+  rejoin with a code created before the removal; a newer code is a deliberate re-invite.
 - **`match_holds`**: the device that scores a match live holds it for 15 minutes (advisory).
 - **`keepalive`**: one row, readable by `anon`, for the keep-alive workflow.
 - **Storage**: private bucket `team-photos`, objects `<teamId>/<photoId>` (JPEG / PNG / WebP, at
   most 256 kB). Members read, managers upload and delete; no updates (a new photo gets a new id).
+
+### Limits
+
+The free tier has 500 MB of database and 1 GB of file storage for everyone, so one account must
+not be able to fill it:
+
+| Limit                                                                   | Error                    |
+| ----------------------------------------------------------------------- | ------------------------ |
+| 10 teams created per user (existing ones)                               | `VL006`                  |
+| 20 MB of record payloads per team (`teams.payload_bytes`)               | `VL007`                  |
+| 20 000 records per team                                                 | `VL007`                  |
+| 64 kB per record, 200 records / 1 MB per push                           | `23514` / `22023`        |
+| 500 photos per team (256 kB each)                                       | `42501` (storage policy) |
+| 20 usable invites per team                                              | `VL007`                  |
+| 50 active live holds per team (holds expired over a day ago are pruned) | `VL007`                  |
 
 ### Security model
 
@@ -59,58 +82,74 @@ Files:
 - All writes go through the RPCs below. They are `SECURITY DEFINER` with `search_path = ''`,
   check `auth.uid()` and the caller's role themselves, and are executable by `authenticated`
   only (EXECUTE is revoked from `public` and `anon`).
-- Policy helpers live in the schema `private`, which the Data API doesn't expose:
+- The schema `private` isn't exposed by the Data API. It holds the policy helpers
   `my_team_ids()`, `my_managed_team_ids()` (used as `team_id in (select …)`, evaluated once per
-  query) and `is_team_member(text)`, `is_team_manager(text)` (used inside RPCs). They are
-  `SECURITY DEFINER` so the `team_members` policy can read `team_members` without recursion.
+  query), `is_team_member(text)`, `is_team_manager(text)` (used inside RPCs) and
+  `team_photo_count(text)` (photo limit, leftover-photo checks). They are `SECURITY DEFINER` so
+  the `team_members` policy can read `team_members` without recursion. It also holds the table
+  `team_removals` (who was removed when), which no API role can read.
 - Triggers on `team_members`: the **last-manager guard** (the last manager can't be demoted or
   removed while other members remain), **drop empty team** (a team without members is deleted)
   and **drop member holds** (leaving, removal or demotion ends the member's live holds).
   `delete_team` and `delete_my_account` switch the guard off for their own transaction with
   `set_config('app.bypass_member_guard', 'on', true)`.
+- **Member changes lock the team row** (`select … for update`): the guard, `leave_team`,
+  `remove_member`, `set_member_role`, and `delete_my_account` (all the caller's teams, in id
+  order). Two managers demoting or removing each other at the same moment are serialized, so a
+  team never ends up without a manager.
+- **Photos before teams**: `delete_team` and `delete_my_account` refuse with `VL008` while the
+  team's storage folder still has photos (the app deletes them through the Storage API first),
+  and `create_team` answers `'taken'` for an id whose folder still has photos. A new team can
+  never see an old team's pictures.
 
 ### RPCs
 
-| RPC                                                                                          | Who                   | What                                                                                                                                                                                                  |
-| -------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create_team(p_team_id, p_display_name) → text`                                              | signed in             | Creates the team with the caller as manager → `'created'`. Existing id → `'member'` (caller already belongs to it) or `'taken'` (someone else's: the app re-keys its team). At most 50 managed teams. |
-| `leave_team(p_team_id)`                                                                      | member                | Leaves. The only member must delete the team instead.                                                                                                                                                 |
-| `set_member_role(p_team_id, p_user_id, p_role)`                                              | manager               | Changes a member's role (also one's own, unless last manager).                                                                                                                                        |
-| `remove_member(p_team_id, p_user_id)`                                                        | manager               | Removes a member.                                                                                                                                                                                     |
-| `delete_team(p_team_id)`                                                                     | manager               | Deletes the team for everyone (members, records, invites, holds). The app removes its photos first.                                                                                                   |
-| `push_records(p_team_id, p_device_id, p_records) → jsonb`                                    | manager               | Writes up to 200 records / 1 MB, last write wins. Returns per record `{kind, id, applied, version, at, updated_at, deleted}` plus `payload` when the server kept a newer row.                         |
-| `pull_changes(p_team_id, p_after, p_limit = 500) → jsonb`                                    | member (invoker, RLS) | `{server_now, rows}`: records with `version > p_after`, oldest first, at most 1000.                                                                                                                   |
-| `create_invite(p_team_id, p_role, p_days = 7) → jsonb`                                       | manager               | New code `{id, code, role, expires_at}`; 1–30 days, at most 20 active per team.                                                                                                                       |
-| `revoke_invite(p_invite_id)`                                                                 | manager               | Revokes a code.                                                                                                                                                                                       |
-| `join_team(p_code, p_display_name) → jsonb`                                                  | signed in             | Joins with a code (dashes, spaces and case ignored) → `{team_id, role}`. A code never lowers a role.                                                                                                  |
-| `hold_match(p_team_id, p_match_id, p_device_id, p_holder_name, p_take_over = false) → jsonb` | manager               | Claims or refreshes the 15-minute hold → `{granted, holder_name, held_until}`; another device's live hold needs `p_take_over`.                                                                        |
-| `release_match(p_team_id, p_match_id, p_device_id)`                                          | manager               | Ends this device's hold.                                                                                                                                                                              |
-| `account_deletion_check() → jsonb`                                                           | signed in (invoker)   | `{delete_teams, blocked_teams}`: teams deleted with the account (caller is the only member) and teams that block it (caller is the last manager, others remain).                                      |
-| `delete_my_account() → text[]`                                                               | signed in             | Deletes the caller's sole-member teams and the auth user (memberships, holds and sessions cascade); returns the deleted team ids. The app removes those teams' photos first.                          |
+| RPC                                                                                          | Who                   | What                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_team(p_team_id, p_display_name) → text`                                              | signed in             | Creates the team with the caller as manager → `'created'`. Existing id → `'member'` (caller already belongs to it) or `'taken'` (someone else's, or old photos remain: the app re-keys its team). At most 10 created teams. |
+| `leave_team(p_team_id)`                                                                      | member                | Leaves. The only member must delete the team instead.                                                                                                                                                                       |
+| `set_member_role(p_team_id, p_user_id, p_role)`                                              | manager               | Changes a member's role (also one's own, unless last manager).                                                                                                                                                              |
+| `remove_member(p_team_id, p_user_id)`                                                        | manager               | Removes a member and records the removal (older codes stop working for them).                                                                                                                                               |
+| `delete_team(p_team_id)`                                                                     | manager               | Deletes the team for everyone (members, records, invites, holds). `VL008` while photos remain: the app removes them first.                                                                                                  |
+| `push_records(p_team_id, p_device_id, p_records) → jsonb`                                    | manager               | Writes up to 200 records / 1 MB, last write wins. Returns per record `{kind, id, applied, version, at, updated_at, deleted, device_id}` plus `payload` when the server kept a newer row.                                    |
+| `pull_changes(p_team_id, p_after, p_limit = 500) → jsonb`                                    | member (invoker, RLS) | `{server_now, rows}`: records with `version > p_after`, oldest first, at most 1000. Each row: `{kind, id, payload, deleted, at, updated_at, version, device_id}`.                                                           |
+| `create_invite(p_team_id, p_role, p_days = 7) → jsonb`                                       | manager               | New code `{id, code, role, expires_at, max_uses}`; players 1–30 days and unlimited uses, managers 1–7 days and one use. At most 20 usable per team.                                                                         |
+| `revoke_invite(p_invite_id)`                                                                 | manager               | Revokes a code.                                                                                                                                                                                                             |
+| `join_team(p_code, p_display_name) → jsonb`                                                  | signed in             | Joins with a code (dashes, spaces and case ignored) → `{team_id, role}`. A code never lowers a role.                                                                                                                        |
+| `hold_match(p_team_id, p_match_id, p_device_id, p_holder_name, p_take_over = false) → jsonb` | manager               | Claims or refreshes the 15-minute hold → `{granted, holder_name, held_until}`; another device's live hold needs `p_take_over`.                                                                                              |
+| `release_match(p_team_id, p_match_id, p_device_id)`                                          | manager               | Ends this device's hold.                                                                                                                                                                                                    |
+| `account_deletion_check() → jsonb`                                                           | signed in (invoker)   | `{delete_teams, blocked_teams}`: teams deleted with the account (caller is the only member) and teams that block it (caller is the last manager, others remain).                                                            |
+| `delete_my_account() → text[]`                                                               | signed in             | Deletes the caller's sole-member teams and the auth user (memberships, holds and sessions cascade); returns the deleted team ids. `VL008` while those teams still have photos: the app removes them first.                  |
 
 ### Error codes
 
-| SQLSTATE | Meaning                                                                      | App error       |
-| -------- | ---------------------------------------------------------------------------- | --------------- |
-| `42501`  | forbidden (not signed in, not a member, not a manager; PostgREST: 401 / 403) | `forbidden`     |
-| `VL001`  | last manager (detail: blocked team ids for `delete_my_account`)              | `lastManager`   |
-| `VL002`  | invite code unknown, expired or revoked                                      | `inviteInvalid` |
-| `VL004`  | last member: delete the team instead                                         | `lastMember`    |
-| `VL006`  | too many teams (50 managed)                                                  | `tooMany`       |
-| `VL007`  | team full (20 000 records or 20 active invites)                              | `tooMany`       |
-| `22023`  | bad batch or argument (size, shape, role, days)                              | `unknown`       |
-| `23514`  | a record breaks a CHECK (kind, id, payload size, singleton id)               | `unknown`       |
+| SQLSTATE | Meaning                                                                             | App error       |
+| -------- | ----------------------------------------------------------------------------------- | --------------- |
+| `42501`  | forbidden (not signed in, not a member, not a manager; PostgREST: 401 / 403)        | `forbidden`     |
+| `VL001`  | last manager (detail: blocked team ids for `delete_my_account`)                     | `lastManager`   |
+| `VL002`  | invite code unknown, expired, revoked or used up, or the user was removed after it  | `inviteInvalid` |
+| `VL004`  | last member: delete the team instead                                                | `lastMember`    |
+| `VL006`  | too many teams (10 created)                                                         | `tooMany`       |
+| `VL007`  | team full (20 MB, 20 000 records, 20 usable invites or 50 live holds)               | `tooMany`       |
+| `VL008`  | photos remain: delete the team's photos first (detail: team ids)                    | (app retries)   |
+| `22023`  | bad batch or argument (size, shape, `at` not a finite time, role, days)             | `unknown`       |
+| `23514`  | a record breaks a CHECK (kind, id, payload over 64 kB, singleton id; team id shape) | `unknown`       |
 
 ## Applying the migrations
 
 The files in `supabase/migrations` are the whole schema and must be applied in file-name order,
-once, to an empty project.
+once, to an empty project. Their names start with the version (`20261125HHMMSS`).
 
-- **Supabase CLI** (hosted or self-hosted): `supabase link --project-ref <ref>` then
-  `supabase db push`. Locally, `supabase start` applies them automatically.
-- **psql**: `for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done`
-  as `postgres`.
-- **MCP / dashboard**: run each file in order (`apply_migration` or the SQL editor).
+- **The hosted project** is applied with the MCP tool `apply_migration`, one file at a time in
+  order. That records each migration under the time it ran, so afterwards the orchestrator sets
+  the recorded versions in `supabase_migrations.schema_migrations` to the file versions
+  (`20261125090000` … `20261125090600`). Then `supabase db push` sees them as applied and stays
+  in sync.
+- **Other projects** (new, self-hosted, local): `supabase link --project-ref <ref>` and
+  `supabase db push`, or psql in file order:
+  `for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done`
+  (as `postgres`). Locally, `supabase start` applies them automatically. Self-hosted: keep the
+  `authenticated` statement_timeout at 8 s (see [Model](#model)).
 
 Afterwards: run the RLS tests, check the advisors (Dashboard → Advisors, or MCP `get_advisors`
 for `security` and `performance`), and regenerate the app's types
@@ -129,23 +168,26 @@ claims, and rolls everything back at the end, so it leaves nothing behind.
 
 A failing check raises `FAIL T<n> …` and stops. Success ends with `ALL RLS TESTS PASSED`.
 
-| Tests    | What                                                                                   |
-| -------- | -------------------------------------------------------------------------------------- |
-| T1–T3    | create teams, push and pull, invite and join as player                                 |
-| T4–T6    | a stranger reads nothing, can't call any team RPC, can't hijack a team id              |
-| T7–T9    | a player reads records and members but no invites, can't write through RPCs or tables  |
-| T10      | a manager of another team has no access                                                |
-| T11–T13  | storage: upload, read and delete by role, one folder level only                        |
-| T14–T16  | last write wins with the device tie-break, clock clamp, tombstones                     |
-| T17      | CHECKs and limits (kinds, sizes, batch size, team full, too many teams, invite args)   |
-| T18, T23 | last manager and last member                                                           |
-| T19, T20 | leaving / removed members lose access to records, members, holds and photos            |
-| T21, T22 | expired, revoked and unknown codes; codes never downgrade                              |
-| T24      | live holds: refusal, take-over, expiry, release                                        |
-| T25, T26 | account deletion: `anon` refused, blocked teams (VL001), sole teams deleted, user gone |
-| T27      | delete for everyone; dashboard deletion of a sole member drops the empty team          |
-| T28, T29 | `anon`: keepalive only, no tables, no RPCs                                             |
-| T30      | catalogue: grants, `search_path`, RLS and policies on every table                      |
+| Tests    | What                                                                                                       |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| T1–T3    | create teams (team id shape), push and pull (ISO ms times, device id, clock `updated_at`), invite and join |
+| T4–T6    | a stranger reads nothing, can't call any team RPC, can't hijack a team id                                  |
+| T7–T9    | a player reads records and members but no invites, can't write through RPCs or tables, can't read removals |
+| T10      | a manager of another team has no access                                                                    |
+| T11–T13b | storage: upload, read and delete by role, one folder level only, at most 500 photos                        |
+| T14–T16  | last write wins with the device tie-break, clock clamp, millisecond times, tombstones                      |
+| T17      | CHECKs and limits (kinds, 64 kB, infinite times, batch size, 20 MB and 20 000 records, 10 created teams)   |
+| T18, T23 | last manager and last member                                                                               |
+| T19, T20 | leaving / removed members lose access; T20b: old codes refused after a removal, a new code works           |
+| T21, T22 | expired, revoked and unknown codes; codes never downgrade; T22b: manager codes are single use              |
+| T24      | live holds: refusal, take-over, expiry, release; T24b: 50 active holds, pruning                            |
+| T25, T26 | account deletion: `anon` refused, blocked teams (VL001), photos first (VL008), sole teams deleted          |
+| T27      | delete for everyone (photos first, VL008); T27b: leftover photos make an id `'taken'`; dashboard deletion  |
+| T28, T29 | `anon`: keepalive only, no tables, no RPCs                                                                 |
+| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks                         |
+
+The team-row locks prevent a race between two sessions; one transaction can't reproduce it, so
+T30 checks that the functions take the lock.
 
 ## Live check with test users
 
@@ -165,6 +207,14 @@ push denied, older write ignored, hold and take over, removed member loses acces
 Web QA can sign in a test user with a password from a script and inject the session; the app
 itself only offers the email code.
 
+## Deleting users in the dashboard
+
+Deleting a user under Authentication → Users is **blocked** (error `VL001`, last manager) while
+they are the last manager of a team that has other members. Make someone else manager of that
+team first (or delete the team in the app), then delete the user. Teams where the user was the
+only member are deleted with them; their photos stay in the bucket, so remove the
+`team-photos/<teamId>/` folder in Storage as well.
+
 ## Keep-alive
 
 The free tier pauses a project after about 7 days without activity. The workflow
@@ -172,12 +222,17 @@ The free tier pauses a project after about 7 days without activity. The workflow
 the publishable key and fails loudly if it can't. Run it by hand under Actions → "Supabase
 keep-alive" → "Run workflow".
 
+- **Until the migrations are applied** the `keepalive` table doesn't exist and the workflow
+  fails with HTTP 404. That's expected; it passes once they are applied.
 - **GitHub disables scheduled workflows** in public repositories after 60 days without commits.
   The keep-alive run doesn't count. If that happens: Actions → "Supabase keep-alive" →
   **Enable workflow**.
 - **If the project paused anyway**, the app shows "Offline" and keeps working locally; nothing is
   lost. The owner restores it: Supabase dashboard → the project → **Restore project**. It takes a
   few minutes; devices sync again on their next cycle.
+- **A free project paused for more than 90 days can't be restored from the dashboard** any more
+  (only its data can be downloaded). Don't let it get that far: check the workflow runs now and
+  then.
 
 ## Owner dashboard steps
 
@@ -194,10 +249,15 @@ members of the Supabase organization.
 3. **Email provider** (Authentication → Sign In / Providers → Email): enabled, **Email OTP
    length 6**, **Email OTP expiration 600** seconds. Keep "Confirm email" on.
 4. **Rate limits** (Authentication → Rate Limits): after SMTP works, raise "emails sent per
-   hour" to what the provider allows (e.g. 30–100). Keep the OTP / verify limits.
-5. **Anonymous sign-ins off** (Authentication → Sign In / Providers).
-6. Check the region is **eu-central-2 (Zurich)** (Project Settings → General).
-7. If GitHub disabled the keep-alive workflow, enable it again (see [Keep-alive](#keep-alive)).
+   hour" to what the provider allows (e.g. 30–100). **Keep the sign-up, OTP and verify limits**:
+   together with the per-user limits above they stop one person from creating many accounts to
+   fill the free tier.
+5. **Usage alert**: Organization → Usage (or Billing → Usage): check database and storage size
+   regularly, and set up a usage notification if the plan offers one. The app's limits make
+   filling 500 MB hard, not impossible.
+6. **Anonymous sign-ins off** (Authentication → Sign In / Providers).
+7. Check the region is **eu-central-2 (Zurich)** (Project Settings → General).
+8. If GitHub disabled the keep-alive workflow, enable it again (see [Keep-alive](#keep-alive)).
 
 Optional: in the SQL editor run
 `revoke execute on function public.rls_auto_enable() from public, anon, authenticated;` to clear
