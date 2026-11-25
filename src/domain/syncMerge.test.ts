@@ -731,6 +731,46 @@ describe('applyPushResults', () => {
     expect(applyPushResults(linkedTeam(), [], [result(p2, true, 7)]).team.base).toEqual({});
   });
 
+  describe('the server kept a save this device already had (version ≤ base)', () => {
+    const p2 = change('player:p2', { ...payload('player:p2'), firstName: 'Second' });
+    const known = { 'player:p2': { v: 9, h: 'first', at: T2 } };
+
+    it('re-stamps the change just after it (clock went back) instead of a stale row', () => {
+      const team = linkedTeam({ base: known, edits: { [p2.key]: { at: T0, h: p2.hash } } });
+      const out = applyPushResults(team, [p2], [result(p2, false, 9, { at: T2 })]);
+      expect(out.stale).toEqual([]);
+      expect(out.team.edits[p2.key]).toEqual({ at: '2026-11-26T10:09:00.001Z', h: p2.hash });
+      expect(out.team.base).toEqual(known);
+    });
+
+    it('also for a deletion saved in the same millisecond', () => {
+      const gone = change('player:p2', null, T2);
+      const team = linkedTeam({ base: known, edits: { [gone.key]: { at: T2, h: '' } } });
+      const out = applyPushResults(team, [gone], [result(gone, false, 9, { deleted: false })]);
+      expect(out.stale).toEqual([]);
+      expect(out.team.edits[gone.key]).toEqual({ at: '2026-11-26T10:09:00.001Z', h: '' });
+    });
+
+    it('keeps an edit that is already later, or when the server time is unreadable', () => {
+      const edits = { [p2.key]: { at: T3, h: p2.hash } };
+      const team = linkedTeam({ base: known, edits });
+      expect(applyPushResults(team, [p2], [result(p2, false, 9, { at: T2 })]).team.edits).toEqual(
+        edits,
+      );
+      const early = linkedTeam({ base: known, edits: { [p2.key]: { at: T0, h: p2.hash } } });
+      const out = applyPushResults(early, [p2], [result(p2, false, 8, { at: 'never' })]);
+      expect(out.team.edits).toEqual(early.edits);
+      expect(out.stale).toEqual([]);
+    });
+
+    it('a newer version than base, or no edit: a stale row as before', () => {
+      const team = linkedTeam({ base: known, edits: { [p2.key]: { at: T0, h: p2.hash } } });
+      expect(applyPushResults(team, [p2], [result(p2, false, 10)]).stale).toHaveLength(1);
+      const noEdit = linkedTeam({ base: known });
+      expect(applyPushResults(noEdit, [p2], [result(p2, false, 9)]).stale).toHaveLength(1);
+    });
+  });
+
   it('keeps a save time it cannot read as it is', () => {
     const p2 = change('player:p2', payload('player:p2'));
     const out = applyPushResults(linkedTeam(), [p2], [result(p2, true, 7, { at: 'later' })]);

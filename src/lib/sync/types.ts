@@ -36,3 +36,21 @@ export interface Invite {
 }
 
 export type UploadResult = 'created' | 'linked' | 'rekeyed' | 'failed';
+
+/** One team of `uploadTeams`. */
+export interface UploadItem {
+  /** The team's id as given. */
+  teamId: string;
+  result: UploadResult;
+  /** The team's id now, when it got a new one on this device first (`rekeyed`). */
+  newTeamId?: string;
+  /** Why it failed (`failed`). */
+  error?: SyncErrorCode;
+}
+
+/** The result of `joinTeam`: the team, the role, and the team's name when the server has it. */
+export interface Joined {
+  teamId: string;
+  role: TeamRole;
+  name: string | null;
+}

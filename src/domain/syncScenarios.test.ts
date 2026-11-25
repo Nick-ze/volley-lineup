@@ -537,3 +537,51 @@ describe('review regressions', () => {
     expect(x.data.players.find((p) => p.id === 'p1')?.teamId).toBe('tx');
   });
 });
+
+describe('the server keeps this device’s own earlier save', () => {
+  const pushes = (server: FakeServer) => server.version;
+
+  it('clock jumped back: the newer change still wins, within 2 pushes', () => {
+    const { clock, server, a, b } = setup();
+    edit(a, clock, renamePlayer('p1', 'First'));
+    a.cycle();
+    clock.tick(20_000);
+    a.skewMs = -3_600_000; // the device clock jumps back one hour
+    edit(a, clock, renamePlayer('p1', 'Second'));
+    const before = pushes(server);
+    let rounds = 0;
+    for (let i = 0; i < 5; i += 1) {
+      const sent = a.push().length;
+      if (sent > 0) rounds += 1;
+      clock.tick(1000);
+    }
+    expect(rounds).toBeLessThanOrEqual(2);
+    expect(pushes(server) - before).toBe(1);
+    b.cycle();
+    expect(b.slice?.players.find((p) => p.id === 'p1')?.firstName).toBe('Second');
+    clock.tick(20_000);
+    a.cycle();
+    b.cycle();
+    expectConverged(a, b);
+  });
+
+  it('two saves in one millisecond (the second a deletion): the deletion goes through', () => {
+    const { clock, server, a, b } = setup();
+    const presetId = (a.slice as TeamSlice).presets.find((p) => p.kind === 'preset')?.id;
+    a.edit((d) => ({
+      ...d,
+      presets: d.presets.map((p) => (p.id === presetId ? { ...p, name: 'Renamed' } : p)),
+    }));
+    a.push();
+    a.edit((d) => ({ ...d, presets: d.presets.filter((p) => p.id !== presetId) }));
+    let rounds = 0;
+    for (let i = 0; i < 4; i += 1) if (a.push().length > 0) rounds += 1;
+    expect(rounds).toBeLessThanOrEqual(2);
+    expect(server.rows.get(`preset:${presetId}`)?.deleted).toBe(true);
+    clock.tick(20_000);
+    b.cycle();
+    a.cycle();
+    expect(b.slice?.presets.some((p) => p.id === presetId)).toBe(false);
+    expectConverged(a, b);
+  });
+});
