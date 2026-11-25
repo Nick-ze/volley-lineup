@@ -3,11 +3,12 @@ import { Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ReadOnlyNote } from '@/components';
 import { presetFromSet, presetToDraft, type PresetLineup } from '@/domain/presets';
 import type { SetLineup } from '@/domain/types';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { useLineupDraft } from '@/features/lineup/useLineupDraft';
-import { usePlayersForTeam } from '@/store';
+import { usePlayersForTeam, useTeamAccess } from '@/store';
 import { makeStyles, maxContentWidth, spacing, typography } from '@/theme';
 
 export interface PresetLineupEditorProps {
@@ -23,6 +24,7 @@ export interface PresetLineupEditorProps {
 /**
  * The lineup builder (court, libero, bench, templates, checks) for a team preset or the team's
  * starters. No serve choice, no "copy previous set" and never locked: presets are not played.
+ * v10: a view-only member sees the lineup read-only with the reason instead of the hint.
  */
 export function PresetLineupEditor({
   teamId,
@@ -35,14 +37,19 @@ export function PresetLineupEditor({
   const players = usePlayersForTeam(teamId);
   const set = useMemo(() => presetToDraft(lineup), [lineup]);
   const save = useCallback((next: SetLineup) => onSave(presetFromSet(next)), [onSave]);
-  const draft = useLineupDraft({ set, players, save });
+  const access = useTeamAccess(teamId);
+  const draft = useLineupDraft({ set, players, save, readOnly: !access.canEdit });
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.inner}>
           {header}
-          <Text style={styles.hint}>{hint}</Text>
+          {access.canEdit ? (
+            <Text style={styles.hint}>{hint}</Text>
+          ) : (
+            <ReadOnlyNote block={access.block} />
+          )}
           <LineupBuilder editor={draft} variant="preset" />
         </View>
       </ScrollView>

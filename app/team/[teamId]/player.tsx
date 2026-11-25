@@ -3,11 +3,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
 import { isPlayerInPlayedSet } from '@/domain/playerUsage';
 import { PlayerForm } from '@/features/roster/components/PlayerForm';
+import { ViewOnlyScreen } from '@/features/sync/ViewOnlyScreen';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { useAppStore, usePlayer, useTeam } from '@/store';
+import { useAppStore, useCanEdit, usePlayer, useTeam } from '@/store';
 
-/** `/team/[teamId]/player?playerId=` — add (no id) or edit a player. Modal. */
+/**
+ * `/team/[teamId]/player?playerId=` — add (no id) or edit a player. Modal. v10: view-only members
+ * get the reason instead of the form (no Save, Delete or Captain).
+ */
 export default function PlayerEditorScreen() {
   const t = useT();
   const { teamId, playerId } = useLocalSearchParams<{ teamId: string; playerId?: string }>();
@@ -16,7 +20,8 @@ export default function PlayerEditorScreen() {
   const deleteBlocked = useAppStore((s) => !!playerId && isPlayerInPlayedSet(s.matches, playerId));
   const goBack = useGoBack(`/team/${teamId}`);
   const router = useRouter();
-  useTourPage(team ? 'playerForm' : null);
+  const canEdit = useCanEdit(teamId);
+  useTourPage(team && canEdit ? 'playerForm' : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
@@ -30,9 +35,13 @@ export default function PlayerEditorScreen() {
       />
     );
 
+  const title = player ? t.roster.player.editTitle : t.roster.player.addTitle;
+  if (!canEdit)
+    return <ViewOnlyScreen title={title} backLabel={t.roster.backToTeam} onBack={goBack} />;
+
   return (
     <Screen>
-      <ScreenTitle title={player ? t.roster.player.editTitle : t.roster.player.addTitle} />
+      <ScreenTitle title={title} />
       <PlayerForm
         key={player?.id ?? 'new'}
         teamId={team.id}

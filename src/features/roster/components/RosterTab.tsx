@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
-import { Button, useListStyles } from '@/components';
+import { Button, ReadOnlyNote, useListStyles } from '@/components';
 import { rosterCardWidth, rosterColumns } from '@/domain/rosterGrid';
 import { ScorerListButton } from '@/features/print/ScorerListButton';
 import { useT } from '@/i18n';
-import { useAppStore, usePlayersForTeam } from '@/store';
+import { useAppStore, usePlayersForTeam, useTeamAccess } from '@/store';
 import { makeStyles, maxContentWidth, spacing } from '@/theme';
 
 import { PlayerCard } from './PlayerCard';
@@ -20,13 +20,17 @@ export interface RosterTabProps {
 /** Gap between the player cards. */
 const GAP = spacing.sm;
 
-/** v8: the players as cards (2 columns on a phone, more on wide screens), by jersey number. */
+/**
+ * v8: the players as cards (2 columns on a phone, more on wide screens), by jersey number.
+ * v10: view-only members (player role of a shared team) get no Add player and no active toggle.
+ */
 export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps) {
   const styles = useListStyles();
   const grid = useGridStyles();
   const t = useT();
   const players = usePlayersForTeam(teamId);
   const updatePlayer = useAppStore((s) => s.updatePlayer);
+  const access = useTeamAccess(teamId);
   const window = useWindowDimensions();
   // Until the grid has measured itself: the screen's content width (window minus padding).
   const [measured, setMeasured] = useState<number | null>(null);
@@ -45,9 +49,16 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
         {/* v9.2: wraps below the count when both buttons don't fit (375 px, German, dyslexia font). */}
         <View style={grid.actions}>
           {players.length > 0 ? <ScorerListButton teamId={teamId} /> : null}
-          <Button label={t.roster.roster.addPlayer} onPress={onAddPlayer} compact />
+          {access.canEdit ? (
+            <Button label={t.roster.roster.addPlayer} onPress={onAddPlayer} compact />
+          ) : null}
         </View>
       </View>
+      {access.block ? (
+        <View style={styles.tabHeader}>
+          <ReadOnlyNote block={access.block} />
+        </View>
+      ) : null}
       {players.length === 0 && <Text style={styles.empty}>{t.roster.roster.empty}</Text>}
       <View style={grid.grid} onLayout={onLayout} testID="roster-grid">
         {players.map((p) => (
@@ -56,7 +67,9 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
             player={p}
             width={cardWidth}
             onPress={() => onOpenPlayer(p.id)}
-            onToggleActive={() => updatePlayer(p.id, { active: !p.active })}
+            onToggleActive={
+              access.canEdit ? () => updatePlayer(p.id, { active: !p.active }) : undefined
+            }
           />
         ))}
       </View>

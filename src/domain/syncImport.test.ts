@@ -1,0 +1,232 @@
+import { mergeData, replaceData, type TransferData } from './exportSchema';
+import {
+  importWithSharedTeams,
+  sharedTeamsInFile,
+  sharedTeamsOf,
+  type SharedTeam,
+} from './syncImport';
+import type { SyncedTeam } from './types';
+import { goldenData } from '@/test-utils';
+
+const VIEWER: SharedTeam[] = [{ teamId: 't1', canEdit: false }];
+const MANAGER: SharedTeam[] = [{ teamId: 't1', canEdit: true }];
+
+const ofTeam = (data: TransferData, teamId: string) => {
+  const seasons = data.seasons.filter((x) => x.teamId === teamId);
+  const seasonIds = new Set(seasons.map((x) => x.id));
+  return {
+    team: data.teams.find((t) => t.id === teamId),
+    players: data.players.filter((p) => p.teamId === teamId),
+    matches: data.matches.filter((m) => m.teamId === teamId),
+    presets: data.presets.filter((p) => p.teamId === teamId),
+    seasons,
+    opponents: data.opponents.filter((o) => seasonIds.has(o.seasonId)),
+  };
+};
+
+/** A file from "another device": t1 renamed, p1 changed and p2 gone; t2 renamed; a new team t3. */
+function changedFile(): TransferData {
+  const file = goldenData();
+  return {
+    ...file,
+    teams: [
+      ...file.teams.map((t) => ({ ...t, name: `${t.name} (file)` })),
+      { id: 't3', profileId: 'pr2', name: 'New', createdAt: '2026-03-01T00:00:00.000Z' },
+    ],
+    players: file.players
+      .filter((p) => p.id !== 'p2')
+      .map((p) => (p.id === 'p1' ? { ...p, firstName: 'Anja' } : p)),
+  };
+}
+
+const unwrap = (result: ReturnType<typeof importWithSharedTeams>) => {
+  if (!result.ok) throw new Error(result.error);
+  return result;
+};
+
+describe('sharedTeamsOf', () => {
+  it('lists the linked teams; managers may edit, players only view', () => {
+    const linked = (role: SyncedTeam['role']): SyncedTeam => ({
+      userId: 'u1',
+      role,
+      cursor: 0,
+      base: {},
+      edits: {},
+      photos: [],
+    });
+    expect(sharedTeamsOf({ a: linked('manager'), b: linked('player') })).toEqual([
+      { teamId: 'a', canEdit: true },
+      { teamId: 'b', canEdit: false },
+    ]);
+    expect(sharedTeamsOf({})).toEqual([]);
+  });
+});
+
+describe('sharedTeamsInFile', () => {
+  it('splits the file’s shared teams into merged (manager) and skipped (viewer)', () => {
+    const file = goldenData();
+    const shared = [
+      { teamId: 't1', canEdit: true },
+      { teamId: 't2', canEdit: false },
+      { teamId: 'elsewhere', canEdit: true },
+    ];
+    const { merged, skipped } = sharedTeamsInFile(file, shared);
+    expect(merged.map((t) => t.id)).toEqual(['t1']);
+    expect(skipped.map((t) => t.id)).toEqual(['t2']);
+    expect(sharedTeamsInFile(file, [])).toEqual({ merged: [], skipped: [] });
+  });
+});
+
+describe('importWithSharedTeams without shared teams', () => {
+  it('Replace is exactly replaceData', () => {
+    const file = changedFile();
+    const result = unwrap(importWithSharedTeams(goldenData(), file, 'replace', []));
+    expect(result.data).toEqual(replaceData(file));
+    expect(result.skippedTeams).toEqual([]);
+  });
+
+  it('Merge is exactly mergeData, conflicts included', () => {
+    const file = changedFile();
+    const merged = mergeData(goldenData(), file);
+    expect(importWithSharedTeams(goldenData(), file, 'merge', [])).toEqual({
+      ...merged,
+      skippedTeams: [],
+    });
+    // Another player with p3's number in t1 → the merge is refused, as before.
+    const clash = { ...file, players: [...file.players, { ...file.players[0]!, id: 'px' }] };
+    expect(importWithSharedTeams(goldenData(), clash, 'merge', [])).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+  });
+});
+
+describe('importWithSharedTeams: Replace', () => {
+  it('keeps a viewer team exactly and skips the file’s copy', () => {
+    const current = goldenData();
+    const result = unwrap(importWithSharedTeams(current, changedFile(), 'replace', VIEWER));
+    expect(result.skippedTeams).toEqual(['t1']);
+    expect(ofTeam(result.data, 't1')).toEqual(ofTeam(current, 't1'));
+    // Everything else is the file's.
+    expect(result.data.teams.find((t) => t.id === 't2')?.name).toBe('Damen (file)');
+    expect(result.data.teams.map((t) => t.id).sort()).toEqual(['t1', 't2', 't3']);
+    // The team's pictures stay.
+    expect(result.data.photos.map((p) => p.id).sort()).toEqual(['ph1', 'ph2', 'ph3']);
+  });
+
+  it('merges a manager team: the file wins per id, nothing is deleted', () => {
+    const result = unwrap(importWithSharedTeams(goldenData(), changedFile(), 'replace', MANAGER));
+    expect(result.skippedTeams).toEqual([]);
+    const t1 = ofTeam(result.data, 't1');
+    expect(t1.team?.name).toBe('Herren 1 – Süd (file)');
+    expect(t1.players.find((p) => p.id === 'p1')?.firstName).toBe('Anja');
+    // p2 is not in the file, but a shared team never loses records to an import.
+    expect(t1.players.map((p) => p.id)).toContain('p2');
+  });
+
+  it('keeps a shared team whose profile is not in the file, with that profile', () => {
+    const current = goldenData();
+    const file: TransferData = {
+      ...current,
+      profiles: current.profiles.filter((p) => p.id === 'pr2'),
+      teams: current.teams.filter((t) => t.id === 't2'),
+      players: current.players.filter((p) => p.teamId === 't2'),
+      matches: current.matches.filter((m) => m.teamId === 't2'),
+      presets: [],
+      seasons: current.seasons.filter((x) => x.teamId === 't2'),
+      opponents: current.opponents.filter((o) => o.seasonId === 's3'),
+      photos: [],
+    };
+    const result = unwrap(importWithSharedTeams(current, file, 'replace', VIEWER));
+    expect(result.skippedTeams).toEqual([]);
+    expect(result.data.profiles.map((p) => p.id).sort()).toEqual(['pr1', 'pr2']);
+    expect(ofTeam(result.data, 't1')).toEqual(ofTeam(current, 't1'));
+    expect(result.data.photos.map((p) => p.id).sort()).toEqual(['ph1', 'ph2', 'ph3']);
+  });
+
+  it('a shared team keeps its owning profile when the file moves it to another one', () => {
+    const file = changedFile();
+    const moved = { ...file, teams: file.teams.map((t) => ({ ...t, profileId: 'pr2' })) };
+    const result = unwrap(importWithSharedTeams(goldenData(), moved, 'replace', MANAGER));
+    expect(result.data.teams.find((t) => t.id === 't1')?.profileId).toBe('pr1');
+    // Teams that aren't shared follow the file.
+    expect(result.data.teams.find((t) => t.id === 't3')?.profileId).toBe('pr2');
+  });
+
+  it('refuses when the kept team clashes with the file (no data is dropped)', () => {
+    const file = goldenData();
+    // The file's t2 season gets the id of t1's season s1, which the shared team keeps.
+    const clash: TransferData = {
+      ...file,
+      seasons: file.seasons.map((x) => (x.id === 's3' ? { ...x, id: 's1' } : x)),
+      opponents: file.opponents.map((o) => (o.seasonId === 's3' ? { ...o, seasonId: 's1' } : o)),
+      matches: file.matches.map((m) => (m.seasonId === 's3' ? { ...m, seasonId: 's1' } : m)),
+    };
+    expect(importWithSharedTeams(goldenData(), clash, 'replace', VIEWER)).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+  });
+
+  it('refuses when the manager’s file copy clashes with the kept team', () => {
+    const file = changedFile();
+    // A new player with p2's number: p2 is kept (nothing is deleted), so the numbers clash.
+    const clash = {
+      ...file,
+      players: [...file.players, { ...goldenData().players[1]!, id: 'p-new' }],
+    };
+    expect(importWithSharedTeams(goldenData(), clash, 'replace', MANAGER)).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+  });
+
+  it('refuses an older backup where a jersey number was given to a new player since', () => {
+    // Backup: "Old" wore #99. Since then Old left and "New" got #99 on this device.
+    const backup = goldenData();
+    const old = { ...backup.players[1]!, id: 'p-old', firstName: 'Old', number: 99 };
+    const file = { ...backup, players: [...backup.players, old] };
+    const current = goldenData();
+    const fresh = { ...current.players[1]!, id: 'p-new', firstName: 'New', number: 99 };
+    const now = { ...current, players: [...current.players, fresh] };
+    // Managers: the backup's players are merged into the kept team (nothing is deleted).
+    expect(importWithSharedTeams(now, file, 'replace', MANAGER)).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+    // Viewers: the backup's copy is skipped, so there is nothing to clash with.
+    expect(importWithSharedTeams(now, file, 'replace', VIEWER).ok).toBe(true);
+    // Without shared teams Replace never clashes.
+    expect(importWithSharedTeams(now, file, 'replace', []).ok).toBe(true);
+  });
+});
+
+describe('importWithSharedTeams: Merge', () => {
+  it('skips a viewer team’s copy and merges the rest', () => {
+    const current = goldenData();
+    const result = unwrap(importWithSharedTeams(current, changedFile(), 'merge', VIEWER));
+    expect(result.skippedTeams).toEqual(['t1']);
+    expect(ofTeam(result.data, 't1')).toEqual(ofTeam(current, 't1'));
+    expect(result.data.teams.find((t) => t.id === 't2')?.name).toBe('Damen (file)');
+    expect(result.data.teams.map((t) => t.id)).toEqual(['t1', 't2', 't3']);
+  });
+
+  it('merges a manager team and keeps its owning profile', () => {
+    const file = changedFile();
+    const moved = { ...file, teams: file.teams.map((t) => ({ ...t, profileId: 'pr2' })) };
+    const result = unwrap(importWithSharedTeams(goldenData(), moved, 'merge', MANAGER));
+    const t1 = ofTeam(result.data, 't1');
+    expect(t1.team).toMatchObject({ name: 'Herren 1 – Süd (file)', profileId: 'pr1' });
+    expect(t1.players.map((p) => p.id)).toContain('p2');
+    expect(result.data.teams.find((t) => t.id === 't2')?.profileId).toBe('pr2');
+  });
+
+  it('passes a merge conflict on', () => {
+    const file = changedFile();
+    const clash = { ...file, players: [...file.players, { ...file.players[0]!, id: 'px' }] };
+    expect(importWithSharedTeams(goldenData(), clash, 'merge', MANAGER)).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+  });
+});

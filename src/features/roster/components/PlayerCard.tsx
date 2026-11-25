@@ -18,7 +18,8 @@ export interface PlayerCardProps {
   /** The card's width in the grid. */
   width: number;
   onPress: () => void;
-  onToggleActive: () => void;
+  /** v10: undefined for view-only members — the status is shown, not a switch. */
+  onToggleActive?: () => void;
 }
 
 /**
@@ -91,23 +92,34 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
           </View>
         </View>
       </Pressable>
-      <Pressable
-        accessibilityRole="switch"
-        accessibilityLabel={s.toggleActive(name, player.active)}
-        accessibilityState={{ checked: player.active }}
-        aria-checked={player.active}
-        onPress={onToggleActive}
-        testID={`player-${player.number}-active`}
-        style={({ pressed }) => [
-          styles.toggle,
-          !player.active && styles.toggleInjured,
-          pressed && styles.pressed,
-        ]}
-      >
-        <Text style={[styles.toggleText, !player.active && styles.toggleTextInjured]}>
-          {toggleText}
-        </Text>
-      </Pressable>
+      {onToggleActive ? (
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityLabel={s.toggleActive(name, player.active)}
+          accessibilityState={{ checked: player.active }}
+          aria-checked={player.active}
+          onPress={onToggleActive}
+          testID={`player-${player.number}-active`}
+          style={({ pressed }) => [
+            styles.toggle,
+            !player.active && styles.toggleInjured,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={[styles.toggleText, !player.active && styles.toggleTextInjured]}>
+            {toggleText}
+          </Text>
+        </Pressable>
+      ) : (
+        <View
+          style={[styles.toggle, !player.active && styles.toggleInjured, styles.status]}
+          testID={`player-${player.number}-status`}
+        >
+          <Text style={[styles.toggleText, !player.active && styles.toggleTextInjured]}>
+            {toggleText}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -150,6 +162,8 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: spacing.sm,
   },
   toggleInjured: { borderColor: theme.colors.error, backgroundColor: theme.colors.transparent },
+  // v10: the same place as the toggle, but plain text (no switch for view-only members).
+  status: { borderColor: theme.colors.transparent, backgroundColor: theme.colors.transparent },
   toggleText: { ...typography.label, color: theme.colors.text },
   toggleTextInjured: { color: theme.colors.error },
 }));

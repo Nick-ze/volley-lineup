@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import { lineupForSet, previousSet } from '@/domain/lineupEditing';
 import type { SetLineup, SetNumber } from '@/domain/types';
-import { useAppStore, useMatch, usePlayersForTeam } from '@/store';
+import { useAppStore, useMatch, useMatchAccess, usePlayersForTeam } from '@/store';
 
 import { useLineupDraft } from './useLineupDraft';
 
@@ -19,7 +19,9 @@ export function useLineupEditor(matchId: string, setNumber: SetNumber) {
   const set = useMemo(() => lineupForSet(sets ?? [], setNumber), [sets, setNumber]);
   const previous = useMemo(() => previousSet(sets ?? [], setNumber), [sets, setNumber]);
   const save = useCallback((next: SetLineup) => saveLineup(matchId, next), [matchId, saveLineup]);
-  const draft = useLineupDraft({ set, players, save, selectionKey: setNumber });
+  // v10: a view-only member, or the match is scored live on another device.
+  const readOnly = !useMatchAccess(matchId).canEdit;
+  const draft = useLineupDraft({ set, players, save, selectionKey: setNumber, readOnly });
 
   return { ...draft, match, previous };
 }

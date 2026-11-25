@@ -9,7 +9,8 @@ import { useT } from '@/i18n';
 export interface MatchRowProps {
   match: Match;
   onOpen: () => void;
-  onDelete: () => void;
+  /** v10: undefined for view-only members (no Delete). */
+  onDelete?: () => void;
 }
 
 /** One match of a season: "vs X", date · home/away, the result, and Delete. */
@@ -26,13 +27,15 @@ export function MatchRow({ match: m, onOpen, onDelete }: MatchRowProps) {
       onPress={onOpen}
       accessibilityLabel={result ? `${open}. ${t.match.resultLabel(result)}` : open}
       actions={
-        <Button
-          label={t.common.delete}
-          accessibilityLabel={s.delete(m.opponent)}
-          variant="danger"
-          compact
-          onPress={onDelete}
-        />
+        onDelete ? (
+          <Button
+            label={t.common.delete}
+            accessibilityLabel={s.delete(m.opponent)}
+            variant="danger"
+            compact
+            onPress={onDelete}
+          />
+        ) : undefined
       }
     />
   );

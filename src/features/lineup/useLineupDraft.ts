@@ -23,13 +23,28 @@ export interface LineupDraftOptions {
   save: (next: SetLineup) => void;
   /** The selection is dropped when this changes (e.g. the set number). */
   selectionKey?: string | number;
+  /**
+   * v10: view only (a player of a shared team, or a match scored live on another device):
+   * locked like a played set, and nothing is ever saved.
+   */
+  readOnly?: boolean;
 }
 
 /**
  * State + actions for editing any lineup in the lineup builder (drag & drop, tap-to-select,
  * libero, templates). Used by the match screen (`useLineupEditor`) and the preset editor.
  */
-export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupDraftOptions) {
+export function useLineupDraft({
+  set,
+  players,
+  save: store,
+  selectionKey = 0,
+  readOnly = false,
+}: LineupDraftOptions) {
+  const save = useCallback(
+    (next: SetLineup) => (readOnly ? undefined : store(next)),
+    [readOnly, store],
+  );
   // Selection is remembered per key, so switching sets drops it.
   const [selection, setSelection] = useState<{ key: string | number; id: string | null }>({
     key: selectionKey,
@@ -46,7 +61,7 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
 
   // Assigning a libero pre-selects the middles they replace (docs/DECISIONS.md).
   // A played set keeps its starting six, libero and first serve (see lineupLock.ts).
-  const locked = isLineupLocked(set);
+  const locked = readOnly || isLineupLocked(set);
   const update = useCallback(
     (next: SetLineup) => {
       if (next === set) return;
@@ -115,6 +130,8 @@ export function useLineupDraft({ set, players, save, selectionKey = 0 }: LineupD
     bench,
     validation,
     locked,
+    /** v10: locked because this device may only view it (not because the set was played). */
+    viewOnly: readOnly,
     selectedId,
     update,
     replace,
