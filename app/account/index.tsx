@@ -1,4 +1,4 @@
-// v10: Account screen (worker C) — placeholder from the foundation.
-export default function AccountScreen() {
-  return null;
-}
+// v10: Account — status, Sync now, shared teams, sign out, delete account.
+import { AccountScreen } from '@/features/account';
+
+export default AccountScreen;

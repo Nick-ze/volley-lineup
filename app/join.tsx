@@ -1,4 +1,4 @@
-// v10: join a team with an invite code, also from a `/join?code=` link (worker D) — placeholder.
-export default function JoinScreen() {
-  return null;
-}
+import { JoinScreen } from '@/features/members/JoinScreen';
+
+/** v10: `/join?code=` — join a team with an invite code (also opened from an invite link). */
+export default JoinScreen;

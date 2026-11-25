@@ -6,7 +6,19 @@ import { NoTabSwipe } from './SwipeTabs';
 
 export interface TextFieldProps extends Pick<
   TextInputProps,
-  'keyboardType' | 'placeholder' | 'autoFocus' | 'onSubmitEditing' | 'maxLength' | 'inputMode'
+  | 'keyboardType'
+  | 'placeholder'
+  | 'autoFocus'
+  | 'onSubmitEditing'
+  | 'maxLength'
+  | 'inputMode'
+  // v10: the sign-in form (email and one-time code autofill).
+  | 'autoComplete'
+  | 'textContentType'
+  | 'autoCapitalize'
+  | 'autoCorrect'
+  // v10: the invite code field (no spelling marks under codes).
+  | 'spellCheck'
 > {
   label: string;
   value: string;

@@ -1,0 +1,71 @@
+# Supabase CLI configuration for local development and self-hosting (`supabase start`,
+# `supabase db push`). The hosted project is configured in the dashboard instead; the settings
+# below mirror what docs/SUPABASE.md asks the owner to set there.
+#
+# Hosted project: "Volleylineup manager", ref qzeergfqfwovcvdarwua, region eu-central-2 (Zurich).
+# Link it with `supabase link --project-ref qzeergfqfwovcvdarwua`.
+
+project_id = "volley-lineup"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+enabled = false
+
+[realtime]
+# Not used in 10.0 (watching a live match polls every 15 s).
+enabled = false
+
+[storage]
+enabled = true
+# The `team-photos` bucket itself is created by a migration (256 kB per photo).
+file_size_limit = "1MiB"
+
+[auth]
+enabled = true
+site_url = "https://nick-ze.github.io/volley-lineup/"
+additional_redirect_urls = ["volleylineup://"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+
+[auth.rate_limit]
+# Emails per hour (local Inbucket only; the hosted limit is set in the dashboard).
+email_sent = 30
+
+[auth.email]
+# Sign-in is a 6-digit code typed into the app (signInWithOtp + verifyOtp); no links.
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = false
+max_frequency = "60s"
+otp_length = 6
+otp_expiry = 600
+
+# New users get "Confirm signup", returning users "Magic Link". Both carry the code only.
+[auth.email.template.magic_link]
+subject = "Your Volley Lineup code: {{ .Token }}"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Your Volley Lineup code: {{ .Token }}"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.sms]
+enable_signup = false

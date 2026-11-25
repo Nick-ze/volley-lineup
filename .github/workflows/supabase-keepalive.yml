@@ -1,0 +1,33 @@
+name: Supabase keep-alive
+
+# The Supabase free tier pauses a project after about a week without activity. This reads the
+# one-row `keepalive` table every 3 days with the publishable key (see docs/SUPABASE.md).
+# GitHub disables scheduled workflows after 60 days without commits: re-enable it under
+# Actions → "Supabase keep-alive" → "Enable workflow".
+
+on:
+  schedule:
+    - cron: '17 5 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: ping Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the keepalive row
+        run: |
+          set -euo pipefail
+          URL=$(jq -er '.url' supabase/public-config.json)
+          KEY=$(jq -er '.publishableKey' supabase/public-config.json)
+          curl -fsS --max-time 30 "$URL/rest/v1/keepalive?select=id&limit=1" \
+            -H "apikey: $KEY" | jq -e 'length == 1'
