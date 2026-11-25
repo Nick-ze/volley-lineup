@@ -30,6 +30,7 @@ Team managers and players can create an account, log in, and see the same team d
 
 - Use the Supabase connector (MCP tools) to create tables, apply migrations, set RLS policies, configure Auth and read the security advisors. If the connector isn't available, see "If access is missing" below.
 - Keep the database schema as SQL migration files in the repo (`supabase/migrations/*.sql`) so it can be recreated or moved to a self-hosted Supabase later. Every change to the live database goes through a migration file in a PR.
+- The project already exists: **"Volleylineup manager"**, ref `qzeergfqfwovcvdarwua`, region `eu-central-2` (Zurich), Postgres 17. Use it; don't create another project. Check it's reachable with the connector before planning.
 - The project was created with "Enable RLS on new tables automatically" **on** and "Grant API access to new tables automatically" **off**. So every migration that adds a table must also `GRANT` the needed privileges to the `authenticated` role explicitly (never to `anon` unless a decision says why), or the app can't reach the table.
 - **RLS on every table, no exceptions.** Only members of a team can read it; only managers can write it. Write RLS tests (SQL or a test script) that prove: a stranger can't read a team, a player can't write, a manager of team A can't touch team B, a removed member loses access.
 - The app uses only the **publishable / anon key** (public by design, protected by RLS). It may live in `app.config.js`. The `service_role` key must never be in the repo, the app, or a chat.
@@ -65,7 +66,7 @@ Team managers and players can create an account, log in, and see the same team d
 
 - **Confidential player descriptions** (v6, protected by biometric / PIN): **ASK** (recommend: they stay on the device and are never uploaded).
 - **Photos** (players are often minors): **ASK** (recommend: sync to a private Supabase Storage bucket, readable only by team members, same 256 px size).
-- Choose an EU region for the project (the owner is in Switzerland) and say so in the README.
+- The data is stored in Zurich (eu-central-2); say so in the README.
 
 ### 6. Data model, migrations and export
 
