@@ -1,0 +1,234 @@
+/**
+ * v10: one shared team's part of a sync cycle (docs/V10_SYNC_DESIGN.md §3.3–3.5), following the
+ * engine rules in `src/domain/syncMerge.ts`:
+ * - pull: every page since the cursor (paged by the raw rows' versions), photos downloaded, then
+ *   all pages merged at once in one store write — local changes noted (`detectChanges`) right
+ *   before, in the same write. The cursor doesn't move while the team itself hasn't arrived.
+ * - push (managers): changes noted, photos uploaded first, batches pushed; every result is
+ *   applied in one store write (records the server kept a newer save of are merged back).
+ * - photo clean-up after a push.
+ */
+import { detectChanges, edgePhotoIds, pushBatches, type LocalChange } from '@/domain/syncChanges';
+import {
+  applyPushResults,
+  mergeRemote,
+  nextCursor,
+  resetToCloudMerge,
+  type MergeInput,
+  type MergeOutput,
+} from '@/domain/syncMerge';
+import { foreignKeys, type TeamSlice } from '@/domain/syncRecords';
+import { parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
+import type { SyncedTeam } from '@/domain/types';
+import type { AppState } from '@/store';
+
+import type { PushItem } from './backend';
+import { isoNow, type EngineCore } from './core';
+import {
+  collectGarbage,
+  downloadPhotos,
+  forgetPhotos,
+  remotePhotoIds,
+  settleDownloads,
+  uploadPhotos,
+} from './photoSync';
+import { appState, sliceOf, teamData, transaction, withSlice, withTeamMeta } from './storeOps';
+
+/** Rows per `pull_changes` page. */
+export const PULL_PAGE = 500;
+
+export interface PullReport {
+  /** Rows skipped because their ids belong to another team on the device (don't push then). */
+  foreign: number;
+  /** Rows that failed validation. */
+  invalid: number;
+  /** The team is on the device after the pull. */
+  present: boolean;
+}
+
+/**
+ * True when a linked team is gone from the device (deleted locally): its sync state is dropped,
+ * nothing is deleted on the server. A team linked but never pulled (a download in progress) is
+ * not gone.
+ */
+export const isGone = (meta: SyncedTeam, slice: TeamSlice | undefined): boolean =>
+  !slice && (meta.cursor > 0 || Object.keys(meta.base).length > 0);
+
+const union = (a: readonly string[], b: readonly string[]): string[] =>
+  b.every((x) => a.includes(x)) ? [...a] : [...new Set([...a, ...b])];
+
+/** The profile a team that isn't on the device yet goes to. */
+function profileFor(s: AppState, slice: TeamSlice | undefined): string {
+  return slice?.team.profileId ?? s.sync.account?.profileId ?? s.currentProfileId ?? '';
+}
+
+function maxVersion(rows: readonly unknown[]): number {
+  let max = -1;
+  for (const row of rows) {
+    const v = (row as { version?: unknown } | null)?.version;
+    if (typeof v === 'number' && v > max) max = v;
+  }
+  return max;
+}
+
+/** Merges `rows` into the team in the store state `s` (changes noted first). */
+function mergeInto(
+  s: AppState,
+  teamId: string,
+  meta: SyncedTeam,
+  rows: readonly RemoteRecord[],
+  now: string,
+  reset = false,
+): { out: MergeOutput; data: ReturnType<typeof withSlice>; changed: boolean } {
+  const slice = sliceOf(s, teamId);
+  const edits = detectChanges(slice, meta, now).edits;
+  const input: MergeInput = {
+    teamId,
+    slice,
+    team: edits === meta.edits ? meta : { ...meta, edits },
+    rows,
+    local: { profileId: profileFor(s, slice) },
+    foreignIds: foreignKeys(teamData(s), teamId),
+  };
+  const out = reset ? resetToCloudMerge(input) : mergeRemote(input);
+  return { out, data: withSlice(s, teamId, out.slice), changed: out.slice !== slice };
+}
+
+/** Pulls and applies everything new of the team (`reset`: from 0, the cloud replaces all). */
+export async function pullTeam(
+  core: EngineCore,
+  teamId: string,
+  reset = false,
+): Promise<PullReport> {
+  const start = appState().sync.teams[teamId];
+  if (!start) return { foreign: 0, invalid: 0, present: false };
+  if (isGone(start, sliceOf(appState(), teamId))) {
+    dropTeam(core, teamId);
+    return { foreign: 0, invalid: 0, present: false };
+  }
+  const rows: RemoteRecord[] = [];
+  let invalid = 0;
+  let serverNow = '';
+  for (let after = reset ? 0 : start.cursor; ;) {
+    const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
+    serverNow = page.serverNow;
+    for (const raw of page.rows) {
+      const row = parseRemoteRow(raw);
+      if (row) rows.push(row);
+      else invalid += 1;
+    }
+    const top = maxVersion(page.rows);
+    if (page.rows.length < PULL_PAGE || top <= after) break;
+    after = top;
+  }
+  await downloadPhotos(core, teamId, rows);
+
+  const report: PullReport = { foreign: 0, invalid, present: false };
+  const now = isoNow(core.clock);
+  transaction((s) => {
+    const meta = s.sync.teams[teamId];
+    if (!meta) return s;
+    const { out, data, changed } = mergeInto(s, teamId, meta, rows, now, reset);
+    report.foreign = out.skipped.filter((x) => x.reason === 'foreignId').length;
+    report.invalid += out.skipped.filter((x) => x.reason === 'invalid').length;
+    report.present = out.slice !== undefined;
+    const cursor = out.slice ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow) : meta.cursor;
+    const photos = union(meta.photos, remotePhotoIds(rows));
+    const same =
+      out.team === meta && cursor === meta.cursor && photos.length === meta.photos.length;
+    if (same && !changed) return s;
+    return {
+      ...data,
+      sync: withTeamMeta(s.sync, teamId, { ...out.team, cursor, photos }),
+    };
+  });
+  settleDownloads(core, teamId);
+  return report;
+}
+
+const toItem = (c: LocalChange): PushItem =>
+  c.payload === null
+    ? { kind: c.kind, id: c.id, at: c.at, deleted: true }
+    : { kind: c.kind, id: c.id, at: c.at, payload: c.payload };
+
+/** Notes the team's local changes in the store; returns them (none for viewers). */
+function noteChanges(core: EngineCore, teamId: string): LocalChange[] {
+  let changes: LocalChange[] = [];
+  const now = isoNow(core.clock);
+  transaction((s) => {
+    const meta = s.sync.teams[teamId];
+    if (!meta) return s;
+    const detected = detectChanges(sliceOf(s, teamId), meta, now);
+    changes = detected.changes;
+    if (detected.edits === meta.edits) return s;
+    return { sync: withTeamMeta(s.sync, teamId, { ...meta, edits: detected.edits }) };
+  });
+  return changes;
+}
+
+/** Pushes the team's local changes (managers only), then cleans up unused cloud photos. */
+export async function pushTeam(core: EngineCore, teamId: string, deviceId: string): Promise<void> {
+  const meta = appState().sync.teams[teamId];
+  if (!meta || meta.role !== 'manager' || !sliceOf(appState(), teamId)) return;
+  const changes = noteChanges(core, teamId);
+  const { uploaded, ready } = await uploadPhotos(
+    core,
+    teamId,
+    changes,
+    edgePhotoIds(changes, meta.photos),
+  );
+  let photos = uploaded;
+  for (const batch of pushBatches(ready)) {
+    const results = await core.backend.pushRecords(teamId, deviceId, batch.map(toItem));
+    const now = isoNow(core.clock);
+    const added = photos;
+    transaction((s) => {
+      const current = s.sync.teams[teamId];
+      if (!current) return s;
+      const edits = detectChanges(sliceOf(s, teamId), current, now).edits;
+      const applied = applyPushResults(
+        { ...current, edits, photos: union(current.photos, added) },
+        batch,
+        results,
+      );
+      if (applied.stale.length === 0) {
+        return { sync: withTeamMeta(s.sync, teamId, applied.team) };
+      }
+      const { out, data } = mergeInto(s, teamId, applied.team, applied.stale, now);
+      return { ...data, sync: withTeamMeta(s.sync, teamId, out.team) };
+    });
+    photos = [];
+  }
+  if (photos.length > 0) {
+    const added = photos;
+    transaction((s) => {
+      const current = s.sync.teams[teamId];
+      if (!current) return s;
+      return {
+        sync: withTeamMeta(s.sync, teamId, { ...current, photos: union(current.photos, added) }),
+      };
+    });
+  }
+  await cleanUpPhotos(core, teamId);
+}
+
+async function cleanUpPhotos(core: EngineCore, teamId: string): Promise<void> {
+  const meta = appState().sync.teams[teamId];
+  if (!meta || meta.role !== 'manager') return;
+  const removed = await collectGarbage(core, teamId, meta.photos, sliceOf(appState(), teamId));
+  if (removed.length === 0) return;
+  transaction((s) => {
+    const current = s.sync.teams[teamId];
+    if (!current) return s;
+    const photos = current.photos.filter((id) => !removed.includes(id));
+    return { sync: withTeamMeta(s.sync, teamId, { ...current, photos }) };
+  });
+}
+
+/** Stops syncing a team that is gone from the device. */
+export function dropTeam(core: EngineCore, teamId: string): void {
+  transaction((s) =>
+    s.sync.teams[teamId] ? { sync: withTeamMeta(s.sync, teamId, undefined) } : s,
+  );
+  forgetPhotos(core, teamId);
+}
