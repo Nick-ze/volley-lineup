@@ -52,6 +52,8 @@ export const tour = {
     season: '2026/27',
     opponent: 'Lions',
     player: 'Anna',
+    email: 'anna@example.com',
+    inviteCode: 'ABCDE-FGHJK',
   },
   /** Screen names in the "Quick tip for …?" offer. */
   pages: {
@@ -79,6 +81,11 @@ export const tour = {
     live: 'Live scoring',
     performance: 'Performance',
     matchStats: 'Match stats',
+    account: 'Account',
+    signIn: 'Sign in',
+    cloudTeams: 'Cloud teams',
+    members: 'Members',
+    join: 'Join a team',
   } satisfies Record<TourPage, string>,
   steps: {
     profiles: {
@@ -271,6 +278,36 @@ export const tour = {
       stats: {
         title: 'Match stats',
         text: 'Points per rotation and per player. Filter by set. Print the lineups from the match screen.',
+      },
+    },
+    account: {
+      sync: {
+        title: 'Your account',
+        text: 'Signed in, your shared teams sync between your devices. Everything still works offline; “Sync now” syncs at once.',
+      },
+    },
+    signIn: {
+      code: {
+        title: 'Sign in with a code',
+        text: 'Type your email and tap “Send code”. Enter the 6-digit code from the email. No password needed.',
+      },
+    },
+    cloudTeams: {
+      choose: {
+        title: 'Choose your teams',
+        text: 'Tick the teams to upload from this device and the cloud teams to download. Nothing is uploaded unless you tick it.',
+      },
+    },
+    members: {
+      invite: {
+        title: 'Invite your team',
+        text: 'Managers create an invite code for a manager or a player and share it. Players can only view the team.',
+      },
+    },
+    join: {
+      code: {
+        title: 'Join with a code',
+        text: 'Type the invite code you got from a manager and tap “Join”. The team then appears in your team list.',
       },
     },
   },

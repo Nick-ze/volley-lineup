@@ -42,6 +42,11 @@ export const OTHER_PAGES = [
   'live',
   'performance',
   'matchStats',
+  'account',
+  'signIn',
+  'cloudTeams',
+  'members',
+  'join',
 ] as const satisfies readonly TourPage[];
 
 /** Every page with tips (quick pages first). */

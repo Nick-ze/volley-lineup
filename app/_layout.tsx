@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { HeaderBack } from '@/components/HeaderBack';
 import { HeaderTitle } from '@/components/HeaderTitle';
+import { SyncHost } from '@/features/sync/SyncHost';
 import { TourHost } from '@/features/tour';
 import { useT } from '@/i18n';
 import { setDocumentLanguage } from '@/lib/documentLanguage';
@@ -117,7 +118,18 @@ function ThemedRoot() {
                 name="match/[matchId]/performance"
                 options={{ title: t.nav.performance }}
               />
+              {/* v10: accounts and shared teams. */}
+              <Stack.Screen name="account/index" options={{ title: t.nav.account }} />
+              <Stack.Screen
+                name="account/sign-in"
+                options={{ title: t.nav.signIn, presentation: 'modal' }}
+              />
+              <Stack.Screen name="account/teams" options={{ title: t.nav.cloudTeams }} />
+              <Stack.Screen name="team/[teamId]/members" options={{ title: t.nav.members }} />
+              <Stack.Screen name="join" options={{ title: t.nav.join }} />
             </Stack>
+            {/* v10: background sync (does nothing without an account and shared teams). */}
+            <SyncHost />
             {/* v9.0: the tutorial's choice and tip popups, over every screen. */}
             <TourHost />
           </>

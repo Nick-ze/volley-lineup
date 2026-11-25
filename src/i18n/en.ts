@@ -24,6 +24,9 @@ import { appearance } from './en/appearance';
 import { teamPhoto } from './en/teamPhoto';
 import { motion } from './en/motion';
 import { tour } from './en/tour';
+import { account } from './en/account';
+import { members } from './en/members';
+import { sync } from './en/sync';
 import type { Widen } from './types';
 
 export const en = {
@@ -65,6 +68,11 @@ export const en = {
     season: 'Season',
     newSeason: 'New season',
     settings: 'Settings',
+    account: 'Account',
+    signIn: 'Sign in',
+    cloudTeams: 'Cloud teams',
+    members: 'Members',
+    join: 'Join a team',
   },
   positions: {
     S: 'Setter',
@@ -113,6 +121,9 @@ export const en = {
   teamPhoto,
   motion,
   tour,
+  account,
+  members,
+  sync,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */
