@@ -290,9 +290,15 @@ After the migrations, the **security** advisor lists these WARNs on purpose:
 - **"RLS Enabled No Policy"** (INFO, lint 0008) on `private.team_removals`: on purpose. The table
   lives in the unexposed `private` schema and is closed to every API role; only the RPCs
   (`remove_member`, `join_team`) read and write it.
+- **"Leaked Password Protection Disabled"** (WARN, auth): it doesn't apply. The app signs in only
+  with a 6-digit email code and never uses passwords; only the test users in
+  `supabase/tests/test-users.sql` have one, and they are deleted after each test run. The check
+  (HaveIBeenPwned) is a paid-plan setting. Leave it off on the free tier, or turn it on in
+  **Authentication → Providers → Email** if passwords are ever used.
 
 Checked on the live project after applying the migrations (2026-11-25): security = exactly the
-items above (12 RPCs + `rls_auto_enable` for 0029, `rls_auto_enable` for 0028, the 0008 INFO);
+items above (12 RPCs + `rls_auto_enable` for 0029, `rls_auto_enable` for 0028, the 0008 INFO,
+the leaked-password WARN);
 performance = no findings. `supabase/tests/rls.sql` passed on the applied schema, and
 `scripts/sync-live-check.mjs` passed every step with the test users (removed afterwards).
 
