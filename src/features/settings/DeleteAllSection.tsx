@@ -3,7 +3,8 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components';
 import { useT } from '@/i18n';
-import { useAppStore } from '@/store';
+import { signOut } from '@/lib/sync';
+import { useAppStore, useSession, useSyncAccount } from '@/store';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
 import { Section } from './Section';
@@ -12,6 +13,7 @@ import { StatusMessage } from './StatusMessage';
 /**
  * Delete all data, with an in-app confirmation (`Alert.alert` does nothing on web).
  * `onDeleted` lets the screen clear other sections' messages (e.g. a finished export).
+ * v10: signed in, it says so and signs out on this device first; the cloud teams are untouched.
  */
 export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
   const styles = useStyles();
@@ -19,8 +21,11 @@ export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
   const resetAll = useAppStore((s) => s.resetAll);
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
+  const signedIn = useSession() !== null;
+  const linked = useSyncAccount() !== null;
 
-  const deleteAll = () => {
+  const deleteAll = async () => {
+    if (signedIn || linked) await signOut();
     resetAll();
     setConfirming(false);
     setDone(true);
@@ -32,9 +37,17 @@ export function DeleteAllSection({ onDeleted }: { onDeleted?: () => void }) {
       {confirming ? (
         <View style={styles.confirm} accessibilityRole="alert" testID="delete-confirm">
           <Text style={styles.confirmTitle}>{t.transfer.danger.confirmTitle}</Text>
-          <Text style={styles.body}>{t.transfer.danger.confirmBody}</Text>
+          <Text style={styles.body}>
+            {signedIn
+              ? `${t.transfer.danger.confirmBody} ${t.account.signOutNote}`
+              : t.transfer.danger.confirmBody}
+          </Text>
           <View style={styles.actions}>
-            <Button label={t.transfer.danger.confirm} variant="danger" onPress={deleteAll} />
+            <Button
+              label={t.transfer.danger.confirm}
+              variant="danger"
+              onPress={() => void deleteAll()}
+            />
             <Button
               label={t.transfer.danger.cancel}
               variant="secondary"
