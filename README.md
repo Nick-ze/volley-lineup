@@ -19,12 +19,12 @@ Available in English and German.
 - **Stats and performance**: results, set scores, points per rotation and how each player did, per match, season or
   tournament.
 - **Seasons and tournaments**: group your matches and keep a record against every opponent.
-- **Print**: a lineup sheet to print or share as a PDF.
+- **Print**: a lineup sheet, and a player list (numbers and names) for the scorer, to print or share as a PDF.
 - **Guided tour**: short tips with pictures show you around; choose the full or quick tour, or none.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 9.1**: mark your team captain (player form → "Team captain"); a small yellow "C" shows on their
-player everywhere. 9.0 added a guided tour (Profile → Tutorial).
+**What's new in 9.2**: a player list for the scorer — every player's number and name (C = captain, L = libero) as a
+PDF, from a match's Print / PDF or the team's Roster tab. 9.1 added the team captain, 9.0 a guided tour.
 [All versions →](docs/README_LEGACY.md#version-history)
 
 ## Install on Android (APK)

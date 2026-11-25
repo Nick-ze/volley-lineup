@@ -5,8 +5,9 @@ import { Button } from '@/components';
 import { useT } from '@/i18n';
 import { makeStyles, spacing, typography } from '@/theme';
 
-import { PrintChoiceDialog } from './PrintChoiceDialog';
+import { PrintChoiceDialog, type PrintChoice } from './PrintChoiceDialog';
 import { usePrintSheet } from './usePrintSheet';
+import { useScorerSheet } from './useScorerSheet';
 
 export interface PrintButtonProps {
   matchId: string;
@@ -17,14 +18,21 @@ export interface PrintButtonProps {
 }
 
 /**
- * "Print / PDF": web opens the print dialog, phones get a PDF in the share sheet. Once the match
- * has results, pressing it first asks "Lineups only" / "With results".
+ * "Print / PDF": web opens the print dialog, phones get a PDF in the share sheet. Pressing it
+ * first asks what to print: the lineup sheet ("With results" / "Lineups only" once the match has
+ * results) or (v9.2) the player list for the scorer.
  */
 export function PrintButton({ matchId, style, buttonStyle }: PrintButtonProps) {
   const styles = useStyles();
   const t = useT();
-  const { print, printing, failed, ready, hasResults } = usePrintSheet(matchId);
+  const sheet = usePrintSheet(matchId);
+  const scorer = useScorerSheet({ matchId });
   const [choosing, setChoosing] = useState(false);
+  const choose = (choice: PrintChoice) => {
+    setChoosing(false);
+    if (choice === 'scorer') void scorer.print();
+    else void sheet.print({ withResults: choice === 'results' });
+  };
   return (
     <View style={[styles.wrap, style]}>
       <Button
@@ -32,21 +40,19 @@ export function PrintButton({ matchId, style, buttonStyle }: PrintButtonProps) {
         accessibilityLabel={t.print.buttonLabel}
         variant="secondary"
         compact
-        disabled={!ready || printing}
-        onPress={() => (hasResults ? setChoosing(true) : void print())}
+        disabled={!sheet.ready || sheet.printing || scorer.printing}
+        onPress={() => setChoosing(true)}
         style={buttonStyle}
         testID="print-sheet"
       />
       {choosing ? (
         <PrintChoiceDialog
-          onChoose={(withResults) => {
-            setChoosing(false);
-            void print({ withResults });
-          }}
+          hasResults={sheet.hasResults}
+          onChoose={choose}
           onCancel={() => setChoosing(false)}
         />
       ) : null}
-      {failed ? (
+      {sheet.failed || scorer.failed ? (
         <Text accessibilityRole="alert" style={styles.error} testID="print-error">
           {t.print.failed}
         </Text>
