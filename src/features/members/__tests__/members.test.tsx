@@ -431,6 +431,35 @@ describe('members: loading', () => {
     expect(screen.getByTestId('members-retry')).toBeEnabled();
     expect(screen.queryByText(t.members.list.loading)).toBeNull();
     expect(screen.queryByTestId('members-sign-in')).toBeNull();
+    // Try again also asks the engine to sync (it restores the session once online).
+    await fireEvent.press(screen.getByTestId('members-retry'));
+    expect(sync.syncNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('a Try again that answers after the lists’ key changed is dropped (never stuck loading)', async () => {
+    signIn();
+    let answer: (r: { ok: false; error: 'offline' }) => void = () => undefined;
+    jest
+      .mocked(sync.listMembers)
+      .mockResolvedValueOnce({ ok: false, error: 'offline' })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      )
+      .mockResolvedValue({ ok: true, value: MEMBERS });
+    await renderApp(URL);
+    await fireEvent.press(await screen.findByTestId('members-retry'));
+    // While that reload is out, the cached role changes (a sync): the lists load again.
+    await act(async () => linkTeam('player'));
+    expect(await screen.findByText('Bob')).toBeTruthy();
+    // The old reload answers last: it belongs to the old key and is dropped.
+    await act(async () => answer({ ok: false, error: 'offline' }));
+    expect(screen.getByText('Bob')).toBeTruthy();
+    expect(screen.queryByText(t.members.list.loading)).toBeNull();
+    expect(screen.queryByText(t.members.errors.offline)).toBeNull();
+    expect(screen.getByTestId('members-leave')).toBeEnabled();
   });
 
   it('an unknown team shows "not found"', async () => {

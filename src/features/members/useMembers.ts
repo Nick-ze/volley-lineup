@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { activeInvites, sortMembers } from '@/domain/invites';
 import type { SyncErrorCode, TeamRole } from '@/domain/types';
-import { listInvites, listMembers, type Invite, type Member, type SyncResult } from '@/lib/sync';
+import {
+  listInvites,
+  listMembers,
+  syncNow,
+  type Invite,
+  type Member,
+  type SyncResult,
+} from '@/lib/sync';
 import { useSession, useSessionRestoring, useSyncStatus } from '@/store';
 
 interface Lists {
@@ -68,6 +75,9 @@ export function useMembers(teamId: string, cachedRole: TeamRole | null): Members
   const [actionError, setActionError] = useState<SyncErrorCode | null>(null);
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
+  // The latest key: a load that answers after the key changed is dropped (it would leave the
+  // lists marked as loaded for an old key, i.e. loading for good).
+  const keyRef = useRef(key);
 
   useEffect(() => {
     mounted.current = true;
@@ -75,6 +85,10 @@ export function useMembers(teamId: string, cachedRole: TeamRole | null): Members
       mounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    keyRef.current = key;
+  }, [key]);
 
   const load = useCallback(async () => {
     const next = await fetchLists(teamId, cachedRole);
@@ -86,7 +100,7 @@ export function useMembers(teamId: string, cachedRole: TeamRole | null): Members
     // A load started for an earlier session must not overwrite this one's.
     let current = true;
     void load().then((next) => {
-      if (current && mounted.current) setLists(next);
+      if (current && mounted.current && next.key === keyRef.current) setLists(next);
     });
     return () => {
       current = false;
@@ -95,11 +109,14 @@ export function useMembers(teamId: string, cachedRole: TeamRole | null): Members
 
   const reload = useCallback(async () => {
     setBusy(true);
+    // Still waiting for the stored session (e.g. offline with an expired token): ask the engine
+    // to sync, which restores it once the connection is back.
+    if (waiting) void syncNow();
     const next = await load();
     if (!mounted.current) return;
-    setLists(next);
+    if (next.key === keyRef.current) setLists(next);
     setBusy(false);
-  }, [load]);
+  }, [load, waiting]);
 
   const run = useCallback(
     async (command: () => Promise<SyncResult<unknown>>, reloadAfter = true) => {
