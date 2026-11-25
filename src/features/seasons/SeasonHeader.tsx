@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { Button, ChoiceChip } from '@/components';
 import type { Season } from '@/domain/types';
 import { useT } from '@/i18n';
+import { useCanEdit } from '@/store';
 import { makeStyles, spacing, typography } from '@/theme';
 
 import { KindBadge } from './KindBadge';
@@ -16,12 +17,16 @@ export interface SeasonHeaderProps {
   onEdit: () => void;
 }
 
-/** The season's name, kind, dates / place, Edit, and the Matches · Opponents · Stats tabs. */
+/**
+ * The season's name, kind, dates / place, Edit (v10: not for view-only members), and the
+ * Matches · Opponents · Stats tabs.
+ */
 export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) {
   const styles = useStyles();
   const t = useT();
   const s = t.seasons.screen;
   const whenWhere = seasonWhenWhere(t, season);
+  const canEdit = useCanEdit(season.teamId);
   return (
     <View style={styles.wrap}>
       <View style={styles.top}>
@@ -34,13 +39,15 @@ export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) 
             {whenWhere !== '' ? <Text style={styles.meta}>{whenWhere}</Text> : null}
           </View>
         </View>
-        <Button
-          label={s.edit}
-          accessibilityLabel={s.editLabel(season.name)}
-          variant="secondary"
-          compact
-          onPress={onEdit}
-        />
+        {canEdit ? (
+          <Button
+            label={s.edit}
+            accessibilityLabel={s.editLabel(season.name)}
+            variant="secondary"
+            compact
+            onPress={onEdit}
+          />
+        ) : null}
       </View>
       <View style={styles.tabs} accessibilityRole="tablist" accessibilityLabel={s.tabs}>
         {SEASON_TABS.map((key) => (

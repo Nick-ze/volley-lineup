@@ -10,7 +10,13 @@ import { StatusMessage, type Status } from './StatusMessage';
 import { useImport, type ImportState } from './useImport';
 
 function statusOf(t: Strings, state: ImportState): Status | null {
-  if (state.step === 'error') return { tone: 'error', text: t.transfer.import.errors[state.error] };
+  if (state.step === 'error') {
+    const text =
+      state.error === 'SHARED_CONFLICT'
+        ? t.sync.import.sharedConflict
+        : t.transfer.import.errors[state.error];
+    return { tone: 'error', text };
+  }
   if (state.step === 'done') {
     const text =
       state.mode === 'merge' ? t.transfer.import.doneMerge : t.transfer.import.doneReplace;
@@ -19,7 +25,10 @@ function statusOf(t: Strings, state: ImportState): Status | null {
   return null;
 }
 
-/** Import: pick a file, preview what's in it, then merge, replace or cancel. */
+/**
+ * Import: pick a file, preview what's in it, then merge, replace or cancel. v10: the preview names
+ * the file's shared teams (merged, synced to all members) and view-only teams (skipped).
+ */
 export function ImportSection() {
   const styles = useStyles();
   const t = useT();
@@ -39,8 +48,23 @@ export function ImportSection() {
               {t.transfer.import.descriptions(state.summary.descriptions)}
             </Text>
           ) : null}
+          {state.shared.merged.length > 0 ? (
+            <Text style={styles.muted} testID="import-shared">
+              {t.sync.import.shared(state.shared.merged)}
+            </Text>
+          ) : null}
+          {state.shared.skipped.length > 0 ? (
+            <Text style={styles.muted} testID="import-skipped">
+              {t.sync.import.skipped(state.shared.skipped)}
+            </Text>
+          ) : null}
           <Text style={styles.muted}>{t.transfer.import.mergeHint}</Text>
           <Text style={styles.muted}>{t.transfer.import.replaceHint}</Text>
+          {state.shared.any ? (
+            <Text style={styles.muted} testID="import-replace-keeps">
+              {t.sync.import.replaceKeeps}
+            </Text>
+          ) : null}
           <View style={styles.actions}>
             <Button label={t.transfer.import.merge} onPress={() => apply('merge')} />
             <Button
