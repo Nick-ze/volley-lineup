@@ -34,6 +34,11 @@ function claimHold(teamId: string, matchId: string): () => void {
   };
 }
 
+/** Whether a live screen of the match is open here (it then owns, refreshes and releases the hold). */
+export function isHeldByLiveScreen(teamId: string, matchId: string): boolean {
+  return holds.has(`${teamId}/${matchId}`);
+}
+
 function startFollow(matchId: string): () => void {
   const count = follows.get(matchId) ?? 0;
   follows.set(matchId, count + 1);
