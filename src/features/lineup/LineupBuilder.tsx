@@ -37,6 +37,8 @@ export interface LineupBuilderProps {
  * Court + libero slot + bench with drag & drop and tap-to-select for one lineup (a match set or
  * a team preset). Phone: court, then the bench right under it (no scrolling to pick players),
  * then the other controls. Wide: court + controls left, bench right.
+ * v10: view only (`editor.viewOnly`) shows the lineup without any editing controls; the screen
+ * shows why (ReadOnlyNote).
  */
 export function LineupBuilder({
   editor,
@@ -48,19 +50,20 @@ export function LineupBuilder({
   const t = useT();
   const wide = useIsWide();
   const isMatch = variant === 'match';
-  const { set, selectedId, playerById, update, drop, validation, locked } = editor;
+  const { set, selectedId, playerById, update, drop, validation, locked, viewOnly } = editor;
   const onDrop = useCallback(
     (item: DragItem, target: Parameters<typeof drop>[1]) => drop(item.player.id, target),
     [drop],
   );
   const selected = playerById(selectedId);
 
-  const lockedNotice = locked ? (
-    <Text style={styles.locked} accessibilityRole="alert" testID="lineup-locked">
-      {t.live.lineupLocked}
-    </Text>
-  ) : null;
-  const hint = (
+  const lockedNotice =
+    locked && !viewOnly ? (
+      <Text style={styles.locked} accessibilityRole="alert" testID="lineup-locked">
+        {t.live.lineupLocked}
+      </Text>
+    ) : null;
+  const hint = viewOnly ? null : (
     <Text style={styles.hint} accessibilityLiveRegion="polite">
       {selected
         ? t.lineup.selected(`${selected.number} ${fullName(selected)}`)
@@ -84,7 +87,9 @@ export function LineupBuilder({
       ) : null}
     </View>
   );
-  const moreControls = (
+  const formation = viewOnly ? null : <FormationControls editor={editor} />;
+  const rotate = viewOnly ? null : <RotateButtons editor={editor} />;
+  const moreControls = viewOnly ? null : (
     <>
       <LiberoReplaces editor={editor} />
       {actions}
@@ -99,9 +104,9 @@ export function LineupBuilder({
     return (
       <DragProvider onDrop={onDrop} disabled={locked} style={styles.layout}>
         {lockedNotice}
-        <FormationControls editor={editor} />
+        {formation}
         <LineupCourt editor={editor} compact />
-        <RotateButtons editor={editor} />
+        {rotate}
         {liberoAndServe}
         <Bench editor={editor} scrollable={false} compact />
         {hint}
@@ -116,9 +121,9 @@ export function LineupBuilder({
     <DragProvider onDrop={onDrop} disabled={locked} style={[styles.layout, styles.wide]}>
       <View style={[styles.column, styles.courtColumn]}>
         {lockedNotice}
-        <FormationControls editor={editor} />
+        {formation}
         <LineupCourt editor={editor} />
-        <RotateButtons editor={editor} />
+        {rotate}
         {liberoAndServe}
         {moreControls}
       </View>

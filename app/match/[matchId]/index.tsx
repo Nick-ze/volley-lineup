@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { SlideTransition } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
 import { MatchLinks } from '@/features/lineup/MatchLinks';
+import { MatchReadOnlyNote } from '@/features/live/MatchReadOnlyNote';
 import { MatchResultLine } from '@/features/live/MatchResultLine';
 import { MatchSeasonLine } from '@/features/matchForm/MatchSeasonLine';
 import { PresetApply } from '@/features/lineup/PresetApply';
@@ -38,6 +39,11 @@ export default function MatchScreen() {
 
   const title = match ? t.lineup.title(match.opponent) : undefined;
   const options = useMemo(() => ({ title }), [title]);
+  // v10: a granted Take over is for scoring: open live, which keeps the hold (useMatchHold).
+  const openLive = useCallback(
+    () => router.push({ pathname: '/match/[matchId]/live', params: { matchId } }),
+    [router, matchId],
+  );
 
   if (!match) {
     return (
@@ -60,6 +66,8 @@ export default function MatchScreen() {
           <MatchResultLine match={match} />
           <MatchSeasonLine match={match} />
           <MatchLinks match={match} setNumber={setNumber} />
+          {/* v10: why a view-only member / another device's live scoring has no controls here. */}
+          <MatchReadOnlyNote matchId={matchId} onTakenOver={openLive} />
           {/* v8: another set's lineup slides in from the side of its tab (no swipe here: the
               builder's court and bench are drag & drop areas). */}
           <SlideTransition index={setNumber} clip={false}>

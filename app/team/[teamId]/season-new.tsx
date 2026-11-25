@@ -2,13 +2,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ConfirmDialog, NotFound, Screen, ScreenTitle, useConfirm, useGoBack } from '@/components';
 import { SeasonForm } from '@/features/seasons/SeasonForm';
+import { ViewOnlyScreen } from '@/features/sync/ViewOnlyScreen';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { useAppStore, useMatchesForSeason, useSeason, useTeam } from '@/store';
+import { useAppStore, useCanEdit, useMatchesForSeason, useSeason, useTeam } from '@/store';
 
 /**
  * `/team/[teamId]/season-new?seasonId=` — create (or edit) a season / tournament. Modal (v7.0).
- * Creating opens the new season; deleting asks first and goes back to the team.
+ * Creating opens the new season; deleting asks first and goes back to the team. v10: view-only
+ * members get the reason instead of the form.
  */
 export default function SeasonFormScreen() {
   const t = useT();
@@ -22,7 +24,8 @@ export default function SeasonFormScreen() {
   );
   const { ask, dialogProps } = useConfirm();
   const s = t.seasons.form;
-  useTourPage(team && (!seasonId || season?.teamId === team.id) ? 'seasonForm' : null);
+  const canEdit = useCanEdit(teamId);
+  useTourPage(team && canEdit && (!seasonId || season?.teamId === team.id) ? 'seasonForm' : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
@@ -37,9 +40,11 @@ export default function SeasonFormScreen() {
     );
 
   const teamTab = `/team/${team.id}?tab=matches` as const;
+  const title = season ? s.editTitle : s.newTitle;
+  if (!canEdit) return <ViewOnlyScreen title={title} backLabel={s.backToTeam} onBack={goBack} />;
   return (
     <Screen>
-      <ScreenTitle title={season ? s.editTitle : s.newTitle} />
+      <ScreenTitle title={title} />
       <SeasonForm
         key={season?.id ?? 'new'}
         teamId={team.id}

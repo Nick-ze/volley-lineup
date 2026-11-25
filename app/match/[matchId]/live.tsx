@@ -10,6 +10,7 @@ import type { SetNumber } from '@/domain/types';
 import { LiveMatch } from '@/features/live/LiveMatch';
 import { LivePerformance } from '@/features/live/LivePerformance';
 import { LIVE_VIEWS, LiveViewToggle, type LiveView } from '@/features/live/LiveViewToggle';
+import { useFollowMatch, useMatchHold } from '@/features/live/useMatchHold';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
 import { useTourPage } from '@/features/tour';
 import { useMatch } from '@/store';
@@ -24,6 +25,9 @@ export default function LiveScreen() {
   const router = useRouter();
   const match = useMatch(matchId);
   const [view, setView] = useState<LiveView>('live');
+  // v10: a manager device of a shared team holds the match while scoring; watchers poll faster.
+  useMatchHold(matchId);
+  useFollowMatch(matchId);
   // v9.0: the shown view's tips (Live or Performance; the other one stays mounted beside it).
   useTourPage(match ? liveViewPage(view) : null);
   const setNumber = match ? liveSetNumber(match, set) : parseSetNumber(set);

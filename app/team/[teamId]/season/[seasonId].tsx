@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
-import { NotFound, Screen, ScreenTitle, SwipeTabs } from '@/components';
+import { NotFound, ReadOnlyNote, Screen, ScreenTitle, SwipeTabs } from '@/components';
 import { seasonTabPage } from '@/domain/tour';
 import { SeasonHeader } from '@/features/seasons/SeasonHeader';
 import { SeasonMatches } from '@/features/seasons/SeasonMatches';
@@ -10,13 +10,14 @@ import { SeasonStats } from '@/features/seasons/SeasonStats';
 import { parseSeasonTab, SEASON_TABS, type SeasonTab } from '@/features/seasons/seasonTabs';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { useOpponentsForSeason, useSeason, useTeam } from '@/store';
+import { useOpponentsForSeason, useSeason, useTeam, useTeamAccess } from '@/store';
 
 /**
  * `/team/[teamId]/season/[seasonId]?tab=matches|opponents|stats` — one season / tournament: its
  * matches (with search), its opponent teams (record per opponent) and its stats (v7.0). Tapping an
  * opponent shows the Matches tab filtered to it (screen state, not a URL param: upgraded opponent
- * ids contain "%", which the router decodes twice).
+ * ids contain "%", which the router decodes twice). v10: view-only members see the reason below
+ * the header (no Edit, New match, opponent changes).
  */
 export default function SeasonScreen() {
   const t = useT();
@@ -28,8 +29,10 @@ export default function SeasonScreen() {
   const tab = parseSeasonTab(params.tab);
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const opponent = opponents.find((o) => o.id === opponentId);
+  const access = useTeamAccess(params.teamId);
   // v9.0: the shown tab's tips (never in the tabs: the pager keeps their neighbours mounted).
-  useTourPage(team && season?.teamId === team.id ? seasonTabPage(tab) : null);
+  // v10: none for view-only members (the tips point at controls they don't have).
+  useTourPage(team && season?.teamId === team.id && access.canEdit ? seasonTabPage(tab) : null);
 
   if (!team)
     return <NotFound message={t.roster.teamNotFound} onBack={() => router.dismissTo('/teams')} />;
@@ -81,6 +84,7 @@ export default function SeasonScreen() {
         onTab={selectTab}
         onEdit={() => router.push(`/team/${team.id}/season-new?seasonId=${season.id}`)}
       />
+      <ReadOnlyNote block={access.block} />
       {/* v8: the tab slides in from its side; v8.1: a sideways drag shows the next tab beside it. */}
       <SwipeTabs
         tabs={SEASON_TABS}

@@ -1,38 +1,55 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
-import {
-  Button,
-  ConfirmDialog,
-  ListRow,
-  TeamAvatar,
-  useConfirm,
-  useListStyles,
-} from '@/components';
+import { Button, ConfirmDialog, useConfirm, useListStyles } from '@/components';
 import type { Team } from '@/domain/types';
 import { applyPhotoDraft } from '@/features/photos/photoDraft';
+import { SharedTeamDeleteDialog } from '@/features/sync/SharedTeamDeleteDialog';
 import { useT } from '@/i18n';
 import { useAppStore, useTeamsForProfile } from '@/store';
+import { makeStyles, spacing } from '@/theme';
 
 import { TeamForm } from './TeamForm';
+import { TeamRow } from './TeamRow';
 
 type Editing = { mode: 'create' } | { mode: 'edit'; id: string } | null;
 
-/** The current profile's teams: create, edit (name, v8: picture), delete, open. */
+/**
+ * The current profile's teams: create, edit (name, v8: picture), delete, open. v10: `actions`
+ * go beside "New team" (Join a team); a shared team's Delete offers this device / everyone.
+ */
 export function TeamList({
   profileId,
   onOpen,
+  actions,
 }: {
   profileId: string;
   onOpen: (team: Team) => void;
+  actions?: ReactNode;
 }) {
   const styles = useListStyles();
+  const own = useStyles();
   const t = useT();
   const teams = useTeamsForProfile(profileId);
   const { addTeam, updateTeam, deleteTeam } = useAppStore.getState();
   const [editing, setEditing] = useState<Editing>(null);
+  const [sharedDelete, setSharedDelete] = useState<Team | null>(null);
+  const sharedRole = useAppStore((s) =>
+    sharedDelete ? s.sync.teams[sharedDelete.id]?.role : undefined,
+  );
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.teams;
+  // v10: the team being edited became view-only (role changed by a sync) → close, don't save.
+  const editingViewOnly = useAppStore(
+    (st) => editing?.mode === 'edit' && st.sync.teams[editing.id]?.role === 'player',
+  );
+  // Adjusting state while rendering (React's pattern for state derived from a change).
+  if (editingViewOnly) setEditing(null);
+
+  const onDelete = (team: Team) => {
+    if (useAppStore.getState().sync.teams[team.id]) setSharedDelete(team);
+    else ask(t.roster.confirm.deleteTeam(team.name), () => deleteTeam(team.id));
+  };
 
   return (
     <>
@@ -48,14 +65,17 @@ export function TeamList({
           }}
         />
       ) : (
-        <Button label={s.new} onPress={() => setEditing({ mode: 'create' })} />
+        <View style={own.actions}>
+          <Button label={s.new} onPress={() => setEditing({ mode: 'create' })} style={own.grow} />
+          {actions}
+        </View>
       )}
 
       {teams.length === 0 && <Text style={styles.empty}>{s.empty}</Text>}
 
       <View style={styles.list}>
         {teams.map((team) =>
-          editing?.mode === 'edit' && editing.id === team.id ? (
+          editing?.mode === 'edit' && editing.id === team.id && !editingViewOnly ? (
             <TeamForm
               key={team.id}
               initial={team}
@@ -69,38 +89,31 @@ export function TeamList({
               }}
             />
           ) : (
-            <ListRow
+            <TeamRow
               key={team.id}
-              title={team.name}
-              leading={<TeamAvatar team={team} />}
-              testID={`team-${team.id}`}
-              onPress={() => onOpen(team)}
-              accessibilityLabel={s.open(team.name)}
-              actions={
-                <>
-                  <Button
-                    label={t.common.edit}
-                    accessibilityLabel={s.rename(team.name)}
-                    variant="ghost"
-                    compact
-                    onPress={() => setEditing({ mode: 'edit', id: team.id })}
-                  />
-                  <Button
-                    label={t.common.delete}
-                    accessibilityLabel={s.delete(team.name)}
-                    variant="danger"
-                    compact
-                    onPress={() =>
-                      ask(t.roster.confirm.deleteTeam(team.name), () => deleteTeam(team.id))
-                    }
-                  />
-                </>
-              }
+              team={team}
+              onOpen={() => onOpen(team)}
+              onEdit={() => setEditing({ mode: 'edit', id: team.id })}
+              onDelete={() => onDelete(team)}
             />
           ),
         )}
       </View>
       <ConfirmDialog {...dialogProps} />
+      {sharedDelete && sharedRole ? (
+        <SharedTeamDeleteDialog
+          team={sharedDelete}
+          role={sharedRole}
+          onClose={() => setSharedDelete(null)}
+        />
+      ) : null}
     </>
   );
 }
+
+const useStyles = makeStyles(() => ({
+  // "New team" and (v10) "Join a team" side by side; they wrap on a narrow screen.
+  // Alone, "New team" stays as wide as the list (as before v10).
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  grow: { flexGrow: 1 },
+}));
