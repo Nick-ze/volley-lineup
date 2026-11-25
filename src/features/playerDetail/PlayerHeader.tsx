@@ -12,9 +12,9 @@ const HEADER_PHOTO_SIZE = 72;
 
 /**
  * Photo (or jersey number), name, number, positions (v9.1: and "Captain" for the team captain),
- * status and the Edit button.
+ * status and the Edit button (v10: none without `onEdit`, for view-only members).
  */
-export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () => void }) {
+export function PlayerHeader({ player, onEdit }: { player: Player; onEdit?: () => void }) {
   const styles = useStyles();
   const t = useT();
   const name = fullName(player);
@@ -66,14 +66,16 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit: () =>
           </View>
         </View>
       </View>
-      <Button
-        label={t.playerDetail.edit}
-        accessibilityLabel={t.playerDetail.editLabel(name)}
-        variant="secondary"
-        compact
-        onPress={onEdit}
-        testID="player-edit"
-      />
+      {onEdit ? (
+        <Button
+          label={t.playerDetail.edit}
+          accessibilityLabel={t.playerDetail.editLabel(name)}
+          variant="secondary"
+          compact
+          onPress={onEdit}
+          testID="player-edit"
+        />
+      ) : null}
     </View>
   );
 }

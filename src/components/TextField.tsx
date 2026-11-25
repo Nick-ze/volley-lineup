@@ -17,6 +17,8 @@ export interface TextFieldProps extends Pick<
   | 'textContentType'
   | 'autoCapitalize'
   | 'autoCorrect'
+  // v10: the invite code field (no spelling marks under codes).
+  | 'spellCheck'
 > {
   label: string;
   value: string;

@@ -15,6 +15,8 @@ import { recordLine } from './seasonText';
 
 export interface OpponentRowProps {
   record: OpponentRecord;
+  /** v10: false for view-only members (no Rename, no Delete). */
+  editable: boolean;
   /** False when the opponent has matches (it can't be deleted then). */
   deletable: boolean;
   onOpen: () => void;
@@ -22,7 +24,7 @@ export interface OpponentRowProps {
 }
 
 /** One opponent of the season with its record; Rename inline, Delete when it has no matches. */
-export function OpponentRow({ record, deletable, onOpen, onDelete }: OpponentRowProps) {
+export function OpponentRow({ record, editable, deletable, onOpen, onDelete }: OpponentRowProps) {
   const formStyles = useFormStyles();
   const listStyles = useListStyles();
   const t = useT();
@@ -31,8 +33,11 @@ export function OpponentRow({ record, deletable, onOpen, onDelete }: OpponentRow
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(opponent.name);
   const [error, setError] = useState<OpponentNameError | undefined>();
+  // v10: the role changed to view-only while renaming (a sync) → close without saving.
+  // Adjusting state while rendering (React's pattern for state derived from a change).
+  if (editing && !editable) setEditing(false);
 
-  if (editing) {
+  if (editing && editable) {
     const save = () => {
       const { opponents } = useAppStore.getState();
       const result = validateOpponentName(name, opponents, opponent.seasonId, opponent.id);
@@ -76,28 +81,30 @@ export function OpponentRow({ record, deletable, onOpen, onDelete }: OpponentRow
       accessibilityLabel={`${s.open(opponent.name)}. ${line}`}
       testID={`opponent-${opponent.id}`}
       actions={
-        <View style={listStyles.actions}>
-          <Button
-            label={s.rename}
-            accessibilityLabel={s.renameLabel(opponent.name)}
-            variant="secondary"
-            compact
-            onPress={() => {
-              setName(opponent.name);
-              setError(undefined);
-              setEditing(true);
-            }}
-          />
-          {deletable ? (
+        editable ? (
+          <View style={listStyles.actions}>
             <Button
-              label={s.delete}
-              accessibilityLabel={s.deleteLabel(opponent.name)}
-              variant="danger"
+              label={s.rename}
+              accessibilityLabel={s.renameLabel(opponent.name)}
+              variant="secondary"
               compact
-              onPress={onDelete}
+              onPress={() => {
+                setName(opponent.name);
+                setError(undefined);
+                setEditing(true);
+              }}
             />
-          ) : null}
-        </View>
+            {deletable ? (
+              <Button
+                label={s.delete}
+                accessibilityLabel={s.deleteLabel(opponent.name)}
+                variant="danger"
+                compact
+                onPress={onDelete}
+              />
+            ) : null}
+          </View>
+        ) : undefined
       }
     />
   );

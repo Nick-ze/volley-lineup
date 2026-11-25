@@ -1,0 +1,84 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import type { ComponentProps } from 'react';
+import { useRouter } from 'expo-router';
+import { Pressable, Text } from 'react-native';
+
+import type { SyncPhase, SyncStatus } from '@/domain/types';
+import { useT, type Strings } from '@/i18n';
+import { useSyncAccount, useSyncStatus } from '@/store';
+import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+const ICONS: Record<SyncPhase, IconName> = {
+  off: 'cloud-outline',
+  synced: 'cloud-done-outline',
+  syncing: 'cloud-upload-outline',
+  offline: 'cloud-offline-outline',
+  error: 'alert-circle-outline',
+};
+
+/** Size of the cloud mark (px). */
+const ICON_SIZE = 18;
+
+/** The badge's text: "Synced", "Syncing…", "Offline (3)", "Sync error", "Not signed in". */
+export function syncBadgeText(t: Strings, status: SyncStatus): string {
+  if (status.phase === 'offline' && status.pending > 0) {
+    return t.sync.badge.offlinePending(status.pending);
+  }
+  return t.sync.status[status.phase];
+}
+
+/**
+ * v10: a small cloud mark with the sync state (Teams tab header, design §7.2); tap → Account.
+ * Hidden while sync is off and no account is linked (the app is local-only then).
+ */
+export function SyncBadge() {
+  const styles = useStyles();
+  const t = useT();
+  const { colors } = useTheme();
+  const router = useRouter();
+  const status = useSyncStatus();
+  const account = useSyncAccount();
+  if (status.phase === 'off' && !account) return null;
+  const text = syncBadgeText(t, status);
+  const isError = status.phase === 'error';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t.sync.badge.label(text)}
+      onPress={() => router.push('/account')}
+      testID="sync-badge"
+      style={({ pressed }) => [styles.badge, pressed && styles.pressed]}
+    >
+      <Ionicons
+        name={ICONS[status.phase]}
+        size={ICON_SIZE}
+        color={isError ? colors.error : colors.secondaryText}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
+      <Text style={[styles.text, isError && styles.error]} numberOfLines={1}>
+        {text}
+      </Text>
+    </Pressable>
+  );
+}
+
+const useStyles = makeStyles((theme) => ({
+  badge: {
+    minHeight: touchTarget,
+    minWidth: touchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.round,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  pressed: { opacity: 0.8 },
+  text: { ...typography.label, color: theme.colors.text, flexShrink: 1 },
+  error: { color: theme.colors.error },
+}));

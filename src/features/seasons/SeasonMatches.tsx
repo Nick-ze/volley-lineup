@@ -5,7 +5,7 @@ import { Button, ConfirmDialog, TextField, useConfirm, useListStyles } from '@/c
 import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useAppStore, useMatchesForSeason } from '@/store';
+import { useAppStore, useCanEdit, useMatchesForSeason, useSeason } from '@/store';
 
 import { MatchRow } from './MatchRow';
 
@@ -20,7 +20,8 @@ export interface SeasonMatchesProps {
 
 /**
  * The season's matches, newest first, with the v6.2 search (opponent or date) and an optional
- * opponent filter (set by tapping an opponent on the Opponents tab).
+ * opponent filter (set by tapping an opponent on the Opponents tab). v10: view-only members get
+ * no New match and no Delete.
  */
 export function SeasonMatches({
   seasonId,
@@ -33,6 +34,7 @@ export function SeasonMatches({
   const t = useT();
   const all = useMatchesForSeason(seasonId);
   const deleteMatch = useAppStore((st) => st.deleteMatch);
+  const canEdit = useCanEdit(useSeason(seasonId)?.teamId);
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.matches;
   const [query, setQuery] = useState('');
@@ -55,7 +57,7 @@ export function SeasonMatches({
         ) : (
           <View />
         )}
-        <Button label={s.newMatch} onPress={onNewMatch} compact />
+        {canEdit ? <Button label={s.newMatch} onPress={onNewMatch} compact /> : null}
       </View>
       {matches.length === 0 && (
         <Text style={styles.empty}>
@@ -84,7 +86,11 @@ export function SeasonMatches({
             key={m.id}
             match={m}
             onOpen={() => onOpenMatch(m.id)}
-            onDelete={() => ask(t.roster.confirm.deleteMatch(m.opponent), () => deleteMatch(m.id))}
+            onDelete={
+              canEdit
+                ? () => ask(t.roster.confirm.deleteMatch(m.opponent), () => deleteMatch(m.id))
+                : undefined
+            }
           />
         ))}
       </View>

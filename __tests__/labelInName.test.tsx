@@ -68,6 +68,9 @@ const SCREENS: [string, string][] = [
   ['account', '/account'],
   ['sign-in', '/account/sign-in'],
   ['cloud-teams', '/account/teams'],
+  // v10: a local team's members screen and joining (signed out: "Sign in first").
+  ['members-local', '/team/t1/members'],
+  ['join', '/join?code=ABCDEFGHJK'],
 ];
 
 const CONTROL_ROLES = new Set([
@@ -363,6 +366,61 @@ const PAIRS: [string, (t: Strings) => string, (t: Strings) => string][] = [
     'delete account members',
     (t) => t.account.deleteAccount.members,
     (t) => t.account.deleteAccount.membersLabel('Herren 1'),
+  ],
+  // v10: team header button, members, invites and joining (signed in / shared team).
+  ['team members', (t) => t.members.header.members, (t) => t.members.header.membersLabel('A')],
+  ['team share', (t) => t.members.header.share, (t) => t.members.header.shareLabel('A')],
+  ['members sign in', (t) => t.members.local.signIn, (t) => t.members.local.signInLabel],
+  ['share this team', (t) => t.members.local.share, (t) => t.members.local.shareLabel('A')],
+  ['members retry', (t) => t.members.list.retry, (t) => t.members.list.retryLabel],
+  [
+    'member make manager',
+    (t) => t.members.list.makeManager,
+    (t) => t.members.list.makeManagerLabel('Anna'),
+  ],
+  [
+    'member make player',
+    (t) => t.members.list.makePlayer,
+    (t) => t.members.list.makePlayerLabel('Anna'),
+  ],
+  ['member remove', (t) => t.members.list.remove, (t) => t.members.list.removeLabel('Anna')],
+  ['invite new', (t) => t.members.newInvite, (t) => t.members.newInviteLabel],
+  ['invite share', (t) => t.members.invites.share, (t) => t.members.invites.shareLabel('ABC')],
+  ['invite copy', (t) => t.members.invites.copy, (t) => t.members.invites.copyLabel('ABC')],
+  ['invite revoke', (t) => t.members.invites.revoke, (t) => t.members.invites.revokeLabel('ABC')],
+  [
+    'invite create',
+    (t) => t.members.newInviteDialog.create,
+    (t) => t.members.newInviteDialog.createLabel,
+  ],
+  ['leave team', (t) => t.members.leave.button, (t) => t.members.leave.label('A')],
+  ['join submit', (t) => t.members.join.submit, (t) => t.members.join.submitLabel],
+  ['join open', (t) => t.members.join.open, (t) => t.members.join.openLabel('A')],
+  // v10 (E2): sync badge, notices, Join a team, the shared-team delete dialog.
+  ['sync badge', (t) => t.sync.status.synced, (t) => t.sync.badge.label(t.sync.status.synced)],
+  [
+    'sync badge offline',
+    (t) => t.sync.badge.offlinePending(3),
+    (t) => t.sync.badge.label(t.sync.badge.offlinePending(3)),
+  ],
+  ['sync notice dismiss', (t) => t.sync.notices.dismiss, (t) => t.sync.notices.dismissLabel('A')],
+  ['join a team', (t) => t.sync.team.join, (t) => t.sync.team.joinLabel],
+  [
+    'shared team remove here',
+    (t) => t.sync.teamDelete.removeHere,
+    (t) => t.sync.teamDelete.removeHereLabel('A'),
+  ],
+  [
+    'shared team delete everywhere',
+    (t) => t.sync.teamDelete.deleteEverywhere,
+    (t) => t.sync.teamDelete.deleteEverywhereLabel('A'),
+  ],
+  ['shared team leave', (t) => t.sync.teamDelete.leave, (t) => t.sync.teamDelete.leaveLabel('A')],
+  ['shared team cancel', (t) => t.sync.teamDelete.cancel, (t) => t.sync.teamDelete.cancelLabel],
+  [
+    'shared team row',
+    () => 'Herren 1',
+    (t) => t.sync.team.rowLabel(t.roster.teams.open('Herren 1'), t.sync.viewOnly),
   ],
 ];
 
