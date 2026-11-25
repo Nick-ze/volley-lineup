@@ -7,7 +7,7 @@ import { joinTeam, listCloudTeams } from '@/lib/sync';
 export interface Joined {
   teamId: string;
   role: TeamRole;
-  /** The team's name from the cloud list, when it could be read. */
+  /** The team's name (from the join result, else the cloud list), when known. */
   name: string | null;
 }
 
@@ -33,11 +33,14 @@ export function useJoin() {
       setBusy(false);
       return;
     }
-    // The name isn't part of the join result; the cloud team list has it (best effort).
-    const teams = await listCloudTeams();
-    const name = teams.ok
-      ? (teams.value.find((team) => team.teamId === result.value.teamId)?.name ?? null)
-      : null;
+    // The join result names the team; without it the cloud team list may (best effort).
+    let name = result.value.name;
+    if (name === null) {
+      const teams = await listCloudTeams();
+      name = teams.ok
+        ? (teams.value.find((team) => team.teamId === result.value.teamId)?.name ?? null)
+        : null;
+    }
     setJoined({ ...result.value, name });
     setBusy(false);
   }, []);

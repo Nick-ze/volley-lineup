@@ -113,6 +113,23 @@ describe('members: local team', () => {
     await waitFor(() => expect(screen).toHavePathname('/teams'));
   });
 
+  it('a new team id ("rekeyed" with newTeamId) opens the members screen under the new id', async () => {
+    signIn();
+    jest.mocked(sync.uploadTeams).mockImplementationOnce(async () => {
+      useAppStore.setState((s) => ({
+        teams: s.teams.map((x) => (x.id === 'team1' ? { ...x, id: 'team-new' } : x)),
+        players: s.players.map((p) => (p.teamId === 'team1' ? { ...p, teamId: 'team-new' } : p)),
+      }));
+      return {
+        ok: true,
+        value: [{ teamId: 'team1', result: 'rekeyed' as const, newTeamId: 'team-new' }],
+      };
+    });
+    await renderApp(URL);
+    await fireEvent.press(screen.getByTestId('members-share-team'));
+    await waitFor(() => expect(screen).toHavePathname('/team/team-new/members'));
+  });
+
   it('shows why sharing failed', async () => {
     signIn();
     jest.mocked(sync.uploadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });

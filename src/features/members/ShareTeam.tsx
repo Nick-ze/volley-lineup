@@ -33,11 +33,16 @@ export function ShareTeam({ team }: { team: Team }) {
       setError(result.error);
       return;
     }
-    const outcome = result.value.find((r) => r.teamId === team.id)?.result ?? 'failed';
-    if (outcome === 'failed') setError('unknown');
-    // The cloud had another team with this id, so this one got a new id; the barrel doesn't say
-    // which, so the team list is the way back to it.
-    else if (outcome === 'rekeyed') router.dismissTo('/teams');
+    const item = result.value.find((r) => r.teamId === team.id);
+    const outcome = item?.result ?? 'failed';
+    if (outcome === 'failed') setError(item?.error ?? 'unknown');
+    // The cloud had another team with this id, so this one got a new id: its members screen is
+    // under the new id (the team list when the id isn't known).
+    else if (outcome === 'rekeyed') {
+      if (item?.newTeamId) {
+        router.replace({ pathname: '/team/[teamId]/members', params: { teamId: item.newTeamId } });
+      } else router.dismissTo('/teams');
+    }
   };
 
   return (
