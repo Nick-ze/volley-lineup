@@ -66,5 +66,11 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
 
 const useGridStyles = makeStyles(() => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: spacing.sm },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flexShrink: 1,
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
 }));
