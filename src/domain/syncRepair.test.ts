@@ -1,7 +1,7 @@
 import { goldenTeamData, sliceOf, sliceTransfer } from '@/test-utils/syncFixtures';
 
 import { isConsistent } from './exportConsistency';
-import { repairSlice } from './syncRepair';
+import { referencedPlayerIds, repairSlice, type RepairIssue } from './syncRepair';
 import type { TeamSlice } from './syncRecords';
 import type { LineupPreset, Match, Opponent, Season, SetLineup } from './types';
 
@@ -55,12 +55,28 @@ const preset = (
 });
 
 /** The repaired slice must import again (duplicate numbers aside) and stay as it is. */
-function expectStable(slice: TeamSlice) {
-  const once = repairSlice(slice);
-  const twice = repairSlice(once.slice);
+function expectStable(slice: TeamSlice, keep?: ReadonlySet<string>) {
+  const once = repairSlice(slice, keep);
+  const twice = repairSlice(once.slice, keep);
   expect(twice.slice).toBe(once.slice);
-  expect(twice.issues.filter((i) => i.kind !== 'duplicateNumber')).toEqual([]);
+  const reported = (i: RepairIssue) => i.kind === 'duplicateNumber' || i.kind === 'missingPlayer';
+  expect(twice.issues.filter((i) => !reported(i))).toEqual([]);
+  expect(twice.issues.filter(reported)).toEqual(once.issues.filter(reported));
   return once;
+}
+
+/** The team with player p20 named by the unplayed set of m2, the named preset and as captain. */
+function withP20(base: TeamSlice): TeamSlice {
+  const m2 = base.matches[1];
+  return {
+    ...base,
+    team: { ...base.team, captainId: 'p20' },
+    matches: [
+      base.matches[0],
+      { ...m2, sets: [{ ...m2.sets[0], slots: { ...m2.sets[0].slots, 2: 'p20' } }] },
+    ],
+    presets: [base.presets[0], { ...base.presets[1], liberoId: 'p20' }],
+  };
 }
 
 describe('repairSlice', () => {
@@ -139,26 +155,35 @@ describe('repairSlice', () => {
     });
   });
 
-  it('removes players who are not in the team from sets, keeping the score', () => {
+  it('removes missing players from unplayed sets and presets, never from played sets', () => {
     const base = golden();
     const slice = { ...base, players: base.players.filter((p) => p.id !== 'p8' && p.id !== 'p1') };
-    const { slice: fixed } = expectStable(slice);
-    const [set1, set2] = fixed.matches[0].sets;
-    expect(set1.slots[1]).toBeNull();
-    expect(set1.events.filter((e) => e.type === 'sub')).toEqual([]);
-    expect(set1.events.filter((e) => e.type === 'point')).toHaveLength(
-      base.matches[0].sets[0].events.filter((e) => e.type === 'point').length,
-    );
-    expect(set1.events[0]).toEqual({
-      type: 'point',
-      winner: 'us',
-      kind: 'ace',
-      at: '2026-11-01T18:00:10.000Z',
-    });
-    expect(set2.slots[1]).toBeNull();
+    const { slice: fixed, issues } = expectStable(slice);
+    const [set1, set2, set3] = fixed.matches[0].sets;
+    // Played sets keep their history: court, substitutions and tags stay as they are.
+    expect(set1).toBe(base.matches[0].sets[0]);
+    expect(set2).toBe(base.matches[0].sets[1]);
+    expect(set3.events).toEqual([]);
+    expect(Object.values(set3.slots)).not.toContain('p1');
     expect(fixed.presets[0].slots[1]).toBeNull();
     expect(fixed.presets[1].slots[4]).toBeNull();
-    expect(isConsistent(sliceTransfer(fixed))).toBe(true);
+    expect(issues).toEqual([{ kind: 'missingPlayer', playerIds: ['p1', 'p8'] }]);
+    // Until the players come back the team can't be exported; then it is consistent again.
+    expect(isConsistent(sliceTransfer(fixed))).toBe(false);
+    expect(isConsistent(sliceTransfer({ ...fixed, players: base.players }))).toBe(true);
+  });
+
+  it('keeps every reference to players in `keep` (a player only this device lacks)', () => {
+    const base = golden();
+    const slice = withP20(base);
+    const { slice: fixed, issues } = expectStable(slice, new Set(['p20']));
+    expect(fixed).toBe(slice);
+    expect(issues).toEqual([{ kind: 'missingPlayer', playerIds: ['p20'] }]);
+    const dropped = expectStable(slice).slice;
+    expect(dropped.team).not.toHaveProperty('captainId');
+    expect(dropped.matches[1].sets[0].slots[2]).toBeNull();
+    expect(dropped.presets[1].liberoId).toBeNull();
+    expect(isConsistent(sliceTransfer(dropped))).toBe(true);
   });
 
   it('puts nobody in two slots, keeps the libero off court and drops incoherent tags', () => {
@@ -262,12 +287,11 @@ describe('repairSlice', () => {
     const base = golden();
     const slice: TeamSlice = {
       ...base,
-      team: { ...base.team, captainId: 'p1' },
-      players: base.players.slice(1),
+      ...withP20(base),
       seasons: [...base.seasons, season('s9', 'winter cup', '2026-03-01T00:00:00.000Z')],
       opponents: [...base.opponents, opponent('o9', 's9', 'Cup team', '2026-03-01T00:00:00.000Z')],
-      matches: [...base.matches, match('m9', 's2', 'o9', 'x')],
-      presets: [...base.presets, preset('z', 'strong SERVE', '2026-03-01T00:00:00.000Z')],
+      matches: [...withP20(base).matches, match('m9', 's2', 'o9', 'x')],
+      presets: [...withP20(base).presets, preset('z', 'strong SERVE', '2026-03-01T00:00:00.000Z')],
     };
     const { slice: fixed } = expectStable(slice);
     expect(isConsistent(sliceTransfer(fixed))).toBe(true);
@@ -276,5 +300,14 @@ describe('repairSlice', () => {
       opponentId: 'o3',
       opponent: 'Cup Team',
     });
+  });
+});
+
+describe('referencedPlayerIds', () => {
+  it('lists every player id sets, presets and the captain name', () => {
+    const ids = referencedPlayerIds(withP20(golden()));
+    expect([...ids].sort()).toEqual(['p1', 'p2', 'p20', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+    const t2 = sliceOf(goldenTeamData(), 't2');
+    expect([...referencedPlayerIds(t2)]).toEqual([]);
   });
 });

@@ -15,6 +15,7 @@ import {
   applyPushResults,
   mergeRemote,
   nextCursor,
+  resetToCloudMerge,
   type MergeOutput,
   type PushOutcome,
 } from '@/domain/syncMerge';
@@ -220,24 +221,30 @@ export class FakeDevice {
     this.data = fn(this.data);
   }
 
-  private apply(rows: readonly RemoteRecord[], mode?: 'lww' | 'cloudWins'): void {
-    const out = mergeRemote({
+  /** foreignId skips of the last pull: the engine doesn't push in such a cycle. */
+  foreignSkips = 0;
+
+  private apply(rows: readonly RemoteRecord[], reset = false): number {
+    const out = (reset ? resetToCloudMerge : mergeRemote)({
       teamId: this.teamId,
       slice: this.slice,
       team: this.sync,
       rows,
       local: { profileId: this.profileId },
       foreignIds: foreignKeys(this.data, this.teamId),
-      mode,
     });
     this.skipped.push(...out.skipped);
     this.issues = out.issues;
     this.sync = out.team;
     this.data = replaceTeamSlice(this.data, this.teamId, out.slice);
+    return out.skipped.filter((s) => s.reason === 'foreignId').length;
   }
 
-  /** Pulls every page since the cursor and merges it in one go. */
-  pull(mode?: 'lww' | 'cloudWins', pageSize = 500): void {
+  /**
+   * Pulls every page since the cursor and merges it in one go (`reset`: `resetToCloudMerge`,
+   * from version 0).
+   */
+  pull(reset = false, pageSize = 500): void {
     const rows: RemoteRecord[] = [];
     let cursor = this.sync.cursor;
     let serverNow = '';
@@ -247,9 +254,11 @@ export class FakeDevice {
       const parsed = page.rows.map(parseRemoteRow).filter((r): r is RemoteRecord => r !== null);
       rows.push(...parsed);
       if (page.rows.length < pageSize) break;
-      cursor = Math.max(...parsed.map((r) => r.version));
+      cursor = Math.max(...page.rows.map((r) => (r as { version: number }).version));
     }
-    this.apply(rows, mode);
+    this.foreignSkips = this.apply(rows, reset);
+    // Without the team (its row hasn't arrived) the rows must be read again.
+    if (!this.slice) return;
     this.sync = { ...this.sync, cursor: nextCursor(this.sync.cursor, rows, serverNow) };
   }
 
@@ -282,6 +291,6 @@ export class FakeDevice {
   cycle(): void {
     this.detect();
     this.pull();
-    this.push();
+    if (this.foreignSkips === 0) this.push();
   }
 }

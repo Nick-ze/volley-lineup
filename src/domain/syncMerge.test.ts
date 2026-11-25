@@ -14,6 +14,7 @@ import {
   EPOCH,
   mergeRemote,
   nextCursor,
+  resetToCloudMerge,
   type MergeInput,
   type PushOutcome,
 } from './syncMerge';
@@ -62,14 +63,15 @@ function row(
   };
 }
 
-function merge(input: Partial<MergeInput> & { slice: TeamSlice | undefined }) {
-  return mergeRemote({
+function merge(input: Partial<MergeInput> & { slice: TeamSlice | undefined; reset?: boolean }) {
+  const { reset, ...rest } = input;
+  return (reset ? resetToCloudMerge : mergeRemote)({
     teamId: 't1',
     team: input.slice ? synced(input.slice) : linkedTeam(),
     rows: [],
     local: { profileId: 'prX' },
     foreignIds: new Set(),
-    ...input,
+    ...rest,
   });
 }
 
@@ -476,7 +478,77 @@ describe('mergeRemote: deletions', () => {
   });
 });
 
+describe('mergeRemote: players only this device lacks', () => {
+  const withP20 = (s: TeamSlice): TeamSlice => ({
+    ...s,
+    players: [...s.players, { ...s.players[1], id: 'p20', number: 20 }],
+  });
+  const withoutP20 = (s: TeamSlice): TeamSlice => ({
+    ...s,
+    players: s.players.filter((p) => p.id !== 'p20'),
+  });
+  const captain = (id: string) => ({ ...payload('team:t1'), captainId: id });
+
+  it('keeps references to a player deleted here that the server still has', () => {
+    const start = withP20(golden());
+    const { slice, team } = locally(start, withoutP20, T1);
+    const out = merge({ slice, team, rows: [row('team:t1', captain('p20'), T2)] });
+    const next = out.slice as TeamSlice;
+    expect(next.team.captainId).toBe('p20');
+    expect(out.issues).toEqual([{ kind: 'missingPlayer', playerIds: ['p20'] }]);
+    expect(detectChanges(next, out.team, T3).changes.map((c) => c.key)).toEqual(['player:p20']);
+  });
+
+  it('keeps references to a player skipped as foreign', () => {
+    const slice = golden();
+    const set = payload('set:m2/1') as { slots: object };
+    const rows = [
+      row('player:p9', payload('player:p2')),
+      row('set:m2/1', { ...set, slots: { ...set.slots, 2: 'p9' } }),
+    ];
+    const out = merge({ slice, rows, foreignIds: new Set(['player:p9']) });
+    expect((out.slice as TeamSlice).matches[1].sets[0].slots[2]).toBe('p9');
+    expect(out.skipped).toEqual([{ key: 'player:p9', reason: 'foreignId' }]);
+  });
+
+  it('keeps a newer played set intact and lets the other device bring the player back', () => {
+    const start = withP20(golden());
+    const { slice, team } = locally(start, withoutP20, T1);
+    const set = payload('set:m2/1');
+    const live = { ...set, events: [{ type: 'sub', outPlayerId: 'p1', inPlayerId: 'p20' }] };
+    const out = merge({ slice, team, rows: [row('set:m2/1', live, T2)] });
+    const next = out.slice as TeamSlice;
+    expect(next.matches[1].sets[0].events).toEqual(live.events);
+    expect(detectChanges(next, out.team, T3).changes.map((c) => c.key)).toEqual(['player:p20']);
+  });
+});
+
 describe('mergeRemote: orphans', () => {
+  it('takes a row under a parent this device deleted as deleted (no push loop)', () => {
+    const dropM2 = (s: TeamSlice) => ({ ...s, matches: s.matches.filter((m) => m.id !== 'm2') });
+    const { slice, team } = locally(golden(), dropM2, T1);
+    const live: RecordPayload = {
+      ...payload('set:m2/1'),
+      events: [{ type: 'point', winner: 'us' }],
+    };
+    const incoming = row('set:m2/1', live, T2);
+    const out = merge({ slice, team, rows: [incoming] });
+    expect(out.slice).toBe(slice);
+    expect(out.team.base['set:m2/1']).toEqual({ v: incoming.version, h: '', at: T2, del: true });
+    expect(out.team.edits).not.toHaveProperty('set:m2/1');
+    expect(detectChanges(out.slice, out.team, T3).changes.map((c) => c.key)).toEqual(['match:m2']);
+    // Once the deletion of the match is on the server too, nothing is left to push.
+    const pushed = {
+      ...out.team,
+      base: { ...out.team.base, 'match:m2': { v: 200, h: '', at: T1, del: true as const } },
+      edits: {},
+    };
+    const again = row('set:m2/1', { ...live, weServeFirst: !live.weServeFirst }, T3);
+    const later = merge({ slice, team: pushed, rows: [again] });
+    expect(later.team.base['set:m2/1']).toMatchObject({ v: again.version, del: true });
+    expect(detectChanges(later.slice, later.team, T3).changes).toEqual([]);
+  });
+
   it('does not apply records whose parent is missing (no base)', () => {
     const slice = golden();
     const rows = [
@@ -522,7 +594,7 @@ describe('mergeRemote: orphans', () => {
   });
 });
 
-describe("mergeRemote: 'cloudWins' (after a demotion)", () => {
+describe('resetToCloudMerge (after a demotion)', () => {
   it('replaces local changes, drops local-only records and brings nothing back', () => {
     const base = golden();
     const { slice } = locally(
@@ -542,7 +614,7 @@ describe("mergeRemote: 'cloudWins' (after a demotion)", () => {
       .filter(([key]) => !key.endsWith('m2/1') && key !== 'match:m2' && !key.endsWith(':o3'))
       .map(([key, p], i) => row(key, p, T0, { version: i + 1 }));
     rows.push(row('opponent:o3', null, T1), row('match:m2', null, T1), row('set:m2/1', null, T1));
-    const out = merge({ slice, team: { ...team, edits: {} }, rows, mode: 'cloudWins' });
+    const out = merge({ slice, team: { ...team, edits: {} }, rows, reset: true });
     const next = out.slice as TeamSlice;
     expect(next.players.map((p) => p.firstName)).toEqual(base.players.map((p) => p.firstName));
     expect(next.players.map((p) => p.id)).not.toContain('p20');
@@ -556,11 +628,21 @@ describe("mergeRemote: 'cloudWins' (after a demotion)", () => {
     const rows = [...sliceToRecords(base)]
       .filter(([key]) => key !== 'opponent:o3')
       .map(([key, p], i) => row(key, p, T0, { version: i + 1 }));
-    const out = merge({ slice: base, team: synced(base), rows, mode: 'cloudWins' });
+    const out = merge({ slice: base, team: synced(base), rows, reset: true });
     const next = out.slice as TeamSlice;
     expect(next.opponents.map((o) => o.id)).toEqual(['o1', 'o2']);
     expect(next.matches.map((m) => m.id)).toEqual(['m1']);
     expect(out.skipped.map((s) => s.key)).toEqual(['match:m2', 'set:m2/1']);
+  });
+
+  it('does nothing without the team row (a partial pull would drop records)', () => {
+    const base = golden();
+    const team = synced(base);
+    const rows = [row('player:p2', { ...payload('player:p2'), firstName: 'Cloud' })];
+    const out = merge({ slice: base, team, rows, reset: true });
+    expect(out).toEqual({ slice: base, team, skipped: [], issues: [] });
+    expect(out.slice).toBe(base);
+    expect(out.team).toBe(team);
   });
 });
 
@@ -619,7 +701,12 @@ describe('applyPushResults', () => {
       linkedTeam(),
       [p2, gone],
       [
-        result(p2, false, 9, { payload: theirs, at: T2, updatedAt: 'not a time' }),
+        result(p2, false, 9, {
+          payload: theirs,
+          at: T2,
+          updatedAt: 'not a time',
+          deviceId: 'devB',
+        }),
         result(gone, false, 10, { deleted: false }),
       ],
     );
@@ -632,9 +719,9 @@ describe('applyPushResults', () => {
         at: T2,
         updatedAt: 'not a time',
         version: 9,
-        deviceId: '',
+        deviceId: 'devB',
       },
-      expect.objectContaining({ id: 'ps2', payload: null, version: 10 }),
+      expect.objectContaining({ id: 'ps2', payload: null, version: 10, deviceId: '' }),
     ]);
     expect(out.team.base).toEqual({});
   });

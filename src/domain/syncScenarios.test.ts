@@ -15,9 +15,10 @@ import {
 
 import { isConsistent } from './exportConsistency';
 import { detectChanges } from './syncChanges';
-import { adoptExisting } from './syncMerge';
+import { adoptExisting, resetToCloudMerge } from './syncMerge';
 import { sliceToRecords, type TeamData, type TeamSlice } from './syncRecords';
-import type { LineupPreset, Match } from './types';
+import { parseRemoteRow, type RemoteRecord } from './syncSchema';
+import type { LineupPreset, Match, Player, SetEvent, SetLineup } from './types';
 
 const recordsOf = (d: FakeDevice) => Object.fromEntries(sliceToRecords(d.slice as TeamSlice));
 const pending = (d: FakeDevice) => detectChanges(d.slice, d.sync, '').changes.length;
@@ -88,7 +89,7 @@ describe('two devices', () => {
   it('pull in pages', () => {
     const { a, server, clock } = setup();
     const c = new FakeDevice('devC', server, clock, 't1', emptyTeamData(), linkedTeam(), 'prC');
-    c.pull('lww', 5);
+    c.pull(false, 5);
     expectConverged(a, c);
   });
 
@@ -373,7 +374,166 @@ describe('linking and demotion', () => {
       players: [...d.players, { ...d.players[1], id: 'p20', number: 20 }],
     }));
     b.sync = { ...b.sync, role: 'player', cursor: 0, edits: {} };
-    b.pull('cloudWins');
+    b.pull(true);
     expect(recordsOf(b)).toEqual(recordsOf(a));
+  });
+});
+
+/** Review #90 regressions: a device that merely lacks something must never push the loss. */
+describe('review regressions', () => {
+  const addP10 = (d: TeamData): TeamData => ({
+    ...d,
+    players: [...d.players, { ...(d.players[1] as Player), id: 'p10', number: 30 }],
+  });
+  const dropPlayer = (id: string) => (d: TeamData) => ({
+    ...d,
+    players: d.players.filter((p) => p.id !== id),
+  });
+  const mapSet = (matchId: string, n: number, fn: (s: SetLineup) => SetLineup) => (d: TeamData) =>
+    changeMatch(matchId, {
+      sets: (d.matches.find((m) => m.id === matchId) as Match).sets.map((s) =>
+        s.setNumber === n ? fn(s) : s,
+      ),
+    })(d);
+  const run = (...devices: FakeDevice[]) => devices.forEach((d) => d.cycle());
+
+  it('S2: a player deleted offline on A, subbed into a played set on B: the history stays', () => {
+    const { a, b, clock } = setup();
+    edit(a, clock, addP10);
+    run(a, b, a);
+    clock.tick(20_000);
+    edit(a, clock, dropPlayer('p10'));
+    clock.tick(10_000);
+    const events: SetEvent[] = [
+      { type: 'sub', outPlayerId: 'p2', inPlayerId: 'p10' },
+      { type: 'point', winner: 'us', kind: 'kill', playerId: 'p10', at: clock.iso() },
+    ];
+    edit(
+      b,
+      clock,
+      mapSet('m1', 3, (s) => ({ ...s, events })),
+    );
+    b.cycle();
+    clock.tick(5000);
+    a.cycle();
+    clock.tick(5000);
+    run(b, a, b, a);
+    for (const d of [a, b]) {
+      expect(d.slice?.players.map((p) => p.id)).toContain('p10');
+      expect(d.slice?.matches[0].sets[2].events).toEqual(events);
+    }
+    expectConverged(a, b);
+  });
+
+  it('S2c: a captain set on B while A deleted the player keeps the captain', () => {
+    for (const extraCycles of [0, 2]) {
+      const { a, b, clock } = setup();
+      edit(a, clock, dropPlayer('p5'));
+      clock.tick(10_000);
+      edit(b, clock, (d) => ({ ...d, teams: d.teams.map((t) => ({ ...t, captainId: 'p5' })) }));
+      b.cycle();
+      clock.tick(5000);
+      a.cycle();
+      // A syncing again before B is back must not clear B's newer captain.
+      for (let i = 0; i < extraCycles; i++) {
+        clock.tick(20_000);
+        a.cycle();
+      }
+      run(b, a, b, a);
+      for (const d of [a, b]) {
+        expect(d.slice?.team.captainId).toBe('p5');
+        expect(d.slice?.players.map((p) => p.id)).toContain('p5');
+      }
+      expectConverged(a, b);
+    }
+  });
+
+  it('S4: a match deleted offline on A while B scores it: no push loop, the match comes back', () => {
+    const { a, b, clock } = setup();
+    edit(a, clock, (d) => ({ ...d, matches: d.matches.filter((m) => m.id !== 'm2') }));
+    clock.tick(10_000);
+    const events: SetEvent[] = [{ type: 'point', winner: 'us' }];
+    edit(
+      b,
+      clock,
+      mapSet('m2', 1, (s) => ({ ...s, events })),
+    );
+    b.cycle();
+    clock.tick(5000);
+    const pushed: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      a.detect();
+      a.pull();
+      pushed.push(a.push().length);
+      clock.tick(60_000);
+    }
+    expect(pushed).toEqual([1, 0, 0, 0]);
+    run(b, a, b, a);
+    for (const d of [a, b]) expect(d.slice?.matches[1].sets[0].events).toEqual(events);
+    expectConverged(a, b);
+    expect([a.push(), b.push()]).toEqual([[], []]);
+  });
+
+  it('S9b: a reset with a page that lacks the team row changes nothing', () => {
+    const { b, server } = setup();
+    const page = server
+      .pull(5, 5)
+      .rows.map(parseRemoteRow)
+      .filter((r): r is RemoteRecord => r !== null);
+    expect(page.some((r) => r.kind === 'team')).toBe(false);
+    const before = b.slice;
+    const team = { ...b.sync, role: 'player' as const, cursor: 0, edits: {} };
+    const out = resetToCloudMerge({
+      teamId: 't1',
+      slice: before,
+      team,
+      rows: page,
+      local: { profileId: 'prB' },
+      foreignIds: new Set(),
+    });
+    expect(out.slice).toBe(before);
+    expect(out.team).toBe(team);
+  });
+
+  it('X1: another local team using a player id: nothing is stripped or pushed', () => {
+    const clock = new Clock();
+    const server = new FakeServer(clock);
+    const owner = new FakeDevice(
+      'devA',
+      server,
+      clock,
+      't1',
+      goldenTeamData(),
+      linkedTeam(),
+      'pr1',
+    );
+    owner.cycle();
+    clock.tick(20_000);
+    const set1Before = JSON.stringify(server.rows.get('set:m1/1')?.payload);
+    const local: TeamData = {
+      ...emptyTeamData(),
+      teams: [{ id: 'tx', profileId: 'prX', name: 'local', createdAt: '2026-01-01' }],
+      players: [
+        {
+          id: 'p1',
+          teamId: 'tx',
+          firstName: 'L',
+          lastName: 'L',
+          number: 1,
+          positions: ['OH'],
+          active: true,
+        },
+      ],
+    };
+    const x = new FakeDevice('devX', server, clock, 't1', local, linkedTeam(), 'prX');
+    x.cycle();
+    clock.tick(20_000);
+    x.cycle();
+    expect(x.skipped).toContainEqual({ key: 'player:p1', reason: 'foreignId' });
+    expect([...server.rows.values()].filter((r) => r.deviceId === 'devX')).toEqual([]);
+    expect(JSON.stringify(server.rows.get('set:m1/1')?.payload)).toBe(set1Before);
+    expect(x.slice?.team.captainId).toBe('p3');
+    expect(x.slice?.matches[0].sets[0].slots[1]).toBe('p1');
+    expect(x.data.players.find((p) => p.id === 'p1')?.teamId).toBe('tx');
   });
 });

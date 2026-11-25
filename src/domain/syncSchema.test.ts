@@ -56,6 +56,18 @@ describe('parsePayload', () => {
     expect(parsePayload('starters', 't1', noId)).toBeNull();
   });
 
+  it('rejects text that is too long (names 200, other text 1000 characters)', () => {
+    const player = payload('player:p1');
+    expect(parsePayload('player', 'p1', { ...player, firstName: 'x'.repeat(200) })).not.toBeNull();
+    expect(parsePayload('player', 'p1', { ...player, firstName: 'x'.repeat(201) })).toBeNull();
+    const season = payload('season:s2');
+    expect(parsePayload('season', 's2', { ...season, location: 'x'.repeat(1000) })).not.toBeNull();
+    expect(parsePayload('season', 's2', { ...season, location: 'x'.repeat(1001) })).toBeNull();
+    const set = payload('set:m1/1') as { events: object[] };
+    const longAt = { type: 'point', winner: 'us', at: 'x'.repeat(1001) };
+    expect(parsePayload('set', 'm1/1', { ...set, events: [longAt] })).toBeNull();
+  });
+
   it('checks that a set id matches its set number', () => {
     expect(parsePayload('set', 'm1/2', payload('set:m1/2'))).not.toBeNull();
     expect(parsePayload('set', 'm1/3', payload('set:m1/2'))).toBeNull();

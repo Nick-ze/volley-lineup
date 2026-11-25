@@ -54,6 +54,10 @@ describe('rekeyTeam', () => {
     expect(rekeyTeam(data, 't2', 'y').presets).toBe(data.presets);
   });
 
+  it('refuses an id another local team already has', () => {
+    expect(() => rekeyTeam(goldenTeamData(), 't1', 't2')).toThrow('already used');
+  });
+
   it('changes nothing for a team that is not there or the same id', () => {
     const data = goldenTeamData();
     expect(rekeyTeam(data, 'nope', 'x')).toBe(data);
