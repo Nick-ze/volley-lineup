@@ -107,11 +107,19 @@ export class SyncEngine implements EngineCore {
   setSession(session: BackendSession | null): void {
     const same = session?.userId === this.current?.userId && session?.email === this.current?.email;
     this.current = session;
-    if (session) this.needsRestore = false;
+    if (session) {
+      this.needsRestore = false;
+      this.setRestoring(false);
+    }
     if (!same) useSyncRuntime.setState({ session });
     if (session && appState().sync.deviceId === null)
       useAppStore.getState().setDeviceId(createId());
     this.rewire();
+  }
+
+  /** Whether "no session" may still change once the stored session is read (runtime flag). */
+  private setRestoring(on: boolean): void {
+    if (useSyncRuntime.getState().restoring !== on) useSyncRuntime.setState({ restoring: on });
   }
 
   signingOut(on: boolean): void {
@@ -135,6 +143,7 @@ export class SyncEngine implements EngineCore {
   start(): () => void {
     if (!this.started) {
       this.started = true;
+      this.setRestoring(true);
       this.unsubscribeSession = this.backend.onSessionChange((s, e) => this.onSessionEvent(s, e));
       void this.boot();
     }
@@ -147,16 +156,19 @@ export class SyncEngine implements EngineCore {
     const { account, teams } = appState().sync;
     const localOnly = !account && Object.keys(teams).length === 0;
     if (localOnly && !(await this.backend.hasStoredSession())) {
+      this.setRestoring(false);
       emitStatus({ type: 'disabled' });
       return;
     }
     try {
       const session = await this.backend.getSession();
       if (session || !this.current) this.setSession(session);
+      this.setRestoring(false);
     } catch (e) {
       if (toSyncError(e) === 'signedOut') {
+        this.setRestoring(false);
         emitStatus({ type: 'failed', code: 'signedOut', retryAt: null });
-      } else this.needsRestore = true;
+      } else this.needsRestore = true; // offline: still restoring until a cycle reads it
     }
     this.rewire();
     updatePending(this.userId());
@@ -170,6 +182,7 @@ export class SyncEngine implements EngineCore {
 
   stop(): void {
     this.started = false;
+    this.setRestoring(false);
     for (const timer of Object.values(this.timers)) clearTimeout(timer);
     this.timers = {};
     this.unsubscribeSession?.();
@@ -300,7 +313,10 @@ export class SyncEngine implements EngineCore {
     // First, before any network call: changes get the time they were made, online or not.
     noteAll(this);
     try {
-      if (this.needsRestore) this.setSession(await this.backend.getSession());
+      if (this.needsRestore) {
+        this.setSession(await this.backend.getSession());
+        this.setRestoring(false);
+      }
       const session = this.current;
       updatePending(this.userId());
       if (!session || linkedTeamIds(session.userId).length === 0) {
@@ -342,6 +358,7 @@ export class SyncEngine implements EngineCore {
       if (this.started) this.timers.retry = setTimeout(() => this.kick(), wait);
       emitStatus({ type: 'offline', retryAt: isoNow({ now: () => this.clock.now() + wait }) });
     } else {
+      this.setRestoring(false);
       emitStatus({ type: 'failed', code, retryAt: null });
     }
     updatePending(this.userId());

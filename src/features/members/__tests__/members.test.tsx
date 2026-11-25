@@ -392,6 +392,47 @@ describe('members: loading', () => {
     expect(screen.getByTestId('members-sign-in')).toBeTruthy();
   });
 
+  it('the first screen after a reload: loading while the session is restored, then the list (v10 QA)', async () => {
+    linkTeam('manager');
+    // Like the real command: without a session, listing fails with notSignedIn.
+    jest
+      .mocked(sync.listMembers)
+      .mockImplementation(async () =>
+        useSyncRuntime.getState().session
+          ? { ok: true, value: MEMBERS }
+          : { ok: false, error: 'notSignedIn' },
+      );
+    useSyncRuntime.setState({ restoring: true });
+    await renderApp(URL);
+    expect(await screen.findByText(t.members.list.loading)).toBeTruthy();
+    expect(screen.queryByTestId('members-sign-in')).toBeNull();
+    expect(screen.queryByText(t.members.errors.notSignedIn)).toBeNull();
+
+    await act(async () =>
+      useSyncRuntime.setState({
+        restoring: false,
+        session: { userId: 'me', email: 'coach@example.test' },
+      }),
+    );
+    expect(await screen.findByText('Bob')).toBeTruthy();
+    expect(screen.queryByText(t.members.list.loading)).toBeNull();
+    expect(screen.queryByTestId('members-sign-in')).toBeNull();
+  });
+
+  it('restoring while offline: the offline note with Try again, not "Sign in first"', async () => {
+    linkTeam('manager');
+    jest.mocked(sync.listMembers).mockResolvedValue({ ok: false, error: 'notSignedIn' });
+    useSyncRuntime.setState((r) => ({
+      restoring: true,
+      status: { ...r.status, phase: 'offline' },
+    }));
+    await renderApp(URL);
+    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+    expect(screen.getByTestId('members-retry')).toBeEnabled();
+    expect(screen.queryByText(t.members.list.loading)).toBeNull();
+    expect(screen.queryByTestId('members-sign-in')).toBeNull();
+  });
+
   it('an unknown team shows "not found"', async () => {
     await renderApp('/team/nope/members');
     expect(screen.getByText(t.roster.teamNotFound)).toBeTruthy();

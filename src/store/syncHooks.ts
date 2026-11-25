@@ -15,6 +15,9 @@ export const useSyncStatus = (): SyncStatus => useSyncRuntime((s) => s.status);
 
 export const useSession = (): SyncSession | null => useSyncRuntime((s) => s.session);
 
+/** True while the stored session is being restored (see `SyncRuntimeState.restoring`). */
+export const useSessionRestoring = (): boolean => useSyncRuntime((s) => s.restoring);
+
 export const useSyncAccount = (): SyncAccount | null => useAppStore((s) => s.sync.account);
 
 export const useSyncNotices = (): SyncNotice[] => useSyncRuntime((s) => s.notices);
