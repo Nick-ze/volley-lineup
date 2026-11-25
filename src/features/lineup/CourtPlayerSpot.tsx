@@ -79,11 +79,13 @@ export function CourtPlayerSpot({
               off,
             )}
             accessibilityHint={
-              locked
-                ? t.live.lineupLocked
-                : selectedId
-                  ? t.lineup.slotHintSelected
-                  : t.roles.tagHint
+              editor.viewOnly
+                ? t.sync.viewOnly
+                : locked
+                  ? t.live.lineupLocked
+                  : selectedId
+                    ? t.lineup.slotHintSelected
+                    : t.roles.tagHint
             }
             accessibilityState={{ disabled: locked }}
             aria-disabled={locked}
