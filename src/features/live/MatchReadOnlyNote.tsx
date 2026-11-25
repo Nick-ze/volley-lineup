@@ -21,8 +21,16 @@ function takeOverError(t: Strings, error: SyncErrorCode | 'denied'): string {
  * live), with "Take over" for a held match. A held match is only ever shown to managers (a
  * viewer's reason is "view only"), so Take over is always offered with 'held'. Renders nothing
  * when this device may edit the match (every local team).
+ * `onTakenOver` runs after a granted Take over: off the live screen it opens live, whose
+ * `useMatchHold` then refreshes and releases the hold (taking over only makes sense to score).
  */
-export function MatchReadOnlyNote({ matchId }: { matchId: string | undefined }) {
+export function MatchReadOnlyNote({
+  matchId,
+  onTakenOver,
+}: {
+  matchId: string | undefined;
+  onTakenOver?: () => void;
+}) {
   const t = useT();
   const styles = useStyles();
   const access = useMatchAccess(matchId);
@@ -36,6 +44,7 @@ export function MatchReadOnlyNote({ matchId }: { matchId: string | undefined }) 
     const result = await holdMatch(teamId, matchId, true);
     if (!result.ok) setError(result.error);
     else if (!result.value.granted) setError('denied');
+    else onTakenOver?.();
   };
 
   return (

@@ -153,6 +153,15 @@ describe('lineup builder, view only (v10)', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: t.sync.readOnly.takeOver }));
     expect(sync.holdMatch).toHaveBeenCalledWith('team1', 'm1', true);
+    // Taking over is for scoring: live opens, and its hold hook keeps (refreshes) the hold.
+    expect(screen).toHavePathname('/match/m1/live');
+    expect(sync.holdMatch).toHaveBeenLastCalledWith('team1', 'm1');
+    // Once the engine records this device's hold, live is this device's again (set 1 here has
+    // only two players, so it opens the set's setup instead of the point buttons).
+    expect(screen.getByText(t.sync.readOnly.held('Anna'))).toBeTruthy();
+    await act(async () => useSyncRuntime.setState({ holds: {} }));
+    expect(await screen.findByTestId('set-setup')).toBeTruthy();
+    expect(screen.queryByTestId('read-only-note')).toBeNull();
   });
 
   it('a failed Take over says why', async () => {
@@ -170,8 +179,11 @@ describe('lineup builder, view only (v10)', () => {
       jest.mocked(sync.holdMatch).mockResolvedValueOnce(result);
       await fireEvent.press(takeOver);
       expect(screen.getByTestId('take-over-error').props.children).toBe(message);
+      // Not taken over: the builder stays.
+      expect(screen).toHavePathname('/match/m1');
     }
     await fireEvent.press(takeOver);
     expect(screen.queryByTestId('take-over-error')).toBeNull();
+    expect(screen).toHavePathname('/match/m1/live');
   });
 });
