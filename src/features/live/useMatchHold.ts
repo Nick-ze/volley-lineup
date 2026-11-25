@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 import { followMatch, holdMatch, releaseMatch } from '@/lib/sync';
-import { useMatch, useMatchAccess, useTeamAccess } from '@/store';
+import { useMatch, useMatchAccess, useSession, useTeamAccess } from '@/store';
 
 /** The hold is a 15-minute lease: refresh it well before it runs out (docs/V10_SYNC_DESIGN.md §3.8). */
 export const HOLD_REFRESH_MS = 5 * 60 * 1000;
@@ -59,17 +59,21 @@ function startFollow(matchId: string): () => void {
 export function useMatchHold(matchId: string | undefined): void {
   const teamId = useMatch(matchId)?.teamId;
   const { shared, canEdit } = useTeamAccess(teamId);
-  const claim = shared && canEdit;
+  // The role is persisted, the session is not: on a reload / deep link to live the claim waits
+  // until the stored session is restored (a claim without it fails with notSignedIn).
+  const userId = useSession()?.userId;
+  const claim = shared && canEdit && !!userId;
   useEffect(() => {
     if (!claim || !teamId || !matchId) return undefined;
     return claimHold(teamId, matchId);
-  }, [claim, teamId, matchId]);
+  }, [claim, teamId, matchId, userId]);
 }
 
 /**
  * v10: a device that only watches a shared match live (a viewer, or the match is scored on
  * another device) polls it faster while a live screen of it is open, so the score updates like a
- * ticker. Local teams and the scoring device never follow.
+ * ticker. Local teams and the scoring device never follow. Unlike the hold, this needs no session:
+ * the engine keeps the followed match and polls fast once the stored session is restored.
  */
 export function useFollowMatch(matchId: string | undefined): void {
   const teamId = useMatch(matchId)?.teamId;

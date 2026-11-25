@@ -61,6 +61,10 @@ function seed(role: TeamRole | null) {
         : {},
     },
   });
+  // A shared team's device is signed in (the live hold needs the session).
+  useSyncRuntime.setState({
+    session: role ? { userId: 'u1', email: 'a@example.test' } : null,
+  });
 }
 
 const holdElsewhere = () =>

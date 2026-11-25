@@ -196,6 +196,21 @@ describe('a signed-in device with a shared team', () => {
       stop();
     });
   });
+
+  it('a match followed before the session is restored is polled every 15 s once it is', async () => {
+    const { cloud, d } = await started();
+    d.runtime = { ...d.runtime, session: null };
+    await d.act(async (engine) => {
+      engine.setSession(null);
+      engine.followMatch('m1'); // the live screen mounts before SyncHost starts the engine
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(2000);
+      const pulls = count(cloud, 'pullChanges');
+      await jest.advanceTimersByTimeAsync(30_000);
+      expect(count(cloud, 'pullChanges')).toBe(pulls + 2);
+      stop();
+    });
+  });
 });
 
 describe('live match holds', () => {

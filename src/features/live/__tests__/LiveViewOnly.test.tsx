@@ -45,6 +45,10 @@ function seed(role: TeamRole | null, sets: SetLineup[] = [lineupSet(1, points(3)
         : {},
     },
   });
+  // A shared team's device is signed in (holds need the session).
+  useSyncRuntime.setState({
+    session: role ? { userId: 'u1', email: 'a@example.test' } : null,
+  });
 }
 
 const holdElsewhere = () =>
@@ -150,6 +154,30 @@ describe('live hold (v10)', () => {
     expect(sync.followMatch).not.toHaveBeenCalled();
     await view.unmount();
     expect(sync.releaseMatch).toHaveBeenCalledWith('team1', 'm1');
+  });
+
+  it('live as the first screen: claims the hold once the session is restored (v10 QA)', async () => {
+    seed('manager');
+    // A web reload / deep link: the store is hydrated, the stored session not restored yet.
+    useSyncRuntime.setState({ session: null });
+    const hook = await renderHook(() => useMatchHold('m1'));
+    expect(sync.holdMatch).not.toHaveBeenCalled();
+    await act(async () =>
+      useSyncRuntime.setState({ session: { userId: 'u1', email: 'a@example.test' } }),
+    );
+    expect(sync.holdMatch).toHaveBeenCalledTimes(1);
+    expect(sync.holdMatch).toHaveBeenCalledWith('team1', 'm1');
+    await hook.unmount();
+    expect(sync.releaseMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('live as the first screen of a watcher: follows without waiting for the session', async () => {
+    seed('player');
+    useSyncRuntime.setState({ session: null });
+    const hook = await renderHook(() => useFollowMatch('m1'));
+    // The engine keeps the followed match and polls fast once the session is there.
+    expect(sync.followMatch).toHaveBeenCalledWith('m1');
+    await hook.unmount();
   });
 
   it('a local team never holds, releases or follows', async () => {
