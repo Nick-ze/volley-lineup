@@ -17,4 +17,13 @@ export const sync = {
   },
   shared: 'Shared',
   viewOnly: 'View only',
+  /** v10 (E1): the match side (builder, live, presets) for view-only members and held matches. */
+  match: {
+    notStarted: (set: number) => `Set ${set} hasn’t started yet.`,
+    takeOverFailed: {
+      offline: 'Taking over needs a connection.',
+      forbidden: 'Only managers can take over.',
+      other: 'Couldn’t take over. Try again.',
+    },
+  },
 };

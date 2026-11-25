@@ -8,7 +8,7 @@ import { PresetLineupEditor } from '@/features/presets/PresetLineupEditor';
 import { PresetNameDialog } from '@/features/presets/PresetNameDialog';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { useAppStore, usePreset } from '@/store';
+import { useAppStore, useCanEdit, usePreset } from '@/store';
 
 /** `/team/[teamId]/preset/[presetId]` — edit a named preset's lineup (and rename it). */
 export default function PresetScreen() {
@@ -18,6 +18,8 @@ export default function PresetScreen() {
   const preset = usePreset(presetId);
   const updatePreset = useAppStore((s) => s.updatePreset);
   const [renaming, setRenaming] = useState(false);
+  // v10: view-only members can look at a preset but not rename or change it.
+  const canEdit = useCanEdit(teamId);
   useTourPage(
     preset && preset.teamId === teamId && preset.kind === 'preset' ? 'presetEditor' : null,
   );
@@ -44,18 +46,20 @@ export default function PresetScreen() {
         onSave={save}
         hint={t.presets.editor.presetHint}
         header={
-          <Button
-            label={t.presets.editor.rename}
-            accessibilityLabel={t.presets.editor.renameLabel}
-            variant="secondary"
-            compact
-            onPress={() => setRenaming(true)}
-            testID="rename-preset"
-            style={styles.rename}
-          />
+          canEdit ? (
+            <Button
+              label={t.presets.editor.rename}
+              accessibilityLabel={t.presets.editor.renameLabel}
+              variant="secondary"
+              compact
+              onPress={() => setRenaming(true)}
+              testID="rename-preset"
+              style={styles.rename}
+            />
+          ) : undefined
         }
       />
-      {renaming ? (
+      {renaming && canEdit ? (
         <PresetNameDialog
           teamId={preset.teamId}
           title={t.presets.nameDialog.renameTitle}

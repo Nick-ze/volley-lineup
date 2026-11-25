@@ -10,8 +10,8 @@ export interface MatchSummaryProps {
   state: MatchState;
   opponent: string;
   onBack: () => void;
-  /** Undo the last point of the match (re-opens the deciding set). */
-  onUndo: () => void;
+  /** Undo the last point of the match (re-opens the deciding set); null hides it (v10: watchers). */
+  onUndo: (() => void) | null;
   /** The match-winning rally's tag ("kill #7 Smith"), named in the undo label; null if none. */
   tagDetail?: string | null;
 }
@@ -80,13 +80,15 @@ export function MatchSummary({
         onPress={onBack}
         testID="summary-back"
       />
-      <Button
-        label={t.live.undoLastPoint}
-        accessibilityLabel={tagDetail ? t.tags.withDetail(undoLabel, tagDetail) : undoLabel}
-        variant="secondary"
-        onPress={onUndo}
-        testID="undo"
-      />
+      {onUndo ? (
+        <Button
+          label={t.live.undoLastPoint}
+          accessibilityLabel={tagDetail ? t.tags.withDetail(undoLabel, tagDetail) : undoLabel}
+          variant="secondary"
+          onPress={onUndo}
+          testID="undo"
+        />
+      ) : null}
     </View>
   );
 }
