@@ -54,6 +54,22 @@ export interface PullReport {
 export const isGone = (meta: SyncedTeam, slice: TeamSlice | undefined): boolean =>
   !slice && (meta.cursor > 0 || Object.keys(meta.base).length > 0);
 
+/**
+ * Whether the team's next pull replaces it with the cloud's copy (`resetToCloudMerge`): after a
+ * demotion, or a viewer adopting an old local copy. Read from the persisted state (a viewer
+ * with cursor 0 and a `base`), so it survives an app restart before that pull.
+ */
+export function needsReset(core: EngineCore, teamId: string): boolean {
+  const meta = appState().sync.teams[teamId];
+  if (core.resetPending.has(teamId)) return true;
+  return (
+    meta !== undefined &&
+    meta.role === 'player' &&
+    meta.cursor === 0 &&
+    Object.keys(meta.base).length > 0
+  );
+}
+
 const union = (a: readonly string[], b: readonly string[]): string[] =>
   b.every((x) => a.includes(x)) ? [...a] : [...new Set([...a, ...b])];
 
@@ -121,7 +137,7 @@ export async function pullTeam(
     if (page.rows.length < PULL_PAGE || top <= after) break;
     after = top;
   }
-  await downloadPhotos(core, teamId, rows);
+  const missing = await downloadPhotos(core, teamId, rows);
 
   const report: PullReport = { foreign: 0, invalid, present: false };
   const now = isoNow(core.clock);
@@ -133,9 +149,14 @@ export async function pullTeam(
     report.invalid += out.skipped.filter((x) => x.reason === 'invalid').length;
     report.present = out.slice !== undefined;
     const cursor = out.slice ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow) : meta.cursor;
-    const photos = union(meta.photos, remotePhotoIds(rows));
+    // Not-found photos aren't in the cloud folder (any more): forget them, so a manager that
+    // has one uploads it again with its next change.
+    const photos = union(meta.photos, remotePhotoIds(rows)).filter((id) => !missing.has(id));
     const same =
-      out.team === meta && cursor === meta.cursor && photos.length === meta.photos.length;
+      out.team === meta &&
+      cursor === meta.cursor &&
+      photos.length === meta.photos.length &&
+      photos.every((id, i) => id === meta.photos[i]);
     if (same && !changed) return s;
     return {
       ...data,
@@ -144,6 +165,28 @@ export async function pullTeam(
   });
   settleDownloads(core, teamId);
   return report;
+}
+
+/**
+ * Notes the local changes of every shared team this device may edit, with the time now (one
+ * store write; online or offline). A change must get its save time when it is made — not at the
+ * next online cycle, or an older offline edit would win against a newer one from elsewhere.
+ */
+export function noteAll(core: EngineCore): void {
+  const now = isoNow(core.clock);
+  transaction((s) => {
+    let teams: Record<string, SyncedTeam> | null = null;
+    for (const [teamId, meta] of Object.entries(s.sync.teams)) {
+      if (meta.role !== 'manager') continue;
+      const slice = sliceOf(s, teamId);
+      if (!slice) continue;
+      const { edits } = detectChanges(slice, meta, now);
+      if (edits === meta.edits) continue;
+      teams ??= { ...s.sync.teams };
+      teams[teamId] = { ...meta, edits };
+    }
+    return teams ? { sync: { ...s.sync, teams } } : s;
+  });
 }
 
 const toItem = (c: LocalChange): PushItem =>

@@ -6,13 +6,20 @@ import { isServerSafeTeamId, rekeyTeam } from './syncUpload';
 
 describe('isServerSafeTeamId', () => {
   it('accepts plain ids of at most 100 characters', () => {
-    for (const ok of ['t1', 'a-b_c.d~e', '3f2a1c9e-4b6d-4e1f-9a7b-2c8d0e5f6a1b', 'x'.repeat(100)]) {
+    for (const ok of [
+      't1',
+      '.a',
+      'a..',
+      'a-b_c.d~e',
+      '3f2a1c9e-4b6d-4e1f-9a7b-2c8d0e5f6a1b',
+      'x'.repeat(100),
+    ]) {
       expect(isServerSafeTeamId(ok)).toBe(true);
     }
   });
 
   it('rejects ids the server or a storage path would not take', () => {
-    for (const bad of ['', 'x'.repeat(101), 'a/b', 'a%20b', 'a b', 'Mü', 'a:b']) {
+    for (const bad of ['', 'x'.repeat(101), 'a/b', 'a%20b', 'a b', 'Mü', 'a:b', '.', '..', '...']) {
       expect(isServerSafeTeamId(bad)).toBe(false);
     }
   });

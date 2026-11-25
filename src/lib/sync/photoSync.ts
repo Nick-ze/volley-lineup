@@ -13,7 +13,7 @@ import type { TeamSlice } from '@/domain/syncRecords';
 import { setPendingRemotePhotos, setPhoto, usePhotoStore, whenPhotosLoaded } from '@/store';
 
 import type { EngineCore } from './core';
-import { toSyncError } from './errors';
+import { isNotFound, toSyncError } from './errors';
 
 const photoIdOf = (payload: Readonly<Record<string, unknown>> | null): string | null =>
   typeof payload?.photoId === 'string' ? payload.photoId : null;
@@ -46,17 +46,20 @@ function publishPending(core: EngineCore): void {
 
 /**
  * Downloads the photos of pulled records (and earlier failures) that the device doesn't have.
- * They stay "pending" until `settleDownloads` (after the records were applied). Rethrows when
- * the connection is gone.
+ * They stay "pending" until `settleDownloads` (after the records were applied). Returns the ids
+ * the cloud doesn't have (not found: e.g. removed by another device meanwhile), so they are no
+ * longer counted as uploaded and a manager that has one uploads it again. Rethrows when the
+ * connection is gone.
  */
 export async function downloadPhotos(
   core: EngineCore,
   teamId: string,
   rows: readonly RemoteRecord[],
-): Promise<void> {
+): Promise<Set<string>> {
+  const missing = new Set<string>();
   const pending = core.pendingPhotos.get(teamId) ?? new Set<string>();
   const wanted = new Set([...remotePhotoIds(rows), ...pending]);
-  if (wanted.size === 0) return;
+  if (wanted.size === 0) return missing;
   await whenPhotosLoaded();
   core.pendingPhotos.set(teamId, pending);
   let offline: unknown = null;
@@ -70,9 +73,11 @@ export async function downloadPhotos(
       if (isPhotoDataUri(uri)) await setPhoto(id, uri);
     } catch (e) {
       if (toSyncError(e) === 'offline') offline = e;
+      else if (isNotFound(e)) missing.add(id);
     }
   }
   if (offline) throw offline;
+  return missing;
 }
 
 /** After applying: photos now on the device are no longer pending. */

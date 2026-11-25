@@ -332,7 +332,9 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async downloadPhoto(teamId, photoId) {
-      const blob = await data(bucket().download(`${teamId}/${photoId}`));
+      const { data: blob, error } = await bucket().download(`${teamId}/${photoId}`);
+      if (error)
+        throw isMissing(error) ? new BackendError('unknown', 'not_found') : backendError(error);
       if (!(blob instanceof Blob)) throw new BackendError('unknown', 'photo');
       const uri = bytesToDataUri(await blobToBytes(blob));
       if (!uri) throw new BackendError('unknown', 'photo');
@@ -369,6 +371,17 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
       return parse(z.array(z.string()).nullable(), await rpc('delete_my_account')) ?? [];
     },
   };
+}
+
+/** Storage's "no such object". */
+function isMissing(error: unknown): boolean {
+  const e = error as { statusCode?: unknown; status?: unknown; code?: unknown; message?: unknown };
+  return (
+    String(e.statusCode) === '404' ||
+    e.status === 404 ||
+    e.code === 'NoSuchKey' ||
+    /not found/i.test(String(e.message))
+  );
 }
 
 /** Storage's "already exists" (an earlier upload of the same immutable photo went through). */

@@ -100,6 +100,8 @@ export class TestDevice {
     try {
       return await fn(this.engine);
     } finally {
+      // A cycle a command kicked must finish on this device's stores.
+      await this.engine.whenIdle();
       this.save();
     }
   }

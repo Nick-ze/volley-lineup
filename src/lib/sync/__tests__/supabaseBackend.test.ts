@@ -357,6 +357,13 @@ describe('supabase backend: photos', () => {
     (globalThis as { FileReader?: unknown }).FileReader = Reader;
     bucket.download.mockResolvedValueOnce(ok(new Blob(['x'])));
     expect(await backend.downloadPhoto('t1', 'ph1')).toBe('data:image/png;base64,iVBORw0KGgo=');
+    bucket.download.mockResolvedValueOnce({
+      data: null,
+      error: { statusCode: '404', message: 'Object not found' },
+    });
+    await expect(backend.downloadPhoto('t1', 'ph1')).rejects.toMatchObject({ raw: 'not_found' });
+    bucket.download.mockResolvedValueOnce({ data: null, error: { status: 500, message: 'x' } });
+    await expect(backend.downloadPhoto('t1', 'ph1')).rejects.toMatchObject({ code: 'offline' });
     bucket.download.mockResolvedValueOnce(ok('not a blob'));
     await expect(backend.downloadPhoto('t1', 'ph1')).rejects.toBeInstanceOf(BackendError);
     delete (globalThis as { FileReader?: unknown }).FileReader;

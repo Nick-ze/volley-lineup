@@ -106,3 +106,7 @@ export function backendError(error: unknown): BackendError {
 /** The server refused because the team's photos are still stored (`VL008`). */
 export const isPhotosRemain = (error: unknown): boolean =>
   error instanceof BackendError && error.raw === 'VL008';
+
+/** Storage has no such object (a photo removed or never uploaded). */
+export const isNotFound = (error: unknown): boolean =>
+  error instanceof BackendError && error.raw === 'not_found';

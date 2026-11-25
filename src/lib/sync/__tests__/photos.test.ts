@@ -34,9 +34,8 @@ async function setup() {
 describe('photos', () => {
   it('are uploaded before the records that refer to them', async () => {
     const { cloud, a } = await setup();
-    await a.act((e) => uploadTeams(e, ['t1']));
     const mark = cloud.calls.length;
-    await a.cycle();
+    await a.act((e) => uploadTeams(e, ['t1'])); // the upload's own cycle pushes
     const calls = cloud.calls.slice(mark);
     expect(calls.lastIndexOf('uploadPhoto')).toBeLessThan(calls.indexOf('pushRecords'));
     expect(calls.filter((c) => c === 'uploadPhoto')).toHaveLength(2);
@@ -100,5 +99,24 @@ describe('photos', () => {
     await b.cycle();
     expect(b.data.players.find((p) => p.id === 'p1')?.photoId).toBe('ph-new');
     expect(b.photos['ph-new']).toBe(OTHER);
+  });
+
+  it('a photo the cloud no longer has is forgotten as uploaded (a manager re-uploads it)', async () => {
+    const { cloud, a, b } = await setup();
+    await a.act((e) => uploadTeams(e, ['t1']));
+    await a.cycle();
+    await b.act((e) => downloadTeams(e, ['t1']));
+    expect(b.data.sync.teams.t1.photos.sort()).toEqual(['ph2', 'ph3']);
+    // Another device removed ph2 meanwhile; device B now pulls a record that uses it.
+    cloud.photos.delete('t1/ph2');
+    b.photos = { ph3: PHOTO };
+    cloud.clock.tick(1000);
+    await a.edit((s) => ({
+      players: s.players.map((p) => (p.id === 'p1' ? { ...p, firstName: 'Changed' } : p)),
+    }));
+    await a.cycle();
+    await b.cycle();
+    expect(b.data.sync.teams.t1.photos).toEqual(['ph3']);
+    expect(b.data.players.find((p) => p.id === 'p1')?.photoId).toBe('ph2');
   });
 });

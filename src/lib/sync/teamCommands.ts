@@ -2,7 +2,8 @@
  * v10: sharing teams — the cloud list, upload, download, join, leave, delete for everyone and
  * unlink (docs/V10_SYNC_DESIGN.md §3.9, §3.11).
  */
-import { adoptExisting } from '@/domain/syncMerge';
+import { adoptExisting, EPOCH } from '@/domain/syncMerge';
+import { payloadHash, sliceToRecords, type TeamSlice } from '@/domain/syncRecords';
 import { isServerSafeTeamId, rekeyTeam } from '@/domain/syncUpload';
 import type { SyncedTeam, TeamRole } from '@/domain/types';
 import { createId } from '@/lib/id';
@@ -22,7 +23,7 @@ import {
   transaction,
   unlinkTeams,
 } from './storeOps';
-import { pullTeam } from './teamSync';
+import { needsReset, pullTeam } from './teamSync';
 import type { CloudTeam, Joined, SyncResult, UploadItem } from './types';
 
 /** Errors that end a whole command (the others only fail one team). */
@@ -50,11 +51,23 @@ function linkCloudTeam(engine: SyncEngine, userId: string, teamId: string, role:
     return;
   }
   const slice = sliceOf(appState(), teamId);
-  if (slice && role === 'player') engine.resetPending.add(teamId);
-  setTeamMeta(
-    teamId,
-    newMeta(userId, role, slice && role === 'manager' ? adoptExisting(slice) : {}),
-  );
+  if (!slice) setTeamMeta(teamId, newMeta(userId, role));
+  else if (role === 'manager') setTeamMeta(teamId, newMeta(userId, role, adoptExisting(slice)));
+  else {
+    // A viewer gets the cloud's copy: a `base` of the local records (cursor 0) marks the reset
+    // in the persisted state (`needsReset`), so it also happens after a restart.
+    engine.resetPending.add(teamId);
+    setTeamMeta(teamId, { ...newMeta(userId, role), base: localBase(slice) });
+  }
+}
+
+/** A `base` of the local copy's records at version 0 (nothing pulled yet). */
+function localBase(slice: TeamSlice): SyncedTeam['base'] {
+  const base: SyncedTeam['base'] = {};
+  for (const [key, payload] of sliceToRecords(slice)) {
+    base[key] = { v: 0, h: payloadHash(payload), at: EPOCH };
+  }
+  return base;
 }
 
 export const listCloudTeams = (engine: SyncEngine): Promise<SyncResult<CloudTeam[]>> =>
@@ -89,21 +102,28 @@ async function uploadOne(
     return { teamId, result: 'failed', error: 'unknown' };
   }
   let id = isServerSafeTeamId(teamId) ? teamId : rekey(teamId);
-  let outcome = await engine.backend.createTeam(id, name);
-  if (outcome === 'taken') {
-    id = rekey(id);
-    outcome = await engine.backend.createTeam(id, name);
+  try {
+    let outcome = await engine.backend.createTeam(id, name);
+    if (outcome === 'taken') {
+      id = rekey(id);
+      outcome = await engine.backend.createTeam(id, name);
+    }
+    const moved = id === teamId ? {} : { newTeamId: id };
+    if (outcome === 'taken') return { teamId, result: 'failed', error: 'unknown', ...moved };
+    if (outcome === 'created') {
+      setTeamMeta(id, newMeta(session.userId, 'manager'));
+    } else {
+      const roles = await engine.backend.memberships();
+      const role = roles.find((m) => m.teamId === id)?.role ?? 'player';
+      linkCloudTeam(engine, session.userId, id, role);
+    }
+    const result = id !== teamId ? 'rekeyed' : outcome === 'created' ? 'created' : 'linked';
+    return { teamId, result, ...moved };
+  } catch (e) {
+    // The team already has its new id on this device: the caller must learn it, whatever failed.
+    if (id === teamId) throw e;
+    return { teamId, result: 'failed', error: toSyncError(e), newTeamId: id };
   }
-  const moved = id === teamId ? {} : { newTeamId: id };
-  if (outcome === 'taken') return { teamId, result: 'failed', error: 'unknown', ...moved };
-  if (outcome === 'created') {
-    setTeamMeta(id, newMeta(session.userId, 'manager'));
-  } else {
-    const roles = await engine.backend.memberships();
-    linkCloudTeam(engine, session.userId, id, roles.find((m) => m.teamId === id)?.role ?? 'player');
-  }
-  const result = id !== teamId ? 'rekeyed' : outcome === 'created' ? 'created' : 'linked';
-  return { teamId, result, ...moved };
 }
 
 /**
@@ -151,7 +171,7 @@ export const downloadTeams = (engine: SyncEngine, teamIds: string[]): Promise<Sy
       engine.rewire();
       try {
         for (const teamId of wanted) {
-          const reset = engine.resetPending.has(teamId);
+          const reset = needsReset(engine, teamId);
           const report = await pullTeam(engine, teamId, reset);
           if (reset && report.present) engine.resetPending.delete(teamId);
         }

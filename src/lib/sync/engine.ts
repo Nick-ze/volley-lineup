@@ -41,7 +41,7 @@ import {
   whenHydrated,
 } from './storeOps';
 import { forgetPhotos } from './photoSync';
-import { pullTeam, pushTeam } from './teamSync';
+import { needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
 
 export interface EngineTiming {
   /** Delay of the first cycle after start (after the first screen is idle). */
@@ -222,6 +222,7 @@ export class SyncEngine implements EngineCore {
     if (isApplying() || !dataChanged(s, prev) || Object.keys(s.sync.teams).length === 0) return;
     clearTimeout(this.timers.debounce);
     this.timers.debounce = setTimeout(() => {
+      noteAll(this);
       updatePending(this.userId());
       if (this.failures === 0) this.kick();
     }, this.timing.debounceMs);
@@ -270,6 +271,11 @@ export class SyncEngine implements EngineCore {
     void this.runCycle();
   }
 
+  /** Resolves once no cycle runs (tests: before another device takes the stores). */
+  async whenIdle(): Promise<void> {
+    while (this.cycling) await this.cycling;
+  }
+
   /** "Sync now": forget the back-off and sync at once. */
   async syncNow(): Promise<void> {
     this.failures = 0;
@@ -291,6 +297,8 @@ export class SyncEngine implements EngineCore {
   /* ---------------------------------------------------------------- the cycle */
 
   private async cycle(): Promise<void> {
+    // First, before any network call: changes get the time they were made, online or not.
+    noteAll(this);
     try {
       if (this.needsRestore) this.setSession(await this.backend.getSession());
       const session = this.current;
@@ -340,7 +348,7 @@ export class SyncEngine implements EngineCore {
   }
 
   private async syncTeam(teamId: string, deviceId: string): Promise<void> {
-    const reset = this.resetPending.has(teamId);
+    const reset = needsReset(this, teamId);
     const report = await pullTeam(this, teamId, reset);
     if (reset && report.present) this.resetPending.delete(teamId);
     const skipped = report.foreign + report.invalid;

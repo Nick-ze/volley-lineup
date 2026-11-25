@@ -14,6 +14,7 @@ import {
   requestCode,
   verifyCode,
 } from '../accountCommands';
+import { createEngine } from '../engine';
 import { createInvite } from '../memberCommands';
 import {
   deleteTeamEverywhere,
@@ -179,6 +180,28 @@ describe('first upload', () => {
     expect(cloud.teams.has(item?.newTeamId as string)).toBe(true);
   });
 
+  it('the create fails after the team got a new id: failed, but with newTeamId', async () => {
+    const cloud = new FakeCloud();
+    const other = device(cloud, 'dev-x');
+    await other.signIn('other@example.test');
+    await other.act((e) => uploadTeams(e, ['t1']));
+    const d = device(cloud, 'dev-a');
+    await d.signIn('anna@example.test');
+    const create = d.backend.createTeam.bind(d.backend);
+    let calls = 0;
+    d.backend.createTeam = async (id, name) => {
+      calls += 1;
+      if (calls === 2) throw new TypeError('Network request failed');
+      return create(id, name);
+    };
+    const result = await d.act((e) => uploadTeams(e, ['t1']));
+    const item = result.ok ? result.value[0] : null;
+    expect(item).toMatchObject({ teamId: 't1', result: 'failed', error: 'offline' });
+    expect(item?.newTeamId).toEqual(expect.any(String));
+    expect(d.data.teams.map((t) => t.id)).toEqual([item?.newTeamId]);
+    expect(d.data.sync.teams).toEqual({});
+  });
+
   it('failures: a missing team fails; 10 created teams is tooMany; offline ends the command', async () => {
     const cloud = new FakeCloud();
     const d = device(cloud, 'dev-a');
@@ -222,6 +245,37 @@ describe('cloud teams', () => {
     expect(Object.keys(b.data.sync.teams)).toEqual(['t1']);
     const listed = await b.act((e) => listCloudTeams(e));
     expect(listed.ok && listed.value[0].onDevice).toBe(true);
+  });
+
+  it('a viewer adopting an old local copy gets the cloud copy, also after a restart', async () => {
+    const cloud = new FakeCloud();
+    const a = device(cloud, 'dev-a');
+    await a.signIn('anna@example.test');
+    await a.act((e) => uploadTeams(e, ['t1']));
+    await a.cycle();
+    const invite = await a.act((e) => createInvite(e, 't1', 'player', 7));
+    // Ben has an old local copy of t1 with a player the cloud doesn't have.
+    const old = t1();
+    const b = device(cloud, 'dev-b', {
+      ...old,
+      players: [...old.players, { ...old.players[1], id: 'p-old', number: 88 }],
+    });
+    await b.signIn('ben@example.test');
+    const pull = b.backend.pullChanges.bind(b.backend);
+    b.backend.pullChanges = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await b.act((e) => joinTeam(e, invite.ok ? invite.value.code : ''));
+    expect(b.data.sync.teams.t1).toMatchObject({ role: 'player', cursor: 0 });
+    b.backend.pullChanges = pull;
+    // A restart: a new engine, nothing in memory.
+    const fresh = createEngine(b.backend, { now: () => cloud.clock.ms });
+    await b.act(async () => {
+      fresh.setSession(b.backend.session);
+      await fresh.runCycle();
+    });
+    expect(b.data.players.some((p) => p.id === 'p-old')).toBe(false);
+    expect(b.data.players.map((p) => p.id).sort()).toEqual(a.data.players.map((p) => p.id).sort());
   });
 
   it('unlinkTeam keeps the local copy and stops syncing it', async () => {
