@@ -722,7 +722,7 @@ the team's members**.
 
 ## 45. v10.0 acceptance checklist
 
-- [ ] Without signing in the app behaves like 9.2: no network calls; screens unchanged except Profile → Account, the team header's Members button and the Teams tab's sync / join entries.
+- [ ] Without signing in the app behaves like 9.2: no network calls; screens unchanged except Profile → Cloud sync, the team header's Members / Share button and the Teams tab's sync / join entries.
 - [ ] Sign in with a 6-digit email code (EN + DE); wrong / expired code and offline messages; resend after 60 s.
 - [ ] First sign-in offers Upload (nothing pre-selected) and Download; nothing uploads without a tap.
 - [ ] Edits on device A appear on device B after Sync now / focus / ≤ 60 s; the same record edited on both → the later save wins per record (player, match, set, preset, starters, season, opponent, team fields).

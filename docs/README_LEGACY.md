@@ -179,7 +179,7 @@ opened by an older app.
 - **Shared teams**: upload your teams (you pick which) and download your cloud teams on another device. Changes are
   saved on the device first and sync in the background; the most recent save wins per player, match, set, preset,
   season, opponent and team; deletions sync too. Sync status (Synced / Syncing / Offline / error) on the Teams tab,
-  "Sync now" on the Account screen.
+  "Sync now" on the Cloud sync screen.
 - **Roles and invites**: managers edit, players only view (every edit control is hidden with a short note). Managers
   create invite codes / links (player codes many uses up to 30 days, manager codes once up to 7 days), revoke them,
   change roles and remove members; the last manager can't leave.

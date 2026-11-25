@@ -103,8 +103,8 @@ You don't need an account. If you want your teams on more than one device, or wa
 4. **Syncing**: changes are saved on the phone first and sync in the background when you're online (the small cloud on
    the Teams tab shows Synced / Syncing / Offline). If two devices change the same thing, the later change wins. While
    a match is scored live on one device, the others show it read-only (managers can **Take over**).
-5. **Account screen** (Profile → Cloud sync → **Account**): sync now, sign out, or **delete your account** (removes your
-   data from the server; what's on your phone stays).
+5. **Cloud sync screen** (Profile → **Open cloud sync**, or tap the cloud on the Teams tab): sync now, sign out, or
+   **delete your account** (removes your data from the server; what's on your phone stays).
 
 **Privacy**: team data is stored on a Supabase server in **Zurich, Switzerland** (eu-central-2). Player photos are
 stored privately and only the team's members can see them; profile photos and the confidential player descriptions
