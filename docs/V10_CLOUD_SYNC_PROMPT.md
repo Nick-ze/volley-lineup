@@ -30,6 +30,7 @@ Team managers and players can create an account, log in, and see the same team d
 
 - Use the Supabase connector (MCP tools) to create tables, apply migrations, set RLS policies, configure Auth and read the security advisors. If the connector isn't available, see "If access is missing" below.
 - Keep the database schema as SQL migration files in the repo (`supabase/migrations/*.sql`) so it can be recreated or moved to a self-hosted Supabase later. Every change to the live database goes through a migration file in a PR.
+- The project was created with "Enable RLS on new tables automatically" **on** and "Grant API access to new tables automatically" **off**. So every migration that adds a table must also `GRANT` the needed privileges to the `authenticated` role explicitly (never to `anon` unless a decision says why), or the app can't reach the table.
 - **RLS on every table, no exceptions.** Only members of a team can read it; only managers can write it. Write RLS tests (SQL or a test script) that prove: a stranger can't read a team, a player can't write, a manager of team A can't touch team B, a removed member loses access.
 - The app uses only the **publishable / anon key** (public by design, protected by RLS). It may live in `app.config.js`. The `service_role` key must never be in the repo, the app, or a chat.
 - Add `@supabase/supabase-js` with `EXPO_OFFLINE=1 npx expo install` (plus whatever session storage it needs on native) and note it in DECISIONS.
