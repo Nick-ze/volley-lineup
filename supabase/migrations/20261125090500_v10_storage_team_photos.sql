@@ -18,14 +18,15 @@ create policy team_photos_select_members on storage.objects
   using (bucket_id = 'team-photos'
          and (storage.foldername(name))[1] in (select private.my_team_ids()));
 
--- Managers upload directly into their team's folder (exactly one folder level), at most 500
--- photos per team (with 256 kB each, at most 125 MB).
+-- Managers upload directly into their team's folder (exactly one folder level), at most 150
+-- photos per team: with 256 kB each that is 37.5 MB per team and 375 MB for one account's
+-- 10 teams, well inside the free tier's 1 GB.
 create policy team_photos_insert_managers on storage.objects
   for insert to authenticated
   with check (bucket_id = 'team-photos'
               and array_length(storage.foldername(name), 1) = 1
               and (storage.foldername(name))[1] in (select private.my_managed_team_ids())
-              and private.team_photo_count((storage.foldername(name))[1]) < 500);
+              and private.team_photo_count((storage.foldername(name))[1]) < 150);
 
 -- Managers delete their team's photos (photo clean-up, "Delete for everyone", account deletion).
 create policy team_photos_delete_managers on storage.objects

@@ -91,10 +91,15 @@ $$;
 
 -- Number of photos in the team's storage folder 'team-photos/<teamId>/'. SECURITY DEFINER so it
 -- counts every object, whoever asks (used by the photo upload policy and the team RPCs).
+-- A byte range in the C collation ('<id>/' ≤ name < '<id>0', since '0' follows '/') lets the
+-- (bucket_id, name) index find the folder instead of filtering every object in the bucket.
+-- The bucket isn't versioned, so archived versions and delete markers aren't filtered out.
 create function private.team_photo_count(p_team_id text) returns bigint
   language sql stable security definer set search_path = '' as $$
   select count(*) from storage.objects o
-  where o.bucket_id = 'team-photos' and starts_with(o.name, p_team_id || '/')
+  where o.bucket_id = 'team-photos'
+    and o.name collate "C" >= p_team_id || '/'
+    and o.name collate "C" < p_team_id || '0'
 $$;
 
 revoke all on function private.my_team_ids(), private.my_managed_team_ids(),

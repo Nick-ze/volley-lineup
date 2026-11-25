@@ -78,15 +78,16 @@ create trigger team_records_stamp
   before insert or update on public.team_records
   for each row execute function private.stamp_team_record();
 
--- Storage budget: teams.payload_bytes is the sum of the team's payload sizes. A write that grows
--- it past 20 MB is VL007 (team_full); shrinking writes always pass. With at most 10 created teams
--- per user this caps what one account can store.
+-- Storage budget: teams.payload_bytes is the sum of the team's payload sizes plus 512 bytes per
+-- row (row, index and tombstone overhead). A write that grows it past 20 MB is VL007
+-- (team_full); shrinking writes always pass. With at most 10 created teams per user this caps
+-- what one account can store.
 create function private.count_team_payload() returns trigger
   language plpgsql set search_path = '' as $$
 declare
   v_delta bigint := coalesce(octet_length(new.payload::text), 0)
-                    - case when tg_op = 'UPDATE' then coalesce(octet_length(old.payload::text), 0)
-                           else 0 end;
+                    + case when tg_op = 'INSERT' then 512
+                           else -coalesce(octet_length(old.payload::text), 0) end;
   v_total bigint;
 begin
   if v_delta = 0 then

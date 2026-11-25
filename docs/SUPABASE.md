@@ -68,12 +68,16 @@ not be able to fill it:
 | Limit                                                                   | Error                    |
 | ----------------------------------------------------------------------- | ------------------------ |
 | 10 teams created per user (existing ones)                               | `VL006`                  |
-| 20 MB of record payloads per team (`teams.payload_bytes`)               | `VL007`                  |
+| 20 MB per team: payloads + 512 bytes per record (`teams.payload_bytes`) | `VL007`                  |
 | 20 000 records per team                                                 | `VL007`                  |
 | 64 kB per record, 200 records / 1 MB per push                           | `23514` / `22023`        |
-| 500 photos per team (256 kB each)                                       | `42501` (storage policy) |
+| 150 photos per team (256 kB each)                                       | `42501` (storage policy) |
 | 20 usable invites per team                                              | `VL007`                  |
 | 50 active live holds per team (holds expired over a day ago are pruned) | `VL007`                  |
+
+Worst case for one account: 10 teams × 20 MB = 200 MB of records (the 512 bytes per record cover
+row, index and tombstone overhead, so a team of many tiny records still counts as what it costs)
+and 10 × 150 × 256 kB = 375 MB of photos.
 
 ### Security model
 
@@ -85,7 +89,11 @@ not be able to fill it:
 - The schema `private` isn't exposed by the Data API. It holds the policy helpers
   `my_team_ids()`, `my_managed_team_ids()` (used as `team_id in (select …)`, evaluated once per
   query), `is_team_member(text)`, `is_team_manager(text)` (used inside RPCs) and
-  `team_photo_count(text)` (photo limit, leftover-photo checks). They are `SECURITY DEFINER` so
+  `team_photo_count(text)` (photo limit, leftover-photo checks; it reads the folder as a C-collation
+  name range, so the `(bucket_id, name)` index is used; the bucket isn't versioned, so it doesn't
+  filter archived versions or delete markers: if versioning is ever turned on for `team-photos`,
+  add `archived_at is null and not coalesce(is_delete_marker, false)` there, or deletes of old
+  teams stay blocked by `VL008`). They are `SECURITY DEFINER` so
   the `team_members` policy can read `team_members` without recursion. It also holds the table
   `team_removals` (who was removed when), which no API role can read.
 - Triggers on `team_members`: the **last-manager guard** (the last manager can't be demoted or
@@ -168,23 +176,23 @@ claims, and rolls everything back at the end, so it leaves nothing behind.
 
 A failing check raises `FAIL T<n> …` and stops. Success ends with `ALL RLS TESTS PASSED`.
 
-| Tests    | What                                                                                                       |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| T1–T3    | create teams (team id shape), push and pull (ISO ms times, device id, clock `updated_at`), invite and join |
-| T4–T6    | a stranger reads nothing, can't call any team RPC, can't hijack a team id                                  |
-| T7–T9    | a player reads records and members but no invites, can't write through RPCs or tables, can't read removals |
-| T10      | a manager of another team has no access                                                                    |
-| T11–T13b | storage: upload, read and delete by role, one folder level only, at most 500 photos                        |
-| T14–T16  | last write wins with the device tie-break, clock clamp, millisecond times, tombstones                      |
-| T17      | CHECKs and limits (kinds, 64 kB, infinite times, batch size, 20 MB and 20 000 records, 10 created teams)   |
-| T18, T23 | last manager and last member                                                                               |
-| T19, T20 | leaving / removed members lose access; T20b: old codes refused after a removal, a new code works           |
-| T21, T22 | expired, revoked and unknown codes; codes never downgrade; T22b: manager codes are single use              |
-| T24      | live holds: refusal, take-over, expiry, release; T24b: 50 active holds, pruning                            |
-| T25, T26 | account deletion: `anon` refused, blocked teams (VL001), photos first (VL008), sole teams deleted          |
-| T27      | delete for everyone (photos first, VL008); T27b: leftover photos make an id `'taken'`; dashboard deletion  |
-| T28, T29 | `anon`: keepalive only, no tables, no RPCs                                                                 |
-| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks                         |
+| Tests    | What                                                                                                                                    |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| T1–T3    | create teams (team id shape), push and pull (ISO ms times, device id, clock `updated_at`), invite and join                              |
+| T4–T6    | a stranger reads nothing, can't call any team RPC, can't hijack a team id                                                               |
+| T7–T9    | a player reads records and members but no invites, can't write through RPCs or tables, can't read removals                              |
+| T10      | a manager of another team has no access                                                                                                 |
+| T11–T13b | storage: upload, read and delete by role, one folder level only, at most 150 photos                                                     |
+| T14–T16  | last write wins with the device tie-break, clock clamp, millisecond times, tombstones                                                   |
+| T17      | CHECKs and limits (kinds, 64 kB, infinite times, batch size, byte budget with row overhead, 20 MB and 20 000 records, 10 created teams) |
+| T18, T23 | last manager and last member                                                                                                            |
+| T19, T20 | leaving / removed members lose access; T20b: old codes refused after a removal, a new code works                                        |
+| T21, T22 | expired, revoked and unknown codes; codes never downgrade; T22b: manager codes are single use                                           |
+| T24      | live holds: refusal, take-over, expiry, release; T24b: 50 active holds, pruning                                                         |
+| T25, T26 | account deletion: `anon` refused, blocked teams (VL001), photos first (VL008), sole teams deleted                                       |
+| T27      | delete for everyone (photos first, VL008); T27b: leftover photos make an id `'taken'`; dashboard deletion                               |
+| T28, T29 | `anon`: keepalive only, no tables, no RPCs                                                                                              |
+| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks                                                      |
 
 The team-row locks prevent a race between two sessions; one transaction can't reproduce it, so
 T30 checks that the functions take the lock.

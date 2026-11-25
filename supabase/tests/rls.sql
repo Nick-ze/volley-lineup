@@ -312,20 +312,22 @@ begin
   insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/x2');
 end $$;
 
--- T13b at most 500 photos per team: fill team-a to 499 as postgres, MA adds the 500th.
+-- T13b at most 150 photos per team: fill team-a to 149 as postgres, MA adds the 150th.
 reset role;
 insert into storage.objects (bucket_id, name)
-select 'team-photos', 'team-a/bulk-' || g from generate_series(1, 498) g;
+select 'team-photos', 'team-a/bulk-' || g from generate_series(1, 148) g
+union all values ('team-photos', 'team-ab/other'), ('team-photos', 'team-a.b/other'); -- neighbours: not counted
 select pg_temp.as_user('a0000000-0000-4000-8000-000000000001'); set local role authenticated;
 do $$
 begin
-  insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/bulk-499');
-  perform pg_temp.check(private.team_photo_count('team-a') = 500, 'T13b team-a has 500 photos');
-  perform pg_temp.expect_error('T13b the 501st photo', $q$insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/bulk-500')$q$, '42501');
+  insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/bulk-149');
+  perform pg_temp.check(private.team_photo_count('team-a') = 150, 'T13b team-a has 150 photos');
+  perform pg_temp.expect_error('T13b the 151st photo', $q$insert into storage.objects (bucket_id, name) values ('team-photos', 'team-a/bulk-150')$q$, '42501');
 end $$;
 reset role;
 select set_config('storage.allow_delete_query', 'true', true);
-delete from storage.objects where bucket_id = 'team-photos' and name like 'team-a/bulk-%';
+delete from storage.objects where bucket_id = 'team-photos'
+  and (name like 'team-a/bulk-%' or name in ('team-ab/other', 'team-a.b/other'));
 select set_config('storage.allow_delete_query', 'false', true);
 select pg_temp.as_user('a0000000-0000-4000-8000-000000000001'); set local role authenticated;
 
@@ -426,12 +428,28 @@ begin
   perform pg_temp.expect_error('T17 bad member role', $q$select public.set_member_role('team-a', 'a0000000-0000-4000-8000-000000000003', 'coach')$q$, '22023');
 end $$;
 
+-- Row overhead: a new record costs its payload plus 512 bytes; an update only the size change.
+do $$
+declare
+  v_before bigint := (select payload_bytes from public.teams where id = 'team-a');
+begin
+  perform public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p7","at":"2026-01-01T10:00:00Z","payload":{"a":1}}]');
+  perform pg_temp.check((select payload_bytes from public.teams where id = 'team-a') = v_before + octet_length('{"a": 1}') + 512,
+                        'T17 a new record costs payload + 512 bytes');
+  perform public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p7","at":"2026-01-01T10:00:01Z","payload":{"a":12}}]');
+  perform pg_temp.check((select payload_bytes from public.teams where id = 'team-a') = v_before + octet_length('{"a": 12}') + 512,
+                        'T17 an update costs only the size change');
+  perform public.push_records('team-a', 'dev1', '[{"kind":"player","id":"p7","at":"2026-01-01T10:00:02Z","deleted":true}]');
+  perform pg_temp.check((select payload_bytes from public.teams where id = 'team-a') = v_before + 512,
+                        'T17 a tombstone keeps the row overhead');
+end $$;
+
 -- Team full by bytes (VL007): teams.payload_bytes follows every write; growing past 20 MB fails.
 reset role;
 do $$
 begin
   perform pg_temp.check((select payload_bytes from public.teams where id = 'team-a')
-                        = (select sum(octet_length(payload::text)) from public.team_records where team_id = 'team-a'),
+                        = (select sum(octet_length(payload::text)) + 512 * count(*) from public.team_records where team_id = 'team-a'),
                         'T17 payload_bytes is the sum of the payloads');
 end $$;
 update public.teams set payload_bytes = 20 * 1024 * 1024 - 10 where id = 'team-a';
@@ -444,7 +462,7 @@ begin
 end $$;
 reset role;
 update public.teams
-set payload_bytes = (select coalesce(sum(octet_length(payload::text)), 0) from public.team_records where team_id = 'team-a')
+set payload_bytes = (select coalesce(sum(octet_length(payload::text)), 0) + 512 * count(*) from public.team_records where team_id = 'team-a')
 where id = 'team-a';
 
 -- Team full by count (VL007): fill team-a to 20 000 records as postgres.
@@ -462,7 +480,7 @@ reset role;
 -- Records are only ever removed with their team; here the filler goes and the budget is re-synced.
 delete from public.team_records where team_id = 'team-a' and id like 'fill%';
 update public.teams
-set payload_bytes = (select coalesce(sum(octet_length(payload::text)), 0) from public.team_records where team_id = 'team-a')
+set payload_bytes = (select coalesce(sum(octet_length(payload::text)), 0) + 512 * count(*) from public.team_records where team_id = 'team-a')
 where id = 'team-a';
 
 -- Too many teams (VL006): MB has created 10 teams (team-b + 9 more as postgres).
