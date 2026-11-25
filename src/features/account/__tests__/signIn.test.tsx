@@ -5,6 +5,7 @@ import * as sync from '@/lib/sync';
 import { useAppStore } from '@/store';
 import { renderApp, seedApp } from '@/test-utils';
 
+import { CODE_INPUT_MAX } from '../CodeStep';
 import { useResendTimer } from '../useResendTimer';
 
 const s = t.account.signIn;
@@ -53,7 +54,8 @@ describe('sign in with an email code', () => {
     expect(field.props.textContentType).toBe('oneTimeCode');
     expect(field.props.autoComplete).toBe('one-time-code');
     expect(field.props.keyboardType).toBe('number-pad');
-    expect(field.props.maxLength).toBe(6);
+    // Longer than the code: a pasted "123 456" must not be cut before the digits are kept.
+    expect(field.props.maxLength).toBe(CODE_INPUT_MAX);
 
     jest.mocked(sync.verifyCode).mockResolvedValueOnce({ ok: false, error: 'invalidCode' });
     await press('sign-in-verify');
@@ -66,6 +68,18 @@ describe('sign in with an email code', () => {
     expect(screen).toHavePathname('/account/teams');
     expect(screen).toHaveSearchParams({ setup: '1' });
   });
+
+  it.each(['123 456', '123-456', ' 123 456 '])(
+    'a pasted “%s” keeps all 6 digits (the field cuts at maxLength first, v10 QA)',
+    async (pasted) => {
+      await toCodeStep();
+      const field = screen.getByTestId('sign-in-code');
+      // What the platform hands onChangeText: the paste cut to maxLength.
+      await typeCode(pasted.slice(0, field.props.maxLength));
+      expect(screen.getByTestId('sign-in-code').props.value).toBe('123456');
+      expect(screen.getByTestId('sign-in-verify')).toBeEnabled();
+    },
+  );
 
   it('says so when offline or rate-limited and stays on the step', async () => {
     jest.mocked(sync.requestCode).mockResolvedValueOnce({ ok: false, error: 'offline' });

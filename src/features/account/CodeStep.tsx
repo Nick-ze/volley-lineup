@@ -9,6 +9,12 @@ import { makeStyles, spacing, typography } from '@/theme';
 import { ErrorText } from './ErrorText';
 import type { useSignIn } from './useSignIn';
 
+/**
+ * How much raw text the code field takes: more than the 6 digits, so a pasted "123 456" or
+ * "123-456" isn't cut before `codeInput` keeps its digits (and caps them at 6).
+ */
+export const CODE_INPUT_MAX = 12;
+
 export interface CodeStepProps {
   form: ReturnType<typeof useSignIn>;
   error: SyncErrorCode | null;
@@ -33,7 +39,7 @@ export function CodeStep({ form, error }: CodeStepProps) {
         inputMode="numeric"
         textContentType="oneTimeCode"
         autoComplete="one-time-code"
-        maxLength={CODE_LENGTH}
+        maxLength={CODE_INPUT_MAX}
         autoFocus
         onSubmitEditing={() => void form.verify()}
         testID="sign-in-code"
