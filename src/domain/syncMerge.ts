@@ -6,16 +6,27 @@
  * content; a changed one keeps its change when it was saved later than the server's. Deleting a
  * season, opponent, match or player that something newer still needs brings it back instead
  * (and the device pushes it again); otherwise the deletion cascades on the device. Afterwards
- * `repairSlice` keeps the team consistent.
+ * `repairSlice` keeps the team consistent — except that it never removes a player only this
+ * device lacks (played sets and other references keep them; see `repairSlice`'s `keep`).
+ *
+ * For the engine (docs/V10_SYNC_DESIGN.md §3.5):
+ * - Store the `edits` of `detectChanges` before every merge: an unnoted change loses to any row.
+ * - Merge all pages of one pull at once. Page with the raw rows' versions (also of rows that
+ *   fail `parseRemoteRow`); compute `nextCursor` from the parsed rows and don't advance the
+ *   cursor while `MergeOutput.slice` is undefined (the team row hasn't arrived).
+ * - Don't push a team in a cycle whose merge skipped a row as `foreignId`: its records name ids
+ *   another local team uses, and the device's copy isn't the server's.
+ * - After a demotion use `resetToCloudMerge` with a complete pull from version 0.
  */
 import {
   inPlayedSet,
   descendants,
+  parentKey,
   parentPresent,
   playerReferences,
   type Records,
 } from './syncGraph';
-import { repairSlice, type RepairIssue } from './syncRepair';
+import { referencedPlayerIds, repairSlice, type RepairIssue } from './syncRepair';
 import { normalizeTimestamp, parsePayload, type RemoteRecord } from './syncSchema';
 import {
   payloadHash,
@@ -42,11 +53,6 @@ export interface MergeInput {
   local: { profileId: string };
   /** Entity keys used by the device's other teams (`foreignKeys`). */
   foreignIds: ReadonlySet<string>;
-  /**
-   * 'cloudWins' (after a demotion, with every row since version 0): the server's content
-   * replaces every local change, and local records the server doesn't have are dropped.
-   */
-  mode?: 'lww' | 'cloudWins';
 }
 
 export type SkipReason = 'foreignId' | 'orphan' | 'invalid';
@@ -121,6 +127,7 @@ function isForeign(
 }
 
 interface Prior {
+  row: RemoteRecord;
   payload: RecordPayload | undefined;
   base: SyncBase | undefined;
   edit: SyncEdit | undefined;
@@ -154,8 +161,23 @@ function sameEntries<V>(a: Readonly<Record<string, V>>, b: Readonly<Record<strin
  * fields (the team's profile, players' descriptions) are kept.
  */
 export function mergeRemote(input: MergeInput): MergeOutput {
+  return merge(input, false);
+}
+
+/**
+ * After a demotion (`resetToCloud`: cursor 0, no edits): the server's content replaces every
+ * local change, nothing is resurrected, and local records the server doesn't have are dropped.
+ * `input.rows` MUST be the complete pull from version 0 (every page): records missing from it
+ * are deleted. Without the team's row among them it does nothing (returns the input as it was).
+ */
+export function resetToCloudMerge(input: MergeInput): MergeOutput {
+  const hasTeam = input.rows.some((r) => r.kind === 'team' && r.id === input.teamId);
+  if (!hasTeam) return { slice: input.slice, team: input.team, skipped: [], issues: [] };
+  return merge(input, true);
+}
+
+function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
   const { teamId, team, foreignIds } = input;
-  const cloudWins = input.mode === 'cloudWins';
   const records = new Map(input.slice ? sliceToRecords(input.slice) : []);
   const base: Record<string, SyncBase> = { ...team.base };
   const edits: Record<string, SyncEdit> = { ...team.edits };
@@ -192,7 +214,7 @@ export function mergeRemote(input: MergeInput): MergeOutput {
     if (payload === null) {
       if (local) pending.add(key);
     } else {
-      upserted.set(key, { payload: local, base: known, edit });
+      upserted.set(key, { row, payload: local, base: known, edit });
       records.set(key, payload);
     }
   }
@@ -206,7 +228,7 @@ export function mergeRemote(input: MergeInput): MergeOutput {
     }
   }
 
-  resolveDeletions(records, pending, base, edits, cloudWins);
+  const removed = resolveDeletions(records, pending, base, edits, cloudWins);
   pruneOrphans(records, teamId, upserted, base, edits, skipped, cloudWins);
 
   const nextTeam =
@@ -225,7 +247,13 @@ export function mergeRemote(input: MergeInput): MergeOutput {
     descriptions,
     previous: input.slice,
   });
-  const repaired = repairSlice(built);
+  // Missing players keep their references unless this merge deleted them (a pending local
+  // delete, an id skipped as foreign, a player deleted before a newer reference arrived).
+  const present = new Set(built.players.map((p) => p.id));
+  const keep = cloudWins
+    ? new Set<string>()
+    : new Set([...referencedPlayerIds(built)].filter((id) => !present.has(id) && !removed.has(id)));
+  const repaired = repairSlice(built, keep);
   const slice = sameSlice(input.slice, repaired.slice) ? input.slice : repaired.slice;
   return { slice, team: nextTeam, skipped, issues: repaired.issues };
 }
@@ -248,7 +276,8 @@ function resolveDeletions(
   base: Record<string, SyncBase>,
   edits: Record<string, SyncEdit>,
   cloudWins: boolean,
-): void {
+): Set<string> {
+  const removedPlayers = new Set<string>();
   const order = (key: string) => DELETE_ORDER.indexOf(key.slice(0, key.indexOf(':')) as RecordKind);
   const repush = new Set<string>();
   for (const key of [...pending].sort((a, b) => order(a) - order(b))) {
@@ -273,6 +302,7 @@ function resolveDeletions(
       continue;
     }
     records.delete(key);
+    if (kind === 'player') removedPlayers.add(id);
     for (const child of below) {
       records.delete(child);
       delete base[child];
@@ -282,12 +312,15 @@ function resolveDeletions(
   }
   // Devices that already let the subtree go get it back: what stays below is pushed again.
   for (const key of repush) delete base[key];
+  return removedPlayers;
 }
 
 /**
  * Pulled records whose parent isn't there are not applied: the device keeps what it had and no
- * `base` (repeated until nothing changes, since a match without sets is an orphan too). With
- * 'cloudWins', local records without a parent go as well.
+ * `base` (repeated until nothing changes, since a match without sets is an orphan too). When the
+ * device doesn't have the record and deleted its parent itself, the row counts as deleted
+ * (`base` a tombstone, the device's own deletion forgotten), so the device doesn't push that
+ * deletion again every cycle. With 'cloudWins', local records without a parent go as well.
  */
 function pruneOrphans(
   records: Map<string, RecordPayload>,
@@ -305,11 +338,17 @@ function pruneOrphans(
       const prior = upserted.get(key);
       if (prior && !prior.reverted) {
         prior.reverted = true;
+        const parent = parentKey(teamId, key, payload) as string;
         if (prior.payload) records.set(key, prior.payload);
         else records.delete(key);
-        if (prior.base) base[key] = prior.base;
-        else delete base[key];
-        if (prior.edit) edits[key] = prior.edit;
+        if (!prior.payload && (base[parent]?.del || edits[parent]?.h === '')) {
+          base[key] = { v: prior.row.version, h: '', at: prior.row.at, del: true };
+          delete edits[key];
+        } else {
+          if (prior.base) base[key] = prior.base;
+          else delete base[key];
+          if (prior.edit) edits[key] = prior.edit;
+        }
         skipped.push({ key, reason: 'orphan' });
         again = true;
       } else if (cloudWins) {
@@ -331,6 +370,8 @@ export interface PushOutcome {
   deleted: boolean;
   /** The server's content when the push wasn't applied (null for a tombstone). */
   payload?: RecordPayload | null;
+  /** The device that saved the server's content (when the push wasn't applied). */
+  deviceId?: string;
 }
 
 /**
@@ -359,7 +400,7 @@ export function applyPushResults(
         at,
         updatedAt: normalizeTimestamp(r.updatedAt) ?? r.updatedAt,
         version: r.version,
-        deviceId: '',
+        deviceId: r.deviceId ?? '',
       });
       continue;
     }
@@ -379,7 +420,9 @@ export function applyPushResults(
 /**
  * The next pull cursor: the highest version such that every row up to it was written more than
  * `overlapMs` before the server's `now`. Newer rows are read again next time (and skipped by
- * version), so a write that committed late is never missed.
+ * version), so a write that committed late is never missed. `updatedAt` is the row's server
+ * write time, stamped right after its version (`clock_timestamp()`); a write commits within the
+ * server's 8 s statement timeout, so no uncommitted row can hide below the returned cursor.
  */
 export function nextCursor(
   cursor: number,

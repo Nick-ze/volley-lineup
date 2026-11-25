@@ -29,7 +29,24 @@ import {
 export type RepairIssue =
   | { kind: 'duplicateNumber'; numbers: number[] }
   | { kind: 'renamed'; recordKey: string }
-  | { kind: 'merged'; from: string; into: string };
+  | { kind: 'merged'; from: string; into: string }
+  /** Players that played sets (or kept references) name but who aren't in the team here. */
+  | { kind: 'missingPlayer'; playerIds: string[] };
+
+/** The team's players, the missing ones whose references stay, and the missing ones seen. */
+interface PlayerCheck {
+  players: ReadonlySet<string>;
+  keep: ReadonlySet<string>;
+  missing: Set<string>;
+}
+
+/** True when references to `id` go: not a player of the team and not to be kept. */
+function drops(check: PlayerCheck, id: string): boolean {
+  if (check.players.has(id)) return false;
+  if (!check.keep.has(id)) return true;
+  check.missing.add(id);
+  return false;
+}
 
 /** Oldest first: by creation time, then id (ids are unique, so the order is total). */
 const ageKey = (x: { createdAt: string; id: string }) => `${x.createdAt}\u0000${x.id}`;
@@ -125,6 +142,7 @@ function untagged(event: PointEvent): PointEvent {
   return rest;
 }
 
+/** Every player id a set names (court, libero, libero replacements, subs, point tags). */
 const setPlayerIds = (set: SetLineup): string[] => [
   ...COURT_POSITIONS.map((p) => set.slots[p]).filter((x): x is string => x !== null),
   ...(set.liberoId === null ? [] : [set.liberoId]),
@@ -134,10 +152,16 @@ const setPlayerIds = (set: SetLineup): string[] => [
   ),
 ];
 
-function repairSet(set: SetLineup, players: ReadonlySet<string>): SetLineup {
+const playedSet = (set: SetLineup) => set.events.length > 0;
+
+function repairSet(set: SetLineup, check: PlayerCheck): SetLineup {
   let next = set;
+  // A played set keeps its history: a missing player is reported, never removed (#73).
+  const played = playedSet(set);
   for (const id of new Set(setPlayerIds(set))) {
-    if (!players.has(id)) next = removePlayerEverywhere(next, id);
+    if (played) {
+      if (!check.players.has(id)) check.missing.add(id);
+    } else if (drops(check, id)) next = removePlayerEverywhere(next, id);
   }
   next = dedupeLineup(next);
   if (next.events.some((e) => e.type === 'point' && !isValidPointTag(e))) {
@@ -149,15 +173,17 @@ function repairSet(set: SetLineup, players: ReadonlySet<string>): SetLineup {
   return next;
 }
 
-function repairPreset(preset: LineupPreset, players: ReadonlySet<string>): LineupPreset {
-  const ids = [
+const presetPlayerIds = (preset: LineupPreset): string[] =>
+  [
     ...COURT_POSITIONS.map((p) => preset.slots[p]),
     preset.liberoId,
     ...preset.liberoReplaces,
-  ];
+  ].filter((x): x is string => x !== null);
+
+function repairPreset(preset: LineupPreset, check: PlayerCheck): LineupPreset {
   let next = preset;
-  for (const id of new Set(ids)) {
-    if (id !== null && !players.has(id)) next = removePlayerFromPreset(next, id);
+  for (const id of new Set(presetPlayerIds(preset))) {
+    if (drops(check, id)) next = removePlayerFromPreset(next, id);
   }
   return dedupeLineup(next);
 }
@@ -206,25 +232,46 @@ function duplicateNumbers(slice: TeamSlice): number[] {
   return [...dupes].sort((a, b) => a - b);
 }
 
+/** Every player id the team's sets, presets and captain name (players or not). */
+export function referencedPlayerIds(slice: TeamSlice): Set<string> {
+  const ids = new Set<string>();
+  if (slice.team.captainId !== undefined) ids.add(slice.team.captainId);
+  for (const m of slice.matches)
+    for (const set of m.sets) setPlayerIds(set).forEach((id) => ids.add(id));
+  for (const p of slice.presets) presetPlayerIds(p).forEach((id) => ids.add(id));
+  return ids;
+}
+
 /**
  * The repaired team (the same object when nothing needed repair) and what was done:
  * - same-named seasons (ignoring case and accents) merge into the oldest (createdAt, id), their
  *   opponents and matches move along; same-named opponents of a season likewise;
  * - every match takes its opponent's season and name;
- * - sets: references to players who aren't in the team are removed (court, libero, libero
- *   replacements, substitutions, point tags — the score is kept), nobody stands in two slots,
- *   the libero isn't also a starter, incoherent point tags are dropped;
- * - presets lose missing players the same way; only the first starters is kept;
+ * - unplayed sets: references to players who aren't in the team are removed (court, libero,
+ *   libero replacements, point tags); played sets keep them (their history must not change on
+ *   a device that merely lacks the player — `missingPlayer` is reported instead);
+ * - every set: nobody stands in two slots, the libero isn't also a starter, incoherent point
+ *   tags are dropped;
+ * - presets lose missing players like unplayed sets; only the first starters is kept;
  * - a captain who isn't a player of the team is cleared;
+ * - `keep`: missing players whose references stay everywhere (e.g. a player only this device
+ *   lacks: removing them would push the loss to everyone) — reported as `missingPlayer`;
  * - named presets get valid, unique names (" (2)", " (3)" …);
  * - duplicate jersey numbers are only reported.
  */
-export function repairSlice(slice: TeamSlice): { slice: TeamSlice; issues: RepairIssue[] } {
+export function repairSlice(
+  slice: TeamSlice,
+  keep: ReadonlySet<string> = new Set(),
+): { slice: TeamSlice; issues: RepairIssue[] } {
   const issues: RepairIssue[] = [];
   const merged = mergeSeasonsAndOpponents(slice, issues);
-  const players = new Set(slice.players.map((p) => p.id));
+  const check: PlayerCheck = {
+    players: new Set(slice.players.map((p) => p.id)),
+    keep,
+    missing: new Set(),
+  };
   const matches = mapList(merged.matches, (m): Match => {
-    const sets = mapList(m.sets, (set) => repairSet(set, players));
+    const sets = mapList(m.sets, (set) => repairSet(set, check));
     return sets === m.sets ? m : { ...m, sets };
   });
   const firstStarters = slice.presets.find((p) => p.kind === 'starters');
@@ -232,11 +279,18 @@ export function repairSlice(slice: TeamSlice): { slice: TeamSlice; issues: Repai
   const presets = renamePresets(
     mapList(
       onlyOneStarters.length === slice.presets.length ? slice.presets : onlyOneStarters,
-      (p) => repairPreset(p, players),
+      (p) => repairPreset(p, check),
     ),
     issues,
   );
-  const team = withValidCaptain(slice.team, slice.players);
+  const captain = slice.team.captainId;
+  const team =
+    captain !== undefined && !drops(check, captain)
+      ? slice.team
+      : withValidCaptain(slice.team, slice.players);
+  if (check.missing.size > 0) {
+    issues.push({ kind: 'missingPlayer', playerIds: [...check.missing].sort() });
+  }
   const numbers = duplicateNumbers(slice);
   if (numbers.length > 0) issues.push({ kind: 'duplicateNumber', numbers });
   const same =

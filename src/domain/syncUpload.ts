@@ -17,10 +17,14 @@ export function isServerSafeTeamId(id: string): boolean {
 /**
  * The data with team `oldId` renamed to `newId` everywhere: the team, its players, seasons,
  * matches and presets (the starters too). Opponents follow their season and ids inside sets
- * don't name the team. Copy-on-write; `data` itself when the team isn't there.
+ * don't name the team. Copy-on-write; `data` itself when the team isn't there. Throws when
+ * another local team already has `newId` (ids are unique on a device).
  */
 export function rekeyTeam<T extends TeamData>(data: T, oldId: string, newId: string): T {
   if (oldId === newId || !data.teams.some((t) => t.id === oldId)) return data;
+  if (data.teams.some((t) => t.id === newId)) {
+    throw new Error(`rekeyTeam: team id ${newId} is already used on this device`);
+  }
   const move = <E extends { teamId: string }>(list: E[]): E[] =>
     list.some((x) => x.teamId === oldId)
       ? list.map((x) => (x.teamId === oldId ? { ...x, teamId: newId } : x))

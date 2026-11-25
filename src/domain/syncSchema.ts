@@ -3,7 +3,12 @@
  *
  * Remote data is untrusted: every row is checked (shape, kind, id, timestamps) and its payload
  * is validated against the export file's entity schemas minus the fields that aren't in a
- * payload. Unknown payload fields are dropped. Invalid rows are skipped by the caller.
+ * payload. Unknown payload fields are dropped. Invalid rows are skipped by the caller. Text
+ * fields have sane length limits here (sync only, the export file is unchanged): names 200
+ * characters, any other text 1000.
+ *
+ * Forward-compatibility limit: because unknown fields are dropped, fields a newer app version
+ * adds to a record are lost when an older app version edits and pushes that record.
  */
 import { z } from 'zod';
 
@@ -72,7 +77,23 @@ export function parsePayload(kind: RecordKind, id: string, payload: unknown): Re
   if (!result.success) return null;
   const value = result.data as RecordPayload;
   if (kind === 'set' && parseSetRecordId(id)?.setNumber !== value.setNumber) return null;
-  return value;
+  return textFits(value, '') ? value : null;
+}
+
+const NAME_FIELDS: ReadonlySet<string> = new Set(['firstName', 'lastName', 'name', 'opponent']);
+export const MAX_NAME_LENGTH = 200;
+export const MAX_TEXT_LENGTH = 1000;
+
+/** True when every string in the value is short enough (names ≤ 200, other text ≤ 1000). */
+function textFits(value: unknown, field: string): boolean {
+  if (typeof value === 'string') {
+    return value.length <= (NAME_FIELDS.has(field) ? MAX_NAME_LENGTH : MAX_TEXT_LENGTH);
+  }
+  if (Array.isArray(value)) return value.every((x) => textFits(x, field));
+  if (value !== null && typeof value === 'object') {
+    return Object.entries(value).every(([k, v]) => textFits(v, k));
+  }
+  return true;
 }
 
 const timestamp = z.string().transform((value, ctx) => {

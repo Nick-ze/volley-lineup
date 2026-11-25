@@ -24,6 +24,23 @@ function hasSet(records: Records, matchId: string): boolean {
   return SET_NUMBERS.some((n) => records.has(recordKey('set', setRecordId(matchId, n))));
 }
 
+/** The key of the record's parent (null for the team itself). */
+export function parentKey(teamId: string, key: string, payload: RecordPayload): string | null {
+  const { kind, id } = parse(key);
+  switch (kind) {
+    case 'team':
+      return null;
+    case 'opponent':
+      return recordKey('season', str(payload, 'seasonId'));
+    case 'match':
+      return recordKey('opponent', str(payload, 'opponentId'));
+    case 'set':
+      return recordKey('match', matchOfSet(id));
+    default:
+      return recordKey('team', teamId);
+  }
+}
+
 /** True when the record's parent is there (and a match has a set). */
 export function parentPresent(
   records: Records,
@@ -31,19 +48,11 @@ export function parentPresent(
   key: string,
   payload: RecordPayload,
 ): boolean {
+  const parent = parentKey(teamId, key, payload);
+  if (parent === null) return true;
+  if (!records.has(parent)) return false;
   const { kind, id } = parse(key);
-  switch (kind) {
-    case 'team':
-      return true;
-    case 'opponent':
-      return records.has(recordKey('season', str(payload, 'seasonId')));
-    case 'match':
-      return records.has(recordKey('opponent', str(payload, 'opponentId'))) && hasSet(records, id);
-    case 'set':
-      return records.has(recordKey('match', matchOfSet(id)));
-    default:
-      return records.has(recordKey('team', teamId));
-  }
+  return kind !== 'match' || hasSet(records, id);
 }
 
 /** The keys of every record below a season, opponent or match (opponents, matches, sets). */
