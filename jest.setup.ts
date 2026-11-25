@@ -61,3 +61,15 @@ beforeEach(() => {
   const { useAppStore } = require('@/store/appStore') as typeof import('@/store/appStore');
   useAppStore.setState({ tourMode: 'none', tourSeen: [] });
 });
+
+/*
+ * v10: tests never talk to the backend. `@/lib/sync` is replaced by `src/lib/sync/__mocks__`
+ * (commands resolve `{ ok: true }`); the sync engine's own tests use `jest.requireActual`.
+ */
+jest.mock('@/lib/sync');
+
+beforeEach(() => {
+  const { resetSyncRuntimeForTests } =
+    require('@/store/syncRuntime') as typeof import('@/store/syncRuntime');
+  resetSyncRuntimeForTests();
+});

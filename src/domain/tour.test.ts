@@ -31,7 +31,7 @@ describe('tour pages', () => {
   it('has every page once, quick pages first', () => {
     expect(TOUR_PAGES).toEqual([...QUICK_PAGES, ...OTHER_PAGES]);
     expect(new Set(TOUR_PAGES).size).toBe(TOUR_PAGES.length);
-    expect(TOUR_PAGES).toHaveLength(24);
+    expect(TOUR_PAGES).toHaveLength(29); // v10: + account, signIn, cloudTeams, members, join
   });
 
   it('tells quick pages from the others', () => {

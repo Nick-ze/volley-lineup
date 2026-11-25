@@ -7,7 +7,7 @@ import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
 import { withSeen } from '@/domain/tour';
-import type { LineupPreset, Match, Opponent, Season } from '@/domain/types';
+import type { LineupPreset, Match, Opponent, Season, SyncData } from '@/domain/types';
 import { createId } from '@/lib/id';
 
 import { migrateStore, STORE_VERSION } from './migrations';
@@ -25,6 +25,13 @@ export const emptyData = (): AppData => ({
   opponents: [],
 });
 
+/** v10: no account, no shared teams (the device id is kept where it exists). */
+export const emptySync = (deviceId: string | null = null): SyncData => ({
+  deviceId,
+  account: null,
+  teams: {},
+});
+
 const initialState = (): AppState => ({
   ...emptyData(),
   currentProfileId: null,
@@ -34,6 +41,7 @@ const initialState = (): AppState => ({
   dyslexiaFont: false,
   tourMode: null,
   tourSeen: [],
+  sync: emptySync(),
   hydrated: false,
 });
 
@@ -79,6 +87,8 @@ export const useAppStore = create<AppStore>()(
             presets: s.presets.filter((p) => !teamIds.has(p.teamId)),
             ...withoutSeasonsOf(s, (x) => teamIds.has(x.teamId)),
             currentProfileId: s.currentProfileId === id ? null : s.currentProfileId,
+            // v10: the account linked to this profile is unlinked (its teams are gone locally).
+            sync: s.sync.account?.profileId === id ? { ...s.sync, account: null } : s.sync,
           };
         }),
       selectProfile: (id) => set({ currentProfileId: id }),
@@ -226,9 +236,19 @@ export const useAppStore = create<AppStore>()(
           currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
             ? s.currentProfileId
             : null,
+          // v10: keep the shared teams' bookkeeping; the account link goes with its profile.
+          sync:
+            s.sync.account && !data.profiles.some((p) => p.id === s.sync.account?.profileId)
+              ? { ...s.sync, account: null }
+              : s.sync,
         })),
-      resetAll: () => set({ ...emptyData(), currentProfileId: null }),
+      // v10: also forgets the account and every shared team on this device (the cloud is untouched).
+      resetAll: () =>
+        set((s) => ({ ...emptyData(), currentProfileId: null, sync: emptySync(s.sync.deviceId) })),
       setHydrated: (value) => set({ hydrated: value }),
+      syncTransaction: (fn) => set((s) => fn(s)),
+      setSyncAccount: (account) => set((s) => ({ sync: { ...s.sync, account } })),
+      setDeviceId: (deviceId) => set((s) => ({ sync: { ...s.sync, deviceId } })),
       setLanguage: (language) => set({ language }),
       setChipLabel: (chipLabel) => set({ chipLabel }),
       setThemeMode: (themeMode) => set({ themeMode }),
@@ -257,6 +277,7 @@ export const useAppStore = create<AppStore>()(
         dyslexiaFont: s.dyslexiaFont,
         tourMode: s.tourMode,
         tourSeen: s.tourSeen,
+        sync: s.sync,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);

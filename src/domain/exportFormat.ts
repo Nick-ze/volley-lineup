@@ -53,7 +53,8 @@ const profileSchema = z.object({
   photoId: id.optional(),
 });
 
-const teamSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const teamSchema = z.object({
   id,
   profileId: id,
   name: z.string(),
@@ -64,7 +65,8 @@ const teamSchema = z.object({
   captainId: id.optional(),
 });
 
-const playerSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const playerSchema = z.object({
   id,
   teamId: id,
   firstName: z.string(),
@@ -77,7 +79,8 @@ const playerSchema = z.object({
 });
 
 /** v7: a picture referenced by a profile or player. */
-const photoSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const photoSchema = z.object({
   id,
   dataUri: z.string().refine(isPhotoDataUri),
 });
@@ -105,7 +108,8 @@ const formationSchema = z.object({
   ]),
 });
 
-const setLineupSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const setLineupSchema = z.object({
   setNumber: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   slots: slotsSchema,
   liberoId: playerRef,
@@ -129,7 +133,8 @@ const setLineupSchema = z.object({
 });
 
 /** v8: a season / tournament and an opponent team. */
-const seasonSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const seasonSchema = z.object({
   id,
   teamId: id,
   name: z.string(),
@@ -140,14 +145,16 @@ const seasonSchema = z.object({
   createdAt: z.string(),
 });
 
-const opponentSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const opponentSchema = z.object({
   id,
   seasonId: id,
   name: z.string(),
   createdAt: z.string(),
 });
 
-const matchSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const matchSchema = z.object({
   id,
   teamId: id,
   seasonId: id,
@@ -158,7 +165,8 @@ const matchSchema = z.object({
   sets: z.array(setLineupSchema).min(1).max(5),
 });
 
-const presetSchema = z.object({
+/** v10: also used to validate synced records (`syncSchema.ts`). */
+export const presetSchema = z.object({
   id,
   teamId: id,
   name: z.string(),
