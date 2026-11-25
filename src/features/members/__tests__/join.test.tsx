@@ -21,7 +21,7 @@ describe('join a team', () => {
     signIn();
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'team1', role: 'player' },
+      value: { teamId: 'team1', role: 'player', name: null },
     });
     await renderApp('/join?code=abcdefghjk');
     expect(codeField().props.value).toBe('ABCDE-FGHJK');
@@ -36,7 +36,7 @@ describe('join a team', () => {
     signIn();
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'cloud9', role: 'manager' },
+      value: { teamId: 'cloud9', role: 'manager', name: null },
     });
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({
       ok: true,
@@ -51,11 +51,23 @@ describe('join a team', () => {
     expect(screen).toHavePathname('/teams');
   });
 
+  it('uses the name the join result gives (no cloud list needed)', async () => {
+    signIn();
+    jest.mocked(sync.joinTeam).mockResolvedValueOnce({
+      ok: true,
+      value: { teamId: 'cloud9', role: 'player', name: 'Mixed 3' },
+    });
+    await renderApp('/join?code=YZ23456789');
+    await fireEvent.press(screen.getByTestId('join-submit'));
+    expect(await screen.findByText(t.members.join.joined('Mixed 3', 'player'))).toBeTruthy();
+    expect(sync.listCloudTeams).not.toHaveBeenCalled();
+  });
+
   it('without the name (cloud list unavailable) it still confirms', async () => {
     signIn();
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'cloud9', role: 'player' },
+      value: { teamId: 'cloud9', role: 'player', name: null },
     });
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await renderApp('/join?code=YZ23456789');

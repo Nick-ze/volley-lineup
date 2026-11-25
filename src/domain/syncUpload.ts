@@ -2,7 +2,7 @@
  * v10: uploading a local team to the cloud (docs/V10_SYNC_DESIGN.md §3.9). Pure.
  *
  * Team ids are global on the server and also name the team's photo folder, so they must be
- * plain (`[A-Za-z0-9._~-]`, at most 100 characters). A team whose id doesn't fit, or whose id is
+ * plain (`[A-Za-z0-9._~-]`, at most 100 characters, not only dots). A team whose id doesn't fit, or whose id is
  * already taken by someone else's team, gets a new id on the device first (`rekeyTeam`).
  */
 import type { TeamData } from './syncRecords';
@@ -11,7 +11,8 @@ const SERVER_TEAM_ID = /^[A-Za-z0-9._~-]{1,100}$/;
 
 /** True when the server accepts `id` as a team id. */
 export function isServerSafeTeamId(id: string): boolean {
-  return SERVER_TEAM_ID.test(id);
+  // Not only dots either: '.' and '..' aren't folder names (the server's check too).
+  return SERVER_TEAM_ID.test(id) && !/^\.+$/.test(id);
 }
 
 /**

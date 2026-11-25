@@ -377,7 +377,9 @@ export interface PushOutcome {
 /**
  * The team's sync state after a push: applied records get their new `base` (and lose their
  * edit unless the user changed them again meanwhile); records the server kept a newer save of
- * come back as `stale` rows for `mergeRemote`.
+ * come back as `stale` rows for `mergeRemote` — unless the device already knew that save
+ * (version ≤ `base`): then the change was made on top of it and is re-stamped just after it,
+ * so the next push wins instead of being refused forever.
  */
 export function applyPushResults(
   team: SyncedTeam,
@@ -391,6 +393,17 @@ export function applyPushResults(
   for (const r of results) {
     const key = recordKey(r.kind, r.id);
     const at = normalizeTimestamp(r.at) ?? r.at;
+    const known = base[key];
+    const edit = edits[key];
+    if (!r.applied && edit && known && r.version <= known.v) {
+      // The server kept a save this device already had (its own earlier one: the clock went
+      // back, or two saves in one millisecond). The change was made on top of it, so it is
+      // newer: its time moves to just after the server's and it is pushed again.
+      const after = time(at) + 1;
+      if (Number.isFinite(after) && time(edit.at) < after)
+        edits[key] = { ...edit, at: new Date(after).toISOString() };
+      continue;
+    }
     if (!r.applied) {
       stale.push({
         kind: r.kind,

@@ -45,7 +45,7 @@ export const createInvite = jest.fn(async () => ({
 export const revokeInvite = ok(undefined);
 export const joinTeam = jest.fn(async () => ({
   ok: true as const,
-  value: { teamId: 'team-1', role: 'player' as const },
+  value: { teamId: 'team-1', role: 'player' as const, name: null as string | null },
 }));
 export const holdMatch = jest.fn(async () => ({ ok: true as const, value: { granted: true } }));
 export const releaseMatch = jest.fn(async () => undefined);

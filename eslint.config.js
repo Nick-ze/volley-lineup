@@ -68,8 +68,13 @@ module.exports = defineConfig([
     },
   },
   {
-    // v10: inside the sync module the backend may be used (the i18n rule still applies).
-    files: ['src/lib/sync/**/*.{ts,tsx}'],
+    // v10: inside the sync module the backend may be used (the i18n rule still applies); so may
+    // the engine tests' in-memory backend.
+    files: [
+      'src/lib/sync/**/*.{ts,tsx}',
+      'src/test-utils/fakeBackend.ts',
+      'src/test-utils/syncDevice.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
