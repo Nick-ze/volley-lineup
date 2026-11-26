@@ -184,17 +184,29 @@ export function storedSyncData(value: unknown): SyncData {
 }
 
 /**
- * The `sync` slice with every shared team's pull cursor back at 0 (v10 audit L6): the next pull
- * reads the whole team again, so rows an older app version couldn't read arrive. Records the
- * device already has are skipped by their version (`base`); a view-only copy is replaced by the
- * cloud's (as after a demotion), which is what it should be anyway. The same object when every
- * cursor is 0 already.
+ * A pull cursor below every server version: the next pull reads the whole team again and merges
+ * it the normal way. Unlike 0 it doesn't mark a view-only copy for replacement by the cloud's
+ * (`needsReset`: a viewer with cursor 0 and a `base`).
+ */
+export const REPULL_CURSOR = -1;
+
+/**
+ * The `sync` slice with the pull cursor of every shared team that has pulled before set to
+ * `REPULL_CURSOR` (v10 audit L6): the next pull reads the whole team again, so rows an older app
+ * version couldn't read arrive. Records the device already has are skipped by their version
+ * (`base`), everything else is merged as on any pull — on a view-only device too: a reset pull
+ * there would delete its copies of records whose newest row it still can't read, skip what
+ * changed meanwhile when the team's own row is such a row, and strip references a later row
+ * brings back (found by the review of this fix). A cursor at 0 stays 0: nothing was pulled yet,
+ * or a reset pull is still to come. The same object when nothing changes.
  */
 export function withPullCursorsReset(sync: SyncData): SyncData {
   const teams = Object.entries(sync.teams);
-  if (teams.every(([, team]) => team.cursor === 0)) return sync;
+  if (teams.every(([, team]) => team.cursor <= 0)) return sync;
   return {
     ...sync,
-    teams: Object.fromEntries(teams.map(([id, team]) => [id, { ...team, cursor: 0 }])),
+    teams: Object.fromEntries(
+      teams.map(([id, team]) => [id, team.cursor > 0 ? { ...team, cursor: REPULL_CURSOR } : team]),
+    ),
   };
 }

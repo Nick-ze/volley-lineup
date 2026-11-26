@@ -11,6 +11,8 @@ import {
   selectAppData,
   useAppStore,
 } from './appStore';
+import { REPULL_CURSOR } from '@/domain/syncSchema';
+
 import { migrateStore, STORE_VERSION } from './migrations';
 import type { AppData } from './types';
 import {
@@ -460,6 +462,25 @@ describe('lastStoreWriteFailed (audit M19)', () => {
     expect(lastStoreWriteFailed()).toBe(false);
   });
 
+  it('two writes that both work but land in the wrong order: the older data is what is stored', async () => {
+    let finishOlder: () => void = () => {};
+    setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishOlder = resolve;
+        }),
+    );
+    const older = write('de');
+    await write('en'); // the newer write lands first
+    expect(lastStoreWriteFailed()).toBe(false);
+    finishOlder();
+    await older;
+    // Found by the review: this counted as "all stored", and no idle cycle wrote it again.
+    expect(lastStoreWriteFailed()).toBe(true);
+    await write('de');
+    expect(lastStoreWriteFailed()).toBe(false);
+  });
+
   it('goes by the newest write, also when an older one finishes after it', async () => {
     // The older write takes a while and works; the newer one fails at once.
     let finishOlder: () => void = () => {};
@@ -507,13 +528,13 @@ describe('migrations', () => {
     const team = { userId: 'u1', role: 'manager', cursor: 57, base: {}, edits: {}, photos: [] };
     const sync = { deviceId: 'd1', account: null, teams: { t1: team, t2: { ...team, cursor: 3 } } };
 
-    it('puts the pull cursors back at 0, so each team is pulled once more from the start', () => {
+    it('puts the pull cursors back to the start, so each team is pulled once more', () => {
       const next = migrateStore({ teams: [], sync }, 13, STORE_VERSION + 1) as {
         teams: unknown[];
         sync: typeof sync;
       };
-      expect(next.sync.teams.t1).toEqual({ ...team, cursor: 0 });
-      expect(next.sync.teams.t2).toEqual({ ...team, cursor: 0 });
+      expect(next.sync.teams.t1).toEqual({ ...team, cursor: REPULL_CURSOR });
+      expect(next.sync.teams.t2).toEqual({ ...team, cursor: REPULL_CURSOR });
       expect(next.sync.deviceId).toBe('d1');
       expect(next.teams).toEqual([]);
     });

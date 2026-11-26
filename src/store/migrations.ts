@@ -27,8 +27,10 @@
  * v12 → v13 (app 10.0): device-only sync state `sync: { deviceId: null, account: null, teams: {} }`
  * (no account, no shared teams — the app behaves exactly as before until someone signs in).
  *
- * Every step from v13 on (v10 audit L6): the shared teams' pull cursors go back to 0, so each
- * team is pulled once more from the start after the update. Records an older app version couldn't
+ * Every step from v13 on (v10 audit L6): the shared teams' pull cursors go back to the start
+ * (`withPullCursorsReset`: -1, a normal pull of everything, not the "replace by the cloud's copy"
+ * pull a view-only team with cursor 0 gets), so each team is pulled once more from the start
+ * after the update. Records an older app version couldn't
  * read were skipped and the cursor has passed them; this is the only way they arrive. So a version
  * that accepts more synced data than the one before (a new field, a longer text) must bump
  * STORE_VERSION even when the stored shape itself doesn't change.

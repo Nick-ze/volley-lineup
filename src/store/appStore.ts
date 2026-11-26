@@ -18,18 +18,21 @@ import type { AppData, AppState, AppStore } from './types';
 export const STORAGE_KEY = 'volley-lineup';
 
 let writeSeq = 0;
+let landedSeq = 0;
 let writeFailed = false;
 
 /**
- * True when the latest write of the stored data failed (storage full or unavailable). The data
- * is written as a whole after every change, so the next write that works stores everything; the
- * sync engine uses this to repeat a failed write on its next cycle (v10 audit M19).
+ * True when the stored data isn't the newest state: the latest write failed (storage full or
+ * unavailable), or an older write landed after a newer one. The data is written as a whole after
+ * every change, so the next write that works stores everything; the sync engine uses this to
+ * repeat the write on its next cycle (v10 audit M19).
  */
 export const lastStoreWriteFailed = (): boolean => writeFailed;
 
 /**
- * AsyncStorage, remembering whether the latest write of the data worked. Writes finish in the
- * background and not always in the order they were started: only the newest one counts.
+ * AsyncStorage, remembering whether what is stored is the newest state. Writes finish in the
+ * background and not always in the order they were started: the newest one decides, and an
+ * older one that lands after a newer one has landed leaves older data in storage.
  */
 const trackedStorage = {
   getItem: (name: string) => AsyncStorage.getItem(name),
@@ -39,7 +42,9 @@ const trackedStorage = {
     const seq = writeSeq;
     try {
       await AsyncStorage.setItem(name, value);
-      if (seq === writeSeq) writeFailed = false;
+      if (seq < landedSeq) writeFailed = true;
+      else if (seq === writeSeq) writeFailed = false;
+      landedSeq = Math.max(landedSeq, seq);
     } catch (e) {
       if (seq === writeSeq) writeFailed = true;
       throw e;

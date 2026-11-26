@@ -3,10 +3,11 @@
  * the team's pull cursor has passed it, it is never pulled again — also not after an app update
  * that could read it. The device then lacks that record for good (until someone changes it).
  *
- * The update's store migration now puts the pull cursors back at 0 (`migrateStore`, every step
- * from v13 on), so each shared team is pulled once more from the start.
+ * The update's store migration now sends the pull cursors back to the start (`migrateStore`,
+ * every step from v13 on), so each shared team is pulled once more from the start.
  */
 import { teamSlice, type TeamData } from '@/domain/syncRecords';
+import { REPULL_CURSOR } from '@/domain/syncSchema';
 import { migrateStore, STORE_VERSION } from '@/store/migrations';
 import { FakeCloud } from '@/test-utils/fakeBackend';
 import { goldenTeamData } from '@/test-utils/syncFixtures';
@@ -130,7 +131,7 @@ describe('a record an older app version skipped (audit L6)', () => {
   it('arrives on a manager device after the update’s store migration; nothing is pushed', async () => {
     const { cloud, a, b } = await skippedOnB('manager');
     updateApp(b);
-    expect(b.data.sync.teams[T1].cursor).toBe(0);
+    expect(b.data.sync.teams[T1].cursor).toBe(REPULL_CURSOR);
     const pushed = watchPushes(b);
     cloud.clock.tick(60_000);
     await b.cycle();

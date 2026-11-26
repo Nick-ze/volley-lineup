@@ -5,6 +5,7 @@ import {
   normalizeTimestamp,
   parsePayload,
   parseRemoteRow,
+  REPULL_CURSOR,
   storedSyncData,
   withPullCursorsReset,
 } from './syncSchema';
@@ -162,20 +163,19 @@ describe('withPullCursorsReset (audit L6)', () => {
   const team = { userId: 'u1', role: 'manager' as const, cursor: 57, base, edits, photos: ['ph1'] };
   const account = { userId: 'u1', email: 'anna@example.test', profileId: 'pr1' };
 
-  it('puts every cursor back at 0 and keeps everything else', () => {
-    const sync = {
-      deviceId: 'd1',
-      account,
-      teams: { t1: team, t2: { ...team, role: 'player' as const, cursor: 0 }, t3: team },
-    };
+  it('sends every team that has pulled back to the start and keeps everything else', () => {
+    const viewer = { ...team, role: 'player' as const, cursor: 12 };
+    const sync = { deviceId: 'd1', account, teams: { t1: team, t2: viewer, t3: team } };
     const reset = withPullCursorsReset(sync);
+    expect(REPULL_CURSOR).toBe(-1);
     expect(reset).toEqual({
       deviceId: 'd1',
       account,
       teams: {
-        t1: { ...team, cursor: 0 },
-        t2: { ...team, role: 'player', cursor: 0 },
-        t3: { ...team, cursor: 0 },
+        t1: { ...team, cursor: REPULL_CURSOR },
+        // A view-only team too — not 0, which would replace its copy by the cloud's.
+        t2: { ...viewer, cursor: REPULL_CURSOR },
+        t3: { ...team, cursor: REPULL_CURSOR },
       },
     });
     expect(reset.teams.t1.base).toBe(base);
@@ -183,10 +183,20 @@ describe('withPullCursorsReset (audit L6)', () => {
     expect(sync.teams.t1.cursor).toBe(57);
   });
 
+  it('leaves a cursor at 0 alone: nothing pulled yet, or a reset pull still to come', () => {
+    const waiting = { ...team, role: 'player' as const, cursor: 0 };
+    const sync = { deviceId: 'd1', account, teams: { t1: team, t2: waiting } };
+    const reset = withPullCursorsReset(sync);
+    expect(reset.teams.t1.cursor).toBe(REPULL_CURSOR);
+    expect(reset.teams.t2).toBe(waiting);
+  });
+
   it('returns the same object when there is nothing to reset', () => {
     const none = { deviceId: null, account: null, teams: {} };
     expect(withPullCursorsReset(none)).toBe(none);
     const fresh = { deviceId: 'd1', account, teams: { t1: { ...team, cursor: 0 } } };
     expect(withPullCursorsReset(fresh)).toBe(fresh);
+    const again = withPullCursorsReset({ deviceId: 'd1', account, teams: { t1: team } });
+    expect(withPullCursorsReset(again)).toBe(again);
   });
 });

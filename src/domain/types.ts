@@ -290,7 +290,11 @@ export interface SyncedTeam {
   userId: string;
   /** Cached role (refreshed every sync), so view-only also works offline. */
   role: TeamRole;
-  /** Highest gap-free server version pulled. */
+  /**
+   * Highest gap-free server version pulled. 0: nothing yet — on a view-only copy with a `base`
+   * also "replace it by the cloud's on the next pull". -1 (`REPULL_CURSOR`): pull everything
+   * again and merge it the normal way (after an app update, v10 audit L6).
+   */
   cursor: number;
   base: Record<string, SyncBase>;
   edits: Record<string, SyncEdit>;

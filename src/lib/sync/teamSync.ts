@@ -256,8 +256,11 @@ export async function pullTeam(
     return { ...NOTHING_PULLED };
   }
   const here = local !== undefined;
+  // Still linked after a request (the link can go meanwhile: an import, "Delete all data"):
+  // only then is the team waited for (found by the review: the notice stayed for good).
+  const linked = () => appState().sync.teams[teamId] !== undefined;
   if (here) core.awaited.delete(teamId);
-  else if (await stillWaiting(core, teamId)) return { ...NOTHING_PULLED, waiting: true };
+  else if (await stillWaiting(core, teamId)) return { ...NOTHING_PULLED, waiting: linked() };
   const { rows, invalid, serverNow, teamRow, marks } = await pullPages(
     core,
     teamId,
@@ -268,6 +271,7 @@ export async function pullTeam(
     // not readable by this app version): nothing can be applied — no photo is downloaded and
     // nothing is written. The cursor stays at 0, as always while the team isn't there; where
     // this pull got to is remembered for this app run instead (audit M6).
+    if (!linked()) return { ...NOTHING_PULLED };
     core.awaited.set(teamId, { cursor: nextCursor(0, marks, serverNow ?? ''), teamRow });
     return { ...NOTHING_PULLED, waiting: true };
   }

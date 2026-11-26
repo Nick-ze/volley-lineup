@@ -9,13 +9,14 @@
  * cycle only asks for what is new. The user gets a notice, which goes away when the team arrives.
  */
 import { teamSlice, type TeamData } from '@/domain/syncRecords';
+import { useAppStore, useSyncRuntime } from '@/store';
 import { FakeCloud, type FakeBackend } from '@/test-utils/fakeBackend';
 import { goldenTeamData } from '@/test-utils/syncFixtures';
-import { TestDevice } from '@/test-utils/syncDevice';
+import { PROFILE, TestDevice } from '@/test-utils/syncDevice';
 
 import type { PushItem } from '../backend';
 import { createInvite } from '../memberCommands';
-import { downloadTeams, joinTeam } from '../teamCommands';
+import { downloadTeams, joinTeam, unlinkTeam } from '../teamCommands';
 
 const T9 = 'team-nine';
 const PHOTO = 'data:image/png;base64,iVBORw0KGgo=';
@@ -282,6 +283,106 @@ describe('a linked team whose own record hasn’t arrived (audit M6)', () => {
     expect(b.data.sync.teams[T9]).toBeUndefined();
     expect(b.engine.awaited.has(T9)).toBe(false);
     expect(waitingNotices(b)).toEqual([]);
+  });
+});
+
+describe('a waited-for team whose link goes (from the review of this fix)', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  /** The data of a file that holds the team (as a backup of the manager's would). */
+  const importedTeam = (): Parameters<ReturnType<typeof useAppStore.getState>['replaceAll']>[0] => {
+    const data = golden();
+    const s = useAppStore.getState();
+    return {
+      profiles: s.profiles,
+      teams: [{ ...data.teams[0], id: T9, profileId: PROFILE.id, photoId: undefined }],
+      players: data.players.map((p) => ({ ...p, teamId: T9, photoId: undefined })),
+      matches: [],
+      presets: [],
+      seasons: [],
+      opponents: [],
+    };
+  };
+
+  it('during its check: no "can’t be shown yet" notice is left behind', async () => {
+    const { cloud, b } = await joinedWithoutTeamRecord();
+    expect(waitingNotices(b)).toHaveLength(1);
+    cloud.clock.tick(60_000);
+    await b.act(async (engine) => {
+      const stop = engine.start(); // the running app: the engine listens to the store
+      await jest.advanceTimersByTimeAsync(10);
+      const pull = b.backend.pullChanges.bind(b.backend);
+      let imported = false;
+      b.backend.pullChanges = async (teamId, after, limit) => {
+        const page = await pull(teamId, after, limit);
+        if (!imported) {
+          imported = true;
+          useAppStore.getState().replaceAll(importedTeam());
+        }
+        return page;
+      };
+      await engine.runCycle();
+      stop();
+      // The import unlinked the team (a link never adopts an imported team); it is an ordinary
+      // local team now, and nothing says it is still waited for.
+      expect(useAppStore.getState().sync.teams[T9]).toBeUndefined();
+      expect(useAppStore.getState().teams.map((t) => t.id)).toEqual([T9]);
+      expect(useSyncRuntime.getState().notices.filter((n) => n.kind === 'waiting')).toEqual([]);
+      expect(engine.awaited.has(T9)).toBe(false);
+    });
+  });
+
+  it('during its first complete pull: not remembered as waited for', async () => {
+    const { cloud, b } = await joinedWithoutTeamRecord();
+    b.engine.awaited.clear(); // a new app run: the next pull is a complete one
+    cloud.clock.tick(60_000);
+    await b.act(async (engine) => {
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(10);
+      const pull = b.backend.pullChanges.bind(b.backend);
+      b.backend.pullChanges = async (teamId, after, limit) => {
+        const page = await pull(teamId, after, limit);
+        if (useAppStore.getState().sync.teams[T9]) useAppStore.getState().resetAll();
+        return page;
+      };
+      await engine.runCycle();
+      stop();
+      expect(engine.awaited.has(T9)).toBe(false);
+      expect(useSyncRuntime.getState().notices.filter((n) => n.kind === 'waiting')).toEqual([]);
+    });
+  });
+
+  it('"Stop syncing on this device" (unlink) takes the notice and the memory with it', async () => {
+    const { b } = await joinedWithoutTeamRecord();
+    expect(waitingNotices(b)).toHaveLength(1);
+    expect(b.engine.awaited.has(T9)).toBe(true);
+    await b.act((engine) => unlinkTeam(engine, T9));
+    expect(b.data.sync.teams[T9]).toBeUndefined();
+    expect(b.engine.awaited.has(T9)).toBe(false);
+    expect(waitingNotices(b)).toEqual([]);
+  });
+
+  it('a link removed by the store (e.g. "Delete all data") does the same in the running app', async () => {
+    const { b } = await joinedWithoutTeamRecord();
+    await b.act(async (engine) => {
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(10);
+      expect(engine.awaited.has(T9)).toBe(true);
+      useAppStore.getState().resetAll();
+      expect(engine.awaited.has(T9)).toBe(false);
+      expect(useSyncRuntime.getState().notices.filter((n) => n.kind === 'waiting')).toEqual([]);
+      stop();
+    });
+  });
+
+  it('only that team’s "can’t be shown yet" notice goes: other notices stay', async () => {
+    const { b } = await joinedWithoutTeamRecord();
+    const other = { kind: 'waiting' as const, teamId: 'another-team', teamName: '' };
+    const skipped = { kind: 'skipped' as const, teamId: T9, teamName: '', count: 2 };
+    b.runtime = { ...b.runtime, notices: [...b.runtime.notices, other, skipped] };
+    await b.act((engine) => unlinkTeam(engine, T9));
+    expect(b.runtime.notices).toEqual([other, skipped]);
   });
 });
 
