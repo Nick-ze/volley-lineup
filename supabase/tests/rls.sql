@@ -1094,7 +1094,7 @@ begin
   select string_agg(f, ', ') into v_bad
   from unnest(array['private.guard_last_manager()', 'public.leave_team(text)',
                     'public.set_member_role(text,uuid,text)', 'public.remove_member(text,uuid)',
-                    'public.create_invite(text,text,integer)',
+                    'public.create_invite(text,text,integer)', 'public.join_team(text,text)',
                     'public.delete_my_account()']) f
   where pg_get_functiondef(f::regprocedure) !~* 'from public\.teams t\s.*for update';
   perform pg_temp.check(v_bad is null, 'T30 team row locked in: ' || coalesce(v_bad, ''));
@@ -1110,6 +1110,11 @@ begin
                                 where tgrelid = 'public.team_members'::regclass
                                   and tgname = 'team_members_revoke_invites' and not tgisinternal),
                         'T30 invite revocation trigger on team_members');
+  -- join_team locks the team row before the invite row (the order of the member changes that
+  -- revoke codes), so the two can't deadlock.
+  perform pg_temp.check(pg_get_functiondef('public.join_team(text,text)'::regprocedure)
+                          ~* 'from public\.teams t\s.*for update.*from public\.invites i\s.*for update',
+                        'T30 join_team locks the team before the invite');
 
   raise notice 'ALL RLS TESTS PASSED';
 end $$;

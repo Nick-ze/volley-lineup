@@ -13,7 +13,9 @@
 --   * remove_member revokes every open code of the team, player codes too;
 --   * create_invite, set_member_role and remove_member check the caller's role again after
 --     taking the team's row lock, so a call that was waiting behind the caller's own demotion or
---     removal is refused instead of running with the old role.
+--     removal is refused instead of running with the old role;
+--   * join_team takes the team's row lock before the invite's, the same order as the member
+--     changes that revoke codes, so a join can't deadlock with a removal and always sees it.
 --
 -- Nothing is dropped; no data is changed except `invites.revoked_at` when the rules above fire.
 -- Apply after 20261125090600_v10_keepalive.sql.
@@ -135,8 +137,56 @@ begin
   return null; -- not reached
 end $$;
 
+-- join_team: as before, but the team row is locked first and the invite second. A removal or a
+-- demotion holds the team row while it revokes codes; with the invite locked first, a join at
+-- the same moment could deadlock with it (one of the two would fail with 40P01). In this order
+-- the join waits and then finds the code revoked (VL002).
+create or replace function public.join_team(p_code text, p_display_name text)
+  returns jsonb
+  language plpgsql security definer set search_path = '' as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_code text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+  v_name text := left(btrim(coalesce(p_display_name, '')), 60);
+  v_team_id text;
+  v_invite public.invites%rowtype;
+  v_role text;
+begin
+  if v_uid is null then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  select i.team_id into v_team_id from public.invites i where i.code = v_code;
+  if v_team_id is not null then
+    perform 1 from public.teams t where t.id = v_team_id for update; -- serialize member changes
+  end if;
+  -- FOR UPDATE: two people can't both use the last use of a single-use code.
+  select * into v_invite from public.invites i
+  where i.code = v_code and i.revoked_at is null and i.expires_at > now()
+  for update;
+  if not found
+     or (v_invite.max_uses is not null and v_invite.uses >= v_invite.max_uses)
+     or exists (select 1 from private.team_removals r
+                where r.team_id = v_invite.team_id and r.user_id = v_uid
+                  and r.removed_at >= v_invite.created_at) then
+    raise exception 'invite_invalid' using errcode = 'VL002';
+  end if;
+
+  insert into public.team_members as m (team_id, user_id, role, display_name)
+  values (v_invite.team_id, v_uid, v_invite.role, v_name)
+  on conflict (team_id, user_id) do update
+    set role = case when excluded.role = 'manager' then 'manager' else m.role end,
+        display_name = case when excluded.display_name <> '' then excluded.display_name
+                            else m.display_name end
+  returning m.role into v_role;
+
+  update public.invites set uses = uses + 1 where id = v_invite.id;
+  delete from private.team_removals r where r.team_id = v_invite.team_id and r.user_id = v_uid;
+  return jsonb_build_object('team_id', v_invite.team_id, 'role', v_role);
+end $$;
+
 -- `create or replace` keeps the owner and the grants; stated again so the file stands alone.
 revoke all on function public.set_member_role(text, uuid, text), public.remove_member(text, uuid),
-  public.create_invite(text, text, integer) from public, anon;
+  public.create_invite(text, text, integer), public.join_team(text, text) from public, anon;
 grant execute on function public.set_member_role(text, uuid, text),
-  public.remove_member(text, uuid), public.create_invite(text, text, integer) to authenticated;
+  public.remove_member(text, uuid), public.create_invite(text, text, integer),
+  public.join_team(text, text) to authenticated;
