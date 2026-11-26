@@ -300,10 +300,9 @@ members of the Supabase organization.
 7. Check the region is **eu-central-2 (Zurich)** (Project Settings → General).
 8. If GitHub disabled the keep-alive workflow, enable it again (see [Keep-alive](#keep-alive)).
 
-`public.rls_auto_enable()`: migration `20261126140000` revokes its EXECUTE from the API roles
-(audit L2; this used to be an optional owner step). **That migration is not applied to the hosted
-project yet** (2026-11-26: the connector's confirmation got no answer): apply it as described in
-`docs/AUDIT_V10.md` "Open questions" 7, which also does this step.
+Nothing to do for `public.rls_auto_enable()` any more: migration `20261126140000` (applied
+2026-11-26) revokes its EXECUTE from the API roles (audit L2; this used to be an optional owner
+step).
 
 ## Advisor warnings that are intended
 
@@ -319,7 +318,7 @@ After the migrations, the **security** advisor lists these WARNs on purpose:
   `anon` (lint 0028 stays clean for them).
 - **`public.rls_auto_enable()`**: not ours. Supabase created it for the project's "enable RLS on
   new tables" option before any migration ran. It used to show up under lints 0028 and 0029;
-  migration `20261126140000` (audit L2; not applied yet on 2026-11-26) revokes EXECUTE from
+  migration `20261126140000` (audit L2) revokes EXECUTE from
   `public`, `anon` and `authenticated`, which clears both. The event trigger `ensure_rls` still runs it (EXECUTE is
   only checked for calls; rls.sql T34 checks that a new table still gets RLS).
 - **"RLS Enabled No Policy"** (INFO, lint 0008) on `private.team_removals`: on purpose. The table
@@ -367,4 +366,6 @@ files exactly (tables, policies, grants, triggers, all function bodies); the one
 `20261126120000_v10_audit_invite_revocation.sql`; `20261126130000_v10_audit_member_triggers.sql`
 makes deleting a user in the dashboard work (see above) and revokes, once, codes that had
 already outlived a demotion or removal. Advisors after both: unchanged (the trigger functions
-are in `private`, not executable by any API role).
+are in `private`, not executable by any API role). `20261126140000_v10_audit_medium_low.sql`
+(applied 2026-11-26) closes M9, L1 and L2; afterwards the whole `rls.sql` (T1–T34) passed and the
+security advisor lists only the 12 RPCs (0029) and the `team_removals` INFO.
