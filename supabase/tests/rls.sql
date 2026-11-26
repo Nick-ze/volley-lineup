@@ -1110,6 +1110,18 @@ begin
                                 where tgrelid = 'public.team_members'::regclass
                                   and tgname = 'team_members_revoke_invites' and not tgisinternal),
                         'T30 invite revocation trigger on team_members');
+  -- The AFTER triggers on team_members also fire when an auth user is deleted in the dashboard,
+  -- as `supabase_auth_admin`, which has no rights on these tables: they must run as their
+  -- owner. (This script can't become that role on a hosted project, so it checks the functions.)
+  select string_agg(p.oid::regprocedure::text, ', ') into v_bad
+  from pg_trigger t join pg_proc p on p.oid = t.tgfoid
+  where t.tgrelid = 'public.team_members'::regclass and not t.tgisinternal
+    and (t.tgtype & 2) = 0 -- AFTER triggers
+    and not p.prosecdef;
+  perform pg_temp.check(v_bad is null, 'T30 after-triggers on team_members run as their owner: ' || coalesce(v_bad, ''));
+  perform pg_temp.check(not has_table_privilege('supabase_auth_admin', 'public.team_members', 'select'),
+                        'T30 (premise) the auth admin role has no rights on team_members');
+
   -- join_team locks the team row before the invite row (the order of the member changes that
   -- revoke codes), so the two can't deadlock.
   perform pg_temp.check(pg_get_functiondef('public.join_team(text,text)'::regprocedure)
