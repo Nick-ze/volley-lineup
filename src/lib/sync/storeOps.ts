@@ -96,8 +96,6 @@ export function linkedTeamIds(userId?: string | null): string[] {
   return Object.keys(teams).filter((id) => userId == null || teams[id].userId === userId);
 }
 
-export const teamMeta = (teamId: string): SyncedTeam | undefined => appState().sync.teams[teamId];
-
 export function teamName(teamId: string): string {
   return appState().teams.find((t) => t.id === teamId)?.name ?? '';
 }

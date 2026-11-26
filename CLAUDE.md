@@ -4,7 +4,7 @@ Read this file, `docs/HANDOFF.md` (current state + how work is done here) and `d
 
 ## Project
 
-Expo (React Native + web) app for volleyball team managers: roster, per-set lineups with drag and drop, rotation viewer, local storage, JSON export/import. No backend.
+Expo (React Native + web) app for volleyball team managers: roster, per-set lineups with drag and drop, rotation viewer, local storage, JSON export/import. Optional accounts and cloud sync for shared teams (Supabase, since v10: `src/lib/sync`, `supabase/`, `docs/SUPABASE.md`); without an account the app makes no network call.
 
 ## Commands
 

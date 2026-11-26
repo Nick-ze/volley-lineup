@@ -44,6 +44,21 @@ describe('German strings', () => {
     );
   });
 
+  it('use the singular verb for one change (audit L21)', () => {
+    expect(de.account.screen.signOutConfirm(1)).toBe(
+      '1 Änderung wird bei der nächsten Anmeldung synchronisiert. Jetzt abmelden?',
+    );
+    expect(de.account.screen.signOutConfirm(2)).toBe(
+      '2 Änderungen werden bei der nächsten Anmeldung synchronisiert. Jetzt abmelden?',
+    );
+    expect(de.account.signIn.switchConfirm('a@b.ch', 1)).toContain(
+      '1 Änderung, die noch nicht synchronisiert ist, kommt nicht in die Cloud.',
+    );
+    expect(de.account.signIn.switchConfirm('a@b.ch', 3)).toContain(
+      '3 Änderungen, die noch nicht synchronisiert sind, kommen nicht in die Cloud.',
+    );
+  });
+
   it('are picked by language', () => {
     expect(stringsFor('de')).toBe(de);
     expect(stringsFor('en')).toBe(en);
