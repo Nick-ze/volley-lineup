@@ -101,7 +101,11 @@ describe('photos', () => {
     expect(b.photos['ph-new']).toBe(OTHER);
   });
 
-  it('a photo the cloud no longer has is forgotten as uploaded (a manager re-uploads it)', async () => {
+  // v10 audit M18: this test used to expect the id to be taken off the team's cloud photo list
+  // ("forgotten as uploaded"). That was the bug: off the list, the `photoId` was cleared after
+  // the next restart and pushed as "no photo" (see `lostPhoto.test.ts`). The id stays listed
+  // now; what the old rule was for still holds — a device that has the picture uploads it again.
+  it('a photo the cloud no longer has stays listed; a device that has it again uploads it', async () => {
     const { cloud, a, b } = await setup();
     await a.act((e) => uploadTeams(e, ['t1']));
     await a.cycle();
@@ -116,7 +120,19 @@ describe('photos', () => {
     }));
     await a.cycle();
     await b.cycle();
-    expect(b.data.sync.teams.t1.photos).toEqual(['ph3']);
+    expect(b.data.sync.teams.t1.photos.sort()).toEqual(['ph2', 'ph3']);
     expect(b.data.players.find((p) => p.id === 'p1')?.photoId).toBe('ph2');
+    // B gets the picture back (e.g. from a backup) and changes the player: uploaded again.
+    cloud.clock.tick(1000);
+    await b.act(async () => {
+      await setPhoto('ph2', PHOTO);
+      useAppStore.getState().updatePlayer('p1', { firstName: 'Again' });
+    });
+    await b.cycle();
+    expect(cloud.photos.get('t1/ph2')).toBe(PHOTO);
+    expect(cloud.record('t1', 'player', 'p1')?.payload).toMatchObject({
+      firstName: 'Again',
+      photoId: 'ph2',
+    });
   });
 });

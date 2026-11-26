@@ -14,7 +14,9 @@ function statusOf(t: Strings, state: ImportState): Status | null {
     const text =
       state.error === 'SHARED_CONFLICT'
         ? t.sync.import.sharedConflict
-        : t.transfer.import.errors[state.error];
+        : state.error === 'LIVE_MATCH'
+          ? t.sync.import.liveMatch
+          : t.transfer.import.errors[state.error];
     return { tone: 'error', text };
   }
   if (state.step === 'done') {

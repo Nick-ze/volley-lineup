@@ -29,6 +29,13 @@ export interface EngineCore {
   readonly resetPending: Set<string>;
   /** Photo ids per team that couldn't be downloaded yet (retried every cycle). */
   readonly pendingPhotos: Map<string, Set<string>>;
+  /**
+   * Photo ids per team the cloud answered "not found" for in this app run (v10 audit M18): once
+   * this device has such a picture (again), it uploads it with the record's next change.
+   */
+  readonly lostPhotos: Map<string, Set<string>>;
+  /** Teams whose cloud folder was compared with the stored list in this app run (`checkFolder`). */
+  readonly checkedFolders: Set<string>;
   /** Notice keys already shown in this run (each shown once). */
   readonly notified: Set<string>;
   /** Matches this device was scoring that another device holds now (`holdState.ts`). */

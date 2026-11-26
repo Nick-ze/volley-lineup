@@ -35,6 +35,10 @@ export const sync: Strings['sync'] = {
     held: (name: string) =>
       `Wird gerade live auf dem Gerät von ${name || 'jemand anderem'} gezählt.`,
     takeOver: 'Übernehmen',
+    heldNoDelete: (name: string) =>
+      name
+        ? `Löschen ist nicht möglich, solange auf dem Gerät von ${name} ein Spiel live gezählt wird.`
+        : 'Löschen ist nicht möglich, solange auf einem anderen Gerät ein Spiel live gezählt wird.',
   },
   // E2: Status-Anzeige, Hinweise, geteiltes Team löschen, Import, Teamliste.
   badge: {
@@ -111,6 +115,8 @@ export const sync: Strings['sync'] = {
     replaceKeeps: 'Ersetzen behält die auf diesem Gerät geteilten Teams.',
     sharedConflict:
       'Diese Datei passt nicht zu einem auf diesem Gerät geteilten Team (zum Beispiel zwei Spieler mit derselben Trikotnummer). Es wurde nichts geändert.',
+    liveMatch:
+      'Ein Spiel, das diese Datei ändern würde, wird gerade auf einem anderen Gerät live gezählt. Es wurde nichts geändert. Importiere erneut, wenn dieses Spiel vorbei ist.',
   },
   team: {
     rowLabel: (open: string, mark: string) => `${open}. ${mark}`,

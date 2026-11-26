@@ -16,7 +16,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 import type { TransferData } from '@/domain/exportSchema';
-import { isCloudPhoto, referencedPhotoIds } from '@/domain/photos';
+import { isCloudPhoto, referencedPhotoIds, withCloudPhotos } from '@/domain/photos';
+import { isUnchangedRecord } from '@/domain/syncAccess';
+import { playerRecordHash, recordKey, teamRecordHash } from '@/domain/syncRecords';
 import type { Photo } from '@/domain/types';
 
 import { selectAppData, useAppStore } from './appStore';
@@ -133,10 +135,32 @@ export async function prunePhotos(): Promise<void> {
     x.photoId !== undefined && !(x.photoId in photos) && !pendingRemotePhotos.has(x.photoId);
   // v10 audit H3: a shared team's cloud photo that isn't on the device (yet) keeps its `photoId`,
   // whatever the in-memory download list says (it is empty after a restart).
+  // v10 audit M18: so does the `photoId` of a record that is exactly what the server last had
+  // — it came from the cloud, also when the folder list doesn't name it (the cloud answered
+  // "not found" for it on an earlier app version). Clearing it on a manager device would be
+  // pushed as "no photo" and take the picture from the devices that still have it. Such an id
+  // goes back on the team's list (`adopt`), so that it also survives the record's next change.
+  const adopt = new Map<string, Set<string>>();
+  const fromCloud = (teamId: string, photoId: string | undefined, key: string, hash: string) => {
+    if (isCloudPhoto(app.sync, teamId, photoId)) return true;
+    if (photoId === undefined || !isUnchangedRecord(app.sync, teamId, key, hash)) return false;
+    adopt.set(teamId, (adopt.get(teamId) ?? new Set<string>()).add(photoId));
+    return true;
+  };
   const players = app.players.filter(
-    (p) => dangling(p) && !isCloudPhoto(app.sync, p.teamId, p.photoId),
+    (p) =>
+      dangling(p) &&
+      !fromCloud(p.teamId, p.photoId, recordKey('player', p.id), playerRecordHash(p)),
   );
-  const teams = app.teams.filter((x) => dangling(x) && !isCloudPhoto(app.sync, x.id, x.photoId));
+  const teams = app.teams.filter(
+    (x) => dangling(x) && !fromCloud(x.id, x.photoId, recordKey('team', x.id), teamRecordHash(x)),
+  );
+  if (adopt.size > 0) {
+    app.syncTransaction((s) => {
+      const sync = withCloudPhotos(s.sync, adopt);
+      return sync === s.sync ? s : { sync };
+    });
+  }
   for (const p of app.profiles.filter(dangling)) app.updateProfile(p.id, { photoId: undefined });
   for (const p of players) app.updatePlayer(p.id, { photoId: undefined });
   for (const x of teams) app.updateTeam(x.id, { photoId: undefined });

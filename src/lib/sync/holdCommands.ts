@@ -27,6 +27,9 @@ import { appState, displayName } from './storeOps';
 import { needsReset, pullTeam } from './teamSync';
 import type { SyncResult } from './types';
 
+/** How long the server keeps a hold that isn't refreshed (`hold_match`). */
+const HOLD_TTL_MS = 15 * 60_000;
+
 /**
  * Brings the team up to date before this device scores, like a cycle's pull (a pending reset
  * included). Never fails: offline, this device scores anyway.
@@ -63,6 +66,13 @@ async function claim(
     return { granted: true };
   }
   const known = useSyncRuntime.getState().holds[matchId];
+  // A refusal without a readable end (v10 audit L17) would never run out here: an unreadable
+  // time counts as "still running" (`holdStatus`), and offline no sync replaces it. The other
+  // device's hold can't outlast the server's 15 minutes without a refresh, so that is its end
+  // here until the next sync knows better.
+  const until = Number.isNaN(Date.parse(r.heldUntil))
+    ? new Date(engine.clock.now() + HOLD_TTL_MS).toISOString()
+    : r.heldUntil;
   putHold(engine, {
     matchId,
     teamId,
@@ -70,7 +80,7 @@ async function claim(
     deviceId: known && known.deviceId !== deviceId ? known.deviceId : '',
     userId: known?.userId ?? '',
     holderName: r.holderName,
-    heldUntil: r.heldUntil,
+    heldUntil: until,
   });
   return { granted: false, holder: r.holderName };
 }

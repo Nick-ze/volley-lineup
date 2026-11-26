@@ -18,6 +18,7 @@ import {
 } from '@/domain/seasons';
 import { useT } from '@/i18n';
 import {
+  canEditTeamNow,
   useAppStore,
   useCanEdit,
   useMatchesForSeason,
@@ -52,7 +53,8 @@ export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsPro
   const [name, setName] = useState('');
   const [error, setError] = useState<OpponentNameError | undefined>();
   const { ask, dialogProps } = useConfirm();
-  const canEdit = useCanEdit(useSeason(seasonId)?.teamId);
+  const teamId = useSeason(seasonId)?.teamId;
+  const canEdit = useCanEdit(teamId);
   const anyBlocked = opponents.some((o) => opponentHasMatches(matches, o.id));
 
   const add = () => {
@@ -96,9 +98,10 @@ export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsPro
             deletable={!opponentHasMatches(matches, r.opponent.id)}
             onOpen={() => onOpenOpponent(r.opponent.id)}
             onDelete={() =>
-              ask(s.confirmDelete(r.opponent.name), () =>
-                useAppStore.getState().deleteOpponent(r.opponent.id),
-              )
+              ask(s.confirmDelete(r.opponent.name), () => {
+                // The role may have changed while the question was open (v10 audit L18).
+                if (canEditTeamNow(teamId)) useAppStore.getState().deleteOpponent(r.opponent.id);
+              })
             }
           />
         ))}

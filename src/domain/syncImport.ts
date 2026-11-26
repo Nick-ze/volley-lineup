@@ -14,7 +14,8 @@
 import type { TransferData } from './exportFormat';
 import { mergeData, replaceData } from './exportMerge';
 import { referencedPhotoIds } from './photos';
-import type { SyncData, Team } from './types';
+import { stableStringify } from './syncRecords';
+import type { Match, Photo, SyncData, Team } from './types';
 
 /** A team shared on this device and whether this device may edit it (manager). */
 export interface SharedTeam {
@@ -57,6 +58,28 @@ export function sharedTeamsInFile(
   };
 }
 
+/**
+ * True when the import's result changes, drops or brings one of the matches `ids` (v10 audit
+ * M15, found by the review) — matches another device is scoring live right now. The file's copy
+ * would replace the scorer's rallies on this device, and from here for everyone. "Brings": a
+ * match the device knows is being scored but hasn't pulled yet would be pushed from the file.
+ */
+export function importChangesMatches(
+  current: readonly Match[],
+  result: readonly Match[],
+  ids: readonly string[],
+): boolean {
+  if (ids.length === 0) return false;
+  const before = new Map(current.map((m) => [m.id, m]));
+  const after = new Map(result.map((m) => [m.id, m]));
+  return ids.some((id) => {
+    const was = before.get(id);
+    const next = after.get(id);
+    if (was === undefined || next === undefined) return was !== next;
+    return next !== was && stableStringify(next) !== stableStringify(was);
+  });
+}
+
 export function importWithSharedTeams(
   current: TransferData,
   file: TransferData,
@@ -73,15 +96,47 @@ export function importWithSharedTeams(
   const skippedTeams = file.teams.filter((t) => viewerIds.has(t.id)).map((t) => t.id);
   // Viewer teams in the file are dropped first; managers' shared teams stay to be merged.
   const incoming = withoutTeams(file, viewerIds);
-  if (mode === 'merge' && movesSharedRecords(current, incoming, sharedIds)) {
+  // A shared team's picture that hasn't been downloaded yet (v10 audit L31) stands in as an
+  // empty photo while the result is checked, and is taken out again afterwards. Not for a
+  // picture the file brings: the real one must win (on a view-only device nothing else of the
+  // file's copy of that team is taken, and the stand-in would push the picture out).
+  const inFile = new Set(incoming.photos.map((p) => p.id));
+  const waiting = waitingPhotos(current, sharedIds).filter((p) => !inFile.has(p.id));
+  const device =
+    waiting.length > 0 ? { ...current, photos: [...current.photos, ...waiting] } : current;
+  if (mode === 'merge' && movesSharedRecords(device, incoming, sharedIds)) {
     return { ok: false, error: 'SHARED_CONFLICT' };
   }
   const result =
     mode === 'merge'
-      ? mergeData(current, incoming)
-      : replaceKeepingShared(current, incoming, sharedIds);
+      ? mergeData(device, incoming)
+      : replaceKeepingShared(device, incoming, sharedIds);
   if (!result.ok) return result;
-  return { ok: true, data: keepOwners(result.data, current, sharedIds), skippedTeams };
+  const stand = new Set<unknown>(waiting);
+  const data =
+    waiting.length > 0
+      ? { ...result.data, photos: result.data.photos.filter((p) => !stand.has(p)) }
+      : result.data;
+  return { ok: true, data: keepOwners(data, current, sharedIds), skippedTeams };
+}
+
+/**
+ * Stand-ins for the photos that shared teams and their players refer to but the device doesn't
+ * have (v10 audit L31): a cloud picture keeps its `photoId` while its download is still to come
+ * (DECISIONS #294), and the import's consistency check ("every referenced photo is there") would
+ * refuse every file because of it — Merge as a "conflict", Replace outright. The same photo in
+ * the file replaces its stand-in (the file wins per id), so an import can also bring it back.
+ */
+function waitingPhotos(current: TransferData, sharedIds: ReadonlySet<string>): Photo[] {
+  const have = new Set(current.photos.map((p) => p.id));
+  const ids = new Set<string>();
+  for (const team of current.teams) {
+    if (sharedIds.has(team.id) && team.photoId !== undefined) ids.add(team.photoId);
+  }
+  for (const player of current.players) {
+    if (sharedIds.has(player.teamId) && player.photoId !== undefined) ids.add(player.photoId);
+  }
+  return [...ids].filter((id) => !have.has(id)).map((id) => ({ id, dataUri: '' }));
 }
 
 /** Every record of the data that belongs to a team, as [`kind:id`, team id]. */

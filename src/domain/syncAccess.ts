@@ -30,6 +30,22 @@ export function teamAccess(sync: SyncData, teamId: string): TeamAccess {
   return { shared: true, role: linked.role, canEdit, block: canEdit ? null : 'viewer' };
 }
 
+/**
+ * True when a shared team's record on the device is exactly what the server last had (`hash`:
+ * the record's payload hash): there is nothing of this device's in it. The photo prune uses it
+ * (v10 audit M18): the `photoId` of such a record came from the cloud and is never cleared here,
+ * also when the picture isn't on the device and the cloud's folder list doesn't name it.
+ */
+export function isUnchangedRecord(
+  sync: Pick<SyncData, 'teams'>,
+  teamId: string,
+  key: string,
+  hash: string,
+): boolean {
+  const known = sync.teams[teamId]?.base[key];
+  return known !== undefined && !known.del && known.h === hash;
+}
+
 export type HoldStatus = 'none' | 'mine' | 'other';
 
 /** Whether a hold is missing / expired, this device's, or another device's (`now` in ms). */
@@ -43,11 +59,27 @@ export function holdStatus(
 }
 
 /**
+ * The matches among `matchIds` that another device is scoring live right now: an unexpired hold
+ * of another device (v10 audit M15). They can't be deleted from this device meanwhile — neither
+ * the match itself nor, with it, its season or team.
+ */
+export function heldMatchIds(
+  holds: Readonly<Record<string, MatchHold>>,
+  deviceId: string | null,
+  now: number,
+  matchIds: readonly string[],
+): string[] {
+  return matchIds.filter((id) => holdStatus(holds[id], deviceId, now) === 'other');
+}
+
+/**
  * The matches this device has yielded to another scorer (v10 audit M1), after its known holds
  * change from `prev` to `next`: a match another device holds now (unexpired) that this device
  * was the scorer of — its own hold was the last one it knew and **hadn't run out** — or had
- * already yielded. It stays yielded until that other hold ends (released, expired, or taken back
- * here).
+ * already yielded. It stays yielded until this device sees that other hold ended: a hold list
+ * without it, or the match taken back here. (A hold that merely runs out while this device is
+ * offline doesn't end it — the device can't tell whether the scorer stopped or kept refreshing;
+ * AUDIT_V10 "Open questions" 11.)
  *
  * Only a hold that was still running can have been taken over: the server gives a running hold
  * to another device only on "Take over". A device whose own hold had run out (the scorer in a

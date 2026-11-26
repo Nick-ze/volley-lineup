@@ -41,6 +41,28 @@ export function isCloudPhoto(
   return photoId !== undefined && (sync.teams[teamId]?.photos.includes(photoId) ?? false);
 }
 
+/**
+ * `sync` with photo ids put (back) on their teams' cloud photo lists (`added`: team id → photo
+ * ids); the same object when nothing changes. v10 audit M18: a record that is exactly what the
+ * server last had can refer to a photo the list doesn't name — app version 10.0.0 took an id
+ * off the list when the cloud answered "not found" for it. Back on the list, the `photoId`
+ * survives the record's next change, and the picture is asked for (and uploaded) again.
+ */
+export function withCloudPhotos(
+  sync: SyncData,
+  added: ReadonlyMap<string, ReadonlySet<string>>,
+): SyncData {
+  let teams: SyncData['teams'] | null = null;
+  for (const [teamId, ids] of added) {
+    const team = sync.teams[teamId];
+    const missing = team ? [...ids].filter((id) => !team.photos.includes(id)) : [];
+    if (!team || missing.length === 0) continue;
+    teams ??= { ...sync.teams };
+    teams[teamId] = { ...team, photos: [...team.photos, ...missing] };
+  }
+  return teams ? { ...sync, teams } : sync;
+}
+
 /** The photo ids that profiles, players and teams refer to. */
 export function referencedPhotoIds(data: {
   profiles: readonly Pick<ManagerProfile, 'photoId'>[];

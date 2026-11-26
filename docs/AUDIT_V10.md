@@ -693,6 +693,32 @@ rate limit is enough; 3 six digits stay; 4 yes; 5 yes. Questions 4 and 5 were th
    device's opponent of the same name, which that device merges into it — waits there too. A
    fix would give such opponents a new id on the device before the first upload (their matches
    follow). Wanted?
+10. **M7: an old local copy when a team is joined again** (not built). Today: a team that was
+    unlinked (you were removed, or switched accounts) and stays on the device as a local copy is
+    replaced by the cloud's content when you join or download the same team again as a player;
+    as a manager, the cloud wins wherever both have a record. Changes made to the local copy in
+    between are gone without a question. The audit suggested keeping the old copy under a new
+    id. That needs more than a new team id: every player, season, opponent, match and preset of
+    the copy needs a new id too (the cloud's records have the same ones, and a record whose id
+    another local team uses is skipped), and the device then shows two teams with the same
+    name. Options: (a) **ask first** — "This device has an older copy of U18. Joining replaces
+    it with the team's cloud version. Export a backup first?" (small, no second team;
+    recommended); (b) keep a full copy under new ids, named "U18 (local copy)"; (c) leave it as
+    it is.
+11. **Take-over: how long does the previous scorer's device give way?** (Found by the review of
+    PR 3; `main` behaves the same.) A device that was scoring and sees another device take over
+    gives way (DECISIONS #306). It keeps giving way until it _learns_ that the other hold has
+    ended. If it is offline while that hold runs out, two things can have happened, and the
+    device can't tell them apart: (a) the new scorer released the match and, later, some device
+    simply opened it again — then the rallies scored on the first device in between are thrown
+    away although nobody took over (with the "taken over" notice); (b) the new scorer kept
+    scoring the whole time (its hold was renewed) — then giving way is right, and the
+    alternative ("the latest save wins") would let the first device's old copy of the set
+    replace everything the scorer entered since (checked with a probe: three rallies lost on
+    every device). Today the app decides for (b). Deciding for (a) is a one-line change, but it
+    loses data in (b), which works today, so it wasn't made (DECISIONS #331). Getting both
+    right needs the server to say when a hold began (a small database change: a start time
+    returned with the holds). Wanted?
 
 ## Owner dashboard steps
 
@@ -967,7 +993,10 @@ documentation and cleanup (marked "docs" / "cleanup").
 | M4                   | fixed: a refused batch is taken apart; the refused record waits, the rest is pushed (DECISIONS #322)                                                                                                                                                                                                                                                    | PR 2 | `unsendable.test.ts` (8 cases), `errors.test.ts`                                                                                                                                                            |
 | M5                   | fixed: more time for requests that send a lot; a push that times out continues in smaller parts (DECISIONS #323)                                                                                                                                                                                                                                        | PR 2 | `slowUplink.test.ts`, `fetchWithTimeout.test.ts`                                                                                                                                                            |
 | M12                  | fixed: a body that stalls ends the request after 15 s without data (DECISIONS #324)                                                                                                                                                                                                                                                                     | PR 2 | `fetchWithTimeout.test.ts`                                                                                                                                                                                  |
-| M2, M7, M15, M18     | second chat: see "Engine fix log" below                                                                                                                                                                                                                                                                                                                 | —    | —                                                                                                                                                                                                           |
+| M7                   | not built: needs the owner’s choice ("Open questions" 10, DECISIONS #330)                                                                                                                                                                                                                                                                               | —    | —                                                                                                                                                                                                           |
+| M15                  | fixed: no delete of a match another device scores live, its season, its players, its team; no import that would change it (DECISIONS #325)                                                                                                                                                                                                              | PR 3 | `heldDelete.test.tsx`, `holdsAndCopies.test.ts`, `importLive.test.tsx`                                                                                                                                      |
+| M18                  | fixed: a "not found" photo stays listed; the prune keeps the `photoId` of an unchanged record; the cloud folder is checked before a picture's record is pushed (DECISIONS #328)                                                                                                                                                                         | PR 3 | `lostPhoto.test.ts`, `photos.test.ts`                                                                                                                                                                       |
+| M2                   | second chat: see "Engine fix log" below                                                                                                                                                                                                                                                                                                                 | —    | —                                                                                                                                                                                                           |
 | M8                   | accepted by the owner (no CAPTCHA, DECISIONS #304)                                                                                                                                                                                                                                                                                                      | —    | —                                                                                                                                                                                                           |
 | M10                  | known limit, documented (`docs/SUPABASE.md` "Known limits")                                                                                                                                                                                                                                                                                             | PR 1 | docs                                                                                                                                                                                                        |
 | L3, L7, L9, L10, L12 | by design / known limit, documented (`docs/SUPABASE.md` "Known limits")                                                                                                                                                                                                                                                                                 | PR 1 | docs                                                                                                                                                                                                        |
@@ -1001,7 +1030,9 @@ documentation and cleanup (marked "docs" / "cleanup").
 | M9                   | fixed (applied 2026-11-26): `20261126140000_v10_audit_medium_low.sql`: `delete_team` checks the role again under the team row lock                                                                                                                                                                                                                      | PR 4 | `rls.sql` T30 (`delete_team` in the lock and re-check lists)                                                                                                                                                |
 | L1                   | fixed (applied): same migration: no default table privileges for `anon` / `authenticated` / `service_role` in `public`                                                                                                                                                                                                                                  | PR 4 | `rls.sql` T34 (a probe table, `pg_default_acl`)                                                                                                                                                             |
 | L2                   | fixed (applied): same migration: `rls_auto_enable()` EXECUTE revoked from `public` / `anon` / `authenticated` (was an optional owner step)                                                                                                                                                                                                              | PR 4 | `rls.sql` T34 (not callable; its event trigger still enables RLS)                                                                                                                                           |
-| L6, L17, L18, L31    | second chat                                                                                                                                                                                                                                                                                                                                             | —    | —                                                                                                                                                                                                           |
+| L17                  | fixed: a refused hold without an end runs out after 15 minutes (DECISIONS #327)                                                                                                                                                                                                                                                                         | PR 3 | `holdsAndCopies.test.ts`                                                                                                                                                                                    |
+| L18                  | fixed: confirms read the role again; the preset name dialogs close (DECISIONS #326)                                                                                                                                                                                                                                                                     | PR 3 | `heldDelete.test.tsx`                                                                                                                                                                                       |
+| L31                  | fixed: an import accepts a shared team’s picture that is still to be downloaded (DECISIONS #329)                                                                                                                                                                                                                                                        | PR 3 | `syncImport.test.ts`, `holdsAndCopies.test.ts`                                                                                                                                                              |
 
 **Review of PR 2** (an independent reviewer agent, its own copy, typecheck + 350 tests): no
 blocking finding. Fixed from its nits: the start-up check of M17 also runs when the session can
@@ -1162,3 +1193,67 @@ probes on three copies: fixed, before the fixes, `main`):
 - After one timeout every later push of the app run, for every team, uses the smaller batches
   (DECISIONS #323).
 - Not run against the hosted database or its API layer.
+
+### PR 3 — live holds, photos, dialogs, import (M15, M18, L17, L18, L31); M7 parked
+
+- **M15**: a match another device is scoring live can't be deleted — nor its season, a player
+  in its lineups, or its team for everyone — and an import that would change it is refused.
+  The screens hide or disable the action and say why; the action asks again when the question
+  is answered.
+- **L18**: delete confirms read the role again at that moment; the preset name dialogs close on
+  a demotion.
+- **L17**: a refused hold without a readable end ends 15 minutes later on this device instead
+  of never.
+- **M18**: a photo the cloud answers "not found" for stays in the team's cloud photo list; the
+  prune never clears the `photoId` of a record that is exactly what the server last had, and
+  puts such an id back on a list that lacks it; before a picture's record is pushed, the cloud
+  folder is checked once per app run, and what is missing there is uploaded again.
+- **L31**: an import no longer fails because a shared team's picture hasn't been downloaded yet.
+- **M7**: not built — "Open questions" 10 (DECISIONS #330).
+
+Tests: `heldDelete.test.tsx` (M15, L18: 19 component cases), `heldMatches.test.tsx` (the hook
+and time: 5), `importLive.test.tsx` (8), `holdsAndCopies.test.ts` (L17, M15, L31 with two
+devices: 10), `lostPhoto.test.ts` (M18: 16), `syncImport.test.ts`, `photos.test.ts`,
+`syncAccess.test.ts`, `syncRecords.test.ts` (domain, 100 %). One existing test in
+`src/lib/sync/__tests__/photos.test.ts` expected the old rule of M18 (the id taken off the
+list): changed, with a comment.
+
+**Independent review.** The reviewer compared the change with a copy without it, wrote 23 probes
+and ran two rounds of mutations. What it found, and what was done:
+
+| Review finding                                                                                                                                                                                                                                                                                                                                          | Done                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M18, claim not met: a list app version 10.0.0 already shortened was only protected until the record was edited.** The prune kept the `photoId` of an unchanged record, but any edit of that record (a name, a number) cleared it and pushed "no photo" — and the devices that still had the picture deleted it. The id was also never asked for again | fixed: the prune puts such an id back on the team's cloud photo list (`withCloudPhotos`), so it survives edits and is downloaded when it is there again. `lostPhoto.test.ts`, 4 cases                                                                                                                                                                                       |
+| **M18, new with the change: a lost picture was no longer uploaded again after an app restart.** What the cloud answered "not found" for is only remembered for the app run; a device that got the picture back (a backup) and was restarted before the record's next change never uploaded it. `main` did (it had taken the id off the list)            | fixed: before a team or player record with a picture is pushed, once per app run and team, the cloud folder is listed and compared with the stored list (`checkFolder`); what is missing there is uploaded with the record. This also repairs the folder from a device that always had the picture, which `main` never did. 5 cases                                         |
+| **L31, new with the change: Replace on a view-only device no longer brought a waiting picture back from the backup** (the stand-in beat the file's real photo)                                                                                                                                                                                          | fixed: no stand-in for a photo the file brings (`syncImport.test.ts`, all four mode / role cases)                                                                                                                                                                                                                                                                           |
+| **M15: the re-check of "Delete season" and "Delete player" used the matches and lineups from when the question was asked** — a match that arrived (and is scored) while the question was open, or a player the scorer put into the lineup meanwhile, was deleted                                                                                        | fixed: both read the store at the moment of the answer (`heldDelete.test.tsx`, 2 cases)                                                                                                                                                                                                                                                                                     |
+| L18: the preset name dialog was hidden, not closed: it came back by itself after a later promotion                                                                                                                                                                                                                                                      | fixed (1 case)                                                                                                                                                                                                                                                                                                                                                              |
+| **Also on `main`: an import on a manager's device overwrote a match another device was scoring live** (Merge and Replace: the file's older copy replaced the set, was pushed as the newest save, and the scorer's rallies were gone everywhere)                                                                                                         | fixed: the import is refused, with a text (EN + DE), while another device holds a match the file would change; a file that leaves that match as it is can still be imported (`importLive.test.tsx`, 7 cases; `importChangesMatches` in the domain)                                                                                                                          |
+| **Also on `main`: a device that gave way to a new scorer keeps giving way after that hold has run out without its knowing** (it was offline): a later ordinary claim of the free match by another device makes it discard its own rallies again                                                                                                         | **not changed — "Open questions" 11, DECISIONS #331.** The one-line change the reviewer proposed makes this case "the latest save wins", but in the opposite case (the new scorer kept scoring while the old device was offline) it lets the old device's stale copy replace the scorer's set: checked with a probe — three rallies lost everywhere that today's code keeps |
+| Test gaps: `useHeldMatches` and time; the team's own picture in the prune; "Delete for everyone" shown as unavailable; a view-only member's dialog; a hold on a match the player isn't in                                                                                                                                                               | tests added (`heldMatches.test.tsx` 5, `heldDelete.test.tsx` 3, `lostPhoto.test.ts` 1)                                                                                                                                                                                                                                                                                      |
+
+Every fix was undone once to see its test fail (14 mutations, all noticed).
+
+**Second pass**, on these fixes (12 more probes, 24 mutations, the whole suite): "OK to merge".
+One gap, closed: the import guard only looked at matches on the device, so a file that brings a
+match the device knows is being scored but hasn't pulled yet (the holds arrive before the
+records) got through — such a match now counts as changed (`importLive.test.tsx`, 8 cases). On
+the take-over question the reviewer agrees that no rule in the app gets both cases right; the
+server would have to say when a hold began. Checked and sound: the folder check can't upload a
+wrong picture or replace one that is there, costs no request in a cycle with nothing to push,
+and a listing that wrongly says "missing" only leads to one upload attempt; the prune puts no
+id on a list for a record changed on this device, a local team or an unlinked one.
+
+**Limits that remain (PR 3)**
+
+- The folder check costs one small request per app run and team, at the first push of a team or
+  player record that has a picture. If the listing fails, the push goes on and the next one
+  asks again.
+- The delete gates and the import guard look at the holds this device knows (from its last
+  sync: at most a minute old while the app is open, none offline or before the first sync of
+  an app run). The server would accept the deletion.
+- A hold without a readable end (L17) ends after 15 minutes on the device's own clock.
+- A record with a missing picture that already carries an unsynced change of this device at
+  the first start after the update still loses its `photoId`: it can't be told apart from a
+  picture this device set itself and failed to save.
+- M7 is not built ("Open questions" 10); the take-over question is open ("Open questions" 11).

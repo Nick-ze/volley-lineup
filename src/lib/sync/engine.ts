@@ -89,6 +89,8 @@ export class SyncEngine implements EngineCore {
   /** Teams this account was made manager of: the role is stored after their reset pull. */
   private readonly promoting = new Set<string>();
   readonly pendingPhotos = new Map<string, Set<string>>();
+  readonly lostPhotos = new Map<string, Set<string>>();
+  readonly checkedFolders = new Set<string>();
   readonly notified = new Set<string>();
   readonly yielded = new Set<string>();
   readonly awaited = new Map<string, AwaitedTeam>();

@@ -5,8 +5,14 @@
 import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { matchAccess, teamAccess, type MatchAccess, type TeamAccess } from '@/domain/syncAccess';
-import type { SyncAccount, SyncNotice, SyncStatus } from '@/domain/types';
+import {
+  heldMatchIds,
+  matchAccess,
+  teamAccess,
+  type MatchAccess,
+  type TeamAccess,
+} from '@/domain/syncAccess';
+import type { MatchHold, SyncAccount, SyncNotice, SyncStatus } from '@/domain/types';
 
 import { useAppStore } from './appStore';
 import { useSyncRuntime, type SyncSession } from './syncRuntime';
@@ -64,4 +70,51 @@ export function useMatchAccess(matchId: string | null | undefined): MatchAccess 
   if (!teamId) return { canEdit: true, block: null };
   const teams = role ? { [teamId]: { ...ROLE_ONLY, role } } : {};
   return matchAccess({ deviceId, account: null, teams }, teamId, hold, now);
+}
+
+/**
+ * The matches among `matchIds` that another device is scoring live right now, with that device's
+ * hold (v10 audit M15): they — and with them their season, their team for everyone, and players
+ * in their lineups — can't be deleted here meanwhile. Re-renders when the next hold runs out.
+ */
+export function useHeldMatches(matchIds: readonly string[]): ReadonlyMap<string, MatchHold> {
+  const holds = useSyncRuntime((s) => s.holds);
+  const deviceId = useAppStore((s) => s.sync.deviceId);
+  const [now, setNow] = useState(() => Date.now());
+  // The next end of another device's hold on one of these matches: the time is read again then.
+  const nextEnd = matchIds
+    .flatMap((id) => (holds[id] && holds[id].deviceId !== deviceId ? [holds[id].heldUntil] : []))
+    .sort()
+    .find((end) => Date.parse(end) > now);
+  useEffect(() => {
+    if (!nextEnd) return undefined;
+    const ms = Math.max(0, Date.parse(nextEnd) - Date.now());
+    const timer = setTimeout(() => setNow(Date.now()), ms + 50);
+    return () => clearTimeout(timer);
+  }, [nextEnd]);
+  return new Map(heldMatchIds(holds, deviceId, now, matchIds).map((id) => [id, holds[id]]));
+}
+
+/**
+ * Whether this device may edit the team right now, read from the store at the moment of the call
+ * (v10 audit L18): for the action of a dialog that may have been open while the role changed.
+ */
+export const canEditTeamNow = (teamId: string | null | undefined): boolean =>
+  teamAccess(useAppStore.getState().sync, teamId ?? '').canEdit;
+
+/** The matches among `matchIds` another device is scoring live at this moment (see the hook). */
+export function heldMatchesNow(matchIds: readonly string[]): string[] {
+  const { holds } = useSyncRuntime.getState();
+  return heldMatchIds(holds, useAppStore.getState().sync.deviceId, Date.now(), matchIds);
+}
+
+/**
+ * Whether this device may change or delete the match right now: the team's role, and no other
+ * device scoring the match live (v10 audit M15, L18). For the action of a confirm dialog.
+ */
+export function canEditMatchNow(matchId: string): boolean {
+  const match = useAppStore.getState().matches.find((m) => m.id === matchId);
+  return (
+    match !== undefined && canEditTeamNow(match.teamId) && heldMatchesNow([matchId]).length === 0
+  );
 }

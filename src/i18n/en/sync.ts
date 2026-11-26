@@ -38,6 +38,11 @@ export const sync = {
     held: (name: string) =>
       name ? `Being scored live on ${name}’s device.` : 'Being scored live on another device.',
     takeOver: 'Take over',
+    /** v10 audit M15: why Delete is missing while another device scores a match live. */
+    heldNoDelete: (name: string) =>
+      name
+        ? `Deleting isn’t possible while a match is being scored live on ${name}’s device.`
+        : 'Deleting isn’t possible while a match is being scored live on another device.',
   },
   // E2: status badge, notices, deleting a shared team, import, team list.
   badge: {
@@ -129,6 +134,9 @@ export const sync = {
     replaceKeeps: 'Replace keeps the teams shared on this device.',
     sharedConflict:
       'This file clashes with a team shared on this device (for example two players with the same jersey number). Nothing was changed.',
+    /** v10 audit M15: the file would change a match another device is scoring live. */
+    liveMatch:
+      'A match this file would change is being scored live on another device right now. Nothing was changed. Import again when that match is over.',
   },
   team: {
     /** A team row's accessibility label plus its "Shared" / "View only" mark. */
