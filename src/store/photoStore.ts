@@ -75,7 +75,12 @@ export async function removePhoto(id: string): Promise<void> {
   await persist({}, [id]);
 }
 
-/** Import (replace): the given photos become all photos. */
+/**
+ * The given photos become all photos.
+ * @internal Not used by the app since the v10 audit (the import adds the file's photos and lets
+ * the prune remove the rest, so nothing is awaited between reading and writing the store); kept
+ * for the storage tests.
+ */
 export async function replacePhotos(list: readonly Photo[]): Promise<void> {
   const next = Object.fromEntries(list.map((p) => [p.id, p.dataUri]));
   const removed = Object.keys(usePhotoStore.getState().photos).filter((id) => !(id in next));

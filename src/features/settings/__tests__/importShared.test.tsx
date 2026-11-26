@@ -2,6 +2,7 @@
  * v10: importing while teams are shared through the cloud (design §3.12): shared teams are never
  * removed or replaced; a view-only team's copy in the file is skipped; the preview says so.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
@@ -123,6 +124,43 @@ describe('import with a manager’s shared team', () => {
     expect(screen.getByTestId('import-status')).toHaveTextContent(t.sync.import.sharedConflict);
     expect(screen.queryByText(t.transfer.import.errors.MERGE_CONFLICT)).toBeNull();
     expect(selectAppData(store())).toEqual(before);
+  });
+});
+
+describe('a sync that lands while the import writes its photos (audit H10)', () => {
+  beforeEach(() => link('manager'));
+
+  it.each([
+    ['Merge', t.transfer.import.merge],
+    ['Replace', t.transfer.import.replace],
+  ])('%s keeps what the sync pulled meanwhile', async (_mode, button) => {
+    await preview();
+    // While the file's photos are written, a sync cycle applies another manager's new player
+    // and notes it as known to the server (`base`), as `pullTeam` does in one store write.
+    const pulled = { ...goldenData().players[0]!, id: 'p-sync', number: 77, photoId: undefined };
+    const multiSet = jest.spyOn(AsyncStorage, 'multiSet').mockImplementationOnce(async () => {
+      store().syncTransaction((st) => ({
+        players: [...st.players, pulled],
+        sync: {
+          ...st.sync,
+          teams: {
+            t1: {
+              ...st.sync.teams.t1!,
+              cursor: 9,
+              base: { 'player:p-sync': { v: 9, h: 'hash', at: '2026-11-26T10:00:00.000Z' } },
+            },
+          },
+        },
+      }));
+    });
+    await fireEvent.press(screen.getByLabelText(button));
+    expect(multiSet).toHaveBeenCalled();
+    multiSet.mockRestore();
+    // The import worked from the data as it was after the pull: the player is still there (it
+    // used to be dropped by the older snapshot and then deleted for every member).
+    expect(t1Players()).toContain('p-sync');
+    expect(t1Players()).toContain('px');
+    expect(teamName('t1')).toBe('Herren 1 – Süd (file)');
   });
 });
 
