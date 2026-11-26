@@ -9,6 +9,7 @@ import {
   useConfirm,
   useFormStyles,
 } from '@/components';
+import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
 import { fullName } from '@/domain/playerNames';
 import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
@@ -52,6 +53,7 @@ export function PlayerForm({
     <View style={formStyles.card}>
       <TextField
         label={s.firstName}
+        maxLength={MAX_NAME_LENGTH}
         value={form.firstName}
         onChangeText={(v) => set('firstName', v)}
         error={errorText(t, errors.firstName)}
@@ -59,6 +61,7 @@ export function PlayerForm({
       />
       <TextField
         label={s.lastName}
+        maxLength={MAX_NAME_LENGTH}
         value={form.lastName}
         onChangeText={(v) => set('lastName', v)}
         error={errorText(t, errors.lastName)}

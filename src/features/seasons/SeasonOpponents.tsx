@@ -9,6 +9,7 @@ import {
   useFormStyles,
   useListStyles,
 } from '@/components';
+import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
 import {
   opponentHasMatches,
   opponentRecords,
@@ -69,6 +70,7 @@ export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsPro
         <View style={formStyles.card}>
           <TextField
             label={s.name}
+            maxLength={MAX_NAME_LENGTH}
             value={name}
             onChangeText={(text) => {
               setName(text);

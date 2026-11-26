@@ -7,6 +7,7 @@ import {
   parseRemoteRow,
   REPULL_CURSOR,
   storedSyncData,
+  textFits,
   withPullCursorsReset,
 } from './syncSchema';
 
@@ -198,5 +199,18 @@ describe('withPullCursorsReset (audit L6)', () => {
     expect(withPullCursorsReset(fresh)).toBe(fresh);
     const again = withPullCursorsReset({ deviceId: 'd1', account, teams: { t1: team } });
     expect(withPullCursorsReset(again)).toBe(again);
+  });
+});
+
+describe('textFits', () => {
+  it('allows names up to 200 and other text up to 1000 characters, at any depth', () => {
+    expect(textFits({ name: 'x'.repeat(200), note: 'y'.repeat(1000) })).toBe(true);
+    expect(textFits({ name: 'x'.repeat(201) })).toBe(false);
+    expect(textFits({ note: 'y'.repeat(1001) })).toBe(false);
+    expect(textFits({ list: [{ firstName: 'x'.repeat(201) }] })).toBe(false);
+    expect(textFits({ list: ['y'.repeat(1000)], n: 7, none: null })).toBe(true);
+    expect(textFits(null)).toBe(true);
+    expect(textFits('z'.repeat(1001))).toBe(false);
+    expect(textFits('z'.repeat(201), 'lastName')).toBe(false);
   });
 });

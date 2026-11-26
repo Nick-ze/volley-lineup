@@ -65,7 +65,8 @@ const OFFLINE_NAMES = new Set([
 /**
  * What `fetch` says when there is no connection: React Native "Network request failed", Chrome
  * "Failed to fetch", Safari "Load failed", Firefox "NetworkError when attempting to fetch
- * resource", Node "fetch failed"; `authFetch.ts` and `fetchWithTimeout.ts` use the first.
+ * resource", Node "fetch failed"; `authFetch.ts` and `fetchWithTimeout.ts` use the first (the
+ * latter for an answer that stalled, with "timed out": see `isTimeout`).
  */
 const NETWORK_MESSAGE =
   /network request failed|failed to fetch|load failed|networkerror|fetch failed|network error/i;
@@ -127,14 +128,51 @@ export function toSyncError(error: unknown): SyncErrorCode {
   return 'unknown';
 }
 
+/** `BackendError.raw` of a request that got no answer in time (see `isTimeout`). */
+const TIMEOUT = 'timeout';
+
+/** What a timed-out request says: the abort of `fetchWithTimeout`, or its stalled-answer error. */
+const TIMEOUT_MESSAGE = /^(AbortError|TimeoutError):|timed out/i;
+
+function timedOut(error: unknown, depth = 0): boolean {
+  if (typeof error !== 'object' || error === null || depth > 3) return false;
+  const e = error as Fields;
+  const name = text(e.name);
+  if (name === 'AbortError' || name === 'TimeoutError') return true;
+  if (TIMEOUT_MESSAGE.test(text(e.message))) return true;
+  return timedOut(e.originalError, depth + 1);
+}
+
 /** `error` as a `BackendError` (kept when it already is one), with the server's raw code. */
 export function backendError(error: unknown): BackendError {
   if (error instanceof BackendError) return error;
   const fields = (typeof error === 'object' && error !== null ? error : {}) as Fields & {
     details?: unknown;
   };
-  return new BackendError(toSyncError(error), text(fields.code), text(fields.details));
+  const code = toSyncError(error);
+  const raw = text(fields.code) || (code === 'offline' && timedOut(error) ? TIMEOUT : '');
+  return new BackendError(code, raw, text(fields.details));
 }
+
+/**
+ * True when a request got no answer in time — as opposed to "no connection at all". The data may
+ * be too much for the connection: a push is then tried again in smaller parts (v10 audit M5).
+ */
+export const isTimeout = (error: unknown): boolean =>
+  error instanceof BackendError
+    ? error.raw === TIMEOUT
+    : toSyncError(error) === 'offline' && timedOut(error);
+
+/**
+ * SQLSTATEs with which the server refuses what a push sends, whatever else is in the batch
+ * (v10 audit M4): a CHECK of `team_records` (an id over 200 characters, a payload over 64 kB),
+ * a malformed or oversized batch, and a character the database can't store (NUL).
+ */
+const REFUSED_CONTENT = new Set(['23514', '22023', '22P05']);
+
+/** The server refused the content of a push (not the caller, the connection or the team). */
+export const isRefusedContent = (error: unknown): boolean =>
+  error instanceof BackendError && REFUSED_CONTENT.has(error.raw);
 
 /** The server refused because the team's photos are still stored (`VL008`). */
 export const isPhotosRemain = (error: unknown): boolean =>

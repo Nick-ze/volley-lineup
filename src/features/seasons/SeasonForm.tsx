@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { MAX_NAME_LENGTH, MAX_TEXT_LENGTH } from '@/domain/syncSchema';
 import { Button, ChoiceChip, TextField, useFormStyles } from '@/components';
 import { DATE_INPUT_MAX_LENGTH, formatDateInput, todayInput } from '@/domain/dates';
 import {
@@ -58,6 +59,7 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
     <View style={formStyles.card}>
       <TextField
         label={s.name}
+        maxLength={MAX_NAME_LENGTH}
         value={name}
         onChangeText={setName}
         placeholder={s.namePlaceholder}
@@ -98,6 +100,7 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
       />
       <TextField
         label={s.location}
+        maxLength={MAX_TEXT_LENGTH}
         value={location}
         onChangeText={setLocation}
         error={err('location')}

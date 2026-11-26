@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
 import { Button, TeamAvatar, TextField, useFormStyles } from '@/components';
 import {
   validateTeamForm,
@@ -50,6 +51,7 @@ export function TeamForm({ initial, team, submitLabel, onSubmit, onCancel }: Tea
     <View style={styles.card}>
       <TextField
         label={t.roster.teams.name}
+        maxLength={MAX_NAME_LENGTH}
         value={name}
         onChangeText={setName}
         error={errorText(t, errors.name)}

@@ -19,7 +19,7 @@
  */
 import { AppState, type NativeEventSubscription } from 'react-native';
 
-import { detectChanges } from '@/domain/syncChanges';
+import { detectChanges, PUSH_LIMITS } from '@/domain/syncChanges';
 import { backoffMs } from '@/domain/syncStatus';
 import type { SyncNotice } from '@/domain/types';
 import { createId } from '@/lib/id';
@@ -92,6 +92,8 @@ export class SyncEngine implements EngineCore {
   readonly notified = new Set<string>();
   readonly yielded = new Set<string>();
   readonly awaited = new Map<string, AwaitedTeam>();
+  readonly refused = new Map<string, Set<string>>();
+  readonly pushLimit = { ...PUSH_LIMITS };
   private current: BackendSession | null = null;
   private started = false;
   private needsRestore = false;
@@ -271,6 +273,7 @@ export class SyncEngine implements EngineCore {
         this.resetPending.delete(teamId);
         this.promoting.delete(teamId);
         this.forgetAwaited(teamId);
+        this.refused.delete(teamId);
       }
       if (gone.length > 0) dropHolds(gone);
       this.rewire();

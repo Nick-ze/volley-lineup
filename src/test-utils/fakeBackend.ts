@@ -5,7 +5,8 @@
  *   leave (`VL001`), the only member can't leave (`VL004`), a removed member can't come back with
  *   an older code (`VL002`), at most 10 created teams (`VL006`);
  * - records with last write wins by `(clamped at, device id)` and a global version sequence;
- *   `pull_changes` pages with `server_now`;
+ *   `pull_changes` pages with `server_now`; a push with content the database can't store is
+ *   refused as a whole (`refuseBadContent`);
  * - invites, live holds (15 min, take over) and photos (`<teamId>/<photoId>`; `VL008` while a
  *   deleted team's photos remain).
  *
@@ -79,6 +80,33 @@ function inviteCode(n: number): string {
 }
 const sqlError = (code: string, app: ConstructorParameters<typeof BackendError>[0]) =>
   new BackendError(app, code);
+
+/**
+ * What `push_records` refuses, for the whole batch and before anything is written (the checks of
+ * `team_records` and the function's own, `supabase/migrations/20261125090100`): more than 200
+ * records or 1 MB and a time that isn't one (22023); a character the database can't store
+ * (22P05); an id over 200 characters, a payload over 64 kB, and a team / starters record under
+ * another id than the team's (23514).
+ */
+function refuseBadContent(teamId: string, items: readonly PushItem[]): void {
+  const json = JSON.stringify(items);
+  if (items.length > 200 || json.length > 1_048_576) throw sqlError('22023', 'unknown');
+  if (json.includes('\\u0000')) throw sqlError('22P05', 'unknown');
+  for (const item of items) {
+    if (Number.isNaN(Date.parse(item.at))) throw sqlError('22023', 'unknown');
+    const singleton = item.kind === 'team' || item.kind === 'starters';
+    const payloadBytes = item.deleted ? 0 : JSON.stringify(item.payload ?? null).length;
+    if (
+      item.id.length < 1 ||
+      item.id.length > 200 ||
+      payloadBytes > 65_536 ||
+      (!item.deleted && (typeof item.payload !== 'object' || item.payload === null)) ||
+      (singleton && item.id !== teamId)
+    ) {
+      throw sqlError('23514', 'unknown');
+    }
+  }
+}
 
 export class FakeCloud {
   users = new Map<string, string>(); // email → user id
@@ -256,7 +284,7 @@ export class FakeBackend implements SyncBackend {
 
   async pushRecords(teamId: string, deviceId: string, items: readonly PushItem[]) {
     this.manager('pushRecords', teamId);
-    if (items.length > 200) throw sqlError('22023', 'unknown');
+    refuseBadContent(teamId, items);
     const team = this.cloud.team(teamId);
     return items.map((item): PushOutcome => {
       const key = `${item.kind}:${item.id}`;

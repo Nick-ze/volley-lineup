@@ -11,7 +11,7 @@ const TEXT_MIN_WIDTH = 200;
 
 /**
  * What a notice says (removed, team deleted, demoted, records skipped, scoring taken over, a
- * team that can't be shown yet).
+ * team that can't be shown yet, records that can't be synced).
  */
 export function syncNoticeText(t: Strings, notice: SyncNotice): string {
   const s = t.sync.notices;
@@ -28,6 +28,8 @@ export function syncNoticeText(t: Strings, notice: SyncNotice): string {
       return s.takenOver(notice.teamName, notice.holder, notice.undone);
     case 'waiting':
       return s.waiting;
+    case 'unsent':
+      return s.unsent(notice.teamName, notice.label, notice.count, notice.reason);
   }
 }
 

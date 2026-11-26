@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
 import { Button, Dialog, TextField, useDialogStyles } from '@/components';
 import { validatePresetName, type PresetNameError } from '@/domain/presets';
 import { useT } from '@/i18n';
@@ -43,6 +44,7 @@ export function PresetNameDialog({
     <Dialog onClose={onCancel} title={title} testID="preset-name-dialog">
       <TextField
         label={s.name}
+        maxLength={MAX_NAME_LENGTH}
         value={name}
         onChangeText={(text) => {
           setName(text);

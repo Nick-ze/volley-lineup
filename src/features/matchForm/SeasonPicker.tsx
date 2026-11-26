@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 
+import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
 import { ChoiceChip, TextField, useFormStyles } from '@/components';
 import type { Season } from '@/domain/types';
 import { useT } from '@/i18n';
@@ -33,6 +34,7 @@ export function SeasonPicker(props: SeasonPickerProps) {
       <View>
         <TextField
           label={s.seasonName}
+          maxLength={MAX_NAME_LENGTH}
           value={newName}
           onChangeText={onNewName}
           error={error}

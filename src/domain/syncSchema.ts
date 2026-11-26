@@ -92,7 +92,7 @@ export const MAX_NAME_LENGTH = 200;
 export const MAX_TEXT_LENGTH = 1000;
 
 /** True when every string in the value is short enough (names ≤ 200, other text ≤ 1000). */
-function textFits(value: unknown, field: string): boolean {
+export function textFits(value: unknown, field = ''): boolean {
   if (typeof value === 'string') {
     return value.length <= (NAME_FIELDS.has(field) ? MAX_NAME_LENGTH : MAX_TEXT_LENGTH);
   }
