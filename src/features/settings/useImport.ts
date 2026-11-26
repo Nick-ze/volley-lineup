@@ -9,13 +9,7 @@ import {
 import { importWithSharedTeams, sharedTeamsInFile, sharedTeamsOf } from '@/domain/syncImport';
 import type { ExportFile } from '@/domain/types';
 import { pickTextFile } from '@/lib/fileTransfer';
-import {
-  prunePhotos,
-  putPhotos,
-  transferSnapshotNow,
-  useAppStore,
-  whenPhotosLoaded,
-} from '@/store';
+import { putPhotos, transferSnapshotNow, useAppStore, whenPhotosLoaded } from '@/store';
 
 /** v10: `SHARED_CONFLICT` = Replace clashes with a team shared on this device. */
 export type ImportError = ImportErrorCode | 'MERGE_CONFLICT' | 'SHARED_CONFLICT' | 'READ_FAILED';
@@ -96,10 +90,7 @@ export function useImport() {
     async (mode: ImportMode) => {
       if (state.step !== 'preview') return;
       const file = state.file;
-      // Photos first: the file's pictures are added before anything points at them (photos
-      // nobody refers to are pruned after the store changes, photoStore.ts).
       await whenPhotosLoaded();
-      await putPhotos(file.photos);
       // v10 audit H10: from reading the current data to writing the result nothing is awaited.
       // A sync cycle that ran in between would be undone by the older snapshot, and what it
       // had pulled would be pushed back as deletions to every member of a shared team.
@@ -113,11 +104,16 @@ export function useImport() {
         // Replace only fails because of a kept shared team ("use Replace instead" wouldn't help).
         const error = mode === 'replace' ? 'SHARED_CONFLICT' : result.error;
         setState({ step: 'error', error });
-        void prunePhotos(); // the file's pictures aren't used after all
         return;
       }
+      // The pictures are in memory at once (`putPhotos` sets them before its first await) and
+      // referred to in the same step, so the prune can't drop them in between; they are
+      // written to storage while the screen moves on. Photos nobody refers to afterwards
+      // (Replace) are removed by the prune.
+      const saving = putPhotos(result.data.photos);
       store.replaceAll(result.data);
       selectOnlyProfile();
+      await saving;
       setState({ step: 'done', mode });
     },
     [state],

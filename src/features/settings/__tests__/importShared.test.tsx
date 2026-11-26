@@ -11,7 +11,7 @@ import { buildExport, serializeExport, type TransferData } from '@/domain/export
 import type { TeamRole } from '@/domain/types';
 import { t } from '@/i18n/en';
 import { pickTextFile } from '@/lib/fileTransfer';
-import { selectAppData, useAppStore } from '@/store';
+import { prunePhotos, selectAppData, useAppStore, usePhotoStore } from '@/store';
 import { goldenData, seedGolden } from '@/test-utils';
 
 import { SettingsScreen } from '../SettingsScreen';
@@ -139,6 +139,7 @@ describe('a sync that lands while the import writes its photos (audit H10)', () 
     // and notes it as known to the server (`base`), as `pullTeam` does in one store write.
     const pulled = { ...goldenData().players[0]!, id: 'p-sync', number: 77, photoId: undefined };
     const multiSet = jest.spyOn(AsyncStorage, 'multiSet').mockImplementationOnce(async () => {
+      await Promise.resolve(); // another task: a pull never runs inside the import's own step
       store().syncTransaction((st) => ({
         players: [...st.players, pulled],
         sync: {
@@ -161,6 +162,51 @@ describe('a sync that lands while the import writes its photos (audit H10)', () 
     expect(t1Players()).toContain('p-sync');
     expect(t1Players()).toContain('px');
     expect(teamName('t1')).toBe('Herren 1 – Süd (file)');
+  });
+});
+
+describe('the file’s pictures (audit H10, review)', () => {
+  const PICTURE = 'data:image/png;base64,iVBORw0KGgo=';
+  const withPicture = () =>
+    fileText((file) => ({
+      ...file,
+      players: file.players.map((p) => (p.id === 'p4' ? { ...p, photoId: 'ph-file' } : p)),
+      photos: [...file.photos, { id: 'ph-file', dataUri: PICTURE }],
+    }));
+
+  it.each([
+    ['Merge', t.transfer.import.merge],
+    ['Replace', t.transfer.import.replace],
+  ])('%s: a change of the data while they are saved doesn’t lose them', async (_mode, button) => {
+    await preview(withPicture());
+    // While the photos are written to storage, something changes a player (a sync pull, the
+    // user): that runs the photo prune, which removes pictures nobody refers to.
+    const multiSet = jest.spyOn(AsyncStorage, 'multiSet').mockImplementationOnce(async () => {
+      await Promise.resolve();
+      store().updatePlayer('px', { firstName: 'Changed' });
+      await prunePhotos();
+    });
+    await fireEvent.press(screen.getByLabelText(button));
+    expect(multiSet).toHaveBeenCalled();
+    multiSet.mockRestore();
+    await prunePhotos();
+    expect(store().players.find((p) => p.id === 'p4')?.photoId).toBe('ph-file');
+    expect(usePhotoStore.getState().photos['ph-file']).toBe(PICTURE);
+  });
+
+  it('a refused import adds no picture', async () => {
+    link('manager');
+    const old = { ...goldenData().players[1]!, id: 'p-old', number: 99, photoId: 'ph-file' };
+    await preview(
+      fileText((file) => ({
+        ...file,
+        players: [...file.players, old],
+        photos: [...file.photos, { id: 'ph-file', dataUri: PICTURE }],
+      })),
+    );
+    await fireEvent.press(screen.getByLabelText(t.transfer.import.replace));
+    expect(screen.getByTestId('import-status')).toHaveTextContent(t.sync.import.sharedConflict);
+    expect(usePhotoStore.getState().photos['ph-file']).toBeUndefined();
   });
 });
 

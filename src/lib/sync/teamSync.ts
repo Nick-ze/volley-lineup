@@ -161,13 +161,13 @@ export async function pullTeam(
   }
   const rows: RemoteRecord[] = [];
   let invalid = 0;
-  let serverNow = '';
+  let serverNow: string | null = null;
   for (let after = reset ? 0 : start.cursor; ;) {
     const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
     // The cursor's 10 s overlap counts from the FIRST page's server time (audit H4): a write
     // still uncommitted when page 1 was read can sit below page 1's newest rows, and no later
     // page returns it. Every later page is read later, so the first time is safe for all rows.
-    if (serverNow === '') serverNow = page.serverNow;
+    serverNow ??= page.serverNow;
     for (const raw of page.rows) {
       const row = parseRemoteRow(raw);
       if (row) rows.push(row);
@@ -190,7 +190,9 @@ export async function pullTeam(
     report.present = out.slice !== undefined;
     // `resetToCloudMerge` only replaces the team when its own row is among the rows.
     report.replaced = reset && rows.some((r) => r.kind === 'team' && r.id === teamId);
-    const cursor = out.slice ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow) : meta.cursor;
+    const cursor = out.slice
+      ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow ?? '')
+      : meta.cursor;
     // Not-found photos aren't in the cloud folder (any more): forget them, so a manager that
     // has one uploads it again with its next change.
     const photos = union(meta.photos, remotePhotoIds(rows)).filter((id) => !missing.has(id));
@@ -280,15 +282,17 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       if (applied.stale.length === 0) {
         return { sync: withTeamMeta(s.sync, teamId, applied.team) };
       }
+      const { out, data } = mergeInto(s, teamId, applied.team, applied.stale, now);
       // Rows the server kept a newer save of are applied here without a pull: the photos they
-      // point at are in the cloud folder (their writer uploaded them first). Listed in the same
-      // write, the prune keeps those `photoId`s and the next pull downloads them (audit H3).
-      const stale = {
-        ...applied.team,
-        photos: union(applied.team.photos, remotePhotoIds(applied.stale)),
-      };
-      const { out, data } = mergeInto(s, teamId, stale, applied.stale, now);
-      return { ...data, sync: withTeamMeta(s.sync, teamId, out.team) };
+      // point at are in the cloud folder (their writer uploaded them first). Those the merged
+      // team now refers to are listed in the same write, so the prune keeps their `photoId`s
+      // and the next pull downloads them (audit H3). A row that lost against a still newer
+      // local change isn't listed: this device's clean-up must not remove a photo the
+      // server's row points at.
+      const used = slicePhotoIds(out.slice);
+      const arrived = remotePhotoIds(applied.stale).filter((id) => used.has(id));
+      const meta = { ...out.team, photos: union(out.team.photos, arrived) };
+      return { ...data, sync: withTeamMeta(s.sync, teamId, meta) };
     });
     photos = [];
   }

@@ -252,11 +252,15 @@ export const useAppStore = create<AppStore>()(
             currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
               ? s.currentProfileId
               : null,
-            // Gone before (a stale link must not adopt a team the new data brings under its id) or
-            // gone now.
+            // A link goes when its team is gone now, and when it had no team before but the new
+            // data brings one under its id (a stale link, or a download that hasn't pulled
+            // yet): a link must not adopt an imported team — its records would be pushed over
+            // the cloud's. Downloading the team again links it with "the cloud wins".
             sync: withoutTeamLinks(sync, [
-              ...goneTeamLinks(sync, s.teams),
               ...goneTeamLinks(sync, data.teams),
+              ...data.teams
+                .map((t) => t.id)
+                .filter((id) => id in sync.teams && !s.teams.some((t) => t.id === id)),
             ]),
           };
         }),

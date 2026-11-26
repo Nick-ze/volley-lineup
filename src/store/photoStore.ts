@@ -77,9 +77,9 @@ export async function removePhoto(id: string): Promise<void> {
 
 /**
  * The given photos become all photos.
- * @internal Not used by the app since the v10 audit (the import adds the file's photos and lets
- * the prune remove the rest, so nothing is awaited between reading and writing the store); kept
- * for the storage tests.
+ * @internal Not used by the app since the v10 audit (the import adds the result's photos with
+ * `putPhotos` and lets the prune remove the rest, so nothing is awaited between reading and
+ * writing the store); kept for the storage tests.
  */
 export async function replacePhotos(list: readonly Photo[]): Promise<void> {
   const next = Object.fromEntries(list.map((p) => [p.id, p.dataUri]));
@@ -88,7 +88,11 @@ export async function replacePhotos(list: readonly Photo[]): Promise<void> {
   await persist(next, removed);
 }
 
-/** Import (merge): adds / replaces the given photos, keeps the others. */
+/**
+ * Import: adds / replaces the given photos, keeps the others. They are in memory before this
+ * function first waits (the import relies on it: it points records at them in the same step),
+ * then written to storage.
+ */
 export async function putPhotos(list: readonly Photo[]): Promise<void> {
   const added = Object.fromEntries(list.map((p) => [p.id, p.dataUri]));
   usePhotoStore.setState((s) => ({ photos: { ...s.photos, ...added } }));

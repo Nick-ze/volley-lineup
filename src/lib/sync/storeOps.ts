@@ -68,6 +68,16 @@ export function setTeamMeta(teamId: string, meta: SyncedTeam | undefined): void 
   });
 }
 
+/** Forgets the live holds of these teams (they are no longer shared on this device). */
+export function dropHolds(teamIds: readonly string[]): void {
+  useSyncRuntime.setState((r) => {
+    const holds = Object.fromEntries(
+      Object.entries(r.holds).filter(([, h]) => !teamIds.includes(h.teamId)),
+    );
+    return Object.keys(holds).length === Object.keys(r.holds).length ? r : { holds };
+  });
+}
+
 /** Stops syncing the teams on this device (their local copies stay). */
 export function unlinkTeams(teamIds: readonly string[]): void {
   transaction((s) => {
@@ -77,12 +87,7 @@ export function unlinkTeams(teamIds: readonly string[]): void {
     for (const id of gone) delete teams[id];
     return { sync: { ...s.sync, teams } };
   });
-  useSyncRuntime.setState((r) => {
-    const holds = Object.fromEntries(
-      Object.entries(r.holds).filter(([, h]) => !teamIds.includes(h.teamId)),
-    );
-    return Object.keys(holds).length === Object.keys(r.holds).length ? r : { holds };
-  });
+  dropHolds(teamIds);
 }
 
 /** Ids of the linked teams (of `userId`, or all). */

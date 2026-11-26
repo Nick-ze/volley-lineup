@@ -184,6 +184,8 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
   const skipped: MergeOutput['skipped'] = [];
   const upserted = new Map<string, Prior>();
   const pending = new Set<string>();
+  /** Players the cloud has that a reset pull can't apply here: their references stay. */
+  const unreadable = new Set<string>();
   const rows = sortRows(input.rows);
 
   for (const row of rows) {
@@ -191,12 +193,12 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
     const known = base[key];
     if (!cloudWins && known && row.version <= known.v) continue;
     const payload = validPayload(row, teamId);
-    if (payload === undefined) {
-      skipped.push({ key, reason: 'invalid' });
-      continue;
-    }
-    if (isForeign(row, payload, records, teamId, foreignIds)) {
-      skipped.push({ key, reason: 'foreignId' });
+    if (payload === undefined || isForeign(row, payload, records, teamId, foreignIds)) {
+      skipped.push({ key, reason: payload === undefined ? 'invalid' : 'foreignId' });
+      if (cloudWins) {
+        base[key] = unapplied(row, records.get(key));
+        if (row.kind === 'player') unreadable.add(row.id);
+      }
       continue;
     }
     const local = records.get(key);
@@ -219,8 +221,8 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
     }
   }
 
+  const cloudKeys = new Set(cloudWins ? rows.map((r) => recordKey(r.kind, r.id)) : []);
   if (cloudWins) {
-    const cloudKeys = new Set(rows.map((r) => recordKey(r.kind, r.id)));
     for (const key of [...records.keys()]) {
       if (cloudKeys.has(key) || key === recordKey('team', teamId)) continue;
       records.delete(key);
@@ -230,6 +232,7 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
 
   const removed = resolveDeletions(records, pending, base, edits, cloudWins);
   pruneOrphans(records, teamId, upserted, base, edits, skipped, cloudWins);
+  if (cloudWins) settleBase(records, base, cloudKeys);
 
   const nextTeam =
     sameEntries(base, team.base) && sameEntries(edits, team.edits)
@@ -250,12 +253,42 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
   // Missing players keep their references unless this merge deleted them (a pending local
   // delete, an id skipped as foreign, a player deleted before a newer reference arrived).
   const present = new Set(built.players.map((p) => p.id));
-  const keep = cloudWins
-    ? new Set<string>()
-    : new Set([...referencedPlayerIds(built)].filter((id) => !present.has(id) && !removed.has(id)));
+  const keep = new Set(
+    cloudWins
+      ? [...unreadable].filter((id) => !present.has(id))
+      : [...referencedPlayerIds(built)].filter((id) => !present.has(id) && !removed.has(id)),
+  );
   const repaired = repairSlice(built, keep);
   const slice = sameSlice(input.slice, repaired.slice) ? input.slice : repaired.slice;
   return { slice, team: nextTeam, skipped, issues: repaired.issues };
+}
+
+/**
+ * `base` for a row a reset pull can't apply on this device (it is invalid here, or its id
+ * belongs to another local team): the device's own state at the row's version, so nothing is
+ * pushed for it — neither the local record as a change nor its absence as a deletion.
+ */
+function unapplied(row: RemoteRecord, local: RecordPayload | undefined): SyncBase {
+  return local
+    ? { v: row.version, h: payloadHash(local), at: row.at }
+    : { v: row.version, h: '', at: row.at, del: true };
+}
+
+/**
+ * After a reset pull `base` must describe exactly what the device has, or the first change
+ * detection as a manager (a promotion, audit H8) would push the difference: an entry the pull
+ * didn't confirm goes (the cloud never had that record), and an entry whose record isn't on
+ * the device (an orphan the cloud still has) counts as deleted here — no tombstone is pushed.
+ */
+function settleBase(
+  records: ReadonlyMap<string, RecordPayload>,
+  base: Record<string, SyncBase>,
+  cloudKeys: ReadonlySet<string>,
+): void {
+  for (const key of Object.keys(base)) {
+    if (!cloudKeys.has(key)) delete base[key];
+    else if (!records.has(key) && !base[key].del) base[key] = { ...base[key], h: '', del: true };
+  }
 }
 
 /** The latest save time the device knows for a record (+∞ for a new, unseen local record). */
