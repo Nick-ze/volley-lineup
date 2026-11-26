@@ -564,12 +564,16 @@ describe('sendableChanges: the deletion of a season or an opponent (review of th
     expect(ready).toEqual([]);
   });
 
-  it('goes once the move can go — after it, whatever the kinds’ order', () => {
-    const { changes, ready, held } = plan(movedM1(newOpponent('New VC')));
+  it('goes once the move can go — in one request with it, and after it', () => {
+    const { changes, ready, held, together } = plan(movedM1(newOpponent('New VC')));
     expect(keysOf(changes)).toEqual(['opponent:ox', 'opponent:o1', 'match:m1']);
     expect(held).toEqual([]);
     expect(keysOf(ready)).toEqual(['opponent:ox', 'match:m1', 'opponent:o1']);
     expect(ready[2].payload).toBeNull();
+    expect([...together].sort()).toEqual(['match:m1', 'opponent:o1', 'opponent:ox']);
+    expect(pushGroups(ready, together).map(keysOf)).toEqual([
+      ['opponent:ox', 'match:m1', 'opponent:o1'],
+    ]);
   });
 
   it('waits too when the server refused the match’s change', () => {
@@ -610,7 +614,8 @@ describe('sendableChanges: the deletion of a season or an opponent (review of th
     };
     const second = plan(renamed);
     expect(reasons(second.held)).toEqual({ 'opponent:o2': 'invalid', 'season:s2': 'parent' });
-    expect(keysOf(second.ready).slice(-2)).toEqual(['opponent:o1', 'opponent:o3']);
+    expect(keysOf(second.ready).slice(0, 2)).toEqual(['opponent:o1', 'opponent:o3']);
+    expect([...second.together]).toEqual(['opponent:o1', 'opponent:o3']);
   });
 
   it('a new match that waits holds no deletion: the server has no copy of it anywhere', () => {
@@ -627,33 +632,111 @@ describe('sendableChanges: the deletion of a season or an opponent (review of th
     expect(keysOf(ready)).toEqual(['opponent:o2']);
   });
 
-  it('every other deletion keeps its place; seasons’ and opponents’ go last, seasons first', () => {
+  it('nothing has to travel together when no season or opponent is deleted', () => {
     const next: TeamData = {
       ...renameP2(data, 'Renamed'),
-      seasons: data.seasons.filter((x) => x.id !== 's2'),
-      opponents: data.opponents.filter((o) => o.id !== 'o3' && o.id !== 'o2'),
+      opponents: [...data.opponents, newOpponent('New VC')],
       matches: data.matches.filter((m) => m.id !== 'm2'),
     };
-    const { changes, ready, held } = plan(next);
+    const { changes, ready, held, together } = plan(next);
+    expect(held).toEqual([]);
+    expect(ready).toEqual(changes);
+    expect(together.size).toBe(0);
+  });
+
+  it('what arrives with the deletion stands together where the first of it stood', () => {
+    // A season is started again under its name: the old one goes with what is in it, a new one
+    // comes with an opponent and a new match; m1 moves to another opponent; a player changes.
+    const again = { ...data.seasons[1], id: 'sx' };
+    const next: TeamData = {
+      ...renameP2(data, 'Renamed'),
+      teams: data.teams.map((x) => (x.id === 't1' ? { ...x, name: 'Renamed too' } : x)),
+      seasons: [...data.seasons.filter((x) => x.id !== 's2'), again],
+      opponents: [
+        ...data.opponents.filter((o) => o.id !== 'o3'),
+        { ...data.opponents[2], id: 'ox', seasonId: 'sx' },
+      ],
+      matches: data.matches.map((m) =>
+        m.id === 'm1'
+          ? { ...m, opponentId: 'o2', opponent: 'Upcoming VC' }
+          : m.id === 'm2'
+            ? { ...m, id: 'mx', seasonId: 'sx', opponentId: 'ox' }
+            : m,
+      ),
+    };
+    const { changes, ready, held, together } = plan(next);
     expect(held).toEqual([]);
     expect(keysOf(changes)).toEqual([
+      'team:t1',
+      'season:sx',
       'season:s2',
-      'opponent:o2',
+      'opponent:ox',
       'opponent:o3',
       'player:p2',
+      'match:m1',
+      'match:mx',
       'match:m2',
+      'set:mx/1',
       'set:m2/1',
     ]);
+    // The new season and opponent, the moved match, then the deletions; the rest as it was.
     expect(keysOf(ready)).toEqual([
+      'team:t1',
+      'season:sx',
+      'opponent:ox',
+      'match:m1',
+      'season:s2',
+      'opponent:o3',
       'player:p2',
+      'match:mx',
+      'set:mx/1',
       'match:m2',
       'set:m2/1',
-      'season:s2',
-      'opponent:o2',
-      'opponent:o3',
     ]);
-    // Planned again (as after a refusal in the middle of a push), the order stays.
-    expect(sendableChanges(ready, team.base, 't1').ready).toEqual(ready);
+    const structure = ['season:sx', 'opponent:ox', 'match:m1', 'season:s2', 'opponent:o3'];
+    expect([...together]).toEqual(structure);
+    expect(pushGroups(ready, together).map(keysOf)).toEqual([
+      ['team:t1'],
+      structure,
+      ['player:p2'],
+      ['match:mx', 'set:mx/1'],
+      ['match:m2', 'set:m2/1'],
+    ]);
+    // However small the batches: one request for them, and halving never parts them.
+    const small = pushBatches(ready, { count: 1, bytes: 1 }, together).map(keysOf);
+    expect(small).toContainEqual(structure);
+    expect(small).toHaveLength(5);
+    expect(halveBatch(ready, together).map(keysOf)).toContainEqual(
+      expect.arrayContaining(structure),
+    );
+    // Without the set (as the plain record order), each would travel alone.
+    expect(pushGroups(ready).map(keysOf)).toContainEqual(['season:s2']);
+    // Planned again (as after a refusal in the middle of a push), nothing changes.
+    const replanned = sendableChanges(ready, team.base, 't1');
+    expect(replanned.ready).toEqual(ready);
+    expect([...replanned.together]).toEqual(structure);
+  });
+
+  it('a changed set of a match that travels with the deletion goes on its own', () => {
+    const next: TeamData = {
+      ...data,
+      opponents: data.opponents.filter((o) => o.id !== 'o1'),
+      matches: data.matches.map((m) =>
+        m.id === 'm1'
+          ? {
+              ...m,
+              opponentId: 'o2',
+              opponent: 'Upcoming VC',
+              sets: m.sets.map((x, i) => (i === 0 ? { ...x, events: [] } : x)),
+            }
+          : m,
+      ),
+    };
+    const { ready, together } = plan(next);
+    expect(pushGroups(ready, together).map(keysOf)).toEqual([
+      ['match:m1', 'opponent:o1'],
+      ['set:m1/1'],
+    ]);
   });
 });
 

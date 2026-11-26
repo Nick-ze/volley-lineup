@@ -110,14 +110,36 @@ const changeBytes = (c: LocalChange): number =>
 export const batchBytes = (changes: readonly LocalChange[]): number =>
   changes.reduce((sum, c) => sum + changeBytes(c), 0);
 
+/** The deletion of a season or an opponent: other devices let go of everything below it. */
+const dropsWhatIsBelow = (c: LocalChange): boolean =>
+  c.payload === null && (c.kind === 'season' || c.kind === 'opponent');
+
+const NONE: ReadonlySet<string> = new Set();
+
 /**
- * The changes as they must travel, in order: a match together with its sets (one server
- * transaction, so nobody ever pulls a new match without its sets), every other record alone.
+ * The changes as they must travel, in order, each group in one request (one server
+ * transaction, so no device ever pulls half of it):
+ * - a match together with its sets (nobody pulls a new match without its sets);
+ * - the records of `together` (their keys; from `sendableChanges`) as one group, where the first
+ *   of them stands: what has to arrive with the deletion of a season or an opponent;
+ * - every other record alone.
  */
-export function pushGroups(changes: readonly LocalChange[]): LocalChange[][] {
+export function pushGroups(
+  changes: readonly LocalChange[],
+  together: ReadonlySet<string> = NONE,
+): LocalChange[][] {
   const groups: LocalChange[][] = [];
   const matchGroups = new Map<string, LocalChange[]>();
+  let structure: LocalChange[] | null = null;
   for (const c of changes) {
+    if (together.has(c.key)) {
+      if (!structure) {
+        structure = [];
+        groups.push(structure);
+      }
+      structure.push(c);
+      continue;
+    }
     const matchId = c.kind === 'set' ? parseSetRecordId(c.id)?.matchId : undefined;
     const group = matchId === undefined ? undefined : matchGroups.get(matchId);
     if (group) {
@@ -133,14 +155,15 @@ export function pushGroups(changes: readonly LocalChange[]): LocalChange[][] {
 
 /**
  * The changes split into push batches of at most `max.count` records and `max.bytes` bytes, in
- * order. A match travels in the same batch as its sets (`pushGroups`); a group bigger than the
- * limits gets a batch of its own.
+ * order. A group travels in one batch (`pushGroups`); a group bigger than the limits gets a
+ * batch of its own.
  */
 export function pushBatches(
   changes: readonly LocalChange[],
   max: { count: number; bytes: number } = PUSH_LIMITS,
+  together: ReadonlySet<string> = NONE,
 ): LocalChange[][] {
-  const groups = pushGroups(changes);
+  const groups = pushGroups(changes, together);
   const batches: LocalChange[][] = [];
   let batch: LocalChange[] = [];
   let bytes = 0;
@@ -163,8 +186,15 @@ export function pushBatches(
  * A batch in two or more smaller ones (by size, groups kept whole), for a retry after a push
  * that timed out on a slow connection (v10 audit M5). A single group can't be split: `[batch]`.
  */
-export function halveBatch(batch: readonly LocalChange[]): LocalChange[][] {
-  return pushBatches(batch, { count: batch.length, bytes: Math.ceil(batchBytes(batch) / 2) });
+export function halveBatch(
+  batch: readonly LocalChange[],
+  together: ReadonlySet<string> = NONE,
+): LocalChange[][] {
+  return pushBatches(
+    batch,
+    { count: batch.length, bytes: Math.ceil(batchBytes(batch) / 2) },
+    together,
+  );
 }
 
 /**
@@ -189,10 +219,6 @@ export interface HeldChange {
   reason: HeldReason;
 }
 
-/** The deletion of a season or an opponent: other devices let go of everything below it. */
-const dropsWhatIsBelow = (c: LocalChange): boolean =>
-  c.payload === null && (c.kind === 'season' || c.kind === 'opponent');
-
 /**
  * The changes that can be pushed (in push order) and those that have to wait (v10 audit M3, M4):
  * - a record that fails the validation every device applies to pulled records (`parsePayload`).
@@ -210,16 +236,20 @@ const dropsWhatIsBelow = (c: LocalChange): boolean =>
  * A record the server already has (`base`, not deleted there) doesn't hold what is below it, and
  * every other deletion goes (unless the server refused it).
  *
- * Push order: as given, but the deletions of seasons and opponents last. A push can take several
- * requests, and a device that pulls between two of them must see a match moved away before it
- * sees its old season or opponent deleted (else it deletes the match with it).
+ * Push order: as given (by kind), except when a season or an opponent is deleted. Then every
+ * change of seasons and opponents and of matches the server has stands together where the first
+ * of them stood, the deletions last, and must travel in one request (`together`: their keys,
+ * for `pushGroups`). A push can take several requests, and a device that pulls between two of
+ * them must not see the deletion without "this match now belongs elsewhere" (it would delete
+ * the match with it), nor a new season or opponent without the deletion of the old one of the
+ * same name (it would take the two for doubles and merge them).
  */
 export function sendableChanges(
   changes: readonly LocalChange[],
   base: SyncedTeam['base'],
   teamId: string,
   refused: ReadonlySet<string> = new Set(),
-): { ready: LocalChange[]; held: HeldChange[] } {
+): { ready: LocalChange[]; held: HeldChange[]; together: ReadonlySet<string> } {
   const onServer = (key: string): boolean => base[key] !== undefined && !base[key].del;
   /** New records that aren't pushed: nothing new below them is pushed either. */
   const blocked = new Set<string>();
@@ -259,15 +289,29 @@ export function sendableChanges(
     held.some((h) => h.change.kind === kind && h.change.payload !== null && onServer(h.change.key));
   const matchWaits = waits('match');
   const opponentWaits = waits('opponent');
-  const ready: LocalChange[] = [];
-  const last: LocalChange[] = [];
-  for (const c of sendable) {
-    if (!dropsWhatIsBelow(c)) ready.push(c);
-    else if (matchWaits || (c.kind === 'season' && opponentWaits)) {
-      held.push({ change: c, reason: 'parent' });
-    } else last.push(c);
-  }
-  return { ready: [...ready, ...last], held };
+  const going = sendable.filter((c) => {
+    const stays = dropsWhatIsBelow(c) && (matchWaits || (c.kind === 'season' && opponentWaits));
+    if (stays) held.push({ change: c, reason: 'parent' });
+    return !stays;
+  });
+  if (!going.some(dropsWhatIsBelow)) return { ready: going, held, together: NONE };
+  // A season or an opponent is deleted: what must arrive with that.
+  const withIt = (c: LocalChange): boolean =>
+    c.kind === 'season' ||
+    c.kind === 'opponent' ||
+    (c.kind === 'match' && c.payload !== null && onServer(c.key));
+  const members = going.filter(withIt);
+  const group = [
+    ...members.filter((c) => !dropsWhatIsBelow(c)),
+    ...members.filter(dropsWhatIsBelow),
+  ];
+  const rest = going.filter((c) => !withIt(c));
+  const at = going.findIndex(withIt);
+  return {
+    ready: [...rest.slice(0, at), ...group, ...rest.slice(at)],
+    held,
+    together: new Set(group.map((c) => c.key)),
+  };
 }
 
 /** A short name for a record in a notice (its name fields; '' when it has none). */

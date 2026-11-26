@@ -301,7 +301,7 @@ describe('a deleted season or opponent and the match that moved away from it', (
     expect(b.data.opponents.some((o) => o.id === 'o1')).toBe(false);
   });
 
-  it('a push in small parts (M5): the move is sent before the deletion, never after', async () => {
+  it('a push in small parts (M5): the move and the deletion still travel in one request', async () => {
     const { cloud, a, b } = await inSync();
     cloud.clock.tick(60_000);
     await moveM1AndDeleteO1(a, 'o2', 'Upcoming VC');
@@ -311,11 +311,151 @@ describe('a deleted season or opponent and the match that moved away from it', (
     limit.count = 1;
     const pushed = pullBeforeEveryRequest(a, b, () => expect(matchIds(b)).toEqual(['m1', 'm2']));
     await a.cycle();
-    expect(pushed).toEqual([['player:p2'], ['match:m1'], ['opponent:o1 (del)']]);
+    expect(pushed).toEqual([['match:m1', 'opponent:o1 (del)'], ['player:p2']]);
     cloud.clock.tick(60_000);
     await b.cycle();
     expect(records(b)).toEqual(records(a));
     expect(rallies(b, 'm1')).toBe(10);
+  });
+});
+
+describe('a season or opponent deleted and entered again under the same name', () => {
+  // Found when the first fix for the cases above sent such deletions last: a manager device
+  // that pulls between "new opponent" and "old opponent deleted" has two of one name, merges
+  // the new one into the old one and pushes the new one's deletion — gone for everyone.
+  const manyPlayers = (s: AppState, n: number) =>
+    Array.from({ length: n }, (_, i) => ({ ...s.players[0], id: `extra-${i}`, number: 20 + i }));
+  const has = (d: TestDevice, matchId: string) => d.data.matches.some((m) => m.id === matchId);
+
+  it('an opponent, with a new match, in a push of several requests', async () => {
+    const { cloud, a, b } = await inSync();
+    cloud.clock.tick(60_000);
+    let matchId = '';
+    let opponentId = '';
+    await a.act(() => {
+      const store = useAppStore.getState();
+      store.deleteOpponent('o2'); // "Upcoming VC": no match yet, so it can be deleted
+      const again = store.addOpponent('s1', 'Upcoming VC');
+      opponentId = again.id;
+      matchId = store.addMatch({
+        teamId: T1,
+        seasonId: 's1',
+        opponentId: again.id,
+        opponent: 'Upcoming VC',
+        date: '2026-12-10',
+        home: true,
+      }).id;
+      // Enough other changes for a second request (over 100 records).
+      useAppStore.setState((s) => ({ players: [...s.players, ...manyPlayers(s, 120)] }));
+    });
+    const pushed = pullBeforeEveryRequest(a, b, () => undefined);
+    await a.cycle();
+    expect(pushed.length).toBeGreaterThan(1);
+    // The new opponent and the old one's deletion: the same request.
+    const request = (key: string) => pushed.findIndex((keys) => keys.includes(key));
+    expect(request(`opponent:${opponentId}`)).toBe(request('opponent:o2 (del)'));
+    for (let i = 0; i < 3; i += 1) {
+      cloud.clock.tick(60_000);
+      await b.cycle();
+      await a.cycle();
+    }
+    expect(has(a, matchId)).toBe(true);
+    expect(has(b, matchId)).toBe(true);
+    expect(cloud.record(T1, 'opponent', opponentId)?.deleted).toBe(false);
+    expect(records(b)).toEqual(records(a));
+  });
+
+  it('a season with everything in it', async () => {
+    const { cloud, a, b } = await inSync();
+    cloud.clock.tick(60_000);
+    let matchId = '';
+    let seasonId = '';
+    await a.act(() => {
+      const store = useAppStore.getState();
+      store.deleteSeason('s2'); // "Winter Cup" with its opponent and match
+      const season = store.addSeason({ teamId: T1, name: 'Winter Cup', kind: 'tournament' });
+      seasonId = season.id;
+      const opponent = store.addOpponent(season.id, 'Cup Team B');
+      matchId = store.addMatch({
+        teamId: T1,
+        seasonId: season.id,
+        opponentId: opponent.id,
+        opponent: 'Cup Team B',
+        date: '2027-01-10',
+        home: true,
+      }).id;
+      useAppStore.setState((s) => ({ players: [...s.players, ...manyPlayers(s, 120)] }));
+    });
+    const pushed = pullBeforeEveryRequest(a, b, () => undefined);
+    await a.cycle();
+    const request = (key: string) => pushed.findIndex((keys) => keys.includes(key));
+    expect(request(`season:${seasonId}`)).toBe(request('season:s2 (del)'));
+    for (let i = 0; i < 3; i += 1) {
+      cloud.clock.tick(60_000);
+      await b.cycle();
+      await a.cycle();
+    }
+    expect(has(a, matchId)).toBe(true);
+    expect(has(b, matchId)).toBe(true);
+    expect(a.data.seasons.map((x) => x.id)).toContain(seasonId);
+    expect(records(b)).toEqual(records(a));
+  });
+
+  it('when one of those records is refused: it waits, the others still go together', async () => {
+    const { cloud, a, b } = await inSync();
+    cloud.clock.tick(60_000);
+    // A new opponent with a character the database can't store, and a season that goes: one
+    // group, refused as a whole, then taken apart to find the record.
+    let opponentId = '';
+    await a.act(() => {
+      const store = useAppStore.getState();
+      opponentId = store.addOpponent('s1', 'Na\u0000me').id;
+      store.deleteSeason('s2');
+    });
+    const pushed = watchPushes(a);
+    await a.cycle();
+    const group = [`opponent:${opponentId}`, 'season:s2 (del)', 'opponent:o3 (del)'];
+    const deleted = ['match:m2 (del)', 'set:m2/1 (del)'];
+    expect(pushed).toEqual([
+      [...group, ...deleted], // refused
+      group, // refused: which of them?
+      [group[0]], // this one; it waits
+      [...group.slice(1), ...deleted], // the rest, the season's and the opponent's deletion together
+    ]);
+    expect(cloud.record(T1, 'opponent', opponentId)).toBeUndefined();
+    expect(cloud.record(T1, 'season', 's2')?.deleted).toBe(true);
+    expect(cloud.record(T1, 'opponent', 'o3')?.deleted).toBe(true);
+    expect(unsent(a)).toEqual([expect.objectContaining({ count: 1, reason: 'refused' })]);
+    expect(a.runtime.status.pending).toBe(1);
+    cloud.clock.tick(60_000);
+    await b.cycle();
+    expect(b.data.seasons.some((x) => x.id === 's2')).toBe(false);
+    expect(matchIds(b)).toEqual(['m1']);
+  });
+});
+
+describe('a season or opponent deleted: what is left after a refusal, in small batches', () => {
+  it('the deletions still travel in one request once the refused record is set aside', async () => {
+    const { cloud, a } = await inSync();
+    cloud.clock.tick(60_000);
+    let opponentId = '';
+    await a.act(() => {
+      const store = useAppStore.getState();
+      opponentId = store.addOpponent('s1', 'Na\u0000me').id;
+      store.deleteSeason('s2');
+    });
+    const limit: { count: number } = a.engine.pushLimit;
+    limit.count = 1;
+    const pushed = watchPushes(a);
+    await a.cycle();
+    const group = [`opponent:${opponentId}`, 'season:s2 (del)', 'opponent:o3 (del)'];
+    expect(pushed).toEqual([
+      group, // refused
+      [group[0]], // this one; it waits
+      group.slice(1),
+      ['match:m2 (del)', 'set:m2/1 (del)'],
+    ]);
+    expect(cloud.record(T1, 'season', 's2')?.deleted).toBe(true);
   });
 });
 
@@ -436,6 +576,34 @@ describe('the notice about records that can’t be synced', () => {
     expect(unsent(a)).toEqual([]);
     expect(a.engine.refused.has(T1)).toBe(false);
     expect(a.engine.unsent.has(T1)).toBe(false);
+  });
+
+  it('is replaced when only the record’s name or only the reason changes', async () => {
+    const { cloud, a } = await inSync();
+    cloud.clock.tick(60_000);
+    const location = (value: string) =>
+      a.edit((s) => ({
+        seasons: s.seasons.map((x) => (x.id === 's1' ? { ...x, location: value } : x)),
+      }));
+    await location('y'.repeat(1001));
+    await a.cycle();
+    expect(unsent(a)).toEqual([
+      expect.objectContaining({ count: 1, reason: 'tooLong', label: '2026/27' }),
+    ]);
+    // Short enough now, but with a character the cloud refuses: the same record, another reason.
+    await location('Ha\u0000lle');
+    await a.cycle();
+    expect(unsent(a)).toEqual([
+      expect.objectContaining({ count: 1, reason: 'refused', label: '2026/27' }),
+    ]);
+    // Renamed: the same reason, another name.
+    await a.edit((s) => ({
+      seasons: s.seasons.map((x) => (x.id === 's1' ? { ...x, name: '2026–27' } : x)),
+    }));
+    await a.cycle();
+    expect(unsent(a)).toEqual([
+      expect.objectContaining({ count: 1, reason: 'refused', label: '2026–27' }),
+    ]);
   });
 
   it('goes with a team that is gone from the device', async () => {

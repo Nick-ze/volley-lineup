@@ -457,6 +457,8 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
   const refused = core.refused.get(teamId) ?? new Set<string>();
   const plan = sendableChanges(changes, meta.base, teamId, refused);
   let held = plan.held;
+  // What has to arrive in one request (with the deletion of a season or opponent).
+  let together = plan.together;
   // Said before anything is sent: what this device won't push is known without a connection.
   if (held.length > 0) reportHeld(core, teamId, held);
   const { uploaded, ready } = await uploadPhotos(
@@ -467,13 +469,17 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
   );
   let photos = uploaded;
   let timeouts = 0;
-  const queue = pushBatches(ready, core.pushLimit);
+  // Every refusal below makes the batches smaller or sets a record aside, so the loop ends by
+  // itself; the count is a last line of defence against going round for ever.
+  let refusals = 0;
+  const maxRefusals = 8 * changes.length + 16;
+  const queue = pushBatches(ready, core.pushLimit, together);
   for (let batch = queue.shift(); batch !== undefined; batch = queue.shift()) {
     let results: PushOutcome[];
     try {
       results = await core.backend.pushRecords(teamId, deviceId, batch.map(toItem));
     } catch (e) {
-      const single = pushGroups(batch).length === 1;
+      const single = pushGroups(batch, together).length === 1;
       if (isTimeout(e)) {
         const bytes = batchBytes(batch);
         // One group can't be split, and a small batch that gets no answer isn't a matter of
@@ -484,20 +490,26 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
         core.pushLimit.bytes = Math.max(MIN_PUSH_BYTES, Math.ceil(bytes / 2));
         timeouts += 1;
         if (timeouts >= MAX_PUSH_TIMEOUTS) throw e;
-        queue.splice(0, queue.length, ...pushBatches([...batch, ...queue.flat()], core.pushLimit));
+        const left = [...batch, ...queue.flat()];
+        queue.splice(0, queue.length, ...pushBatches(left, core.pushLimit, together));
         continue;
       }
       if (!isRefusedContent(e)) throw e;
+      refusals += 1;
+      if (refusals > maxRefusals) throw e;
       if (!single) {
         // Something in the batch (M4): the halves tell which.
-        queue.unshift(...halveBatch(batch));
+        queue.unshift(...halveBatch(batch, together));
         continue;
       }
       const base = appState().sync.teams[teamId]?.base ?? meta.base;
       const head = base[batch[0].key];
-      if (batch.length > 1 && head !== undefined && !head.del) {
+      if (batch.length > 1 && (together.has(batch[0].key) || (head !== undefined && !head.del))) {
         // A match the server already has needn't travel with its sets: each record alone
-        // tells which one is refused, and the others still go.
+        // tells which one is refused, and the others still go. The same for the records that
+        // travel with the deletion of a season or opponent, in their order (the deletions
+        // last); what is left of them once the refused one is known travels together again.
+        together = new Set();
         queue.unshift(...batch.map((c) => [c]));
         continue;
       }
@@ -508,7 +520,8 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       const rest = sendableChanges([...batch, ...queue.flat()], base, teamId, refused);
       // Everything that waits now, in the order the next cycle will find it.
       held = sendableChanges(changes, meta.base, teamId, refused).held;
-      queue.splice(0, queue.length, ...pushBatches(rest.ready, core.pushLimit));
+      together = rest.together;
+      queue.splice(0, queue.length, ...pushBatches(rest.ready, core.pushLimit, together));
       continue;
     }
     const pushed = batch;
