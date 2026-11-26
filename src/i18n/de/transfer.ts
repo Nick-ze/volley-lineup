@@ -2,6 +2,9 @@ import type { Strings } from '../en';
 
 /** Export / Import / Einstellungen. */
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+/** Ein Team mit den Nummern, die sich Spieler teilen: „Herren 1 (7, 12)“. */
+const teamNumbers = (team: { name: string; numbers: readonly number[] }) =>
+  `${team.name} (${team.numbers.join(', ')})`;
 
 export const transfer: Strings['transfer'] = {
   export: {
@@ -20,6 +23,10 @@ export const transfer: Strings['transfer'] = {
       'Standardmäßig aus: Die vertraulichen Spielerbeschreibungen bleiben aus der Datei draußen. Nur verfügbar, solange die Beschreibungen entsperrt sind.',
     checkMark: '✓',
     includeDescriptionsLocked: 'Entsperre die Beschreibungen, um sie mitzuexportieren.',
+    duplicateNumbers: (teams: readonly { name: string; numbers: readonly number[] }[]) =>
+      teams.length === 1 && teams[0].numbers.length === 1
+        ? `Eine jetzt erstellte Sicherung lässt sich nicht wieder laden: Im Team ${teams[0].name} haben zwei Spieler die Nummer ${teams[0].numbers[0]}. Ändere zuerst eine der beiden Nummern.`
+        : `Eine jetzt erstellte Sicherung lässt sich nicht wieder laden, weil sich Spieler eine Nummer teilen: ${teams.map(teamNumbers).join(', ')}. Gib ihnen zuerst unterschiedliche Nummern.`,
   },
   import: {
     title: 'Import',

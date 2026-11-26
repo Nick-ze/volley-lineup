@@ -33,6 +33,8 @@ export interface Invite {
   expiresAt: string;
   revokedAt: string | null;
   uses: number;
+  /** How often the code works in all (manager codes: once); null = no limit (player codes). */
+  maxUses: number | null;
 }
 
 export type UploadResult = 'created' | 'linked' | 'rekeyed' | 'failed';

@@ -9,7 +9,7 @@ import {
 import { importWithSharedTeams, sharedTeamsInFile, sharedTeamsOf } from '@/domain/syncImport';
 import type { ExportFile } from '@/domain/types';
 import { pickTextFile } from '@/lib/fileTransfer';
-import { putPhotos, replacePhotos, transferSnapshot, useAppStore } from '@/store';
+import { putPhotos, transferSnapshotNow, useAppStore, whenPhotosLoaded } from '@/store';
 
 /** v10: `SHARED_CONFLICT` = Replace clashes with a team shared on this device. */
 export type ImportError = ImportErrorCode | 'MERGE_CONFLICT' | 'SHARED_CONFLICT' | 'READ_FAILED';
@@ -70,7 +70,8 @@ export function useImport() {
       setState({ step: 'error', error: result.error });
       return;
     }
-    const shared = sharedTeamsOf(useAppStore.getState().sync.teams);
+    const { sync, teams } = useAppStore.getState();
+    const shared = sharedTeamsOf(sync.teams, teams);
     const inFile = sharedTeamsInFile(result.file, shared);
     setState({
       step: 'preview',
@@ -88,23 +89,31 @@ export function useImport() {
   const apply = useCallback(
     async (mode: ImportMode) => {
       if (state.step !== 'preview') return;
+      const file = state.file;
+      await whenPhotosLoaded();
+      // v10 audit H10: from reading the current data to writing the result nothing is awaited.
+      // A sync cycle that ran in between would be undone by the older snapshot, and what it
+      // had pulled would be pushed back as deletions to every member of a shared team.
       const store = useAppStore.getState();
-      const shared = sharedTeamsOf(store.sync.teams);
-      // Replace without shared teams needs no snapshot of the current data (as before v10).
+      const shared = sharedTeamsOf(store.sync.teams, store.teams);
+      // Replace without shared teams doesn't read the current data (as before v10).
       const current =
-        mode === 'merge' || shared.length > 0 ? await transferSnapshot() : emptyTransfer();
-      const result = importWithSharedTeams(current, state.file, mode, shared);
+        mode === 'merge' || shared.length > 0 ? transferSnapshotNow() : emptyTransfer();
+      const result = importWithSharedTeams(current, file, mode, shared);
       if (!result.ok) {
         // Replace only fails because of a kept shared team ("use Replace instead" wouldn't help).
         const error = mode === 'replace' ? 'SHARED_CONFLICT' : result.error;
         setState({ step: 'error', error });
         return;
       }
-      // Photos first: they are pruned as soon as nobody refers to them (photoStore.ts).
-      if (mode === 'replace') await replacePhotos(result.data.photos);
-      else await putPhotos(result.data.photos);
+      // The pictures are in memory at once (`putPhotos` sets them before its first await) and
+      // referred to in the same step, so the prune can't drop them in between; they are
+      // written to storage while the screen moves on. Photos nobody refers to afterwards
+      // (Replace) are removed by the prune.
+      const saving = putPhotos(result.data.photos);
       store.replaceAll(result.data);
       selectOnlyProfile();
+      await saving;
       setState({ step: 'done', mode });
     },
     [state],

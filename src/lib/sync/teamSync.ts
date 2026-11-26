@@ -17,6 +17,7 @@ import {
   type MergeInput,
   type MergeOutput,
 } from '@/domain/syncMerge';
+import { goneTeamLinks, isGoneLink, withoutTeamLinks } from '@/domain/syncAccess';
 import { foreignKeys, type TeamSlice } from '@/domain/syncRecords';
 import { parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
 import type { SyncedTeam } from '@/domain/types';
@@ -30,6 +31,7 @@ import {
   forgetPhotos,
   remotePhotoIds,
   settleDownloads,
+  slicePhotoIds,
   uploadPhotos,
 } from './photoSync';
 import { appState, sliceOf, teamData, transaction, withSlice, withTeamMeta } from './storeOps';
@@ -44,6 +46,8 @@ export interface PullReport {
   invalid: number;
   /** The team is on the device after the pull. */
   present: boolean;
+  /** A `reset` pull replaced the team with the cloud's copy (its team row was in the pull). */
+  replaced: boolean;
 }
 
 /**
@@ -52,7 +56,27 @@ export interface PullReport {
  * not gone.
  */
 export const isGone = (meta: SyncedTeam, slice: TeamSlice | undefined): boolean =>
-  !slice && (meta.cursor > 0 || Object.keys(meta.base).length > 0);
+  isGoneLink(meta, slice !== undefined);
+
+/**
+ * Unlinks every shared team that is gone from the device (audit C1). The store's own delete
+ * actions unlink in the same write; this catches links an earlier app version left behind. It
+ * needs no session: a stale link must not wait for the next sign-in, or a backup restored in
+ * between would be rebuilt under it and pushed as deletions.
+ */
+export function dropGoneTeams(core: EngineCore): void {
+  const s = appState();
+  const gone = goneTeamLinks(s.sync, s.teams);
+  if (gone.length === 0) return;
+  transaction((state) => {
+    const sync = withoutTeamLinks(state.sync, goneTeamLinks(state.sync, state.teams));
+    return sync === state.sync ? state : { sync };
+  });
+  for (const teamId of gone) {
+    forgetPhotos(core, teamId);
+    core.resetPending.delete(teamId);
+  }
+}
 
 /**
  * Whether the team's next pull replaces it with the cloud's copy (`resetToCloudMerge`): after a
@@ -110,6 +134,19 @@ function mergeInto(
   return { out, data: withSlice(s, teamId, out.slice), changed: out.slice !== slice };
 }
 
+/**
+ * Photo ids the team's records on the device refer to that its cloud folder has (`meta.photos`):
+ * `downloadPhotos` fetches those the device lacks. Derived from the stored state, so a download
+ * that failed before a restart — or a photo that arrived with a refused push's newer row — is
+ * fetched by the next pull (audit H3).
+ */
+function storedCloudPhotos(teamId: string): string[] {
+  const s = appState();
+  const cloud = s.sync.teams[teamId]?.photos ?? [];
+  if (cloud.length === 0) return [];
+  return [...slicePhotoIds(sliceOf(s, teamId))].filter((id) => cloud.includes(id));
+}
+
 /** Pulls and applies everything new of the team (`reset`: from 0, the cloud replaces all). */
 export async function pullTeam(
   core: EngineCore,
@@ -117,17 +154,20 @@ export async function pullTeam(
   reset = false,
 ): Promise<PullReport> {
   const start = appState().sync.teams[teamId];
-  if (!start) return { foreign: 0, invalid: 0, present: false };
+  if (!start) return { foreign: 0, invalid: 0, present: false, replaced: false };
   if (isGone(start, sliceOf(appState(), teamId))) {
     dropTeam(core, teamId);
-    return { foreign: 0, invalid: 0, present: false };
+    return { foreign: 0, invalid: 0, present: false, replaced: false };
   }
   const rows: RemoteRecord[] = [];
   let invalid = 0;
-  let serverNow = '';
+  let serverNow: string | null = null;
   for (let after = reset ? 0 : start.cursor; ;) {
     const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
-    serverNow = page.serverNow;
+    // The cursor's 10 s overlap counts from the FIRST page's server time (audit H4): a write
+    // still uncommitted when page 1 was read can sit below page 1's newest rows, and no later
+    // page returns it. Every later page is read later, so the first time is safe for all rows.
+    serverNow ??= page.serverNow;
     for (const raw of page.rows) {
       const row = parseRemoteRow(raw);
       if (row) rows.push(row);
@@ -137,9 +177,9 @@ export async function pullTeam(
     if (page.rows.length < PULL_PAGE || top <= after) break;
     after = top;
   }
-  const missing = await downloadPhotos(core, teamId, rows);
+  const missing = await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
-  const report: PullReport = { foreign: 0, invalid, present: false };
+  const report: PullReport = { foreign: 0, invalid, present: false, replaced: false };
   const now = isoNow(core.clock);
   transaction((s) => {
     const meta = s.sync.teams[teamId];
@@ -148,7 +188,11 @@ export async function pullTeam(
     report.foreign = out.skipped.filter((x) => x.reason === 'foreignId').length;
     report.invalid += out.skipped.filter((x) => x.reason === 'invalid').length;
     report.present = out.slice !== undefined;
-    const cursor = out.slice ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow) : meta.cursor;
+    // `resetToCloudMerge` only replaces the team when its own row is among the rows.
+    report.replaced = reset && rows.some((r) => r.kind === 'team' && r.id === teamId);
+    const cursor = out.slice
+      ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow ?? '')
+      : meta.cursor;
     // Not-found photos aren't in the cloud folder (any more): forget them, so a manager that
     // has one uploads it again with its next change.
     const photos = union(meta.photos, remotePhotoIds(rows)).filter((id) => !missing.has(id));
@@ -173,6 +217,7 @@ export async function pullTeam(
  * next online cycle, or an older offline edit would win against a newer one from elsewhere.
  */
 export function noteAll(core: EngineCore): void {
+  dropGoneTeams(core);
   const now = isoNow(core.clock);
   transaction((s) => {
     let teams: Record<string, SyncedTeam> | null = null;
@@ -238,7 +283,16 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
         return { sync: withTeamMeta(s.sync, teamId, applied.team) };
       }
       const { out, data } = mergeInto(s, teamId, applied.team, applied.stale, now);
-      return { ...data, sync: withTeamMeta(s.sync, teamId, out.team) };
+      // Rows the server kept a newer save of are applied here without a pull: the photos they
+      // point at are in the cloud folder (their writer uploaded them first). Those the merged
+      // team now refers to are listed in the same write, so the prune keeps their `photoId`s
+      // and the next pull downloads them (audit H3). A row that lost against a still newer
+      // local change isn't listed: this device's clean-up must not remove a photo the
+      // server's row points at.
+      const used = slicePhotoIds(out.slice);
+      const arrived = remotePhotoIds(applied.stale).filter((id) => used.has(id));
+      const meta = { ...out.team, photos: union(out.team.photos, arrived) };
+      return { ...data, sync: withTeamMeta(s.sync, teamId, meta) };
     });
     photos = [];
   }

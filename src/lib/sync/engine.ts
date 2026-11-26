@@ -29,6 +29,7 @@ import { isoNow, systemClock, type Clock, type EngineCore } from './core';
 import { toSyncError } from './errors';
 import {
   appState,
+  dropHolds,
   emitStatus,
   isApplying,
   linkedTeamIds,
@@ -41,7 +42,7 @@ import {
   whenHydrated,
 } from './storeOps';
 import { forgetPhotos } from './photoSync';
-import { needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
+import { dropGoneTeams, needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
 
 export interface EngineTiming {
   /** Delay of the first cycle after start (after the first screen is idle). */
@@ -73,6 +74,8 @@ const dataChanged = (a: StoreState, b: StoreState) => DATA_KEYS.some((k) => a[k]
 
 export class SyncEngine implements EngineCore {
   readonly resetPending = new Set<string>();
+  /** Teams this account was made manager of: the role is stored after their reset pull. */
+  private readonly promoting = new Set<string>();
   readonly pendingPhotos = new Map<string, Set<string>>();
   readonly notified = new Set<string>();
   private current: BackendSession | null = null;
@@ -153,6 +156,9 @@ export class SyncEngine implements EngineCore {
   private async boot(): Promise<void> {
     await whenHydrated();
     if (!this.started) return;
+    // Links an earlier version left behind for teams that were deleted with their profile
+    // (audit C1): dropped before anything else, signed in or not.
+    dropGoneTeams(this);
     const { account, teams } = appState().sync;
     const localOnly = !account && Object.keys(teams).length === 0;
     if (localOnly && !(await this.backend.hasStoredSession())) {
@@ -231,7 +237,18 @@ export class SyncEngine implements EngineCore {
 
   private onStoreChange(s: StoreState, prev: StoreState): void {
     if (prev.sync.account && !s.sync.account && this.current) void this.signOut();
-    if (s.sync.teams !== prev.sync.teams) this.rewire();
+    if (s.sync.teams !== prev.sync.teams) {
+      // A team unlinked by the store itself (profile or team deleted, an import): forget what
+      // this run remembered about it, or a later link of the same id would inherit it.
+      const gone = Object.keys(prev.sync.teams).filter((id) => !(id in s.sync.teams));
+      for (const teamId of gone) {
+        forgetPhotos(this, teamId);
+        this.resetPending.delete(teamId);
+        this.promoting.delete(teamId);
+      }
+      if (gone.length > 0) dropHolds(gone);
+      this.rewire();
+    }
     if (isApplying() || !dataChanged(s, prev) || Object.keys(s.sync.teams).length === 0) return;
     clearTimeout(this.timers.debounce);
     this.timers.debounce = setTimeout(() => {
@@ -368,6 +385,13 @@ export class SyncEngine implements EngineCore {
     const reset = needsReset(this, teamId);
     const report = await pullTeam(this, teamId, reset);
     if (reset && report.present) this.resetPending.delete(teamId);
+    if (this.promoting.has(teamId) && report.replaced) {
+      // The copy and its bookkeeping are the cloud's now (`resetToCloudMerge` leaves nothing to
+      // push): from here on this device's changes may be pushed.
+      this.promoting.delete(teamId);
+      const meta = appState().sync.teams[teamId];
+      if (meta) setTeamMeta(teamId, { ...meta, role: 'manager' });
+    }
     const skipped = report.foreign + report.invalid;
     if (skipped > 0)
       this.noticeOnce({ kind: 'skipped', teamId, teamName: teamName(teamId), count: skipped });
@@ -392,6 +416,7 @@ export class SyncEngine implements EngineCore {
         unlinkTeams([teamId]);
         forgetPhotos(this, teamId);
         this.resetPending.delete(teamId);
+        this.promoting.delete(teamId);
         notify({ kind: 'removed', teamId, teamName: name });
       } else if (role !== meta.role) {
         if (meta.role === 'manager') {
@@ -399,8 +424,22 @@ export class SyncEngine implements EngineCore {
           setTeamMeta(teamId, { ...meta, role, cursor: 0, edits: {} });
           this.resetPending.add(teamId);
           notify({ kind: 'demoted', teamId, teamName: teamName(teamId), undone });
-        } else setTeamMeta(teamId, { ...meta, role });
-      }
+        } else {
+          // Promotion (audit H8): a view-only copy can differ from the cloud with no way to
+          // heal, and as a manager's copy every difference would be pushed as an edit made
+          // now (missing records as deletions). So the copy is first replaced by the cloud's,
+          // like after a demotion; the stored role stays `player` (cursor 0: `needsReset`,
+          // also after a restart) until that pull has worked (`syncTeam`).
+          // Armed once per app run: a reset pull that can't bring the team's own row must not
+          // turn every cycle into a pull from 0.
+          if (!this.promoting.has(teamId)) {
+            if (meta.cursor !== 0 || Object.keys(meta.edits).length > 0)
+              setTeamMeta(teamId, { ...meta, cursor: 0, edits: {} });
+            this.resetPending.add(teamId);
+            this.promoting.add(teamId);
+          }
+        }
+      } else this.promoting.delete(teamId);
     }
   }
 

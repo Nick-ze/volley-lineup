@@ -89,8 +89,22 @@ describe('sync state in the store', () => {
     expect(store().sync.account?.profileId).toBe('prof1');
     store().deleteProfile('prof1');
     expect(store().sync.account).toBeNull();
-    // the team meta stays: the engine unlinks teams that are gone locally (no tombstones)
-    expect(Object.keys(store().sync.teams)).toEqual([TEAM_ID]);
+    // v10 audit C1: the profile's shared teams are unlinked in the same write. (This test used
+    // to expect the link to stay "for the engine to drop" — but signed out no cycle runs, and a
+    // backup restored under the leftover link was pushed as deletions to every member.)
+    expect(store().teams).toEqual([]);
+    expect(store().sync.teams).toEqual({});
+  });
+
+  it('deleting a shared team unlinks it; other links stay', () => {
+    seedApp({});
+    const other = store().addTeam({ profileId: 'prof1', name: 'Other' });
+    useAppStore.setState({
+      sync: { ...shared(), teams: { ...shared().teams, [other.id]: shared().teams[TEAM_ID] } },
+    });
+    store().deleteTeam(TEAM_ID);
+    expect(Object.keys(store().sync.teams)).toEqual([other.id]);
+    expect(store().sync.account?.profileId).toBe('prof1');
   });
 
   it('an import keeps the sync state; the account goes when its profile is gone', () => {
@@ -99,9 +113,15 @@ describe('sync state in the store', () => {
     const snapshot = selectAppData(store());
     store().replaceAll(snapshot);
     expect(store().sync).toEqual(shared());
+    // A download that hasn't pulled anything yet has no team on the device: its link stays.
+    const downloading: SyncedTeam = { ...linked('player'), cursor: 0 };
+    useAppStore.setState({ sync: { ...shared(), teams: { ...shared().teams, dl: downloading } } });
     store().replaceAll(emptyData());
     expect(store().sync.account).toBeNull();
-    expect(store().sync.teams).toEqual(shared().teams);
+    // v10 audit C1: the shared team isn't in the new data, so its link goes with it. (This
+    // test used to expect the link to stay; the import itself keeps shared teams in the data
+    // it passes, `importWithSharedTeams`, so a link only loses its team here when it was stale.)
+    expect(store().sync.teams).toEqual({ dl: downloading });
     // without an account nothing changes
     store().replaceAll(emptyData());
     expect(store().sync.account).toBeNull();

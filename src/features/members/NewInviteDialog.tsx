@@ -5,7 +5,8 @@ import { Button, ChoiceChip, Dialog, useDialogStyles } from '@/components';
 import {
   DEFAULT_INVITE_DAYS,
   DEFAULT_INVITE_ROLE,
-  INVITE_DAYS,
+  inviteDayOptions,
+  inviteDaysFor,
   type InviteDays,
 } from '@/domain/invites';
 import type { TeamRole } from '@/domain/types';
@@ -21,7 +22,10 @@ export interface NewInviteDialogProps {
   onCreate: (role: TeamRole, days: InviteDays) => void;
 }
 
-/** v10: "New invite" — role (player / manager) and how long it is valid (1 / 7 / 30 days). */
+/**
+ * v10: "New invite" — role (player / manager) and how long it is valid: 1 / 7 / 30 days for a
+ * player code, 1 / 7 days for a manager code (the server refuses longer ones, audit H5).
+ */
 export function NewInviteDialog({ visible, onCancel, onCreate }: NewInviteDialogProps) {
   const t = useT();
   const styles = useMembersStyles();
@@ -40,7 +44,10 @@ export function NewInviteDialog({ visible, onCancel, onCreate }: NewInviteDialog
               role="radio"
               label={t.members.roles[r]}
               selected={role === r}
-              onPress={() => setRole(r)}
+              onPress={() => {
+                setRole(r);
+                setDays((d) => inviteDaysFor(r, d));
+              }}
               testID={`new-invite-role-${r}`}
             />
           ))}
@@ -50,7 +57,7 @@ export function NewInviteDialog({ visible, onCancel, onCreate }: NewInviteDialog
       <View style={styles.section}>
         <Text style={styles.rowDetail}>{s.days}</Text>
         <View style={styles.choices} accessibilityRole="radiogroup" aria-label={s.days}>
-          {INVITE_DAYS.map((d) => (
+          {inviteDayOptions(role).map((d) => (
             <ChoiceChip
               key={d}
               role="radio"

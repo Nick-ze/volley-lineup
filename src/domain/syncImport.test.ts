@@ -6,6 +6,7 @@ import {
   type SharedTeam,
 } from './syncImport';
 import type { SyncedTeam } from './types';
+import { rekeyTeam } from './syncUpload';
 import { goldenData } from '@/test-utils';
 
 const VIEWER: SharedTeam[] = [{ teamId: 't1', canEdit: false }];
@@ -54,11 +55,15 @@ describe('sharedTeamsOf', () => {
       edits: {},
       photos: [],
     });
-    expect(sharedTeamsOf({ a: linked('manager'), b: linked('player') })).toEqual([
+    const links = { a: linked('manager'), b: linked('player') };
+    expect(sharedTeamsOf(links, [{ id: 'a' }, { id: 'b' }, { id: 'local' }])).toEqual([
       { teamId: 'a', canEdit: true },
       { teamId: 'b', canEdit: false },
     ]);
-    expect(sharedTeamsOf({})).toEqual([]);
+    expect(sharedTeamsOf({}, [{ id: 'a' }])).toEqual([]);
+    // A link whose team isn't on the device protects nothing (audit C1).
+    expect(sharedTeamsOf(links, [{ id: 'b' }])).toEqual([{ teamId: 'b', canEdit: false }]);
+    expect(sharedTeamsOf(links, [])).toEqual([]);
   });
 });
 
@@ -228,5 +233,110 @@ describe('importWithSharedTeams: Merge', () => {
       ok: false,
       error: 'MERGE_CONFLICT',
     });
+  });
+});
+
+describe('importWithSharedTeams: a file with a shared team’s records under another team id (audit H9)', () => {
+  /** The device: golden t1 was uploaded under a new id (`y1`); its record ids are the same. */
+  const device = (): TransferData => rekeyTeam(goldenData(), 't1', 'y1');
+  const SHARED_Y1: SharedTeam[] = [{ teamId: 'y1', canEdit: true }];
+  const count = (data: TransferData, teamId: string) => ofTeam(data, teamId).players.length;
+
+  it('Merge refuses a backup from before the new id: nothing would be left in the shared team', () => {
+    const current = device();
+    expect(count(current, 'y1')).toBeGreaterThan(0);
+    // Without the check the merge "works" and moves every record to t1.
+    const plain = mergeData(current, goldenData());
+    expect(plain.ok && count(plain.data, 'y1')).toBe(0);
+    expect(importWithSharedTeams(current, goldenData(), 'merge', SHARED_Y1)).toEqual({
+      ok: false,
+      error: 'SHARED_CONFLICT',
+    });
+    // A view-only team is protected the same way.
+    expect(
+      importWithSharedTeams(current, goldenData(), 'merge', [{ teamId: 'y1', canEdit: false }]),
+    ).toEqual({ ok: false, error: 'SHARED_CONFLICT' });
+  });
+
+  it.each(['players', 'seasons', 'opponents', 'matches', 'presets'] as const)(
+    'one moved record is enough: %s',
+    (kind) => {
+      const current = device();
+      const golden = goldenData();
+      // A file with another team (t9) that holds exactly one of the shared team's records.
+      const empty: TransferData = {
+        ...golden,
+        teams: [],
+        players: [],
+        seasons: [],
+        opponents: [],
+        matches: [],
+        presets: [],
+        photos: [],
+      };
+      const team = { ...golden.teams[0]!, id: 't9', photoId: undefined, captainId: undefined };
+      const season = { ...golden.seasons.find((x) => x.teamId === 't1')!, id: 'se9', teamId: 't9' };
+      const mine = ofTeam(golden, 't1');
+      const file: TransferData = { ...empty, teams: [team], seasons: [season] };
+      if (kind === 'players')
+        file.players = [{ ...mine.players[0]!, teamId: 't9', photoId: undefined }];
+      if (kind === 'seasons') file.seasons = [{ ...mine.seasons[0]!, teamId: 't9' }];
+      if (kind === 'opponents') file.opponents = [{ ...mine.opponents[0]!, seasonId: 'se9' }];
+      if (kind === 'matches') file.matches = [{ ...mine.matches[0]!, teamId: 't9' }];
+      if (kind === 'presets') file.presets = [{ ...mine.presets[0]!, teamId: 't9' }];
+      expect(importWithSharedTeams(current, file, 'merge', SHARED_Y1)).toEqual({
+        ok: false,
+        error: 'SHARED_CONFLICT',
+      });
+    },
+  );
+
+  it('an opponent of the shared team under a season the file doesn’t have counts as moved', () => {
+    const golden = goldenData();
+    const opponent = { ...ofTeam(golden, 't1').opponents[0]!, seasonId: 'unknown' };
+    const file: TransferData = {
+      ...golden,
+      teams: [],
+      players: [],
+      seasons: [],
+      matches: [],
+      presets: [],
+      photos: [],
+      opponents: [opponent],
+    };
+    expect(importWithSharedTeams(device(), file, 'merge', SHARED_Y1).ok).toBe(false);
+  });
+
+  it('the same records under the shared team’s own id merge as before', () => {
+    const current = device();
+    const file = rekeyTeam(changedFile(), 't1', 'y1');
+    const result = unwrap(importWithSharedTeams(current, file, 'merge', SHARED_Y1));
+    expect(ofTeam(result.data, 'y1').team?.name).toBe('Herren 1 – Süd (file)');
+    expect(count(result.data, 'y1')).toBe(count(current, 'y1'));
+  });
+
+  it('records of teams that aren’t shared may move as before', () => {
+    // t2 isn't shared: a file that holds one of its players under another team just merges.
+    const current = device();
+    const golden = goldenData();
+    const p = golden.players.find((x) => x.teamId === 't2');
+    if (!p) throw new Error('t2 has no player');
+    const file: TransferData = {
+      ...golden,
+      teams: golden.teams.filter((x) => x.id === 't2'),
+      players: [p],
+      seasons: golden.seasons.filter((x) => x.teamId === 't2'),
+      opponents: [],
+      matches: [],
+      presets: [],
+      photos: [],
+    };
+    expect(importWithSharedTeams(current, file, 'merge', SHARED_Y1).ok).toBe(true);
+  });
+
+  it('Replace is not affected: the shared team keeps its records', () => {
+    const current = device();
+    const result = unwrap(importWithSharedTeams(current, goldenData(), 'replace', SHARED_Y1));
+    expect(count(result.data, 'y1')).toBe(count(current, 'y1'));
   });
 });

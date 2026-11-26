@@ -1,5 +1,8 @@
 /** Strings for Worker D — export / import / settings. */
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+/** A team with the numbers its players share: "Herren 1 (7, 12)". */
+const teamNumbers = (team: { name: string; numbers: readonly number[] }) =>
+  `${team.name} (${team.numbers.join(', ')})`;
 
 export const transfer = {
   export: {
@@ -18,6 +21,14 @@ export const transfer = {
       'Off by default: confidential player descriptions stay out of the file. Only available while descriptions are unlocked.',
     checkMark: '✓',
     includeDescriptionsLocked: 'Unlock the descriptions to include them.',
+    /**
+     * v10: teams in which players share a jersey number (added on two devices before a sync);
+     * the import refuses such a file. `teams` is never empty.
+     */
+    duplicateNumbers: (teams: readonly { name: string; numbers: readonly number[] }[]) =>
+      teams.length === 1 && teams[0].numbers.length === 1
+        ? `A backup made now can’t be loaded again: ${teams[0].name} has two players with number ${teams[0].numbers[0]}. Change one of the numbers first.`
+        : `A backup made now can’t be loaded again because players share a number: ${teams.map(teamNumbers).join(', ')}. Give them different numbers first.`,
   },
   import: {
     title: 'Import',

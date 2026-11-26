@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
 import { Button, ReadOnlyNote, useListStyles } from '@/components';
+import { duplicateNumbers } from '@/domain/roster';
 import { rosterCardWidth, rosterColumns } from '@/domain/rosterGrid';
 import { ScorerListButton } from '@/features/print/ScorerListButton';
 import { useT } from '@/i18n';
 import { useAppStore, usePlayersForTeam, useTeamAccess } from '@/store';
-import { makeStyles, maxContentWidth, spacing } from '@/theme';
+import { makeStyles, maxContentWidth, radius, spacing, typography } from '@/theme';
 
 import { PlayerCard } from './PlayerCard';
 
@@ -23,6 +24,8 @@ const GAP = spacing.sm;
 /**
  * v8: the players as cards (2 columns on a phone, more on wide screens), by jersey number.
  * v10: view-only members (player role of a shared team) get no Add player and no active toggle.
+ * v10 (audit H6): a warning when players share a jersey number (two devices added it before a
+ * sync): a backup of the team can't be loaded until it is fixed. Shown to everyone.
  */
 export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps) {
   const styles = useListStyles();
@@ -31,6 +34,7 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
   const players = usePlayersForTeam(teamId);
   const updatePlayer = useAppStore((s) => s.updatePlayer);
   const access = useTeamAccess(teamId);
+  const duplicates = duplicateNumbers(players);
   const window = useWindowDimensions();
   // Until the grid has measured itself: the screen's content width (window minus padding).
   const [measured, setMeasured] = useState<number | null>(null);
@@ -59,6 +63,13 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
           <ReadOnlyNote block={access.block} />
         </View>
       ) : null}
+      {duplicates.length > 0 ? (
+        <View style={[grid.warning, styles.tabHeader]} testID="roster-duplicate-numbers">
+          <Text style={grid.warningText} accessibilityRole="alert" accessibilityLiveRegion="polite">
+            {t.roster.roster.duplicateNumbers(duplicates)}
+          </Text>
+        </View>
+      ) : null}
       {players.length === 0 && <Text style={styles.empty}>{t.roster.roster.empty}</Text>}
       <View style={grid.grid} onLayout={onLayout} testID="roster-grid">
         {players.map((p) => (
@@ -77,8 +88,18 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
   );
 }
 
-const useGridStyles = makeStyles(() => ({
+const useGridStyles = makeStyles((theme) => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  // Same look as the sync notices: the yellow border marks a warning.
+  warning: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.highlightText,
+    backgroundColor: theme.colors.surface,
+  },
+  warningText: { ...typography.body, color: theme.colors.text },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',

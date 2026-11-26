@@ -132,6 +132,43 @@ describe('members and invites', () => {
   });
 });
 
+describe('invite codes after a demotion or a removal (audit H1)', () => {
+  it('a manager made a player can’t become manager again with a spare manager code', async () => {
+    const { cloud, a, b } = await shared('manager');
+    // Ben, still a manager, creates a manager code for later.
+    const spare = await b.act((e) => createInvite(e, T1, 'manager', 7));
+    if (!spare.ok) throw new Error('no spare code');
+    await a.act((e) => setMemberRole(e, T1, benId(cloud), 'player'));
+    await b.cycle();
+    expect(await b.act((e) => joinTeam(e, spare.value.code))).toEqual({
+      ok: false,
+      error: 'inviteInvalid',
+    });
+    expect(cloud.role(T1, benId(cloud))).toBe('player');
+    // The manager's list no longer shows it as usable.
+    const listed = await a.act((e) => listInvites(e, T1));
+    expect(listed.ok && listed.value.every((i) => i.revokedAt !== null)).toBe(true);
+  });
+
+  it('a removed member’s second account can’t join with a code from before the removal', async () => {
+    const { cloud, a, b, invite } = await shared('player');
+    await a.act((e) => removeMember(e, T1, benId(cloud)));
+    const c = new TestDevice(cloud, 'dev-c');
+    await c.signIn('ben.again@example.test');
+    expect(await c.act((e) => joinTeam(e, invite.code))).toEqual({
+      ok: false,
+      error: 'inviteInvalid',
+    });
+    expect(cloud.role(T1, cloud.userId('ben.again@example.test'))).toBeNull();
+    // A code created after the removal is a deliberate invitation and works.
+    const fresh = await a.act((e) => createInvite(e, T1, 'player', 7));
+    if (!fresh.ok) throw new Error('no new code');
+    expect((await c.act((e) => joinTeam(e, fresh.value.code))).ok).toBe(true);
+    await b.cycle(); // the removed account's device: unlinked, as before
+    expect(b.data.sync.teams[T1]).toBeUndefined();
+  });
+});
+
 describe('role changes seen by a sync', () => {
   it('demotion: view-only, unsynced changes undone (the cloud copy), a notice', async () => {
     const { cloud, a, b } = await shared('manager');
@@ -169,6 +206,78 @@ describe('role changes seen by a sync', () => {
     await b.cycle();
     await a.cycle();
     expect(a.data.players.find((p) => p.id === 'p2')?.firstName).toBe('From Ben');
+  });
+});
+
+describe('promotion of a view-only copy that differs from the cloud (audit H8)', () => {
+  const sizes = (d: TestDevice) => {
+    const slice = teamSlice(d.data, T1);
+    return slice ? [slice.players.length, slice.matches.length, slice.presets.length] : null;
+  };
+
+  /** Ben's view-only copy has lost the team's content locally; nothing heals it. */
+  async function divergedViewer() {
+    const ctx = await shared('player');
+    const full = sizes(ctx.a);
+    ctx.cloud.clock.tick(3_600_000);
+    await ctx.b.cycle();
+    await ctx.b.edit((s) => ({
+      players: s.players.filter((p) => p.teamId !== T1),
+      matches: s.matches.filter((m) => m.teamId !== T1),
+      presets: s.presets.filter((p) => p.teamId !== T1),
+    }));
+    await ctx.b.cycle();
+    expect(sizes(ctx.b)).toEqual([0, 0, 0]);
+    ctx.cloud.clock.tick(86_400_000);
+    return { ...ctx, full };
+  }
+
+  it('the copy is replaced by the cloud’s before the device may push; nothing is deleted', async () => {
+    const { cloud, a, b, full } = await divergedViewer();
+    await a.act((e) => setMemberRole(e, T1, benId(cloud), 'manager'));
+    await b.cycle();
+    expect(b.data.sync.teams[T1].role).toBe('manager');
+    expect(sizes(b)).toEqual(full);
+    await b.cycle();
+    await a.cycle();
+    expect(sizes(a)).toEqual(full);
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
+    expect(a.runtime.status.pending).toBe(0);
+  });
+
+  it('offline at the promotion: still view-only (nothing pushed), manager once the pull worked', async () => {
+    const { cloud, a, b, full } = await divergedViewer();
+    await a.act((e) => setMemberRole(e, T1, benId(cloud), 'manager'));
+    // The membership answer arrives, the pull doesn't.
+    const pull = b.backend.pullChanges.bind(b.backend);
+    b.backend.pullChanges = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await b.cycle();
+    expect(b.data.sync.teams[T1]).toMatchObject({ role: 'player', cursor: 0 });
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
+    // Also after an app restart (a new engine with the stored state) and back online.
+    b.backend.pullChanges = pull;
+    b.engine.resetPending.clear();
+    await b.act((e) => e.syncNow());
+    expect(b.data.sync.teams[T1].role).toBe('manager');
+    expect(sizes(b)).toEqual(full);
+    await a.cycle();
+    expect(sizes(a)).toEqual(full);
+  });
+
+  it('a player who uses a manager code is promoted the same way', async () => {
+    const { cloud, a, b, full } = await divergedViewer();
+    const code = await a.act((e) => createInvite(e, T1, 'manager', 7));
+    if (!code.ok) throw new Error('no code');
+    const joined = await b.act((e) => joinTeam(e, code.value.code));
+    expect(joined).toMatchObject({ ok: true, value: { role: 'manager' } });
+    await b.cycle();
+    expect(b.data.sync.teams[T1].role).toBe('manager');
+    expect(sizes(b)).toEqual(full);
+    await a.cycle();
+    expect(sizes(a)).toEqual(full);
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
   });
 });
 

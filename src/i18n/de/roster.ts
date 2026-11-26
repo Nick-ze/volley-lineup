@@ -67,6 +67,10 @@ export const roster: Strings['roster'] = {
       captain = false,
     ) =>
       `${name}, Nummer ${number}${captain ? ', Kapitän' : ''}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', verletzt oder inaktiv'}. Details öffnen`,
+    duplicateNumbers: (numbers: readonly number[]) =>
+      numbers.length === 1
+        ? `Zwei Spieler haben die Nummer ${numbers[0]}. Gib einem der beiden eine andere Nummer: Bis dahin lässt sich eine Sicherung dieses Teams nicht laden.`
+        : `Mehrere Spieler teilen sich eine Nummer (${numbers.join(', ')}). Gib ihnen unterschiedliche Nummern: Bis dahin lässt sich eine Sicherung dieses Teams nicht laden.`,
   },
   player: {
     addTitle: 'Spieler hinzufügen',

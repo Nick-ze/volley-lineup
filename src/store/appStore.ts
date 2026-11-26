@@ -6,6 +6,7 @@ import { chooseCaptain } from '@/domain/captain';
 import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
+import { goneTeamLinks, withoutTeamLinks } from '@/domain/syncAccess';
 import { withSeen } from '@/domain/tour';
 import type { LineupPreset, Match, Opponent, Season, SyncData } from '@/domain/types';
 import { createId } from '@/lib/id';
@@ -87,8 +88,13 @@ export const useAppStore = create<AppStore>()(
             presets: s.presets.filter((p) => !teamIds.has(p.teamId)),
             ...withoutSeasonsOf(s, (x) => teamIds.has(x.teamId)),
             currentProfileId: s.currentProfileId === id ? null : s.currentProfileId,
-            // v10: the account linked to this profile is unlinked (its teams are gone locally).
-            sync: s.sync.account?.profileId === id ? { ...s.sync, account: null } : s.sync,
+            // v10: the account linked to this profile is unlinked, and so are the shared teams
+            // that go with the profile — in this same write (audit C1): a link left behind
+            // would meet a later import of the same team and push deletions to every member.
+            sync: withoutTeamLinks(
+              s.sync.account?.profileId === id ? { ...s.sync, account: null } : s.sync,
+              teamIds,
+            ),
           };
         }),
       selectProfile: (id) => set({ currentProfileId: id }),
@@ -107,6 +113,9 @@ export const useAppStore = create<AppStore>()(
           matches: s.matches.filter((m) => m.teamId !== id),
           presets: s.presets.filter((p) => p.teamId !== id),
           ...withoutSeasonsOf(s, (x) => x.teamId === id),
+          // v10: a shared team that leaves the device is unlinked with it (audit C1); the cloud
+          // team is untouched.
+          sync: withoutTeamLinks(s.sync, [id]),
         })),
 
       addPlayer: (input) => {
@@ -225,23 +234,36 @@ export const useAppStore = create<AppStore>()(
         return starters;
       },
       replaceAll: (data) =>
-        set((s) => ({
-          profiles: data.profiles,
-          teams: data.teams,
-          players: data.players,
-          matches: data.matches,
-          presets: data.presets,
-          seasons: data.seasons,
-          opponents: data.opponents,
-          currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
-            ? s.currentProfileId
-            : null,
-          // v10: keep the shared teams' bookkeeping; the account link goes with its profile.
-          sync:
+        set((s) => {
+          // v10: keep the shared teams' bookkeeping; the account link goes with its profile, and
+          // the link of a shared team that isn't in the new data goes too (audit C1).
+          const sync =
             s.sync.account && !data.profiles.some((p) => p.id === s.sync.account?.profileId)
               ? { ...s.sync, account: null }
-              : s.sync,
-        })),
+              : s.sync;
+          return {
+            profiles: data.profiles,
+            teams: data.teams,
+            players: data.players,
+            matches: data.matches,
+            presets: data.presets,
+            seasons: data.seasons,
+            opponents: data.opponents,
+            currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
+              ? s.currentProfileId
+              : null,
+            // A link goes when its team is gone now, and when it had no team before but the new
+            // data brings one under its id (a stale link, or a download that hasn't pulled
+            // yet): a link must not adopt an imported team — its records would be pushed over
+            // the cloud's. Downloading the team again links it with "the cloud wins".
+            sync: withoutTeamLinks(sync, [
+              ...goneTeamLinks(sync, data.teams),
+              ...data.teams
+                .map((t) => t.id)
+                .filter((id) => id in sync.teams && !s.teams.some((t) => t.id === id)),
+            ]),
+          };
+        }),
       // v10: also forgets the account and every shared team on this device (the cloud is untouched).
       resetAll: () =>
         set((s) => ({ ...emptyData(), currentProfileId: null, sync: emptySync(s.sync.deviceId) })),

@@ -5,7 +5,10 @@ import {
   formatInviteCode,
   INVITE_ALPHABET,
   INVITE_DAYS,
+  inviteDayOptions,
+  inviteDaysFor,
   inviteExpired,
+  inviteUsedUp,
   joinLink,
   normalizeInviteCode,
   sortMembers,
@@ -107,6 +110,27 @@ describe('invite expiry', () => {
     expect(activeInvites(list, now).map((i) => i.id)).toEqual(['soon', 'noRevokedField', 'late']);
     expect(list).toHaveLength(5); // not changed
   });
+
+  it('is used up once it was used as often as it works (manager codes work once)', () => {
+    const base = invite('m', '2026-12-01T00:00:00.000Z');
+    expect(inviteUsedUp({ ...base, uses: 0, maxUses: 1 })).toBe(false);
+    expect(inviteUsedUp({ ...base, uses: 1, maxUses: 1 })).toBe(true);
+    expect(inviteUsedUp({ ...base, uses: 3, maxUses: 2 })).toBe(true);
+    // No limit (player codes), also when the fields are missing.
+    expect(inviteUsedUp({ ...base, uses: 40, maxUses: null })).toBe(false);
+    expect(inviteUsedUp({ ...base, uses: 40 })).toBe(false);
+    expect(inviteUsedUp({ ...base, maxUses: 1 })).toBe(false);
+    expect(inviteUsedUp(base)).toBe(false);
+  });
+
+  it('leaves out a used-up code (audit H2: a manager code the invited manager already used)', () => {
+    const list = [
+      { ...invite('usedManager', '2026-11-27T00:00:00.000Z'), uses: 1, maxUses: 1 },
+      { ...invite('freshManager', '2026-11-28T00:00:00.000Z'), uses: 0, maxUses: 1 },
+      { ...invite('player', '2026-11-29T00:00:00.000Z'), uses: 12, maxUses: null },
+    ];
+    expect(activeInvites(list, now).map((i) => i.id)).toEqual(['freshManager', 'player']);
+  });
 });
 
 describe('sortMembers', () => {
@@ -150,6 +174,12 @@ describe('sortMembers', () => {
 describe('defaults', () => {
   it('offers 1, 7 and 30 days; a new invite is for a player for 7 days', () => {
     expect(INVITE_DAYS).toEqual([1, 7, 30]);
+    // Audit H5: manager codes are valid 7 days at most on the server.
+    expect(inviteDayOptions('player')).toEqual([1, 7, 30]);
+    expect(inviteDayOptions('manager')).toEqual([1, 7]);
+    expect(inviteDaysFor('manager', 30)).toBe(7);
+    expect(inviteDaysFor('manager', 1)).toBe(1);
+    expect(inviteDaysFor('player', 30)).toBe(30);
     expect(DEFAULT_INVITE_DAYS).toBe(7);
     expect(DEFAULT_INVITE_ROLE).toBe('player');
   });

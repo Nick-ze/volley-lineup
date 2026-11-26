@@ -635,6 +635,83 @@ describe('resetToCloudMerge (after a demotion)', () => {
     expect(out.skipped.map((s) => s.key)).toEqual(['match:m2', 'set:m2/1']);
   });
 
+  // Audit H8 (review): after a reset the device may be made a manager, so `base` must describe
+  // exactly what it has — otherwise the first change detection pushes the difference.
+  describe('leaves nothing to push', () => {
+    const all = (slice: TeamSlice) =>
+      [...sliceToRecords(slice)].map(([key, p], i) => row(key, p, T0, { version: i + 1 }));
+    const toPush = (out: ReturnType<typeof merge>) =>
+      detectChanges(out.slice, { ...out.team, role: 'manager' }, T3).changes.map((c) => c.key);
+
+    it('a `base` entry the cloud never had is dropped (a viewer that adopted an old copy)', () => {
+      const base = golden();
+      const extra = { ...base.players[1], id: 'p-old', number: 97 };
+      const slice = { ...base, players: [...base.players, extra] };
+      const team = linkedTeam({ role: 'player', base: serverBase(slice, T0) });
+      expect(team.base['player:p-old']).toBeDefined();
+      const out = merge({ slice, team, rows: all(base), reset: true });
+      expect((out.slice as TeamSlice).players.map((p) => p.id)).not.toContain('p-old');
+      expect(out.team.base['player:p-old']).toBeUndefined();
+      expect(toPush(out)).toEqual([]);
+    });
+
+    it('a row that is invalid here keeps the device as it is: with and without the record', () => {
+      const base = golden();
+      const bad = { ...payload('player:p2'), firstName: 'x'.repeat(300) };
+      const rows = all(base).map((r) => (r.id === 'p2' ? { ...r, payload: bad } : r));
+      // The device has p2 (an older, valid copy): it stays, and isn't pushed back.
+      const kept = merge({ slice: base, team: synced(base), rows, reset: true });
+      expect(kept.skipped).toEqual([{ key: 'player:p2', reason: 'invalid' }]);
+      expect((kept.slice as TeamSlice).players.map((p) => p.id)).toContain('p2');
+      expect(kept.team.base['player:p2']).toMatchObject({ h: payloadHash(payload('player:p2')) });
+      expect(toPush(kept)).toEqual([]);
+      // The device lacks p3 and can't read the cloud's: it isn't pushed as deleted.
+      const without = { ...base, players: base.players.filter((p) => p.id !== 'p3') };
+      const rows3 = all(base).map((r) => (r.id === 'p3' ? { ...r, payload: bad } : r));
+      const missing = merge({ slice: without, team: synced(base), rows: rows3, reset: true });
+      expect(missing.team.base['player:p3']).toMatchObject({ h: '', del: true });
+      expect(toPush(missing)).toEqual([]);
+    });
+
+    it('an invalid row of another kind is left as it is on the device too', () => {
+      const base = golden();
+      const seasonKey = [...sliceToRecords(base).keys()].find((k) => k.startsWith('season:'));
+      if (!seasonKey) throw new Error('no season');
+      const bad = { ...payload(seasonKey), name: 'x'.repeat(300) };
+      const rows = all(base).map((r) =>
+        `${r.kind}:${r.id}` === seasonKey ? { ...r, payload: bad } : r,
+      );
+      const out = merge({ slice: base, team: synced(base), rows, reset: true });
+      expect(out.skipped).toEqual([{ key: seasonKey, reason: 'invalid' }]);
+      expect(out.slice).toBe(base);
+      expect(toPush(out)).toEqual([]);
+    });
+
+    it('a row whose id belongs to another local team isn’t pushed as deleted either', () => {
+      const base = golden();
+      const without = { ...base, players: base.players.filter((p) => p.id !== 'p3') };
+      const out = merge({
+        slice: without,
+        team: synced(base),
+        rows: all(base),
+        foreignIds: new Set(['player:p3']),
+        reset: true,
+      });
+      expect(out.skipped).toEqual([{ key: 'player:p3', reason: 'foreignId' }]);
+      expect(out.team.base['player:p3']).toMatchObject({ del: true });
+      expect(toPush(out)).toEqual([]);
+    });
+
+    it('records the cloud has without their parent count as deleted here', () => {
+      const base = golden();
+      const rows = all(base).filter((r) => r.kind !== 'opponent' || r.id !== 'o3');
+      const out = merge({ slice: base, team: synced(base), rows, reset: true });
+      expect(out.team.base['match:m2']).toMatchObject({ del: true });
+      expect(out.team.base['opponent:o3']).toBeUndefined();
+      expect(toPush(out)).toEqual([]);
+    });
+  });
+
   it('does nothing without the team row (a partial pull would drop records)', () => {
     const base = golden();
     const team = synced(base);

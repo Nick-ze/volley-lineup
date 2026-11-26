@@ -44,7 +44,7 @@ export const members = {
     remove: 'Remove',
     removeLabel: (name: string) => `Remove: ${name} from the team`,
     removeConfirm: (name: string) =>
-      `Remove ${name} from the team? They keep a copy on their device but get no more changes.`,
+      `Remove ${name} from the team? They keep a copy on their device but get no more changes. Open invite codes stop working: create new ones for people who haven’t joined yet.`,
   },
   invites: {
     heading: 'Invites',

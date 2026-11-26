@@ -24,7 +24,7 @@ Files:
 | Path                                                      | What                                                                        |
 | --------------------------------------------------------- | --------------------------------------------------------------------------- |
 | `supabase/migrations/*.sql`                               | The whole schema, applied in file-name order                                |
-| `supabase/tests/rls.sql`                                  | RLS and RPC tests T1–T30, in one rolled-back transaction                    |
+| `supabase/tests/rls.sql`                                  | RLS and RPC tests T1–T33, in one rolled-back transaction                    |
 | `supabase/tests/test-users.sql`, `test-users-cleanup.sql` | Password test users for the live check and QA                               |
 | `supabase/config.toml`, `supabase/templates/*.html`       | Supabase CLI config (local / self-hosted) and the code-only email templates |
 | `scripts/sync-live-check.mjs`                             | End-to-end check against the real project (not in CI)                       |
@@ -53,8 +53,11 @@ Files:
   isn't committed yet always belongs to a row less than 8 s old. **Self-hosted projects must set
   it too**: `alter role authenticated set statement_timeout = '8s';`.
 - **`invites`**: 10-character codes for a role, revocable. Player codes: many uses, 1–30 days.
-  Manager codes: **one use**, 1–7 days. Only managers see them. A member who was removed can't
-  rejoin with a code created before the removal; a newer code is a deliberate re-invite.
+  Manager codes: **one use**, 1–7 days. Only managers see them. A code works for any account
+  that knows it, so codes end with the access of the people who know them (v10 audit, H1):
+  when someone **stops being a manager** (made a player, removed, left, account deleted) the
+  team's open manager codes are revoked, and **removing a member revokes every open code** of
+  the team. A newer code is a deliberate re-invite.
 - **`match_holds`**: the device that scores a match live holds it for 15 minutes (advisory).
 - **`keepalive`**: one row, readable by `anon`, for the keep-alive workflow.
 - **Storage**: private bucket `team-photos`, objects `<teamId>/<photoId>` (JPEG / PNG / WebP, at
@@ -97,14 +100,22 @@ and 10 × 150 × 256 kB = 375 MB of photos.
   the `team_members` policy can read `team_members` without recursion. It also holds the table
   `team_removals` (who was removed when), which no API role can read.
 - Triggers on `team_members`: the **last-manager guard** (the last manager can't be demoted or
-  removed while other members remain), **drop empty team** (a team without members is deleted)
-  and **drop member holds** (leaving, removal or demotion ends the member's live holds).
+  removed while other members remain), **drop empty team** (a team without members is deleted),
+  **drop member holds** (leaving, removal or demotion ends the member's live holds) and
+  **revoke manager invites** (see `invites` above).
   `delete_team` and `delete_my_account` switch the guard off for their own transaction with
   `set_config('app.bypass_member_guard', 'on', true)`.
 - **Member changes lock the team row** (`select … for update`): the guard, `leave_team`,
-  `remove_member`, `set_member_role`, and `delete_my_account` (all the caller's teams, in id
-  order). Two managers demoting or removing each other at the same moment are serialized, so a
-  team never ends up without a manager.
+  `remove_member`, `set_member_role`, `create_invite`, `join_team` (team first, then the invite
+  row) and `delete_my_account` (all the caller's teams, in id order). Two managers demoting or
+  removing each other at the same moment are serialized, so a team never ends up without a
+  manager, and a join can't deadlock with a removal. `set_member_role`, `remove_member` and
+  `create_invite` check the caller's role **again once they hold the lock**: a call that waited
+  behind the caller's own demotion or removal is refused (`42501`).
+- **The AFTER triggers on `team_members` run as their owner** (`security definer`:
+  `drop_empty_team`, `drop_member_holds`, `revoke_manager_invites`). When a user is deleted in
+  the dashboard, the cascade's AFTER triggers fire as `supabase_auth_admin`, which has no rights
+  on these tables (v10 audit, migration `20261126130000`).
 - **Photos before teams**: `delete_team` and `delete_my_account` refuse with `VL008` while the
   team's storage folder still has photos (the app deletes them through the Storage API first),
   and `create_team` answers `'taken'` for an id whose folder still has photos. A new team can
@@ -116,8 +127,8 @@ and 10 × 150 × 256 kB = 375 MB of photos.
 | -------------------------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `create_team(p_team_id, p_display_name) → text`                                              | signed in             | Creates the team with the caller as manager → `'created'`. Existing id → `'member'` (caller already belongs to it) or `'taken'` (someone else's, or old photos remain: the app re-keys its team). At most 10 created teams. |
 | `leave_team(p_team_id)`                                                                      | member                | Leaves. The only member must delete the team instead.                                                                                                                                                                       |
-| `set_member_role(p_team_id, p_user_id, p_role)`                                              | manager               | Changes a member's role (also one's own, unless last manager).                                                                                                                                                              |
-| `remove_member(p_team_id, p_user_id)`                                                        | manager               | Removes a member and records the removal (older codes stop working for them).                                                                                                                                               |
+| `set_member_role(p_team_id, p_user_id, p_role)`                                              | manager               | Changes a member's role (also one's own, unless last manager). A demotion revokes the team's open manager codes.                                                                                                            |
+| `remove_member(p_team_id, p_user_id)`                                                        | manager               | Removes a member, records the removal and revokes every open invite code of the team.                                                                                                                                       |
 | `delete_team(p_team_id)`                                                                     | manager               | Deletes the team for everyone (members, records, invites, holds). `VL008` while photos remain: the app removes them first.                                                                                                  |
 | `push_records(p_team_id, p_device_id, p_records) → jsonb`                                    | manager               | Writes up to 200 records / 1 MB, last write wins. Returns per record `{kind, id, applied, version, at, updated_at, deleted, device_id}` plus `payload` when the server kept a newer row.                                    |
 | `pull_changes(p_team_id, p_after, p_limit = 500) → jsonb`                                    | member (invoker, RLS) | `{server_now, rows}`: records with `version > p_after`, oldest first, at most 1000. Each row: `{kind, id, payload, deleted, at, updated_at, version, device_id}`.                                                           |
@@ -146,13 +157,15 @@ and 10 × 150 × 256 kB = 375 MB of photos.
 ## Applying the migrations
 
 The files in `supabase/migrations` are the whole schema and must be applied in file-name order,
-once, to an empty project. Their names start with the version (`20261125HHMMSS`).
+once, to an empty project. Their names start with the version (`YYYYMMDDHHMMSS`). The later files
+(`20261126120000_v10_audit_invite_revocation.sql`, `20261126130000_v10_audit_member_triggers.sql`)
+change earlier ones with `create or replace` / `alter function` and never drop anything.
 
 - **The hosted project** is applied with the MCP tool `apply_migration`, one file at a time in
   order. That records each migration under the time it ran, so afterwards the orchestrator sets
   the recorded versions in `supabase_migrations.schema_migrations` to the file versions
-  (`20261125090000` … `20261125090600`). Then `supabase db push` sees them as applied and stays
-  in sync.
+  (`20261125090000` … `20261125090600`, and `20261126120000` / `20261126130000` from the v10
+  audit). Then `supabase db push` sees them as applied and stays in sync.
 - **Other projects** (new, self-hosted, local): `supabase link --project-ref <ref>` and
   `supabase db push`, or psql in file order:
   `for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done`
@@ -192,7 +205,10 @@ A failing check raises `FAIL T<n> …` and stops. Success ends with `ALL RLS TES
 | T25, T26 | account deletion: `anon` refused, blocked teams (VL001), photos first (VL008), sole teams deleted                                       |
 | T27      | delete for everyone (photos first, VL008); T27b: leftover photos make an id `'taken'`; dashboard deletion                               |
 | T28, T29 | `anon`: keepalive only, no tables, no RPCs                                                                                              |
-| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks                                                      |
+| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks and their order, role re-check, the member triggers  |
+| T31      | a manager made a player can't become manager again with a spare manager code, nor create a code or change a role                        |
+| T32      | removing a member revokes every open code: a second account can't use one; a code created afterwards works                              |
+| T33      | a player leaving revokes nothing; a manager leaving revokes the manager codes; `delete_team` still works                                |
 
 The team-row locks prevent a race between two sessions; one transaction can't reproduce it, so
 T30 checks that the functions take the lock.
@@ -221,7 +237,16 @@ Deleting a user under Authentication → Users is **blocked** (error `VL001`, la
 they are the last manager of a team that has other members. Make someone else manager of that
 team first (or delete the team in the app), then delete the user. Teams where the user was the
 only member are deleted with them; their photos stay in the bucket, so remove the
-`team-photos/<teamId>/` folder in Storage as well.
+`team-photos/<teamId>/` folder in Storage as well. Open manager codes of teams the user managed
+are revoked.
+
+Before migration `20261126130000` (v10 audit) this failed for **every** user who belonged to a
+team, with "permission denied for table team_members": the dashboard deletes as
+`supabase_auth_admin`, and the triggers that clean up after a membership ran with that role's
+rights. Checked on a local Postgres with the same roles by the audit's reviewer and by the
+privileges on the hosted project; **not tried through the real dashboard** (there was no user to
+delete). If it ever fails, delete the user in the SQL editor instead (it runs as `postgres`):
+`delete from auth.users where id = '<user id>';`.
 
 ## Keep-alive
 
@@ -237,7 +262,9 @@ keep-alive" → "Run workflow".
   **Enable workflow**.
 - **If the project paused anyway**, the app shows "Offline" and keeps working locally; nothing is
   lost. The owner restores it: Supabase dashboard → the project → **Restore project**. It takes a
-  few minutes; devices sync again on their next cycle.
+  few minutes; devices sync again on their next cycle. Devices stay signed in: since the v10
+  audit (H7) the app treats the paused project's answers to a token refresh as an outage
+  (`src/lib/sync/authFetch.ts`); 10.0.0 was signed out by them and needed a new sign-in email.
 - **A free project paused for more than 90 days can't be restored from the dashboard** any more
   (only its data can be downloaded). Don't let it get that far: check the workflow runs now and
   then.
@@ -290,7 +317,8 @@ After the migrations, the **security** advisor lists these WARNs on purpose:
 - **"RLS Enabled No Policy"** (INFO, lint 0008) on `private.team_removals`: on purpose. The table
   lives in the unexposed `private` schema and is closed to every API role; only the RPCs
   (`remove_member`, `join_team`) read and write it.
-- **"Leaked Password Protection Disabled"** (WARN, auth): it doesn't apply. The app signs in only
+- **"Leaked Password Protection Disabled"** (WARN, auth; not reported by the connector's advisor
+  on 2026-11-26, it may only show in the dashboard): it doesn't apply. The app signs in only
   with a 6-digit email code and never uses passwords; only the test users in
   `supabase/tests/test-users.sql` have one, and they are deleted after each test run. The check
   (HaveIBeenPwned) is a paid-plan setting. Leave it off on the free tier, or turn it on in
@@ -304,3 +332,13 @@ performance = no findings. `supabase/tests/rls.sql` passed on the applied schema
 
 The **performance** advisor may list "Unused Index" (INFO) for the new indexes until the app has
 traffic; they back the RLS filters, the pull cursor and the foreign keys and stay.
+
+## v10 audit (2026-11-26)
+
+`docs/AUDIT_V10.md` has the full audit. For the backend: the live database matched the migration
+files exactly (tables, policies, grants, triggers, all function bodies); the one backend finding
+(H1, invite codes outliving a demotion or removal) is fixed by
+`20261126120000_v10_audit_invite_revocation.sql`; `20261126130000_v10_audit_member_triggers.sql`
+makes deleting a user in the dashboard work (see above) and revokes, once, codes that had
+already outlived a demotion or removal. Advisors after both: unchanged (the trigger functions
+are in `private`, not executable by any API role).
