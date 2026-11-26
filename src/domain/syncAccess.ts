@@ -76,8 +76,10 @@ export function heldMatchIds(
  * The matches this device has yielded to another scorer (v10 audit M1), after its known holds
  * change from `prev` to `next`: a match another device holds now (unexpired) that this device
  * was the scorer of — its own hold was the last one it knew and **hadn't run out** — or had
- * already yielded. It stays yielded until that other hold ends (released, expired, or taken back
- * here).
+ * already yielded. It stays yielded until this device sees that other hold ended: a hold list
+ * without it, or the match taken back here. (A hold that merely runs out while this device is
+ * offline doesn't end it — the device can't tell whether the scorer stopped or kept refreshing;
+ * AUDIT_V10 "Open questions" 11.)
  *
  * Only a hold that was still running can have been taken over: the server gives a running hold
  * to another device only on "Take over". A device whose own hold had run out (the scorer in a

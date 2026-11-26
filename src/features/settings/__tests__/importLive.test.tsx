@@ -138,6 +138,20 @@ describe('importing while another device scores a match live (audit M15)', () =>
     expect(ralliesOfM2()).toBe(2);
   });
 
+  it('a scored match this device hasn’t pulled yet: a file that brings it is refused too', async () => {
+    // The hold list arrives before the match itself: the device knows of m-new only by its hold.
+    holdBy(hold('m-new'));
+    const before = selectAppData(store());
+    const withNew = backup((file) => ({
+      ...file,
+      matches: [...file.matches, { ...file.matches.find((m) => m.id === 'm2')!, id: 'm-new' }],
+    }));
+    await preview(withNew);
+    await fireEvent.press(screen.getByLabelText(t.transfer.import.merge));
+    expect(screen.getByTestId('import-status')).toHaveTextContent(t.sync.import.liveMatch);
+    expect(selectAppData(store())).toEqual(before);
+  });
+
   it('this device’s own hold and a hold that has run out don’t stand in the way', async () => {
     holdBy(hold('m2', { deviceId: 'dev1' }), hold('m1', { heldUntil: '2020-01-01T00:00:00.000Z' }));
     await preview();

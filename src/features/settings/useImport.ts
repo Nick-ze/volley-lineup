@@ -124,7 +124,9 @@ export function useImport() {
       // v10 audit M15 (found by the review): not while another device is scoring a match live
       // that the file would change. Its copy would replace the scorer's rallies here, be pushed
       // as this device's newer save, and take them from every device.
-      const live = heldMatchesNow(store.matches.map((m) => m.id));
+      const live = heldMatchesNow([
+        ...new Set([...store.matches, ...result.data.matches].map((m) => m.id)),
+      ]);
       if (importChangesMatches(store.matches, result.data.matches, live)) {
         setState({ step: 'error', error: 'LIVE_MATCH' });
         return;

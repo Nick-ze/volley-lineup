@@ -1212,7 +1212,7 @@ probes on three copies: fixed, before the fixes, `main`):
 - **M7**: not built — "Open questions" 10 (DECISIONS #330).
 
 Tests: `heldDelete.test.tsx` (M15, L18: 19 component cases), `heldMatches.test.tsx` (the hook
-and time: 5), `importLive.test.tsx` (7), `holdsAndCopies.test.ts` (L17, M15, L31 with two
+and time: 5), `importLive.test.tsx` (8), `holdsAndCopies.test.ts` (L17, M15, L31 with two
 devices: 10), `lostPhoto.test.ts` (M18: 16), `syncImport.test.ts`, `photos.test.ts`,
 `syncAccess.test.ts`, `syncRecords.test.ts` (domain, 100 %). One existing test in
 `src/lib/sync/__tests__/photos.test.ts` expected the old rule of M18 (the id taken off the
@@ -1234,6 +1234,16 @@ and ran two rounds of mutations. What it found, and what was done:
 
 Every fix was undone once to see its test fail (14 mutations, all noticed).
 
+**Second pass**, on these fixes (12 more probes, 24 mutations, the whole suite): "OK to merge".
+One gap, closed: the import guard only looked at matches on the device, so a file that brings a
+match the device knows is being scored but hasn't pulled yet (the holds arrive before the
+records) got through — such a match now counts as changed (`importLive.test.tsx`, 8 cases). On
+the take-over question the reviewer agrees that no rule in the app gets both cases right; the
+server would have to say when a hold began. Checked and sound: the folder check can't upload a
+wrong picture or replace one that is there, costs no request in a cycle with nothing to push,
+and a listing that wrongly says "missing" only leads to one upload attempt; the prune puts no
+id on a list for a record changed on this device, a local team or an unlinked one.
+
 **Limits that remain (PR 3)**
 
 - The folder check costs one small request per app run and team, at the first push of a team or
@@ -1243,4 +1253,7 @@ Every fix was undone once to see its test fail (14 mutations, all noticed).
   sync: at most a minute old while the app is open, none offline or before the first sync of
   an app run). The server would accept the deletion.
 - A hold without a readable end (L17) ends after 15 minutes on the device's own clock.
+- A record with a missing picture that already carries an unsynced change of this device at
+  the first start after the update still loses its `photoId`: it can't be told apart from a
+  picture this device set itself and failed to save.
 - M7 is not built ("Open questions" 10); the take-over question is open ("Open questions" 11).

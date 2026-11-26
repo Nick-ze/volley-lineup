@@ -476,7 +476,14 @@ describe('importChangesMatches (audit M15, review)', () => {
     expect(importChangesMatches(current, copy, ['m2'])).toBe(false);
     // Another match changes: that one isn't being scored.
     expect(importChangesMatches(current, edited, ['m1'])).toBe(false);
-    // A held match this device doesn't have can't be changed by the import.
+    // A held match neither the device nor the file has can't be changed by the import.
     expect(importChangesMatches(current, edited, ['unknown'])).toBe(false);
+  });
+
+  it('is true when the file brings a scored match the device hasn’t pulled yet', () => {
+    const m2 = current.find((m) => m.id === 'm2');
+    if (!m2) throw new Error('no m2');
+    const without = current.filter((m) => m.id !== 'm2');
+    expect(importChangesMatches(without, [...without, m2], ['m2'])).toBe(true);
   });
 });

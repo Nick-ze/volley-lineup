@@ -59,9 +59,10 @@ export function sharedTeamsInFile(
 }
 
 /**
- * True when the import's result changes or drops one of the matches `ids` (v10 audit M15, found
- * by the review) — matches another device is scoring live right now. The file's copy would
- * replace the scorer's rallies on this device, and from here for everyone.
+ * True when the import's result changes, drops or brings one of the matches `ids` (v10 audit
+ * M15, found by the review) — matches another device is scoring live right now. The file's copy
+ * would replace the scorer's rallies on this device, and from here for everyone. "Brings": a
+ * match the device knows is being scored but hasn't pulled yet would be pushed from the file.
  */
 export function importChangesMatches(
   current: readonly Match[],
@@ -69,11 +70,13 @@ export function importChangesMatches(
   ids: readonly string[],
 ): boolean {
   if (ids.length === 0) return false;
+  const before = new Map(current.map((m) => [m.id, m]));
   const after = new Map(result.map((m) => [m.id, m]));
-  return current.some((m) => {
-    if (!ids.includes(m.id)) return false;
-    const next = after.get(m.id);
-    return next === undefined || (next !== m && stableStringify(next) !== stableStringify(m));
+  return ids.some((id) => {
+    const was = before.get(id);
+    const next = after.get(id);
+    if (was === undefined || next === undefined) return was !== next;
+    return next !== was && stableStringify(next) !== stableStringify(was);
   });
 }
 
