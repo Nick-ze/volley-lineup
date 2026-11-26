@@ -169,7 +169,7 @@ describe('isTimeout (audit M5)', () => {
 
 describe('isRefusedContent (audit M4)', () => {
   it('is true for the SQLSTATEs with which the server refuses what a push sends', () => {
-    for (const code of ['23514', '22023', '22P05']) {
+    for (const code of ['23514', '22023', '22P05', '22P02']) {
       expect(isRefusedContent(backendError({ code, message: 'x' }))).toBe(true);
       expect(isRefusedContent(new BackendError('unknown', code))).toBe(true);
     }

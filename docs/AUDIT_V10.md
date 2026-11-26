@@ -684,6 +684,15 @@ rate limit is enough; 3 six digits stay; 4 yes; 5 yes. Questions 4 and 5 were th
    lost on the network still reads "invalid code" when entered again (the person is a member
    anyway; the team appears after the next sync). A fix is a server change: `join_team` would
    answer "joined" for a member of the code's team even when the code is used up. Wanted?
+   **Answered** (second chat's brief): not wanted.
+9. **M4: opponents whose id the server can't store.** Data upgraded from before seasons gives
+   opponents an id built from their name; with a long non-Latin name (about 33 Cyrillic or 22
+   Chinese characters) it is over the server's 200 characters. Since the push fixes such an
+   opponent no longer blocks the team's sync, but it and its matches stay on that device only
+   (a notice says so), nobody can change an id in the app, and a match moved to it — or another
+   device's opponent of the same name, which that device merges into it — waits there too. A
+   fix would give such opponents a new id on the device before the first upload (their matches
+   follow). Wanted?
 
 ## Owner dashboard steps
 
@@ -1090,8 +1099,43 @@ had that).
   is tried again in parts of at most half its size, and batches stay that small for the app run.
 - **M12**: the request timeout covers the answer's body as a pause limit (15 s without data).
 
-Tests: `unsendable.test.ts` (M3, M4: 16 two-device cases), `slowUplink.test.ts` (M5: 6),
+Tests: `unsendable.test.ts` (M3, M4: 15 two-device cases), `slowUplink.test.ts` (M5: 6),
 `fetchWithTimeout.test.ts` (M5, M12: 15, three of them through the real supabase-js client),
 `syncChanges.test.ts` (the domain rules, 100 %), `errors.test.ts`, `syncStatusUi.test.tsx`,
-`nameFieldLimits.test.tsx`. The test server (`fakeBackend.ts`) refuses what `push_records`
-refuses.
+`nameFieldLimits.test.tsx`, and the review's sequences in `pushReview.test.ts` (23). The test
+server (`fakeBackend.ts`) refuses what `push_records` refuses.
+
+**Independent review.** The reviewer compared the change with a copy without it (same test
+server), ran the nine import goldens and an upgraded v1 store through the pre-push check (no
+ordinary record is held), and 56 mutations of the change (11 survived: the 9 test gaps below
+and 2 that change nothing). What it found, and what was done:
+
+| Review finding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Done                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Data loss, new with this change: a deleted opponent took a match with it on the other devices.** Deletions always went, but the change that moves a match the cloud has to another opponent was held back when that opponent couldn't be pushed. The cloud got "opponent deleted" and never "match moved": every other device deleted the played match with the opponent. Two ways in: the user moves a match to an opponent that can't be pushed and deletes the old one; or a device with such an opponent merges another device's opponent of the same name into it (no user action at all) | fixed: the deletion of an opponent waits while the change of a match the cloud has is held back; a season's while that of such a match or opponent is (DECISIONS #321). `pushReview.test.ts`, 4 cases; domain rules in `syncChanges.test.ts` |
+| **Data loss, much easier to hit with this change: a pull between two requests of one push.** The deletion travelled before the move (kind order). `main` had this only for pushes of more than 100 records; taking a refused batch apart (M4) or small batches after a timeout (M5) made one refused record enough. The device that pulled in between deleted the match and never got it back (the match row arrives later without its sets and is skipped)                                                                                                                                      | fixed: the deletions of seasons and opponents travel last (DECISIONS #322). Two cases with the other device syncing before every request; this also closes the old over-100-records case                                                     |
+| **Stuck, new: a full photo folder could no longer be emptied.** The clean-up was skipped whenever a team or player record wasn't sent — also when only its new picture's upload was refused because the folder (150) is full                                                                                                                                                                                                                                                                                                                                                                     | fixed: skipped only while such a record is held back, not for a failed upload (as on `main`)                                                                                                                                                 |
+| The `unsent` notice named a record that had been fixed, never came back after a dismiss, and stayed after the team was unlinked                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | fixed: it follows what waits and goes with the team, a demotion or a removal (7 cases)                                                                                                                                                       |
+| Content refused with a fourth SQLSTATE: half an emoji in a text (the 60-character cut of old opponent names can leave one) is 22P02, which wasn't taken apart                                                                                                                                                                                                                                                                                                                                                                                                                                    | fixed, and checked against a local PostgreSQL 16 (`select '"\ud83c"'::jsonb` → 22P02, also through `json_to_record`): such a record is held back before the push, and 22P02 counts as refused content. Not run through the hosted API        |
+| Test gaps (mutations no test noticed): a new match pushed without its refused set; a match brought back after its deletion; one request per record instead of halves; a single large group blamed on the batch size; the team's own picture in the clean-up; the notice when the push fails; the body's pause limit taken from the longer upload time; what unlinking forgets                                                                                                                                                                                                                    | tests added (`pushReview.test.ts`, `fetchWithTimeout.test.ts`); each mutation now fails a test                                                                                                                                               |
+| The test server takes the six typed characters `\u0000` for a NUL and measures sizes in characters, not bytes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | left: no test depends on it                                                                                                                                                                                                                  |
+
+**Limits that remain (PR 2)**
+
+- While a changed match (or opponent) the cloud already has is held back, **no** opponent (or
+  season) deletion of that team leaves the device — the device can't know which one the cloud's
+  copy is under. They go by themselves once the held record goes.
+- A device with an opponent the server can't store ("Open questions" 9) that meets another
+  device's opponent of the same name merges the two on its own copy only: the other devices keep
+  theirs, with its matches.
+- Also on `main`, found by reading, not fixed: (1) the same "deletion without the move" can
+  still happen for a match another device took over from this one (its changes aren't pushed
+  while that hold lasts) when an opponent merge moves it — the app offers no way to do that by
+  hand; (2) when the server keeps another device's newer save of a match instead of this
+  device's move, the old opponent's deletion still goes in the same push — the ordinary "two
+  people changed the same thing" case, decided by save time; (3) for one cycle after the server
+  kept an older save of this device's own record, the clean-up can remove the picture that
+  record still shows.
+- After one timeout every later push of the app run, for every team, uses the smaller batches
+  (DECISIONS #323).
+- Not run against the hosted database or its API layer.

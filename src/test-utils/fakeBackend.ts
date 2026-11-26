@@ -85,13 +85,15 @@ const sqlError = (code: string, app: ConstructorParameters<typeof BackendError>[
  * What `push_records` refuses, for the whole batch and before anything is written (the checks of
  * `team_records` and the function's own, `supabase/migrations/20261125090100`): more than 200
  * records or 1 MB and a time that isn't one (22023); a character the database can't store
- * (22P05); an id over 200 characters, a payload over 64 kB, and a team / starters record under
- * another id than the team's (23514).
+ * (22P05) and half of a character pair (a lone surrogate, which `JSON.stringify` writes as
+ * `\ud83c`: 22P02); an id over 200 characters, a payload over 64 kB, and a team / starters
+ * record under another id than the team's (23514).
  */
 function refuseBadContent(teamId: string, items: readonly PushItem[]): void {
   const json = JSON.stringify(items);
   if (items.length > 200 || json.length > 1_048_576) throw sqlError('22023', 'unknown');
   if (json.includes('\\u0000')) throw sqlError('22P05', 'unknown');
+  if (/\\ud[89a-f][0-9a-f]{2}/i.test(json)) throw sqlError('22P02', 'unknown');
   for (const item of items) {
     if (Number.isNaN(Date.parse(item.at))) throw sqlError('22023', 'unknown');
     const singleton = item.kind === 'team' || item.kind === 'starters';

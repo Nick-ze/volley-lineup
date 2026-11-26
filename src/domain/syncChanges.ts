@@ -21,7 +21,7 @@ import {
   type TeamSlice,
 } from './syncRecords';
 import { parentKey } from './syncGraph';
-import { parsePayload } from './syncSchema';
+import { parsePayload, textIsWhole } from './syncSchema';
 import type { SyncData, SyncEdit, SyncedTeam } from './types';
 
 /** A record to push: its payload (null = deletion), hash (`''` = deletion) and save time. */
@@ -177,8 +177,10 @@ export function groupSignature(group: readonly LocalChange[]): string {
 
 /**
  * Why a change isn't pushed: this app itself would refuse the record when pulled (`invalid`: a
- * name over 200 or another text over 1000 characters), the server refused it as it is
- * (`refused`), or it belongs to a new record that isn't pushed (`parent`).
+ * name over 200 or another text over 1000 characters), the server refused it as it is or is
+ * known to (`refused`: also a text with half of a character pair, `textIsWhole`), or it depends
+ * on a record that isn't pushed (`parent`: a new record below a new one that waits; the deletion
+ * of a season or an opponent while the move of a match away from it waits).
  */
 export type HeldReason = 'invalid' | 'refused' | 'parent';
 
@@ -187,18 +189,30 @@ export interface HeldChange {
   reason: HeldReason;
 }
 
+/** The deletion of a season or an opponent: other devices let go of everything below it. */
+const dropsWhatIsBelow = (c: LocalChange): boolean =>
+  c.payload === null && (c.kind === 'season' || c.kind === 'opponent');
+
 /**
- * The changes that can be pushed (in order) and those that have to wait (v10 audit M3, M4):
+ * The changes that can be pushed (in push order) and those that have to wait (v10 audit M3, M4):
  * - a record that fails the validation every device applies to pulled records (`parsePayload`).
  *   Pushed, it would sync to nobody ("records skipped" elsewhere) — and as the team's own record
  *   it would keep the whole team from being downloaded;
  * - a group the server refused with exactly this content (`refused`: `groupSignature`s of
- *   whole groups, or of single records of a match the server already has);
+ *   whole groups, or of single records of a match the server already has), and a record with a
+ *   text the database can't store (`textIsWhole`);
  * - every new record below a new record that waits. Pushed without its parent it would be
  *   skipped as an orphan on the other devices, and not pulled again when the parent arrives;
- * - a new match with all its sets when one of them waits (it must not arrive without them).
+ * - a new match with all its sets when one of them waits (it must not arrive without them);
+ * - the deletion of an opponent while the change of a match the server has waits, and of a
+ *   season while that of such a match or opponent waits: the server's copy may still be below
+ *   it, and every other device would delete it together with the season or opponent.
  * A record the server already has (`base`, not deleted there) doesn't hold what is below it, and
- * deletions always go (unless the server refused them).
+ * every other deletion goes (unless the server refused it).
+ *
+ * Push order: as given, but the deletions of seasons and opponents last. A push can take several
+ * requests, and a device that pulls between two of them must see a match moved away before it
+ * sees its old season or opponent deleted (else it deletes the match with it).
  */
 export function sendableChanges(
   changes: readonly LocalChange[],
@@ -209,7 +223,7 @@ export function sendableChanges(
   const onServer = (key: string): boolean => base[key] !== undefined && !base[key].del;
   /** New records that aren't pushed: nothing new below them is pushed either. */
   const blocked = new Set<string>();
-  const ready: LocalChange[] = [];
+  const sendable: LocalChange[] = [];
   const held: HeldChange[] = [];
   for (const group of pushGroups(changes)) {
     const wasRefused = refused.has(groupSignature(group));
@@ -217,7 +231,11 @@ export function sendableChanges(
     for (const c of group) {
       if (c.payload !== null && parsePayload(c.kind, c.id, c.payload) === null) {
         reasons.set(c, 'invalid');
-      } else if (wasRefused || refused.has(groupSignature([c]))) {
+      } else if (
+        wasRefused ||
+        refused.has(groupSignature([c])) ||
+        !textIsWhole([c.id, c.payload])
+      ) {
         reasons.set(c, 'refused');
       } else if (c.payload !== null) {
         const parent = parentKey(teamId, c.key, c.payload);
@@ -229,14 +247,27 @@ export function sendableChanges(
     for (const c of group) {
       const reason = reasons.get(c) ?? (newMatch && reasons.size > 0 ? 'parent' : undefined);
       if (reason === undefined) {
-        ready.push(c);
+        sendable.push(c);
         continue;
       }
       held.push({ change: c, reason });
       if (c.payload !== null && !onServer(c.key)) blocked.add(c.key);
     }
   }
-  return { ready, held };
+  /** A change of a record the server has waits: the server's copy may be anywhere still. */
+  const waits = (kind: RecordKind): boolean =>
+    held.some((h) => h.change.kind === kind && h.change.payload !== null && onServer(h.change.key));
+  const matchWaits = waits('match');
+  const opponentWaits = waits('opponent');
+  const ready: LocalChange[] = [];
+  const last: LocalChange[] = [];
+  for (const c of sendable) {
+    if (!dropsWhatIsBelow(c)) ready.push(c);
+    else if (matchWaits || (c.kind === 'season' && opponentWaits)) {
+      held.push({ change: c, reason: 'parent' });
+    } else last.push(c);
+  }
+  return { ready: [...ready, ...last], held };
 }
 
 /** A short name for a record in a notice (its name fields; '' when it has none). */

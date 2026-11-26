@@ -535,6 +535,151 @@ describe('sendableChanges (audit M3, M4)', () => {
   });
 });
 
+describe('sendableChanges: the deletion of a season or an opponent (review of the audit’s push PR)', () => {
+  const reasons = (held: ReturnType<typeof sendableChanges>['held']) =>
+    Object.fromEntries(held.map((h) => [h.change.key, h.reason]));
+  const data = goldenTeamData();
+  const team = syncedWith(data, 't1');
+  const plan = (next: TeamData, refused?: ReadonlySet<string>) => {
+    const { changes } = detectChanges(sliceOf(next, 't1'), team, T1);
+    return { changes, ...sendableChanges(changes, team.base, 't1', refused) };
+  };
+  /** m1 (the server has it under o1) now belongs to `opponent`, and o1 is deleted. */
+  const movedM1 = (opponent: TeamData['opponents'][number]): TeamData => ({
+    ...data,
+    opponents: [...data.opponents.filter((o) => o.id !== 'o1'), opponent],
+    matches: data.matches.map((m) =>
+      m.id === 'm1' ? { ...m, opponentId: opponent.id, opponent: 'New VC' } : m,
+    ),
+  });
+  const newOpponent = (name: string) => ({ ...data.opponents[0], id: 'ox', name });
+
+  it('waits while the move of a match the server has waits: other devices still have it there', () => {
+    const { ready, held } = plan(movedM1(newOpponent(LONG)));
+    expect(reasons(held)).toEqual({
+      'opponent:ox': 'invalid',
+      'match:m1': 'parent',
+      'opponent:o1': 'parent',
+    });
+    expect(ready).toEqual([]);
+  });
+
+  it('goes once the move can go — after it, whatever the kinds’ order', () => {
+    const { changes, ready, held } = plan(movedM1(newOpponent('New VC')));
+    expect(keysOf(changes)).toEqual(['opponent:ox', 'opponent:o1', 'match:m1']);
+    expect(held).toEqual([]);
+    expect(keysOf(ready)).toEqual(['opponent:ox', 'match:m1', 'opponent:o1']);
+    expect(ready[2].payload).toBeNull();
+  });
+
+  it('waits too when the server refused the match’s change', () => {
+    const moved = movedM1(newOpponent('New VC'));
+    const match = plan(moved).changes.filter((c) => c.key === 'match:m1');
+    const { ready, held } = plan(moved, new Set([groupSignature(match)]));
+    expect(reasons(held)).toEqual({ 'match:m1': 'refused', 'opponent:o1': 'parent' });
+    expect(keysOf(ready)).toEqual(['opponent:ox']);
+  });
+
+  it('a season’s deletion waits for such a match as well, and for an opponent the server has', () => {
+    // m2 (server: season s2, opponent o3) moves to o2 in s1; s2 goes with its opponent o3.
+    const moved: TeamData = {
+      ...data,
+      seasons: data.seasons.filter((x) => x.id !== 's2'),
+      opponents: data.opponents.filter((o) => o.id !== 'o3'),
+      matches: data.matches.map((m) =>
+        m.id === 'm2' ? { ...m, seasonId: 's1', opponentId: 'o2', opponent: LONG } : m,
+      ),
+    };
+    const first = plan(moved);
+    expect(reasons(first.held)).toEqual({
+      'match:m2': 'invalid',
+      'season:s2': 'parent',
+      'opponent:o3': 'parent',
+    });
+    expect(first.ready).toEqual([]);
+
+    // An opponent the server has can't be pushed as it is now: only the season's deletion waits
+    // (an opponent's deletion takes matches along, and no match's change waits).
+    const renamed: TeamData = {
+      ...data,
+      seasons: data.seasons.filter((x) => x.id !== 's2'),
+      opponents: data.opponents
+        .filter((o) => o.id !== 'o3' && o.id !== 'o1')
+        .map((o) => (o.id === 'o2' ? { ...o, name: LONG } : o)),
+      matches: data.matches.filter((m) => m.teamId !== 't1'),
+    };
+    const second = plan(renamed);
+    expect(reasons(second.held)).toEqual({ 'opponent:o2': 'invalid', 'season:s2': 'parent' });
+    expect(keysOf(second.ready).slice(-2)).toEqual(['opponent:o1', 'opponent:o3']);
+  });
+
+  it('a new match that waits holds no deletion: the server has no copy of it anywhere', () => {
+    const fresh: TeamData = {
+      ...data,
+      opponents: data.opponents.filter((o) => o.id !== 'o2'),
+      matches: [
+        ...data.matches,
+        { ...data.matches[1], id: 'mx', seasonId: 's1', opponentId: 'o1', opponent: LONG },
+      ],
+    };
+    const { ready, held } = plan(fresh);
+    expect(reasons(held)).toEqual({ 'match:mx': 'invalid', 'set:mx/1': 'parent' });
+    expect(keysOf(ready)).toEqual(['opponent:o2']);
+  });
+
+  it('every other deletion keeps its place; seasons’ and opponents’ go last, seasons first', () => {
+    const next: TeamData = {
+      ...renameP2(data, 'Renamed'),
+      seasons: data.seasons.filter((x) => x.id !== 's2'),
+      opponents: data.opponents.filter((o) => o.id !== 'o3' && o.id !== 'o2'),
+      matches: data.matches.filter((m) => m.id !== 'm2'),
+    };
+    const { changes, ready, held } = plan(next);
+    expect(held).toEqual([]);
+    expect(keysOf(changes)).toEqual([
+      'season:s2',
+      'opponent:o2',
+      'opponent:o3',
+      'player:p2',
+      'match:m2',
+      'set:m2/1',
+    ]);
+    expect(keysOf(ready)).toEqual([
+      'player:p2',
+      'match:m2',
+      'set:m2/1',
+      'season:s2',
+      'opponent:o2',
+      'opponent:o3',
+    ]);
+    // Planned again (as after a refusal in the middle of a push), the order stays.
+    expect(sendableChanges(ready, team.base, 't1').ready).toEqual(ready);
+  });
+});
+
+describe('sendableChanges: a text the database can’t store (review of the audit’s push PR)', () => {
+  it('holds a record with half an emoji in a name as refused; whole emoji go', () => {
+    const half = renameP2(goldenTeamData(), `Ann\ud83c`);
+    const { ready, held } = sendableChanges(allChanges(half), {}, 't1');
+    expect(held.map((h) => [h.change.key, h.reason])).toEqual([['player:p2', 'refused']]);
+    expect(keysOf(ready)).not.toContain('player:p2');
+    const whole = renameP2(goldenTeamData(), 'Ann 🏐');
+    expect(sendableChanges(allChanges(whole), {}, 't1').held).toEqual([]);
+  });
+
+  it('holds a deletion under such an id too (it could never have been stored)', () => {
+    const change: LocalChange = {
+      key: 'player:p\udc00',
+      kind: 'player',
+      id: 'p\udc00',
+      payload: null,
+      hash: '',
+      at: T1,
+    };
+    expect(sendableChanges([change], {}, 't1').held).toEqual([{ change, reason: 'refused' }]);
+  });
+});
+
 describe('recordLabel', () => {
   const change = (kind: LocalChange['kind'], payload: LocalChange['payload']) => ({
     kind,

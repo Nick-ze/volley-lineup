@@ -23,7 +23,7 @@ import {
   transaction,
   unlinkTeams,
 } from './storeOps';
-import { needsReset, pullTeam } from './teamSync';
+import { forgetHeld, needsReset, pullTeam } from './teamSync';
 import type { CloudTeam, Joined, SyncResult, UploadItem } from './types';
 
 /** Errors that end a whole command (the others only fail one team). */
@@ -222,6 +222,7 @@ export function unlinkTeam(engine: SyncEngine, teamId: string): void {
   forgetPhotos(engine, teamId);
   engine.resetPending.delete(teamId);
   engine.forgetAwaited(teamId);
+  forgetHeld(engine, teamId);
   engine.rewire();
 }
 

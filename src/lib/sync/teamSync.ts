@@ -122,6 +122,7 @@ export function dropGoneTeams(core: EngineCore): void {
     forgetPhotos(core, teamId);
     core.resetPending.delete(teamId);
     core.awaited.delete(teamId);
+    forgetHeld(core, teamId);
   }
 }
 
@@ -400,31 +401,37 @@ const MAX_PUSH_TIMEOUTS = 2;
 export const MIN_PUSH_BYTES = 16 * 1024;
 
 /**
- * Tells the user once per app run that records of the team can't be saved to the cloud as they
- * are (v10 audit M3, M4), and takes the notice back when none is left.
+ * Tells the user that records of the team can't be saved to the cloud as they are (v10 audit
+ * M3, M4): once for the same records (also when the notice was dismissed), again when what it
+ * says has changed, and it is taken back when none is left.
  */
 function reportHeld(core: EngineCore, teamId: string, held: readonly HeldChange[]): void {
   const own = held.filter((h) => h.reason !== 'parent');
-  const key = `unsent:${teamId}`;
   if (own.length === 0) {
-    if (core.notified.delete(key)) dropNotices('unsent', teamId);
+    if (core.unsent.delete(teamId)) dropNotices('unsent', teamId);
     return;
   }
-  if (core.notified.has(key)) return;
-  core.notified.add(key);
-  notify({
-    kind: 'unsent',
-    teamId,
-    teamName: teamName(teamId),
-    count: own.length,
-    label: recordLabel(own[0].change),
-    reason:
-      own[0].reason === 'refused'
-        ? 'refused'
-        : textFits(own[0].change.payload)
-          ? 'invalid'
-          : 'tooLong',
-  });
+  const label = recordLabel(own[0].change);
+  const reason =
+    own[0].reason === 'refused'
+      ? 'refused'
+      : textFits(own[0].change.payload)
+        ? 'invalid'
+        : 'tooLong';
+  const said = `${own.length}|${reason}|${label}`;
+  if (core.unsent.get(teamId) === said) return;
+  core.unsent.set(teamId, said);
+  dropNotices('unsent', teamId);
+  notify({ kind: 'unsent', teamId, teamName: teamName(teamId), count: own.length, label, reason });
+}
+
+/**
+ * Forgets what this app run knows about records of the team that can't be pushed, and takes the
+ * notice back: the team is no longer synced from this device, or no longer edited here.
+ */
+export function forgetHeld(core: EngineCore, teamId: string): void {
+  core.refused.delete(teamId);
+  if (core.unsent.delete(teamId)) dropNotices('unsent', teamId);
 }
 
 /**
@@ -449,10 +456,9 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
   );
   const refused = core.refused.get(teamId) ?? new Set<string>();
   const plan = sendableChanges(changes, meta.base, teamId, refused);
-  const held = [...plan.held];
+  let held = plan.held;
   // Said before anything is sent: what this device won't push is known without a connection.
   if (held.length > 0) reportHeld(core, teamId, held);
-  const sent = new Set<string>();
   const { uploaded, ready } = await uploadPhotos(
     core,
     teamId,
@@ -500,12 +506,12 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       refused.add(groupSignature(batch));
       core.refused.set(teamId, refused);
       const rest = sendableChanges([...batch, ...queue.flat()], base, teamId, refused);
-      held.push(...rest.held);
+      // Everything that waits now, in the order the next cycle will find it.
+      held = sendableChanges(changes, meta.base, teamId, refused).held;
       queue.splice(0, queue.length, ...pushBatches(rest.ready, core.pushLimit));
       continue;
     }
     const pushed = batch;
-    for (const c of pushed) sent.add(c.key);
     const now = isoNow(core.clock);
     const added = photos;
     transaction((s) => {
@@ -545,12 +551,11 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
     });
   }
   reportHeld(core, teamId, held);
-  // A team or player record that wasn't pushed (it waits, or its photo couldn't be uploaded)
-  // may show another picture here than its row in the cloud: no clean-up then, or the picture
-  // that row still points at would be removed.
-  const waiting = changes.some(
-    (c) => (c.kind === 'team' || c.kind === 'player') && !sent.has(c.key),
-  );
+  // A team or player record that waits may show another picture here than its row in the cloud:
+  // no clean-up then, or the picture that row still points at would be removed. A record whose
+  // own new picture couldn't be uploaded doesn't count: the clean-up is what makes room in a
+  // full folder, so that the upload works the next time.
+  const waiting = held.some((h) => h.change.kind === 'team' || h.change.kind === 'player');
   if (!waiting) await cleanUpPhotos(core, teamId);
 }
 
@@ -574,4 +579,5 @@ export function dropTeam(core: EngineCore, teamId: string): void {
   );
   forgetPhotos(core, teamId);
   core.awaited.delete(teamId);
+  forgetHeld(core, teamId);
 }

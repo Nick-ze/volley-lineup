@@ -46,6 +46,11 @@ export interface EngineCore {
    */
   readonly refused: Map<string, Set<string>>;
   /**
+   * Per team, what its notice about records that can't be pushed last said (v10 audit M3, M4):
+   * it is shown again only when that has changed.
+   */
+  readonly unsent: Map<string, string>;
+  /**
    * The size of a push batch. Lowered when a push timed out on a slow connection (v10 audit
    * M5); it stays lowered for the app run.
    */

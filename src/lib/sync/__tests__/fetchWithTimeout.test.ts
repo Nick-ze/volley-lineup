@@ -161,6 +161,21 @@ describe('while the answer’s body arrives (audit M12)', () => {
     expect(signals[0].aborted).toBe(true);
   });
 
+  it('the limit of silence isn’t longer for a request that sent a lot (that time was for sending)', async () => {
+    // 8 kB may take 2 s until the answer starts (the slowest uplink a request still gets through
+    // on). Once it has started, silence is silence.
+    const body = 'x'.repeat(2 * 4096);
+    expect(requestTimeoutMs(body, PAUSE)).toBe(2000);
+    global.fetch = jest.fn(async () => answerInParts(['{"rows":['], STEP, true)) as typeof fetch;
+    const started = Date.now();
+    const error = await fetchWithTimeout(PAUSE)('https://x.test/rest/v1/rpc/push_records', {
+      method: 'POST',
+      body,
+    }).catch((e: unknown) => e);
+    expect(isTimeout(error)).toBe(true);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
   it('a slow but steady body is read to its end, however long it takes in all', async () => {
     const parts = ['{"rows":[', '1,', '2,', '3,', '4,', '5,', '6,', '7', ']}'];
     const original = answerInParts(parts, STEP);

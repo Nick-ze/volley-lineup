@@ -166,9 +166,11 @@ export const isTimeout = (error: unknown): boolean =>
 /**
  * SQLSTATEs with which the server refuses what a push sends, whatever else is in the batch
  * (v10 audit M4): a CHECK of `team_records` (an id over 200 characters, a payload over 64 kB),
- * a malformed or oversized batch, and a character the database can't store (NUL).
+ * a malformed or oversized batch, a character the database can't store (NUL: 22P05) and a text
+ * it can't read (half of a character pair: 22P02, checked against PostgreSQL 16; such records
+ * are already held back before the push, `textIsWhole`).
  */
-const REFUSED_CONTENT = new Set(['23514', '22023', '22P05']);
+const REFUSED_CONTENT = new Set(['23514', '22023', '22P05', '22P02']);
 
 /** The server refused the content of a push (not the caller, the connection or the team). */
 export const isRefusedContent = (error: unknown): boolean =>
