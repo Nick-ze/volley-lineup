@@ -26,12 +26,13 @@ import { createId } from '@/lib/id';
 import { useAppStore, useSyncRuntime, type AppState as StoreState } from '@/store';
 
 import type { BackendSession, SessionEvent, SyncBackend } from './backend';
-import { isoNow, systemClock, type Clock, type EngineCore } from './core';
+import { isoNow, systemClock, type AwaitedTeam, type Clock, type EngineCore } from './core';
 import { toSyncError } from './errors';
 import { setHolds } from './holdState';
 import {
   appState,
   dropHolds,
+  dropNotices,
   emitStatus,
   isApplying,
   linkedTeamIds,
@@ -90,6 +91,7 @@ export class SyncEngine implements EngineCore {
   readonly pendingPhotos = new Map<string, Set<string>>();
   readonly notified = new Set<string>();
   readonly yielded = new Set<string>();
+  readonly awaited = new Map<string, AwaitedTeam>();
   private current: BackendSession | null = null;
   private started = false;
   private needsRestore = false;
@@ -268,6 +270,7 @@ export class SyncEngine implements EngineCore {
         forgetPhotos(this, teamId);
         this.resetPending.delete(teamId);
         this.promoting.delete(teamId);
+        this.forgetAwaited(teamId);
       }
       if (gone.length > 0) dropHolds(gone);
       this.rewire();
@@ -437,6 +440,9 @@ export class SyncEngine implements EngineCore {
     const reset = needsReset(this, teamId);
     const report = await pullTeam(this, teamId, reset);
     if (reset && report.present) this.resetPending.delete(teamId);
+    // A team that can't be shown yet (audit M6): said once, and taken back when it has arrived.
+    if (report.waiting) this.noticeOnce({ kind: 'waiting', teamId, teamName: '' });
+    else this.forgetAwaited(teamId);
     if (this.promoting.has(teamId) && report.replaced) {
       // The copy and its bookkeeping are the cloud's now (`resetToCloudMerge` leaves nothing to
       // push): from here on this device's changes may be pushed.
@@ -449,6 +455,12 @@ export class SyncEngine implements EngineCore {
       this.noticeOnce({ kind: 'skipped', teamId, teamName: teamName(teamId), count: skipped });
     if (report.foreign > 0 || !report.present) return;
     await pushTeam(this, teamId, deviceId);
+  }
+
+  /** The team is no longer waited for (it arrived, or was unlinked): its notice goes too. */
+  forgetAwaited(teamId: string): void {
+    this.awaited.delete(teamId);
+    if (this.notified.delete(`waiting:${teamId}`)) dropNotices('waiting', teamId);
   }
 
   private noticeOnce(notice: SyncNotice): void {
@@ -469,6 +481,7 @@ export class SyncEngine implements EngineCore {
         forgetPhotos(this, teamId);
         this.resetPending.delete(teamId);
         this.promoting.delete(teamId);
+        this.forgetAwaited(teamId);
         notify({ kind: 'removed', teamId, teamName: name });
       } else if (role !== meta.role) {
         if (meta.role === 'manager') {

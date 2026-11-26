@@ -70,6 +70,14 @@ export const sync = {
       (undone === 1
         ? '1 change made here that hadn’t synced yet was undone.'
         : `${undone} changes made here that hadn’t synced yet were undone.`),
+    /**
+     * v10 audit M6: a team this account belongs to isn't on the device because its own record
+     * hasn't arrived or can't be read. There is no team name to show.
+     */
+    waiting:
+      'One of your shared teams can’t be shown yet: the cloud doesn’t have all of its data, or it was saved by a newer version of this app. It appears by itself once a manager’s device has synced. If it doesn’t, update the app.',
+    /** In `dismissLabel`, for a notice about a team without a name. */
+    aTeam: 'a shared team',
     dismiss: 'Dismiss',
     dismissLabel: (team: string) => `Dismiss: notice about ${team}`,
   },

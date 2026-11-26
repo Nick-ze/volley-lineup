@@ -9,7 +9,10 @@ import { makeStyles, radius, spacing, typography } from '@/theme';
 /** Narrowest the notice text gets before Dismiss wraps below it (px). */
 const TEXT_MIN_WIDTH = 200;
 
-/** What a notice says (removed, team deleted, demoted, records skipped, scoring taken over). */
+/**
+ * What a notice says (removed, team deleted, demoted, records skipped, scoring taken over, a
+ * team that can't be shown yet).
+ */
 export function syncNoticeText(t: Strings, notice: SyncNotice): string {
   const s = t.sync.notices;
   switch (notice.kind) {
@@ -23,6 +26,8 @@ export function syncNoticeText(t: Strings, notice: SyncNotice): string {
       return s.skipped(notice.teamName, notice.count);
     case 'takenOver':
       return s.takenOver(notice.teamName, notice.holder, notice.undone);
+    case 'waiting':
+      return s.waiting;
   }
 }
 
@@ -44,7 +49,9 @@ export function SyncNotices() {
           </Text>
           <Button
             label={t.sync.notices.dismiss}
-            accessibilityLabel={t.sync.notices.dismissLabel(notice.teamName)}
+            accessibilityLabel={t.sync.notices.dismissLabel(
+              notice.teamName || t.sync.notices.aTeam,
+            )}
             variant="ghost"
             compact
             onPress={() => dismissSyncNotice(notice)}

@@ -33,6 +33,20 @@ export interface EngineCore {
   readonly notified: Set<string>;
   /** Matches this device was scoring that another device holds now (`holdState.ts`). */
   readonly yielded: Set<string>;
+  /**
+   * Linked teams that aren't on the device because their own record hasn't arrived or can't be
+   * read (v10 audit M6), with where their last complete pull got to: until a newer `team` row
+   * shows up, a cycle only asks for what is new instead of pulling everything again. Kept for
+   * the app run only (the first cycle after a restart pulls completely once).
+   */
+  readonly awaited: Map<string, AwaitedTeam>;
+}
+
+export interface AwaitedTeam {
+  /** The pull position of the checks (the cursor rule of a normal pull, never stored). */
+  cursor: number;
+  /** The version of the `team` row the last complete pull saw (-1: none). */
+  teamRow: number;
 }
 
 export const isoNow = (clock: Clock): string => new Date(clock.now()).toISOString();

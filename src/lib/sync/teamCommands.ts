@@ -221,6 +221,7 @@ export function unlinkTeam(engine: SyncEngine, teamId: string): void {
   unlinkTeams([teamId]);
   forgetPhotos(engine, teamId);
   engine.resetPending.delete(teamId);
+  engine.forgetAwaited(teamId);
   engine.rewire();
 }
 

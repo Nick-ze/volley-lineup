@@ -1,7 +1,13 @@
 import { goldenTeamData, sliceOf } from '@/test-utils/syncFixtures';
 
 import { sliceToRecords } from './syncRecords';
-import { normalizeTimestamp, parsePayload, parseRemoteRow, storedSyncData } from './syncSchema';
+import {
+  normalizeTimestamp,
+  parsePayload,
+  parseRemoteRow,
+  storedSyncData,
+  withPullCursorsReset,
+} from './syncSchema';
 
 const records = sliceToRecords(sliceOf(goldenTeamData(), 't1'));
 const payload = (key: string) => records.get(key) as Record<string, unknown>;
@@ -147,5 +153,40 @@ describe('storedSyncData (audit L32)', () => {
     [{ deviceId: 'd1', account: null, teams: { t1: { ...team, base: { k: { v: 'x' } } } } }, 'd1'],
   ])('replaces a malformed slice %j with the empty one', (value, deviceId) => {
     expect(storedSyncData(value)).toEqual({ deviceId, account: null, teams: {} });
+  });
+});
+
+describe('withPullCursorsReset (audit L6)', () => {
+  const base = { 'team:t1': { v: 4, h: 'abc', at: '2026-11-26T10:00:00.000Z' } };
+  const edits = { 'player:p1': { at: '2026-11-26T11:00:00.000Z', h: 'def' } };
+  const team = { userId: 'u1', role: 'manager' as const, cursor: 57, base, edits, photos: ['ph1'] };
+  const account = { userId: 'u1', email: 'anna@example.test', profileId: 'pr1' };
+
+  it('puts every cursor back at 0 and keeps everything else', () => {
+    const sync = {
+      deviceId: 'd1',
+      account,
+      teams: { t1: team, t2: { ...team, role: 'player' as const, cursor: 0 }, t3: team },
+    };
+    const reset = withPullCursorsReset(sync);
+    expect(reset).toEqual({
+      deviceId: 'd1',
+      account,
+      teams: {
+        t1: { ...team, cursor: 0 },
+        t2: { ...team, role: 'player', cursor: 0 },
+        t3: { ...team, cursor: 0 },
+      },
+    });
+    expect(reset.teams.t1.base).toBe(base);
+    expect(reset.teams.t1.edits).toBe(edits);
+    expect(sync.teams.t1.cursor).toBe(57);
+  });
+
+  it('returns the same object when there is nothing to reset', () => {
+    const none = { deviceId: null, account: null, teams: {} };
+    expect(withPullCursorsReset(none)).toBe(none);
+    const fresh = { deviceId: 'd1', account, teams: { t1: { ...team, cursor: 0 } } };
+    expect(withPullCursorsReset(fresh)).toBe(fresh);
   });
 });

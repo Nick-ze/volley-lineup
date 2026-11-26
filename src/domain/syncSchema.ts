@@ -9,6 +9,12 @@
  *
  * Forward-compatibility limit: because unknown fields are dropped, fields a newer app version
  * adds to a record are lost when an older app version edits and pushes that record.
+ *
+ * Rows this version refuses are skipped, and once a team's pull cursor has passed them they are
+ * not pulled again (v10 audit L6). So an app version that accepts more than the one before it
+ * (a new field or kind, a longer text) MUST come with a new store version: the store migration
+ * then resets the pull cursors (`withPullCursorsReset`, `src/store/migrations.ts`) and every
+ * shared team is pulled once more from the start.
  */
 import { z } from 'zod';
 
@@ -175,4 +181,20 @@ export function storedSyncData(value: unknown): SyncData {
       ? (value as { deviceId: unknown }).deviceId
       : null;
   return { deviceId: typeof deviceId === 'string' ? deviceId : null, account: null, teams: {} };
+}
+
+/**
+ * The `sync` slice with every shared team's pull cursor back at 0 (v10 audit L6): the next pull
+ * reads the whole team again, so rows an older app version couldn't read arrive. Records the
+ * device already has are skipped by their version (`base`); a view-only copy is replaced by the
+ * cloud's (as after a demotion), which is what it should be anyway. The same object when every
+ * cursor is 0 already.
+ */
+export function withPullCursorsReset(sync: SyncData): SyncData {
+  const teams = Object.entries(sync.teams);
+  if (teams.every(([, team]) => team.cursor === 0)) return sync;
+  return {
+    ...sync,
+    teams: Object.fromEntries(teams.map(([id, team]) => [id, { ...team, cursor: 0 }])),
+  };
 }

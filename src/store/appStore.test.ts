@@ -4,7 +4,13 @@ import { buildExport, parseImport } from '@/domain/exportSchema';
 import { emptySetLineup } from '@/domain/lineup';
 import type { Formation } from '@/domain/types';
 
-import { STORAGE_KEY, emptyData, selectAppData, useAppStore } from './appStore';
+import {
+  STORAGE_KEY,
+  emptyData,
+  lastStoreWriteFailed,
+  selectAppData,
+  useAppStore,
+} from './appStore';
 import { migrateStore, STORE_VERSION } from './migrations';
 import type { AppData } from './types';
 import {
@@ -431,10 +437,103 @@ function withoutEmptySeasons(state: unknown): unknown {
   return rest;
 }
 
+describe('lastStoreWriteFailed (audit M19)', () => {
+  const setItem = jest.mocked(AsyncStorage.setItem);
+  const fail = () =>
+    setItem.mockImplementationOnce(async () => {
+      throw new Error('storage full');
+    });
+  /** A write of the data; resolves when it has finished, whatever its result. */
+  const write = (language: 'en' | 'de') =>
+    Promise.resolve(useAppStore.setState({ language })).then(
+      () => undefined,
+      () => undefined,
+    );
+
+  it('is false after a write that worked and true after one that failed', async () => {
+    await write('de');
+    expect(lastStoreWriteFailed()).toBe(false);
+    fail();
+    await write('en');
+    expect(lastStoreWriteFailed()).toBe(true);
+    await write('de');
+    expect(lastStoreWriteFailed()).toBe(false);
+  });
+
+  it('goes by the newest write, also when an older one finishes after it', async () => {
+    // The older write takes a while and works; the newer one fails at once.
+    let finishOlder: () => void = () => {};
+    setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishOlder = resolve;
+        }),
+    );
+    const older = write('de');
+    fail();
+    await write('en');
+    expect(lastStoreWriteFailed()).toBe(true);
+    finishOlder();
+    await older;
+    // What is stored is the older write's data: the newest state still isn't saved.
+    expect(lastStoreWriteFailed()).toBe(true);
+    await write('de');
+    expect(lastStoreWriteFailed()).toBe(false);
+  });
+
+  it('an older write that fails doesn’t count once a newer one has worked', async () => {
+    let failOlder: (e: Error) => void = () => {};
+    setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          failOlder = reject;
+        }),
+    );
+    const older = write('de');
+    await write('en');
+    failOlder(new Error('late failure'));
+    await older;
+    expect(lastStoreWriteFailed()).toBe(false);
+  });
+});
+
 describe('migrations', () => {
   it('passes current data through and rejects newer versions', () => {
     expect(migrateStore({ a: 1 }, STORE_VERSION)).toEqual({ a: 1 });
     expect(() => migrateStore({}, STORE_VERSION + 1)).toThrow();
+  });
+
+  describe('an update from a version with shared teams (audit L6)', () => {
+    const team = { userId: 'u1', role: 'manager', cursor: 57, base: {}, edits: {}, photos: [] };
+    const sync = { deviceId: 'd1', account: null, teams: { t1: team, t2: { ...team, cursor: 3 } } };
+
+    it('puts the pull cursors back at 0, so each team is pulled once more from the start', () => {
+      const next = migrateStore({ teams: [], sync }, 13, STORE_VERSION + 1) as {
+        teams: unknown[];
+        sync: typeof sync;
+      };
+      expect(next.sync.teams.t1).toEqual({ ...team, cursor: 0 });
+      expect(next.sync.teams.t2).toEqual({ ...team, cursor: 0 });
+      expect(next.sync.deviceId).toBe('d1');
+      expect(next.teams).toEqual([]);
+    });
+
+    it('leaves the cursors alone without an update', () => {
+      expect(migrateStore({ sync }, STORE_VERSION)).toEqual({ sync });
+    });
+
+    it('replaces a malformed sync slice by the empty one instead of failing', () => {
+      expect(migrateStore({ sync: { deviceId: 'd1', teams: 'x' } }, 13, 14)).toEqual({
+        sync: { deviceId: 'd1', account: null, teams: {} },
+      });
+      expect(migrateStore(null, 13, 14)).toBeNull();
+    });
+
+    it('an update from before v13 starts with the empty sync state', () => {
+      expect(migrateStore({ presets: [] }, 12, 14)).toMatchObject({
+        sync: { deviceId: null, account: null, teams: {} },
+      });
+    });
   });
 
   it('upgrades v1 data: sets gain liberoReplaces/events, state gains language', () => {

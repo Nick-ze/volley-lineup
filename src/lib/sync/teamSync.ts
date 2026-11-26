@@ -3,7 +3,8 @@
  * engine rules in `src/domain/syncMerge.ts`:
  * - pull: every page since the cursor (paged by the raw rows' versions), photos downloaded, then
  *   all pages merged at once in one store write — local changes noted (`detectChanges`) right
- *   before, in the same write. The cursor doesn't move while the team itself hasn't arrived.
+ *   before, in the same write. The cursor doesn't move while the team itself hasn't arrived; such
+ *   a team is pulled completely again only when its own record has changed (audit M6).
  * - push (managers): changes noted, photos uploaded first, batches pushed; every result is
  *   applied in one store write (records the server kept a newer save of are merged back).
  * - a match this device was scoring that another device took over (`holdState.ts`, audit M1):
@@ -21,7 +22,7 @@ import {
 } from '@/domain/syncMerge';
 import { goneTeamLinks, isGoneLink, withoutTeamLinks } from '@/domain/syncAccess';
 import { foreignKeys, matchOfRecord, parseRecordKey, type TeamSlice } from '@/domain/syncRecords';
-import { parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
+import { normalizeTimestamp, parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
 import type { SyncedTeam } from '@/domain/types';
 import { useSyncRuntime, type AppState } from '@/store';
 
@@ -62,6 +63,8 @@ export interface PullReport {
   replaced: boolean;
   /** Unsynced changes to matches another device took over that gave way to the scorer's rows. */
   yielded: number;
+  /** The team can't be shown yet: its own record hasn't arrived or can't be read (audit M6). */
+  waiting: boolean;
 }
 
 const NOTHING_PULLED: PullReport = {
@@ -70,6 +73,7 @@ const NOTHING_PULLED: PullReport = {
   present: false,
   replaced: false,
   yielded: 0,
+  waiting: false,
 };
 
 /**
@@ -97,6 +101,7 @@ export function dropGoneTeams(core: EngineCore): void {
   for (const teamId of gone) {
     forgetPhotos(core, teamId);
     core.resetPending.delete(teamId);
+    core.awaited.delete(teamId);
   }
 }
 
@@ -131,6 +136,72 @@ function maxVersion(rows: readonly unknown[]): number {
     if (typeof v === 'number' && v > max) max = v;
   }
   return max;
+}
+
+/** A raw row's version and server write time: all the cursor rule needs. */
+type RowMark = Pick<RemoteRecord, 'version' | 'updatedAt'>;
+
+function rowMark(raw: unknown): RowMark | null {
+  const row = raw as { version?: unknown; updated_at?: unknown } | null;
+  const updatedAt = typeof row?.updated_at === 'string' ? normalizeTimestamp(row.updated_at) : null;
+  return typeof row?.version === 'number' && updatedAt !== null
+    ? { version: row.version, updatedAt }
+    : null;
+}
+
+interface Pulled {
+  /** The rows that passed `parseRemoteRow`. */
+  rows: RemoteRecord[];
+  /** How many rows didn't. */
+  invalid: number;
+  /** The first page's server time. */
+  serverNow: string | null;
+  /** The highest version of a `team` row among the raw rows, readable or not (-1: none). */
+  teamRow: number;
+  /** Every raw row with a version and a write time, readable or not. */
+  marks: RowMark[];
+}
+
+/** Every page of the team's rows after `after` (paged by the raw rows' versions). */
+async function pullPages(core: EngineCore, teamId: string, after: number): Promise<Pulled> {
+  const pulled: Pulled = { rows: [], invalid: 0, serverNow: null, teamRow: -1, marks: [] };
+  for (;;) {
+    const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
+    // The cursor's 10 s overlap counts from the FIRST page's server time (audit H4): a write
+    // still uncommitted when page 1 was read can sit below page 1's newest rows, and no later
+    // page returns it. Every later page is read later, so the first time is safe for all rows.
+    pulled.serverNow ??= page.serverNow;
+    for (const raw of page.rows) {
+      const row = parseRemoteRow(raw);
+      if (row) pulled.rows.push(row);
+      else pulled.invalid += 1;
+      if ((raw as { kind?: unknown } | null)?.kind === 'team') {
+        pulled.teamRow = Math.max(pulled.teamRow, maxVersion([raw]));
+      }
+      const mark = rowMark(raw);
+      if (mark) pulled.marks.push(mark);
+    }
+    const top = maxVersion(page.rows);
+    if (page.rows.length < PULL_PAGE || top <= after) return pulled;
+    after = top;
+  }
+}
+
+/**
+ * v10 audit M6, for a linked team that isn't on the device: true when nothing can be gained from
+ * a complete pull, because the last one (in this app run) brought no readable record of the team
+ * itself and no newer `team` row has shown up since. Asks only for the rows after that pull's
+ * position; the position then moves on by the cursor rule of a normal pull, so a `team` row that
+ * commits late is still seen. It is never stored, so it may also pass rows this app version
+ * can't read (a stored cursor never does: such rows are read again until a newer one arrives).
+ */
+async function stillWaiting(core: EngineCore, teamId: string): Promise<boolean> {
+  const awaited = core.awaited.get(teamId);
+  if (!awaited) return false;
+  const news = await pullPages(core, teamId, awaited.cursor);
+  if (news.teamRow > awaited.teamRow) return false;
+  awaited.cursor = nextCursor(awaited.cursor, news.marks, news.serverNow ?? '');
+  return true;
 }
 
 /** Merges `rows` into the team in the store state `s` (changes noted first). */
@@ -179,28 +250,28 @@ export async function pullTeam(
 ): Promise<PullReport> {
   const start = appState().sync.teams[teamId];
   if (!start) return { ...NOTHING_PULLED };
-  if (isGone(start, sliceOf(appState(), teamId))) {
+  const local = sliceOf(appState(), teamId);
+  if (isGone(start, local)) {
     dropTeam(core, teamId);
     return { ...NOTHING_PULLED };
   }
-  const rows: RemoteRecord[] = [];
-  let invalid = 0;
-  let serverNow: string | null = null;
-  for (let after = reset ? 0 : start.cursor; ;) {
-    const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
-    // The cursor's 10 s overlap counts from the FIRST page's server time (audit H4): a write
-    // still uncommitted when page 1 was read can sit below page 1's newest rows, and no later
-    // page returns it. Every later page is read later, so the first time is safe for all rows.
-    serverNow ??= page.serverNow;
-    for (const raw of page.rows) {
-      const row = parseRemoteRow(raw);
-      if (row) rows.push(row);
-      else invalid += 1;
-    }
-    const top = maxVersion(page.rows);
-    if (page.rows.length < PULL_PAGE || top <= after) break;
-    after = top;
+  const here = local !== undefined;
+  if (here) core.awaited.delete(teamId);
+  else if (await stillWaiting(core, teamId)) return { ...NOTHING_PULLED, waiting: true };
+  const { rows, invalid, serverNow, teamRow, marks } = await pullPages(
+    core,
+    teamId,
+    reset ? 0 : start.cursor,
+  );
+  if (!here && !rows.some((r) => r.kind === 'team' && r.id === teamId)) {
+    // The team isn't on the device and its own record isn't among the rows (not saved yet, or
+    // not readable by this app version): nothing can be applied — no photo is downloaded and
+    // nothing is written. The cursor stays at 0, as always while the team isn't there; where
+    // this pull got to is remembered for this app run instead (audit M6).
+    core.awaited.set(teamId, { cursor: nextCursor(0, marks, serverNow ?? ''), teamRow });
+    return { ...NOTHING_PULLED, waiting: true };
   }
+  core.awaited.delete(teamId);
   const missing = await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
   const report: PullReport = { ...NOTHING_PULLED, invalid };
@@ -373,4 +444,5 @@ export function dropTeam(core: EngineCore, teamId: string): void {
     s.sync.teams[teamId] ? { sync: withTeamMeta(s.sync, teamId, undefined) } : s,
   );
   forgetPhotos(core, teamId);
+  core.awaited.delete(teamId);
 }
