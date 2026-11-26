@@ -22,8 +22,13 @@ export interface SharedTeam {
   canEdit: boolean;
 }
 
+/**
+ * `SHARED_CONFLICT`: a Merge would move records out of a shared team (audit H9) — nothing may
+ * be changed then.
+ */
 export type SyncImportResult =
-  { ok: true; data: TransferData; skippedTeams: string[] } | { ok: false; error: 'MERGE_CONFLICT' };
+  | { ok: true; data: TransferData; skippedTeams: string[] }
+  | { ok: false; error: 'MERGE_CONFLICT' | 'SHARED_CONFLICT' };
 
 /**
  * The shared teams of the sync state that are on the device, with edit rights (managers edit,
@@ -68,12 +73,50 @@ export function importWithSharedTeams(
   const skippedTeams = file.teams.filter((t) => viewerIds.has(t.id)).map((t) => t.id);
   // Viewer teams in the file are dropped first; managers' shared teams stay to be merged.
   const incoming = withoutTeams(file, viewerIds);
+  if (mode === 'merge' && movesSharedRecords(current, incoming, sharedIds)) {
+    return { ok: false, error: 'SHARED_CONFLICT' };
+  }
   const result =
     mode === 'merge'
       ? mergeData(current, incoming)
       : replaceKeepingShared(current, incoming, sharedIds);
   if (!result.ok) return result;
   return { ok: true, data: keepOwners(result.data, current, sharedIds), skippedTeams };
+}
+
+/** Every record of the data that belongs to a team, as [`kind:id`, team id]. */
+function recordTeams(data: TransferData): [string, string][] {
+  const seasonTeam = new Map(data.seasons.map((x) => [x.id, x.teamId]));
+  const pair = (kind: string, id: string, teamId: string): [string, string] => [
+    `${kind}:${id}`,
+    teamId,
+  ];
+  return [
+    ...data.players.map((p) => pair('player', p.id, p.teamId)),
+    ...data.seasons.map((x) => pair('season', x.id, x.teamId)),
+    ...data.opponents.map((o) => pair('opponent', o.id, seasonTeam.get(o.seasonId) ?? '')),
+    ...data.matches.map((m) => pair('match', m.id, m.teamId)),
+    ...data.presets.map((p) => pair('preset', p.id, p.teamId)),
+  ];
+}
+
+/**
+ * True when the file holds a record of a shared team (the same id) under another team. A Merge
+ * lets the file win per record id, so such a record would move to the file's team: the shared
+ * team loses it on this device, and a manager device then deletes it for every member (audit
+ * H9). It happens with a backup from before the team got a new id on upload (`rekeyTeam` keeps
+ * the ids of players, seasons, matches and presets), or a co-coach's export of the same team.
+ */
+function movesSharedRecords(
+  current: TransferData,
+  incoming: TransferData,
+  sharedIds: ReadonlySet<string>,
+): boolean {
+  const owners = new Map(recordTeams(current).filter(([, teamId]) => sharedIds.has(teamId)));
+  return recordTeams(incoming).some(([key, teamId]) => {
+    const owner = owners.get(key);
+    return owner !== undefined && owner !== teamId;
+  });
 }
 
 /**
