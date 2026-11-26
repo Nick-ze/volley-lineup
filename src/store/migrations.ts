@@ -26,6 +26,14 @@
  * changes.
  * v12 → v13 (app 10.0): device-only sync state `sync: { deviceId: null, account: null, teams: {} }`
  * (no account, no shared teams — the app behaves exactly as before until someone signs in).
+ *
+ * Every step from v13 on (v10 audit L6): the shared teams' pull cursors go back to the start
+ * (`withPullCursorsReset`: -1, a normal pull of everything, not the "replace by the cloud's copy"
+ * pull a view-only team with cursor 0 gets), so each team is pulled once more from the start
+ * after the update. Records an older app version couldn't
+ * read were skipped and the cursor has passed them; this is the only way they arrive. So a version
+ * that accepts more synced data than the one before (a new field, a longer text) must bump
+ * STORE_VERSION even when the stored shape itself doesn't change.
  */
 import {
   addRoleDefaults,
@@ -37,7 +45,11 @@ import {
 } from '@/domain/legacyData';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
+import { storedSyncData, withPullCursorsReset } from '@/domain/syncSchema';
 export const STORE_VERSION = 13;
+
+/** The first store version with shared teams (the `sync` slice). */
+const FIRST_SYNC_VERSION = 13;
 
 function v1ToV2(state: Rec): Rec {
   return { language: 'en', ...state, matches: mapSets(state.matches, addSetLogDefaults) };
@@ -52,11 +64,13 @@ function v6ToV7(state: Rec): Rec {
   return { ...state, ...mapLineups(state, (x) => upgradeLineupToFormation(x, state.players)) };
 }
 
-export function migrateStore(persisted: unknown, fromVersion: number): unknown {
-  if (fromVersion > STORE_VERSION) {
-    throw new Error(
-      `Stored data version ${fromVersion} is newer than this app (${STORE_VERSION}).`,
-    );
+export function migrateStore(
+  persisted: unknown,
+  fromVersion: number,
+  toVersion: number = STORE_VERSION,
+): unknown {
+  if (fromVersion > toVersion) {
+    throw new Error(`Stored data version ${fromVersion} is newer than this app (${toVersion}).`);
   }
   let state = persisted;
   if (fromVersion < 2 && isRec(state)) state = v1ToV2(state);
@@ -71,5 +85,8 @@ export function migrateStore(persisted: unknown, fromVersion: number): unknown {
   // v11 → v12: `Team.captainId` is optional, so nothing changes.
   if (fromVersion < 13 && isRec(state))
     state = { sync: { deviceId: null, account: null, teams: {} }, ...state };
+  // An update from any version that already had shared teams (see the head of this file).
+  if (fromVersion >= FIRST_SYNC_VERSION && fromVersion < toVersion && isRec(state))
+    state = { ...state, sync: withPullCursorsReset(storedSyncData(state.sync)) };
   return state;
 }

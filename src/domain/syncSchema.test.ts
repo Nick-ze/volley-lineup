@@ -1,7 +1,14 @@
 import { goldenTeamData, sliceOf } from '@/test-utils/syncFixtures';
 
 import { sliceToRecords } from './syncRecords';
-import { normalizeTimestamp, parsePayload, parseRemoteRow, storedSyncData } from './syncSchema';
+import {
+  normalizeTimestamp,
+  parsePayload,
+  parseRemoteRow,
+  REPULL_CURSOR,
+  storedSyncData,
+  withPullCursorsReset,
+} from './syncSchema';
 
 const records = sliceToRecords(sliceOf(goldenTeamData(), 't1'));
 const payload = (key: string) => records.get(key) as Record<string, unknown>;
@@ -147,5 +154,49 @@ describe('storedSyncData (audit L32)', () => {
     [{ deviceId: 'd1', account: null, teams: { t1: { ...team, base: { k: { v: 'x' } } } } }, 'd1'],
   ])('replaces a malformed slice %j with the empty one', (value, deviceId) => {
     expect(storedSyncData(value)).toEqual({ deviceId, account: null, teams: {} });
+  });
+});
+
+describe('withPullCursorsReset (audit L6)', () => {
+  const base = { 'team:t1': { v: 4, h: 'abc', at: '2026-11-26T10:00:00.000Z' } };
+  const edits = { 'player:p1': { at: '2026-11-26T11:00:00.000Z', h: 'def' } };
+  const team = { userId: 'u1', role: 'manager' as const, cursor: 57, base, edits, photos: ['ph1'] };
+  const account = { userId: 'u1', email: 'anna@example.test', profileId: 'pr1' };
+
+  it('sends every team that has pulled back to the start and keeps everything else', () => {
+    const viewer = { ...team, role: 'player' as const, cursor: 12 };
+    const sync = { deviceId: 'd1', account, teams: { t1: team, t2: viewer, t3: team } };
+    const reset = withPullCursorsReset(sync);
+    expect(REPULL_CURSOR).toBe(-1);
+    expect(reset).toEqual({
+      deviceId: 'd1',
+      account,
+      teams: {
+        t1: { ...team, cursor: REPULL_CURSOR },
+        // A view-only team too — not 0, which would replace its copy by the cloud's.
+        t2: { ...viewer, cursor: REPULL_CURSOR },
+        t3: { ...team, cursor: REPULL_CURSOR },
+      },
+    });
+    expect(reset.teams.t1.base).toBe(base);
+    expect(reset.teams.t1.edits).toBe(edits);
+    expect(sync.teams.t1.cursor).toBe(57);
+  });
+
+  it('leaves a cursor at 0 alone: nothing pulled yet, or a reset pull still to come', () => {
+    const waiting = { ...team, role: 'player' as const, cursor: 0 };
+    const sync = { deviceId: 'd1', account, teams: { t1: team, t2: waiting } };
+    const reset = withPullCursorsReset(sync);
+    expect(reset.teams.t1.cursor).toBe(REPULL_CURSOR);
+    expect(reset.teams.t2).toBe(waiting);
+  });
+
+  it('returns the same object when there is nothing to reset', () => {
+    const none = { deviceId: null, account: null, teams: {} };
+    expect(withPullCursorsReset(none)).toBe(none);
+    const fresh = { deviceId: 'd1', account, teams: { t1: { ...team, cursor: 0 } } };
+    expect(withPullCursorsReset(fresh)).toBe(fresh);
+    const again = withPullCursorsReset({ deviceId: 'd1', account, teams: { t1: team } });
+    expect(withPullCursorsReset(again)).toBe(again);
   });
 });

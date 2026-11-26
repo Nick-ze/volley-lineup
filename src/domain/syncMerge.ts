@@ -491,7 +491,7 @@ export function applyPushResults(
  */
 export function nextCursor(
   cursor: number,
-  rows: readonly RemoteRecord[],
+  rows: readonly Pick<RemoteRecord, 'version' | 'updatedAt'>[],
   serverNow: string,
   overlapMs = 10_000,
 ): number {

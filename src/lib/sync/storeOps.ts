@@ -7,7 +7,13 @@ import { replaceTeamSlice, teamSlice, type TeamData, type TeamSlice } from '@/do
 import { pendingCount } from '@/domain/syncChanges';
 import { nextSyncStatus, type SyncStatusEvent } from '@/domain/syncStatus';
 import type { SyncData, SyncedTeam, SyncNotice } from '@/domain/types';
-import { useAppStore, useSyncRuntime, type AppState, type AppStore } from '@/store';
+import {
+  lastStoreWriteFailed,
+  useAppStore,
+  useSyncRuntime,
+  type AppState,
+  type AppStore,
+} from '@/store';
 
 /** A member's display name / a hold's holder name: at most this long on the server. */
 const NAME_LIMIT = 60;
@@ -20,13 +26,20 @@ let applying = 0;
 export const isApplying = (): boolean => applying > 0;
 
 /**
- * One atomic store write by the engine. Return `s` itself for "no change" (then nothing is
- * written or persisted).
+ * One atomic store write by the engine. Return `s` itself for "no change": then the store isn't
+ * called at all (v10 audit M19) — zustand's persist rewrites the whole stored data after every
+ * `set`, also when the state is the same object, which cost three full writes per idle cycle.
+ * The one exception: when the last write of the data failed, "no change" still goes through the
+ * store, so the next cycle repeats the write as it always did.
  */
 export function transaction(fn: (s: AppState) => Partial<AppState>): void {
   applying += 1;
   try {
-    useAppStore.getState().syncTransaction(fn);
+    const state = useAppStore.getState();
+    const next = fn(state);
+    if (next === state && !lastStoreWriteFailed()) return;
+    // Nothing runs between reading the state and this call, so `next` is still its successor.
+    state.syncTransaction(() => next);
   } finally {
     applying -= 1;
   }
@@ -124,6 +137,14 @@ export function updatePending(userId: string | null): void {
 
 export function notify(notice: SyncNotice): void {
   useSyncRuntime.setState((r) => ({ notices: [...r.notices, notice] }));
+}
+
+/** Takes back the notices of one kind about a team (what they said no longer holds). */
+export function dropNotices(kind: SyncNotice['kind'], teamId: string): void {
+  useSyncRuntime.setState((r) => {
+    const notices = r.notices.filter((n) => n.kind !== kind || n.teamId !== teamId);
+    return notices.length === r.notices.length ? r : { notices };
+  });
 }
 
 /** Resolves once the persisted store has loaded. */

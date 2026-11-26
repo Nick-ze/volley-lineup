@@ -61,6 +61,9 @@ export const sync: Strings['sync'] = {
       (undone === 1
         ? '1 Änderung von diesem Gerät, die noch nicht synchronisiert war, wurde zurückgenommen.'
         : `${undone} Änderungen von diesem Gerät, die noch nicht synchronisiert waren, wurden zurückgenommen.`),
+    waiting:
+      'Eines deiner geteilten Teams kann noch nicht angezeigt werden: In der Cloud fehlen Daten davon, oder es wurde mit einer neueren Version dieser App gespeichert. Es erscheint von selbst, sobald das Gerät eines Trainers synchronisiert hat. Sonst aktualisiere die App.',
+    aTeam: 'einem geteilten Team',
     dismiss: 'Schließen',
     dismissLabel: (team: string) => `Schließen: Hinweis zu ${team}`,
   },

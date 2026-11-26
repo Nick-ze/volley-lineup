@@ -290,7 +290,11 @@ export interface SyncedTeam {
   userId: string;
   /** Cached role (refreshed every sync), so view-only also works offline. */
   role: TeamRole;
-  /** Highest gap-free server version pulled. */
+  /**
+   * Highest gap-free server version pulled. 0: nothing yet — on a view-only copy with a `base`
+   * also "replace it by the cloud's on the next pull". -1 (`REPULL_CURSOR`): pull everything
+   * again and merge it the normal way (after an app update, v10 audit L6).
+   */
   cursor: number;
   base: Record<string, SyncBase>;
   edits: Record<string, SyncEdit>;
@@ -346,7 +350,12 @@ export type SyncNotice =
   | { kind: 'demoted'; teamId: string; teamName: string; undone: number }
   | { kind: 'skipped'; teamId: string; teamName: string; count: number }
   /** Another device took over scoring a match: `undone` unsynced changes here gave way. */
-  | { kind: 'takenOver'; teamId: string; teamName: string; holder: string; undone: number };
+  | { kind: 'takenOver'; teamId: string; teamName: string; holder: string; undone: number }
+  /**
+   * A linked team can't be shown yet: its own record hasn't arrived or can't be read by this app
+   * version (v10 audit M6). The team isn't on the device, so there is no name (`teamName` '').
+   */
+  | { kind: 'waiting'; teamId: string; teamName: string };
 
 /** v10: an advisory lease on a match while one device scores it live (`match_holds`). */
 export interface MatchHold {

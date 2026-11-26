@@ -9,6 +9,12 @@
  *
  * Forward-compatibility limit: because unknown fields are dropped, fields a newer app version
  * adds to a record are lost when an older app version edits and pushes that record.
+ *
+ * Rows this version refuses are skipped, and once a team's pull cursor has passed them they are
+ * not pulled again (v10 audit L6). So an app version that accepts more than the one before it
+ * (a new field or kind, a longer text) MUST come with a new store version: the store migration
+ * then resets the pull cursors (`withPullCursorsReset`, `src/store/migrations.ts`) and every
+ * shared team is pulled once more from the start.
  */
 import { z } from 'zod';
 
@@ -175,4 +181,32 @@ export function storedSyncData(value: unknown): SyncData {
       ? (value as { deviceId: unknown }).deviceId
       : null;
   return { deviceId: typeof deviceId === 'string' ? deviceId : null, account: null, teams: {} };
+}
+
+/**
+ * A pull cursor below every server version: the next pull reads the whole team again and merges
+ * it the normal way. Unlike 0 it doesn't mark a view-only copy for replacement by the cloud's
+ * (`needsReset`: a viewer with cursor 0 and a `base`).
+ */
+export const REPULL_CURSOR = -1;
+
+/**
+ * The `sync` slice with the pull cursor of every shared team that has pulled before set to
+ * `REPULL_CURSOR` (v10 audit L6): the next pull reads the whole team again, so rows an older app
+ * version couldn't read arrive. Records the device already has are skipped by their version
+ * (`base`), everything else is merged as on any pull — on a view-only device too: a reset pull
+ * there would delete its copies of records whose newest row it still can't read, skip what
+ * changed meanwhile when the team's own row is such a row, and strip references a later row
+ * brings back (found by the review of this fix). A cursor at 0 stays 0: nothing was pulled yet,
+ * or a reset pull is still to come. The same object when nothing changes.
+ */
+export function withPullCursorsReset(sync: SyncData): SyncData {
+  const teams = Object.entries(sync.teams);
+  if (teams.every(([, team]) => team.cursor <= 0)) return sync;
+  return {
+    ...sync,
+    teams: Object.fromEntries(
+      teams.map(([id, team]) => [id, team.cursor > 0 ? { ...team, cursor: REPULL_CURSOR } : team]),
+    ),
+  };
 }

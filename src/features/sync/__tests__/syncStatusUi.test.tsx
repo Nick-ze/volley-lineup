@@ -151,6 +151,21 @@ describe('sync notices', () => {
     );
   });
 
+  it('says that a shared team can’t be shown yet; Dismiss names "a shared team" (audit M6)', async () => {
+    const waiting: SyncNotice = { kind: 'waiting', teamId: 'w', teamName: '' };
+    useSyncRuntime.setState({ notices: [waiting] });
+    await renderApp('/teams');
+    expect(screen.getByText(t.sync.notices.waiting)).toBeTruthy();
+    expect(t.sync.notices.waiting).toMatch(/can’t be shown yet/);
+    expect(de.sync.notices.waiting).toMatch(/kann noch nicht angezeigt werden/);
+    const dismiss = screen.getByRole('button', { name: 'Dismiss: notice about a shared team' });
+    expect(de.sync.notices.dismissLabel(de.sync.notices.aTeam)).toBe(
+      'Schließen: Hinweis zu einem geteilten Team',
+    );
+    await fireEvent.press(dismiss);
+    expect(useSyncRuntime.getState().notices).toEqual([]);
+  });
+
   it('words the demotion without undone changes and several skipped records', () => {
     expect(t.sync.notices.demoted('Gamma', 0)).toBe('You can now only view Gamma.');
     expect(t.sync.notices.demoted('Gamma', 1)).toContain('1 unsynced change was undone');
