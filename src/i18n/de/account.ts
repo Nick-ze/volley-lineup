@@ -29,7 +29,9 @@ export const account: Strings['account'] = {
     switchConfirm: (email, pending) =>
       `Die Teams von ${email} bleiben als lokale Kopien auf diesem Gerät.` +
       (pending > 0
-        ? ` ${changes(pending)}, die noch nicht synchronisiert sind, kommen nicht in die Cloud.`
+        ? pending === 1
+          ? ' 1 Änderung, die noch nicht synchronisiert ist, kommt nicht in die Cloud.'
+          : ` ${changes(pending)}, die noch nicht synchronisiert sind, kommen nicht in die Cloud.`
         : '') +
       ' Weiter?',
     switchContinue: 'Weiter',
@@ -75,7 +77,7 @@ export const account: Strings['account'] = {
     signOutHint:
       'Deine Daten bleiben auf diesem Gerät. Geteilte Teams werden wieder synchronisiert, wenn du dich anmeldest.',
     signOutConfirm: (pending) =>
-      `${changes(pending)} werden bei der nächsten Anmeldung synchronisiert. Jetzt abmelden?`,
+      `${changes(pending)} ${pending === 1 ? 'wird' : 'werden'} bei der nächsten Anmeldung synchronisiert. Jetzt abmelden?`,
     signedOut: 'Du bist nicht angemeldet.',
   },
   deleteAccount: {

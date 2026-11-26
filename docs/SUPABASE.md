@@ -40,7 +40,8 @@ Files:
   one of `team`, `player`, `season`, `opponent`, `match`, `set` (id `<matchId>/<n>`), `preset`,
   `starters` (`team` and `starters` use the team id). `payload` is the JSON of the entity, at
   most 64 kB; a deletion is a tombstone (`deleted = true`, `payload` null). Player descriptions
-  and profile data never leave the device.
+  and profile photos never leave the device; of the profile, only its **name** is sent, as the
+  member's display name (`team_members.display_name`, also the live-hold name).
 - **Last write wins** per record: the server keeps the write with the newer
   `(client_updated_at, device_id)`. The client time is truncated to milliseconds and clamped to
   at most one minute ahead of the server. Timestamps come back as ISO strings with milliseconds
@@ -172,10 +173,10 @@ change earlier ones with `create or replace` / `alter function` and never drop a
   (as `postgres`). Locally, `supabase start` applies them automatically. Self-hosted: keep the
   `authenticated` statement_timeout at 8 s (see [Model](#model)).
 
-Afterwards: run the RLS tests, check the advisors (Dashboard → Advisors, or MCP `get_advisors`
-for `security` and `performance`), and regenerate the app's types
-(`src/lib/sync/database.types.ts`, MCP `generate_typescript_types` or
-`supabase gen types typescript --project-id <ref>`).
+Afterwards: run the RLS tests and check the advisors (Dashboard → Advisors, or MCP `get_advisors`
+for `security` and `performance`). The app has no generated database types: every answer is
+checked with a zod schema in `src/lib/sync/supabaseBackend.ts`, so a changed RPC answer needs a
+change there.
 
 The project was created with "automatically expose new tables" **off** and "enable RLS on new
 tables" **on**. The migrations don't rely on either: they enable RLS and grant explicitly.
@@ -317,21 +318,39 @@ After the migrations, the **security** advisor lists these WARNs on purpose:
 - **"RLS Enabled No Policy"** (INFO, lint 0008) on `private.team_removals`: on purpose. The table
   lives in the unexposed `private` schema and is closed to every API role; only the RPCs
   (`remove_member`, `join_team`) read and write it.
-- **"Leaked Password Protection Disabled"** (WARN, auth; not reported by the connector's advisor
-  on 2026-11-26, it may only show in the dashboard): it doesn't apply. The app signs in only
-  with a 6-digit email code and never uses passwords; only the test users in
-  `supabase/tests/test-users.sql` have one, and they are deleted after each test run. The check
-  (HaveIBeenPwned) is a paid-plan setting. Leave it off on the free tier, or turn it on in
-  **Authentication → Providers → Email** if passwords are ever used.
+
+"Leaked Password Protection Disabled" (auth) is no longer reported by the advisor (checked
+2026-11-26, v10 audit L13). It wouldn't apply anyway: the app signs in with an email code only.
 
 Checked on the live project after applying the migrations (2026-11-25): security = exactly the
-items above (12 RPCs + `rls_auto_enable` for 0029, `rls_auto_enable` for 0028, the 0008 INFO,
-the leaked-password WARN);
+items above (12 RPCs + `rls_auto_enable` for 0029, `rls_auto_enable` for 0028, the 0008 INFO);
 performance = no findings. `supabase/tests/rls.sql` passed on the applied schema, and
 `scripts/sync-live-check.mjs` passed every step with the test users (removed afterwards).
 
 The **performance** advisor may list "Unused Index" (INFO) for the new indexes until the app has
 traffic; they back the RLS filters, the pull cursor and the foreign keys and stay.
+
+## Known limits (by design)
+
+Listed by the v10 audit and kept as they are (`docs/AUDIT_V10.md`):
+
+- **`create_team` says whether a team id exists** (`'taken'`, L3). Team ids are random UUIDs, so
+  the answer tells a stranger nothing they could use.
+- **A manager can push a tombstone for the `team` record** (L7). The app never does; clients
+  ignore it, and new downloads of the team wait until a manager edits the team again. Only a
+  hostile manager could do it, and they could delete the team anyway.
+- **Managers are equals** (L8): any manager can remove the team's creator, change roles or
+  delete the team for everyone. Only make people managers you trust with that.
+- **Display names are free text** (L9): a member's name in the member list and on a live hold is
+  the profile name the member chose (at most 60 characters); nothing checks it.
+- **Photos keep their uploader's id** (L10): after an account is deleted, its user id stays as
+  `owner_id` on photos it uploaded to teams that still exist (a random id, no name or email).
+- **Open tabs poll** (L12): a browser tab left open on the app polls every 60 s (three small
+  requests). Fine for a few users; many always-open tabs would eat into the free tier's 5 GB of
+  egress a month.
+- **A photo id that an older edit brings back** (M10, DECISIONS #285): if a manager's older edit
+  points a player or team at a photo another manager already deleted, devices keep trying to
+  download it until someone sets a new picture.
 
 ## v10 audit (2026-11-26)
 

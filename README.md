@@ -99,7 +99,8 @@ You don't need an account. If you want your teams on more than one device, or wa
    ticked — nothing is uploaded unless you tick it) and which of your cloud teams to download.
 3. **Share a team**: open the team → **Members** (or **Share**) → **New invite**. A **player** code lets players view the
    team (they can't change anything); a **manager** code (used once, valid up to 7 days) lets another coach edit it.
-   Send the code or link; the other person signs in and taps **Join a team** on the Teams tab.
+   All managers are equal: any manager can change roles, remove members (also the one who shared the team) or delete
+   the team for everyone, so only make people managers you trust. Send the code or link; the other person signs in and taps **Join a team** on the Teams tab.
 4. **Syncing**: changes are saved on the phone first and sync in the background when you're online (the small cloud on
    the Teams tab shows Synced / Syncing / Offline). If two devices change the same thing, the later change wins. While
    a match is scored live on one device, the others show it read-only (managers can **Take over**).

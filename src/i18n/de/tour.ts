@@ -188,7 +188,7 @@ export const tour: Strings['tour'] = {
       },
       backup: {
         title: 'Daten sichern',
-        text: 'Alles bleibt auf diesem Gerät. Export speichert es in eine Datei; Import lädt es wieder, auch auf einem anderen Gerät.',
+        text: 'Deine Daten sind auf diesem Gerät gespeichert (geteilte Teams auch in der Cloud). Export speichert sie in eine Datei; Import lädt sie wieder, auch auf einem anderen Gerät.',
       },
     },
     presets: {

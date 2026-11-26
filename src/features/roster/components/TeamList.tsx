@@ -6,7 +6,7 @@ import type { Team } from '@/domain/types';
 import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { SharedTeamDeleteDialog } from '@/features/sync/SharedTeamDeleteDialog';
 import { useT } from '@/i18n';
-import { useAppStore, useTeamsForProfile } from '@/store';
+import { useAppStore, useCanEdit, useTeamAccess, useTeamsForProfile } from '@/store';
 import { makeStyles, spacing } from '@/theme';
 
 import { TeamForm } from './TeamForm';
@@ -34,15 +34,11 @@ export function TeamList({
   const { addTeam, updateTeam, deleteTeam } = useAppStore.getState();
   const [editing, setEditing] = useState<Editing>(null);
   const [sharedDelete, setSharedDelete] = useState<Team | null>(null);
-  const sharedRole = useAppStore((s) =>
-    sharedDelete ? s.sync.teams[sharedDelete.id]?.role : undefined,
-  );
+  const sharedRole = useTeamAccess(sharedDelete?.id).role;
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.teams;
   // v10: the team being edited became view-only (role changed by a sync) → close, don't save.
-  const editingViewOnly = useAppStore(
-    (st) => editing?.mode === 'edit' && st.sync.teams[editing.id]?.role === 'player',
-  );
+  const editingViewOnly = !useCanEdit(editing?.mode === 'edit' ? editing.id : null);
   // Adjusting state while rendering (React's pattern for state derived from a change).
   if (editingViewOnly) setEditing(null);
 

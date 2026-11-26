@@ -191,7 +191,7 @@ export const tour = {
       },
       backup: {
         title: 'Back up your data',
-        text: 'Everything stays on this device. Export saves it to a file; Import loads it again, also on another device.',
+        text: 'Your data is stored on this device (shared teams also in the cloud). Export saves it to a file; Import loads it again, also on another device.',
       },
     },
     presets: {

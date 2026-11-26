@@ -9,7 +9,9 @@
  * the clock and turns motion off, then shoots each screen at 375 and 1280 px in EN + DE, dark +
  * light, with and without the dyslexia font. `--compare` runs ImageMagick `compare -metric AE`
  * on every pair and prints the differing pixel counts (exit code 1 when any differ).
- * Uses the preinstalled Playwright (`require('playwright')`); not part of CI.
+ * Needs Playwright, which is deliberately not a dependency of the app (it is preinstalled in the
+ * agents' sandbox; elsewhere `npm i --no-save playwright && npx playwright install chromium`).
+ * Not part of CI.
  */
 const { execFileSync } = require('child_process');
 const fs = require('fs');
@@ -131,8 +133,19 @@ async function shootVariant(browser, base, outDir, only, { width, height, varian
   return count;
 }
 
+function loadPlaywright() {
+  try {
+    return require('playwright');
+  } catch {
+    console.error(
+      'Playwright is not installed: npm i --no-save playwright && npx playwright install chromium',
+    );
+    process.exit(2);
+  }
+}
+
 async function shoot(dist, outDir, only) {
-  const { chromium } = require('playwright');
+  const { chromium } = loadPlaywright();
   const server = await serve(path.resolve(dist));
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
