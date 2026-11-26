@@ -670,4 +670,112 @@ M11–M17, L15–L30). What they checked and found correct:
 
 ## Owner dashboard steps
 
-See the end of this file (updated after the fixes).
+Nothing is broken without them; they lower risk.
+
+1. **Authentication → Rate Limits**: keep "emails sent per hour" at **20 or less**. Sign-in codes
+   go through your Gmail (about 500 a day); anyone can ask for a code for any address (M8), and
+   the limit is the only brake: 20 an hour is at most 480 a day. Keep the sign-up / OTP / verify
+   limits as they are.
+2. **Authentication → Sign In / Providers**: anonymous sign-ins stay **off** (checked: off);
+   Email stays the only provider (checked).
+3. **Optional**, SQL editor:
+   `revoke execute on function public.rls_auto_enable() from public, anon, authenticated;` —
+   clears the two advisor warnings about Supabase's own helper (L2).
+4. **Optional**: Authentication → Attack Protection → CAPTCHA, if you want it (open question 2;
+   it needs an app change first — don't turn it on before that, or sign-in stops working).
+5. **Nothing to do for the migration**: `20261126120000_v10_audit_invite_revocation.sql` is
+   applied and recorded. If you ever set the project up again: apply all files in
+   `supabase/migrations` in name order (`docs/SUPABASE.md`).
+6. Still open from before the audit (HANDOFF): GitHub Pages isn't turned on; the keep-alive
+   workflow must stay enabled (GitHub turns scheduled workflows off after 60 days without
+   commits).
+
+---
+
+## Fix log
+
+Branch `fix/v10-audit`, PR [Nick-ze/volley-lineup#96](https://github.com/Nick-ze/volley-lineup/pull/96).
+The report was committed first (`66630b7`, side audits `d39cb15`, `2c7782f`), then one commit
+per finding.
+
+| Finding | Status | Commit               | Proof (tests)                                                                                                             |
+| ------- | ------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| C1      | fixed  | `3b55063`            | `staleLink.test.ts` (the five steps, Merge and Replace; a link left by 10.0.0), `syncAccess.test.ts`, `syncState.test.ts` |
+| H1      | fixed  | `0680a6e`, `0527af6` | `supabase/tests/rls.sql` T31–T33 + T30 on the live project; `roles.test.ts` (fake cloud with the same rules)              |
+| H2      | fixed  | `91e6f8b`            | `invites.test.ts`, `supabaseBackend.test.ts`, `members.test.tsx`                                                          |
+| H3      | fixed  | `a0894de`            | `photoRestart.test.ts` (restart; refused push), `photos.test.ts` (domain)                                                 |
+| H4      | fixed  | `5af0461`            | `pullCursor.test.ts`                                                                                                      |
+| H5      | fixed  | `fcf2452`            | `invites.test.ts`, `members.test.tsx`                                                                                     |
+| H6      | fixed  | `9c7926c`            | `roster.test.ts`, `duplicateNumbers.test.tsx`, `exportWarning.test.tsx`                                                   |
+| H7      | fixed  | `fc727fd`            | `authFetch.test.ts` (the real supabase-js client, fake `fetch`: 540 JSON / HTML and 429 keep the session)                 |
+| H8      | fixed  | `6062a19`            | `roles.test.ts` ("promotion of a view-only copy…", offline, manager code)                                                 |
+| H9      | fixed  | `ef049a6`            | `syncImport.test.ts` (every record kind; Replace unchanged)                                                               |
+| H10     | fixed  | `6dc0709`            | `importShared.test.tsx` ("a sync that lands while the import writes its photos")                                          |
+
+Every test above fails on `2af66a8` (checked for each before the fix, or by putting the old code
+back). Two existing tests were changed because they asserted the bug, with a comment in place:
+`syncState.test.ts` (a link staying after its profile was deleted, C1) and `members.test.tsx`
+("Manager · 30 days", H5). MEDIUM and LOW findings were left as listed. Folded into H1 because
+they are the same hole: the role re-check under the lock in `set_member_role` / `remove_member`
+(part of what M9 describes for `delete_team`, which is unchanged).
+
+### Files changed
+
+- **Database**: `supabase/migrations/20261126120000_v10_audit_invite_revocation.sql` (new),
+  `supabase/tests/rls.sql`.
+- **Domain** (`src/domain/`): `syncAccess.ts`, `syncImport.ts`, `invites.ts`, `photos.ts`,
+  `roster.ts` and their tests.
+- **Store**: `appStore.ts`, `photoStore.ts`, `syncState.test.ts`.
+- **Sync** (`src/lib/sync/`): `engine.ts`, `teamSync.ts`, `teamCommands.ts`, `photoSync.ts`,
+  `client.ts`, `authFetch.ts` (new), `supabaseBackend.ts`, `types.ts`, `__mocks__/index.ts`;
+  tests `staleLink`, `photoRestart`, `pullCursor`, `authFetch` (new), `roles`,
+  `supabaseBackend`; `src/test-utils/fakeBackend.ts`.
+- **Screens**: `features/members/NewInviteDialog.tsx`, `features/roster/components/RosterTab.tsx`,
+  `features/settings/{useImport.ts,useExport.ts,ExportSection.tsx}` and tests
+  (`members.test.tsx`, `duplicateNumbers.test.tsx`, `exportWarning.test.tsx`,
+  `importShared.test.tsx`).
+- **Texts** (EN + DE): `i18n/*/members.ts`, `roster.ts`, `transfer.ts`.
+- **Docs**: this file, `docs/DECISIONS.md` (#292–#302), `docs/SUPABASE.md`, `docs/HANDOFF.md`.
+
+49 files, about 2 800 lines added (1 700 of them tests and this report). No stored data shape
+changed: store version 13, export schema 10, app version 10.0.0.
+
+### Migration applied
+
+`20261126120000_v10_audit_invite_revocation.sql`, applied to `qzeergfqfwovcvdarwua` with the
+connector on 2026-11-26 after the PR's checks were green, and recorded under the file's version.
+
+- Before: the migration plus the whole test script (T1–T33) ran in one rolled-back transaction
+  on the live project — `ALL RLS TESTS PASSED`, nothing left behind. `join_team`'s lock order
+  was added after that run and dry-run on its own the same way.
+- After: the five function bodies on the live database are identical to the file (md5), the
+  trigger `team_members_revoke_invites` exists, the grants are unchanged (`authenticated` only
+  for the RPCs, nobody for the trigger function). Security advisor: the same intended items as
+  before (12 RPCs, `rls_auto_enable`, the `team_removals` INFO); performance advisor: no
+  findings. The whole test script (T1–T33) is run once more on the migrated
+  database; its result is in "After the fixes" below.
+- Nothing was dropped; no row was changed. The project holds 0 users, teams, invites and
+  objects (only the `keepalive` row), as before the audit.
+
+### Test results
+
+- `npm run check` (lint, format, typecheck, tests): green. **2239 tests in 174 suites** (2173 in 168 before
+  the audit); `src/domain` at 100 % statements, branches, functions and lines.
+- `npx expo export -p web`: succeeds.
+- CI on the PR: green (`test`, `lint · format · typecheck`, `web export`).
+- Independent review of the fixes by two reviewer agents: see "After the fixes" below.
+
+### Should 10.0.1 be released?
+
+**Yes.** The database fix (H1) is live for every app version already. The other ten fixes are in
+the app and reach users only with a new build. C1 alone justifies it: on 10.0.0, "delete my
+profile → restore my backup → sign in again" deletes a shared team's newer data for every
+member, and H3 / H8 / H9 / H10 are further ways to lose shared data. H7 costs you one sign-in
+email per device each time the project pauses. Nothing in the fixes changes stored data, so
+10.0.0 → 10.0.1 is a plain update (and going back would work too). Not done here, as asked:
+no version bump, no APK. To release: bump `app.json` + `package.json` to 10.0.1, add the version
+to `docs/README_LEGACY.md` and the README's "What's new", then HANDOFF §5.
+
+### After the fixes
+
+_Filled in when the post-migration test run and the two independent reviews have reported._
