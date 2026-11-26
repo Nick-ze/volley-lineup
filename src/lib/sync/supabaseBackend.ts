@@ -66,6 +66,7 @@ const inviteRow = z.object({
   expires_at: time,
   revoked_at: time.nullable().optional(),
   uses: z.number().optional(),
+  max_uses: z.number().nullable().optional(),
 });
 
 const toInvite = (row: z.infer<typeof inviteRow>): Invite => ({
@@ -75,6 +76,7 @@ const toInvite = (row: z.infer<typeof inviteRow>): Invite => ({
   expiresAt: row.expires_at,
   revokedAt: row.revoked_at ?? null,
   uses: row.uses ?? 0,
+  maxUses: row.max_uses ?? null,
 });
 
 const sessionOf = (user: { id: string; email?: string } | null | undefined) =>
@@ -240,7 +242,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
       const rows = await data(
         client()
           .from('invites')
-          .select('id, code, role, expires_at, revoked_at, uses')
+          .select('id, code, role, expires_at, revoked_at, uses, max_uses')
           .eq('team_id', teamId)
           .order('created_at', { ascending: false }),
       );

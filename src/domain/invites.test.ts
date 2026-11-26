@@ -6,6 +6,7 @@ import {
   INVITE_ALPHABET,
   INVITE_DAYS,
   inviteExpired,
+  inviteUsedUp,
   joinLink,
   normalizeInviteCode,
   sortMembers,
@@ -106,6 +107,27 @@ describe('invite expiry', () => {
     ];
     expect(activeInvites(list, now).map((i) => i.id)).toEqual(['soon', 'noRevokedField', 'late']);
     expect(list).toHaveLength(5); // not changed
+  });
+
+  it('is used up once it was used as often as it works (manager codes work once)', () => {
+    const base = invite('m', '2026-12-01T00:00:00.000Z');
+    expect(inviteUsedUp({ ...base, uses: 0, maxUses: 1 })).toBe(false);
+    expect(inviteUsedUp({ ...base, uses: 1, maxUses: 1 })).toBe(true);
+    expect(inviteUsedUp({ ...base, uses: 3, maxUses: 2 })).toBe(true);
+    // No limit (player codes), also when the fields are missing.
+    expect(inviteUsedUp({ ...base, uses: 40, maxUses: null })).toBe(false);
+    expect(inviteUsedUp({ ...base, uses: 40 })).toBe(false);
+    expect(inviteUsedUp({ ...base, maxUses: 1 })).toBe(false);
+    expect(inviteUsedUp(base)).toBe(false);
+  });
+
+  it('leaves out a used-up code (audit H2: a manager code the invited manager already used)', () => {
+    const list = [
+      { ...invite('usedManager', '2026-11-27T00:00:00.000Z'), uses: 1, maxUses: 1 },
+      { ...invite('freshManager', '2026-11-28T00:00:00.000Z'), uses: 0, maxUses: 1 },
+      { ...invite('player', '2026-11-29T00:00:00.000Z'), uses: 12, maxUses: null },
+    ];
+    expect(activeInvites(list, now).map((i) => i.id)).toEqual(['freshManager', 'player']);
   });
 });
 

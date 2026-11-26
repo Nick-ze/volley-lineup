@@ -204,8 +204,11 @@ describe('supabase backend: members, invites, holds, account', () => {
       expires_at: '2026-02-01T00:00:00.000Z',
       revoked_at: null,
       uses: 2,
+      max_uses: null,
     };
-    mockClient.from.mockReturnValueOnce(query(ok([invite])));
+    const used = { ...invite, id: 'i0', role: 'manager', uses: 1, max_uses: 1 };
+    const invites = query(ok([invite, used]));
+    mockClient.from.mockReturnValueOnce(invites);
     expect(await backend.listInvites('t1')).toEqual([
       {
         id: 'i1',
@@ -214,8 +217,20 @@ describe('supabase backend: members, invites, holds, account', () => {
         expiresAt: '2026-02-01T00:00:00.000Z',
         revokedAt: null,
         uses: 2,
+        maxUses: null,
+      },
+      {
+        id: 'i0',
+        code: 'ABCDEFGHJK',
+        role: 'manager',
+        expiresAt: '2026-02-01T00:00:00.000Z',
+        revokedAt: null,
+        uses: 1,
+        maxUses: 1,
       },
     ]);
+    // The single-use limit must be read, or a used manager code looks usable (audit H2).
+    expect(invites.calls).toContainEqual(['select', [expect.stringContaining('max_uses')]]);
     mockClient.rpc.mockResolvedValueOnce(
       ok({
         id: 'i2',
@@ -228,6 +243,7 @@ describe('supabase backend: members, invites, holds, account', () => {
     expect(await backend.createInvite('t1', 'manager', 3)).toMatchObject({
       id: 'i2',
       uses: 0,
+      maxUses: 1,
       revokedAt: null,
     });
     expect(mockClient.rpc).toHaveBeenLastCalledWith('create_invite', {

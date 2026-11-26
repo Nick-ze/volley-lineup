@@ -60,6 +60,9 @@ export function joinLink(code: string, webBase?: string): string {
 export interface InviteTimes {
   expiresAt: string;
   revokedAt?: string | null;
+  /** How often the code was used, and how often it works in all (null / missing: no limit). */
+  uses?: number;
+  maxUses?: number | null;
 }
 
 /** True when the invite's time is up at `now` (ms); an unreadable expiry counts as expired. */
@@ -68,10 +71,18 @@ export function inviteExpired(invite: InviteTimes, now: number): boolean {
   return Number.isNaN(expires) || expires <= now;
 }
 
-/** Invites that still work at `now` (not revoked, not expired), soonest expiry first. */
+/** True when the code has been used as often as it works (manager codes work once). */
+export function inviteUsedUp(invite: InviteTimes): boolean {
+  return invite.maxUses != null && (invite.uses ?? 0) >= invite.maxUses;
+}
+
+/**
+ * Invites that still work at `now` (not revoked, not expired, not used up), soonest expiry
+ * first.
+ */
 export function activeInvites<T extends InviteTimes>(invites: readonly T[], now: number): T[] {
   return invites
-    .filter((invite) => !invite.revokedAt && !inviteExpired(invite, now))
+    .filter((invite) => !invite.revokedAt && !inviteExpired(invite, now) && !inviteUsedUp(invite))
     .sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt));
 }
 

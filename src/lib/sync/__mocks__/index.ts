@@ -40,6 +40,7 @@ export const createInvite = jest.fn(async () => ({
     expiresAt: '2026-12-03T00:00:00.000Z',
     revokedAt: null,
     uses: 0,
+    maxUses: null,
   },
 }));
 export const revokeInvite = ok(undefined);

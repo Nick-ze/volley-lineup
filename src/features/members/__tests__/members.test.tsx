@@ -50,11 +50,18 @@ const invite = (id: string, code: string, expiresAt: string, role: TeamRole = 'p
   expiresAt,
   revokedAt: null,
   uses: 2,
+  maxUses: null as number | null,
 });
 
 const INVITES = [
   invite('inv-1', 'ABCDEFGHJK', '2099-12-03T12:00:00.000Z'),
   invite('inv-old', 'ZZZZZZZZZZ', '2020-01-01T00:00:00.000Z'),
+  // A manager code works once: after the invited manager joined it is no longer listed.
+  {
+    ...invite('inv-used', 'YYYYYYYYYY', '2099-12-03T12:00:00.000Z', 'manager'),
+    uses: 1,
+    maxUses: 1,
+  },
 ];
 
 beforeEach(() => {
@@ -180,6 +187,7 @@ describe('members: manager', () => {
     expect(screen.getByText('ABCDE-FGHJK')).toBeTruthy();
     expect(screen.getByText(t.members.invites.details('Player', '03.12.99', 2))).toBeTruthy();
     expect(screen.queryByText('ZZZZZ-ZZZZZ')).toBeNull();
+    expect(screen.queryByText('YYYYY-YYYYY')).toBeNull();
     // No controls on the manager's own row.
     expect(screen.queryByTestId('member-role-me')).toBeNull();
     expect(sync.listInvites).toHaveBeenCalledWith('team1');
