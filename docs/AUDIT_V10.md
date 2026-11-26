@@ -20,12 +20,12 @@ release is `v10.0.0`.
 | Severity      | Count | Fixed in this audit              |
 | ------------- | ----- | -------------------------------- |
 | CRITICAL      | 0     | –                                |
-| HIGH          | 4     | all 4 (see "Fix log" at the end) |
-| MEDIUM        | 10    | none (listed with the exact fix) |
-| LOW / CLEANUP | 14    | none                             |
+| HIGH          | 9     | all 9 (see "Fix log" at the end) |
+| MEDIUM        | 17    | none (listed with the exact fix) |
+| LOW / CLEANUP | 30    | none                             |
 
-(Counts of the lead audit. The three side audits' findings are added under "Side audits" when
-they finish; any CRITICAL or HIGH among them is written down here before it is fixed.)
+H1–H4 come from the lead audit, H5–H9 from the side audits (each checked against the code by the
+lead auditor before it was listed).
 
 Short version: the database's access rules are sound — a stranger, a signed-out caller, a player,
 a manager of another team and a removed member are all kept out, and the live database is
@@ -33,7 +33,10 @@ exactly what the migration files say. The four HIGH findings are: invite codes t
 access of the people who know them (**H1**, a real way back in for a demoted manager or a removed
 member), used-up manager codes shown as usable (**H2**), a photo that can be wiped for the whole
 team after one device's failed download (**H3**), and a pull cursor that can skip a record
-(**H4**).
+(**H4**). The side audits added: a manager invite option that always fails (**H5**), duplicate
+jersey numbers from two devices that silently make the backup file unloadable (**H6**), a paused
+project signing every device out (**H7**), a promoted viewer pushing an out-of-date copy to
+everyone (**H8**), and a Merge import that can empty a shared team (**H9**).
 
 ---
 
@@ -242,6 +245,87 @@ None.
 - **Fix**: keep the **first** page's server time for the cursor (every later page is read later,
   so the first one is the safe bound for all rows). One line in `pullTeam`, plus the test.
 
+#### H5 — "Manager · 30 days" in New invite always fails
+
+- **Where**: `src/domain/invites.ts:18` (`INVITE_DAYS = [1, 7, 30]` for both roles),
+  `src/features/members/NewInviteDialog.tsx:53–62`; server: `create_invite` allows manager codes
+  1–7 days only (`20261125090200_v10_invites.sql:64–67`, SQLSTATE `22023` → `unknown`).
+- **What happens**: a manager picks role Manager and 30 days and gets "Something went wrong. Try
+  again." every time. `members.test.tsx:204–217` asserts exactly this call against the mock.
+- **Why**: the 7-day cap for manager codes came from the security review (worker A, DECISIONS
+  #271) after the dialog (worker D) was written.
+- **Fix**: `inviteDayOptions(role)` in `src/domain/invites.ts` (manager: 1 and 7 days), the
+  dialog shows only those and falls back to 7 when the role changes; correct the test.
+
+#### H6 — Duplicate jersey numbers from two devices make the backup file unloadable, silently
+
+- **Where**: `src/domain/syncRepair.ts:5–10, 294–295` reports `duplicateNumber` in
+  `MergeOutput.issues` (`syncMerge.ts:66–67, 258`); `src/lib/sync/teamSync.ts:98–110, 147–150`
+  never reads `issues`; no screen mentions duplicates. The design promised "a roster warning and
+  an export warning" (`docs/V10_SYNC_DESIGN.md` §0 hazard 7; DECISIONS #275 "reported").
+- **What happens**: two managers (or one manager on two devices) each add a player with number
+  7 before syncing. Both players stay — by design. But a backup made on any device of that team
+  is then refused on import (`exportConsistency.ts:66–67` → `INCONSISTENT_REFERENCES`), in
+  Replace and in Merge. Nobody is told until they need the backup.
+- **Why**: worker B reported the issue in the merge result; the engine and the UI workers never
+  picked it up.
+- **Fix**: derive it from the store (it must also show after a restart): a warning on the Roster
+  tab naming the numbers, and a warning in Settings → Export naming the team, both EN + DE,
+  based on one pure helper `duplicateNumbers(players)`.
+
+#### H7 — A paused project signs every device out
+
+- **Where**: `src/lib/sync/client.ts:29–41` (auth-js gets the plain `fetchWithTimeout`);
+  auth-js 2.x `lib/fetch.js` (`NETWORK_ERROR_CODES` = 500–504, 520–530) and
+  `GoTrueClient._callRefreshToken` (any other error on a refresh removes the session).
+- **What happens**: a paused Supabase project answers HTTP 540. A device whose access token has
+  expired (anyone who opens the app more than an hour after last use) tries to refresh it, gets
+  540, and auth-js deletes the stored session and fires `SIGNED_OUT`. After the owner restores
+  the project, every such user must sign in again: one email each through the owner's Gmail. A
+  429 on the refresh does the same. Unsynced changes survive. This contradicts
+  `docs/SUPABASE.md` ("If the project paused anyway, the app shows Offline … devices sync again
+  on their next cycle"). Reproduced by the side audit with the real supabase-js and a fake
+  `fetch` (540 JSON, 540 HTML, 429: session removed; network error, 500, 503: kept). Not checked
+  against a really paused project.
+- **Why**: auth-js only treats a fixed list of statuses as temporary.
+- **Fix**: wrap the client's `fetch`: for `/auth/v1/` requests, an HTTP status ≥ 500, and a 429
+  on a token refresh, become a thrown network error — the one thing auth-js always treats as
+  temporary (session kept, retried later).
+
+#### H8 — A promoted viewer pushes its out-of-date copy to everyone
+
+- **Where**: `src/lib/sync/engine.ts:396–402` (a demotion resets the team to the cloud's copy; a
+  promotion only stores the new role).
+- **What happens**: a viewer's local copy can differ from the cloud without any way to heal
+  (H3's prune, H9's import, local repairs, a dialog left open across a demotion): pulls only
+  deliver rows newer than the cursor. When a manager makes that member a manager,
+  `detectChanges` sees every difference as an edit made "now" and pushes it — missing records
+  as deletions. Reproduced by the side audit: a viewer copy with 0 players / matches / presets
+  empties the team on the other device after the promotion.
+- **Why**: promotions were treated as harmless; demotions got the reset.
+- **Fix**: a promotion first replaces the local copy with the cloud's (the same reset pull as a
+  demotion), and only then stores the manager role. The stored role stays `player` with cursor
+  0 until that pull worked, so it also holds across a restart or an offline period.
+
+#### H9 — A Merge import can empty a shared team
+
+- **Where**: `src/domain/syncImport.ts:59–69` (shared teams are protected by **team id** only);
+  `src/domain/exportMerge.ts:28–33, 81–105` (the file wins per record id);
+  `src/domain/syncUpload.ts:24–41` (`rekeyTeam` keeps the ids of players, seasons, matches and
+  presets).
+- **What happens**: a team got a new id when it was uploaded (its id was taken — e.g. the same
+  backup was shared between two coaches before v10, or the team was uploaded under another
+  account first). The user later merges an older backup of it, or a co-coach's export: the file
+  has the same record ids under the old team id. Merge moves every player, season, opponent,
+  match and preset to the old team id. The shared team is empty on this device; a manager
+  device then queues deletions for all of it and the team is wiped for every member (the data
+  survives on the importing device under the old id). Reproduced by the side audit with the
+  golden export. Replace is safe.
+- **Why**: `importWithSharedTeams` checks which teams the file contains, not which records.
+- **Fix**: refuse the import (the existing "clashes with a shared team" message) when a record
+  in the file has the id of a record of a shared team but belongs to another team. Pure domain
+  check + tests.
+
 ### MEDIUM (not fixed; exact fix given)
 
 - **M1 — Take over: the previous scorer can still overwrite the new one once.** `holdCommands.ts`,
@@ -290,6 +374,38 @@ None.
 - **M10 — Known limit kept from v10 (DECISIONS #285)**: an older edit that brings back a photo id
   another manager already deleted leaves a dangling picture until someone sets a new one.
 
+- **M11 — Offline with an expired token reads "Sign in first" instead of "Offline".**
+  `supabaseBackend.ts:142–144`: `memberships()` ignores the error of `getSession()` and throws
+  `notSignedIn`. Fix: `if (auth.error) throw backendError(auth.error)`.
+- **M12 — The 15 s timeout ends when the response headers arrive.** `fetchWithTimeout.ts:17–21`
+  clears the timer in `finally`; a body that stalls afterwards blocks the sync queue for good
+  on web ("Syncing…", Sync now disabled, the shared-team delete dialog can't be closed). Fix:
+  keep the timer until the body is read.
+- **M13 — Sign-in asks for more emails than needed.** The code step is component state only
+  (`useSignIn.ts:26–32`, `useResendTimer.ts`): if the screen closes or the app is killed while
+  the user reads the email, the only way on is "Send code" again. "Change email" has no
+  cool-down. A failed send by the mail server (HTTP 500, e.g. the Gmail quota is used up) reads
+  "No connection"; `signup_disabled`, `email_address_invalid` and similar read "Something went
+  wrong". Fix: remember `{email, sentAt}` and reopen at the code step (or add "I already have a
+  code"); own texts for those codes.
+- **M14 — Join, Cloud sync, the Profile card and Sign-in don't wait for the stored session.**
+  (`JoinScreen.tsx:46`, `AccountScreen.tsx:38`, `profile/AccountSection.tsx:30`.) On a cold
+  start they say "Sign in first" until the session is read, which invites a needless code
+  request. Members and live already wait (DECISIONS #289). Fix: treat "restoring with a linked
+  account" as loading.
+- **M15 — The live hold doesn't cover deleting.** Delete match (`SeasonMatches.tsx:37, 89–93`),
+  season, player and team check the role only, not `useMatchAccess`; holds are unknown from app
+  start until the first cycle ends. Related to M1. Fix: gate the delete actions on unexpired
+  holds.
+- **M16 — The three screens map error codes to text separately** (`i18n/*/account.ts`,
+  `members.ts`, `sync.ts` + `syncErrorText.ts`); `tooMany` reads "Too many at once. Try again
+  with fewer." on the account screens although it means 10 teams / team full. `UploadPanel`
+  drops the per-team reason. Fix: one shared map.
+- **M17 — A sign-in can end with another account's session and no link.** If the sign-in screen
+  closes during verify or on the "switch account" question, the new session stays, the old
+  account's teams silently stop syncing and the UI says "Sign in". Fix: at start, sign out when
+  the session's user differs from the linked account and that account still has teams.
+
 ### LOW / CLEANUP (not fixed)
 
 - **L1** Default privileges for tables created by `postgres` in `public` still give `anon`,
@@ -323,6 +439,48 @@ for role postgres in schema public revoke all on tables from anon, authenticated
 - **L14** The 6-digit email code relies on Supabase's per-IP limits against guessing (no
   per-account lockout). An 8-digit code is a dashboard setting plus a constant in the app.
 
+- **L15** A 401 `PGRST301` / `PGRST303` reads "You were signed out" although the session is
+  fine (a device clock more than ~90 s slow gets it every hour). Fix: refresh and retry once.
+- **L16** `errors.ts:92–93`: the 401 / 403 test runs before the "token has expired or is invalid"
+  test (only matters for an old auth server without error codes).
+- **L17** A refused hold with a null `held_until` never expires locally (`supabaseBackend.ts:316`
+  → `''`, NaN compare in `syncAccess.ts:37`) until the next sync.
+- **L18** Dialogs that were open survive a demotion (`PresetsTab.tsx:113–139` name dialogs; the
+  delete confirms don't re-check the role).
+- **L19** `/team/<id>/members?shareError=__proto__` crashes that screen (`ShareTeam.tsx:15–17`,
+  `in` accepts prototype keys). Fix: `Object.hasOwn`.
+- **L20** `runCycle` has no try / finally (`engine.ts:267–281`): a throw in `noteAll` would leave
+  the cycle promise rejected for the session. No trigger found.
+- **L21** German: "1 Änderung werden …" (`de/account.ts:74–75`, `:26–31`).
+- **L22** A cloud team without a team record yet shows an empty name in the Download list and in
+  the delete-account list (`useDeleteAccount.ts:25`).
+- **L23** After a lost session the Cloud sync screen shows the plain signed-out panel;
+  "You were signed out" isn't shown there.
+- **L24** The notice kind `deleted` is defined and translated but never sent; "deleted for
+  everyone" reads "You're no longer a member".
+- **L25** The ESLint backend rule misses `require()`, dynamic `import()`, `./sync/engine` from a
+  sibling in `src/lib`, test files and `scripts/`; it ignores `supabase/functions/*`, which
+  never existed. No violation today.
+- **L26** `photoId` is used as a storage path segment without a format check
+  (`supabaseBackend.ts:327, 335, 356`). A co-manager's crafted id `../<other team>/<id>` makes a
+  member's device fetch a photo from another team **that member already belongs to**; nothing
+  goes back to the sender. Fix: allow `^[A-Za-z0-9_-]{1,100}$` only.
+- **L27** Docs: `CLAUDE.md` still says "No backend"; `docs/HANDOFF.md` §3 says store version 11;
+  `docs/SUPABASE.md` and the design mention `src/lib/sync/database.types.ts`, which doesn't
+  exist; `docs/SUPABASE.md` says "profile data never leave the device" although the profile
+  **name** is sent as the member's display name (the README says it correctly); the tour's
+  Settings tip says "Everything stays on this device"; several file / function names in
+  `docs/V10_SYNC_DESIGN.md` §4 differ from the code.
+- **L28** `.gitignore` ignores `.env*.local` only; `app.config.js` / `config.ts` accept any key
+  from `EXPO_PUBLIC_SUPABASE_KEY`, also a secret one (it would be bundled). Fix: ignore `.env*`
+  and refuse keys starting with `sb_secret_` / JWTs with `service_role`.
+- **L29** `.claude/settings.json` pre-allows every Supabase connector tool for agents working in
+  this (public) repository, including `apply_migration`. Deliberate (HANDOFF §6); narrowing it
+  to the read tools is safer.
+- **L30** Cleanup: `teamMeta` (`storeOps.ts:94`) has no callers; `TeamList.tsx:38–50` checks the
+  role inline instead of `useTeamAccess`; `ci.yml:45–46` hashes a `babel.config.js` that doesn't
+  exist; `scripts/screenshots.js` needs an undeclared `playwright`.
+
 ---
 
 ## Checked and found correct
@@ -352,15 +510,54 @@ for role postgres in schema public revoke all on tables from anon, authenticated
 - **Malformed server data**: rows go through zod (`parseRemoteRow`), answers of every RPC and
   table read through a schema (`supabaseBackend.ts`); a bad `server_now` leaves the cursor where
   it is.
-- **Paused project / server down / timeout**: counted as offline with a growing retry delay; a
-  dead session shows "Sign in again"; nothing is thrown to a screen from the engine.
+- **Server down / timeout**: counted as offline with a growing retry delay; a dead session shows
+  "Sign in again"; nothing is thrown to a screen from the engine. (A **paused** project is the
+  exception: H7.)
 
 ---
 
 ## Side audits
 
-_Pending: existing users and backups; privacy, secrets and leftovers; screen resilience and
-view-only gating._
+Three independent read-only agents; their findings are merged into the lists above (H5–H9,
+M11–M17, L15–L30). What they checked and found correct:
+
+**Privacy, secrets and leftovers**
+
+- A spy on every backend call plus a dump of the fake cloud: the description text and key, the
+  profile's id, colour and photo appear in no call; a description-only edit pushes nothing. The
+  email goes only to sign-in. The profile **name** goes out as the member's display name (60
+  characters), nothing else of the profile.
+- A pulled or refused-push record can't set or clear a description or a profile photo.
+- A photo id can't be shared between a profile and a player through the UI (every pick gets a
+  new id).
+- Team photos are only read through the authenticated storage API: no public or signed URLs.
+- Secrets: the working tree and the full history (497 commits, all branches and pull-request
+  refs) hold no service-role key, secret key, JWT, password, SMTP credential or `.env` file. The
+  only key anywhere is the publishable key in `supabase/public-config.json`. The workflows use
+  no secrets except `github.token` in the APK workflow, and echo nothing.
+- The web bundle contains exactly the project URL and the publishable key, once each; no source
+  maps, no test users, no mocks.
+- No `console.*` in `src/` or `app/` outside tests; no `@supabase/*` import outside
+  `src/lib/sync`; the Jest mock of `@/lib/sync` has the same 25 exports as the real barrel; no
+  foundation stubs, orphan files, TODOs, `.only` / `.skip` or commented-out code in the 235
+  files v10 changed. The two new dependencies are used.
+
+**Screens, errors and view-only**
+
+- Every command resolves through `attempt`; every error code has EN and DE text; no raw server
+  text, code or stack reaches a screen. Offline, rate-limited and wrong-code read differently.
+- No automatic resend; verifying never sends an email; a wrong code costs nothing.
+- Route guards (player form, new season, new match, preset, starters, season, player detail)
+  check the role and that the record belongs to the team in the URL. The builder, presets and
+  starters are gated in the save itself; live controls, tagging, next-set setup and undo are
+  hidden for viewers. View-only works signed out, offline and while the session is restored (it
+  reads the stored role).
+- Import skips view-only teams by id; Replace keeps shared teams (the gap is H9).
+- Sign out, Log out, Leave and Delete account say what happens to local data and ask first.
+
+**Existing users and backups**
+
+_Pending._
 
 ---
 
@@ -376,6 +573,8 @@ view-only gating._
 3. **8-digit codes** (L14) instead of 6: wanted?
 4. **Take over** (M1): should the app stop the previous scorer's device from pushing as soon as
    it sees the take-over (a behaviour change in live mode)?
+5. **"I already have a code"** on the sign-in screen (M13): saves emails when the app was closed
+   while the user looked for the code. Wanted?
 
 ## Owner dashboard steps
 
