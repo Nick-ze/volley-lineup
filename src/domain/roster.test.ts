@@ -1,8 +1,10 @@
 import {
+  duplicateNumbers,
   isJerseyNumberTaken,
   makePrimaryPosition,
   NAME_MAX_LENGTH,
   SEASON_MAX_LENGTH,
+  teamsWithDuplicateNumbers,
   togglePosition,
   validatePlayerForm,
   validateProfileForm,
@@ -31,6 +33,56 @@ describe('isJerseyNumberTaken', () => {
     expect(isJerseyNumberTaken(players, 't1', 9)).toBe(false);
     expect(isJerseyNumberTaken(players, 't1', 7, 'p1')).toBe(false);
     expect(isJerseyNumberTaken(players, 't1', 7, 'p2')).toBe(true);
+  });
+});
+
+describe('duplicateNumbers (audit H6)', () => {
+  const withNumbers = (...numbers: number[]) => numbers.map((n, i) => player(`p${i}`, n));
+
+  it('is empty when every number is used once, and for no players', () => {
+    expect(duplicateNumbers(withNumbers(7, 3, 12))).toEqual([]);
+    expect(duplicateNumbers([])).toEqual([]);
+  });
+  it('lists a number that two players share', () => {
+    expect(duplicateNumbers(withNumbers(7, 3, 7))).toEqual([7]);
+  });
+  it('lists every shared number once, ascending (also when three players share it)', () => {
+    expect(duplicateNumbers(withNumbers(12, 7, 0, 12, 7, 12, 3, 0))).toEqual([0, 7, 12]);
+  });
+  it('does not change the given list', () => {
+    const list = withNumbers(9, 2, 9);
+    duplicateNumbers(list);
+    expect(list.map((p) => p.number)).toEqual([9, 2, 9]);
+  });
+});
+
+describe('teamsWithDuplicateNumbers (audit H6)', () => {
+  const teams = [
+    { id: 't2', name: 'Damen' },
+    { id: 't1', name: 'Herren 1' },
+    { id: 't3', name: 'Mixed' },
+  ];
+
+  it('is empty when no team has a number twice (the same number in two teams is fine)', () => {
+    expect(teamsWithDuplicateNumbers(teams, [player('a', 7), player('b', 7, 't2')])).toEqual([]);
+    expect(teamsWithDuplicateNumbers(teams, [])).toEqual([]);
+    expect(teamsWithDuplicateNumbers([], [player('a', 7), player('b', 7)])).toEqual([]);
+  });
+  it('lists each team with shared numbers, in the order of the teams', () => {
+    const all = [
+      player('a', 12),
+      player('b', 7),
+      player('c', 12),
+      player('d', 7),
+      player('e', 3, 't2'),
+      player('f', 3, 't2'),
+      player('g', 5, 't2'),
+      player('h', 5, 't3'),
+    ];
+    expect(teamsWithDuplicateNumbers(teams, all)).toEqual([
+      { name: 'Damen', numbers: [3] },
+      { name: 'Herren 1', numbers: [7, 12] },
+    ]);
   });
 });
 

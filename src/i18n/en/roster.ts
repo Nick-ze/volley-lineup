@@ -65,6 +65,11 @@ export const roster = {
       captain = false,
     ) =>
       `${name}, number ${number}${captain ? ', captain' : ''}${positions === '' ? '' : `, ${positions}`}${active ? '' : ', injured or inactive'}. Open details`,
+    /** v10: players of the team share a jersey number (added on two devices before a sync). */
+    duplicateNumbers: (numbers: readonly number[]) =>
+      numbers.length === 1
+        ? `Two players have number ${numbers[0]}. Give one of them another number: until then a backup of this team can't be loaded.`
+        : `Several players share a number (${numbers.join(', ')}). Give them different numbers: until then a backup of this team can't be loaded.`,
   },
   player: {
     addTitle: 'Add player',

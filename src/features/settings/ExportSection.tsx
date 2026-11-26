@@ -11,11 +11,14 @@ import { Section } from './Section';
 import { StatusMessage } from './StatusMessage';
 import { useExport } from './useExport';
 
-/** Export everything, or one team of the current profile; optionally with descriptions. */
+/**
+ * Export everything, or one team of the current profile; optionally with descriptions.
+ * v10 (audit H6): warns before the export when a team has two players with one jersey number.
+ */
 export function ExportSection() {
   const styles = useStyles();
   const t = useT();
-  const { exportData, status, busy } = useExport();
+  const { exportData, status, busy, warning } = useExport();
   const currentProfileId = useAppStore((s) => s.currentProfileId);
   const teams = useTeamsForProfile(currentProfileId);
   // Only true while unlocked (locking clears it): descriptions are exported only when chosen.
@@ -24,6 +27,16 @@ export function ExportSection() {
 
   return (
     <Section title={t.transfer.export.title} hint={t.transfer.export.hint}>
+      {warning ? (
+        <Text
+          style={styles.warning}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          testID="export-duplicate-numbers"
+        >
+          {warning}
+        </Text>
+      ) : null}
       <IncludeDescriptionsToggle />
       <Button
         label={t.transfer.export.all}
@@ -59,4 +72,6 @@ const useStyles = makeStyles((theme) => ({
   teams: { gap: spacing.sm },
   heading: { ...typography.label, color: theme.colors.textMuted },
   muted: { ...typography.body, color: theme.colors.textMuted },
+  // Yellow = warning (as in the lineup's validation panel); the export itself stays possible.
+  warning: { ...typography.body, color: theme.colors.highlightText },
 }));

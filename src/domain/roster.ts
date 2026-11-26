@@ -1,11 +1,12 @@
 /**
  * Roster domain helpers: form validation for profiles, teams and players, plus small pure
- * helpers (jersey uniqueness, position ordering). The match form lives in `matchForm.ts`.
+ * helpers (jersey uniqueness and duplicates, position ordering). The match form lives in
+ * `matchForm.ts`.
  *
  * Validation returns error **codes**, never user-facing text; the UI maps codes to strings.
  * Plain checks, no zod (v8.3: zod is only used by the export file format).
  */
-import type { Player, Position } from './types';
+import type { Player, Position, Team } from './types';
 
 export const NAME_MAX_LENGTH = 40;
 export const SEASON_MAX_LENGTH = 20;
@@ -30,6 +31,41 @@ export function isJerseyNumberTaken(
   exceptPlayerId?: string,
 ): boolean {
   return players.some((p) => p.teamId === teamId && p.number === number && p.id !== exceptPlayerId);
+}
+
+/**
+ * The jersey numbers that two or more of `players` wear, ascending, each once (empty when no
+ * number is used twice). Pass the players of ONE team.
+ *
+ * v10 (audit H6): the player form refuses a taken number, but two devices can each add the same
+ * number before they sync. Both players stay, and a backup file of that team is refused on
+ * import (`exportConsistency.ts`), so the roster and the export warn about it.
+ */
+export function duplicateNumbers(players: readonly Pick<Player, 'number'>[]): number[] {
+  const seen = new Set<number>();
+  const twice = new Set<number>();
+  for (const { number } of players) (seen.has(number) ? twice : seen).add(number);
+  return [...twice].sort((a, b) => a - b);
+}
+
+/** A team in which players share a jersey number, with those numbers (ascending). */
+export interface TeamDuplicateNumbers {
+  /** The team's name. */
+  name: string;
+  numbers: number[];
+}
+
+/** The teams whose players share a jersey number (`duplicateNumbers`), in the order of `teams`. */
+export function teamsWithDuplicateNumbers(
+  teams: readonly Pick<Team, 'id' | 'name'>[],
+  players: readonly Pick<Player, 'teamId' | 'number'>[],
+): TeamDuplicateNumbers[] {
+  return teams
+    .map((team) => ({
+      name: team.name,
+      numbers: duplicateNumbers(players.filter((p) => p.teamId === team.id)),
+    }))
+    .filter((team) => team.numbers.length > 0);
 }
 
 /** Adds the position at the end (first added = primary) or removes it if present. */
