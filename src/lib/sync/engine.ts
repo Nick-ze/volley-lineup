@@ -345,23 +345,28 @@ export class SyncEngine implements EngineCore {
       }
       emitStatus({ type: 'start' });
       await this.refreshMemberships(session.userId);
-      // Before the teams are synced: a take-over must be known before this device pushes.
-      await this.refreshHolds(session.userId);
       const deviceId = appState().sync.deviceId ?? '';
-      let firstError: ReturnType<typeof toSyncError> | null = null;
-      for (const teamId of linkedTeamIds(session.userId)) {
+      const errors: ReturnType<typeof toSyncError>[] = [];
+      /** A step whose own failure doesn't end the cycle (no connection / signed out does). */
+      const step = async (run: () => Promise<void>) => {
         try {
-          await this.syncTeam(teamId, deviceId);
+          await run();
         } catch (e) {
           const code = toSyncError(e);
           if (code === 'offline' || code === 'signedOut' || code === 'notSignedIn') throw e;
-          firstError ??= code;
+          errors.push(code);
         }
+      };
+      // Holds before the teams: a take-over must be known before this device pushes (audit
+      // M1). If they can't be read, the teams still sync, with the holds known so far.
+      await step(() => this.refreshHolds(session.userId));
+      for (const teamId of linkedTeamIds(session.userId)) {
+        await step(() => this.syncTeam(teamId, deviceId));
       }
       this.failures = 0;
       emitStatus(
-        firstError
-          ? { type: 'failed', code: firstError, retryAt: null }
+        errors.length > 0
+          ? { type: 'failed', code: errors[0], retryAt: null }
           : { type: 'done', at: isoNow(this.clock) },
       );
       updatePending(this.userId());

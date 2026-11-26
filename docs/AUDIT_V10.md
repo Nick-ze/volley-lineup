@@ -17,12 +17,12 @@ release is `v10.0.0`.
 
 ## Summary
 
-| Severity      | Count | Fixed in this audit              |
-| ------------- | ----- | -------------------------------- |
-| CRITICAL      | 1     | yes (see "Fix log" at the end)   |
-| HIGH          | 10    | all 10                           |
-| MEDIUM        | 19    | none (listed with the exact fix) |
-| LOW / CLEANUP | 33    | none                             |
+| Severity      | Count | Fixed in this audit            |
+| ------------- | ----- | ------------------------------ |
+| CRITICAL      | 1     | yes (see "Fix log" at the end) |
+| HIGH          | 10    | all 10                         |
+| MEDIUM        | 19    | none; M1 and M13 afterwards    |
+| LOW / CLEANUP | 33    | none                           |
 
 H1–H4 come from the lead audit, C1 and H5–H10 from the side audits (each checked against the code by the
 lead auditor before it was listed).
@@ -378,6 +378,7 @@ Each finding: where, why it happens, the exact fix. Status is filled in at the e
   replaces the whole set, including rallies the new scorer added. Advisory by design (DECISIONS
   #277, #288). Fix: read the holds _before_ pushing and don't push sets of a match another
   device holds (merge the pulled set instead and tell the user).
+  **Fixed afterwards** on the owner's decision: see "Follow-ups" at the end.
 - **M2 — A device whose clock runs ahead wins every conflict it has unsynced changes for.**
   `syncChanges.ts:64–69` stamps with the device clock; the server clamps to +1 min
   (`stamp_team_record`), but the local merge compares the unclamped time
@@ -432,6 +433,8 @@ Each finding: where, why it happens, the exact fix. Status is filled in at the e
   "No connection"; `signup_disabled`, `email_address_invalid` and similar read "Something went
   wrong". Fix: remember `{email, sentAt}` and reopen at the code step (or add "I already have a
   code"); own texts for those codes.
+  **"I already have a code" added afterwards** on the owner's decision (see "Follow-ups" at the
+  end); the own error texts are still open.
 - **M14 — Join, Cloud sync, the Profile card and Sign-in don't wait for the stored session.**
   (`JoinScreen.tsx:46`, `AccountScreen.tsx:38`, `profile/AccountSection.tsx:30`.) On a cold
   start they say "Sign in first" until the session is read, which invites a needless code
@@ -655,6 +658,10 @@ M11–M17, L15–L30). What they checked and found correct:
 
 ## Open questions (owner decisions)
 
+**Answered by the owner on 2026-11-26** (DECISIONS #304): 1 keep "revoke all"; 2 no CAPTCHA, the
+rate limit is enough; 3 six digits stay; 4 yes; 5 yes. Questions 4 and 5 were then built: see
+"Follow-ups" at the end. Question 6 (the two checks) is still open.
+
 1. **H1 revokes all open invite codes when a member is removed.** That is the safe default (a
    code works for any account), but a manager who removes someone has to create and send new
    codes to people who haven't joined yet. Alternative: revoke only codes older than the removed
@@ -836,3 +843,66 @@ email per device each time the project pauses. Nothing in the fixes changes stor
 10.0.0 → 10.0.1 is a plain update (and going back would work too). Not done here, as asked:
 no version bump, no APK. To release: bump `app.json` + `package.json` to 10.0.1, add the version
 to `docs/README_LEGACY.md` and the README's "What's new", then HANDOFF §5.
+
+## Follow-ups (after the owner's answers)
+
+Built on `feat/v10-audit-followups` after the audit was merged; DECISIONS #304–#308. No database
+change, no new app version.
+
+### "I already have a code" (M13)
+
+The sign-in screen's email step has a second button, **I already have a code**. It opens the code
+step for the typed email (checked like "Send code") and sends nothing. The code step then reads
+"Enter the newest code we emailed to …. A code works for 10 minutes." and "Send a new code" can
+be used at once. Files: `src/features/account/{useSignIn.ts,SignInScreen.tsx,CodeStep.tsx}`,
+`src/i18n/{en,de}/account.ts`. Tests: `signIn.test.tsx` (5 cases: no email is sent, sign-in with
+an earlier code, the email check, resend without a wait, the accessible name). Checked in a
+browser on the web build (no request left the page).
+
+### The previous scorer after a take-over (M1)
+
+- A sync cycle now reads the live holds **first** (before the pull and the push; it was last).
+- A match this device was scoring that another device holds now is **yielded** while that hold
+  lasts — also when the device learns it from a refused hold refresh, and also after its own
+  live screen has closed.
+- While yielded: the match and its sets are **not pushed** from this device, and a row the new
+  scorer saves for them **replaces** this device's unsynced change, whatever the save times say.
+  The user gets a notice on the Teams tab ("Anna took over scoring a match of U18. 1 change made
+  here that hadn't synced yet was undone.").
+- **Nothing is thrown away without a newer save**: a rally the new scorer never saved over stays
+  on the device, counts as "waiting" in the status, and is synced when the hold ends (released,
+  run out after 15 minutes, or taken back on this device).
+- A device that never held the match behaves as before.
+- If the hold list can't be read (a server error; not "no connection"), the teams still sync
+  with the holds known so far and the status shows the error — before, the holds were read
+  last, so such an error never stood in the way of the data.
+
+Files: `src/domain/syncAccess.ts` (`yieldedMatches`), `syncRecords.ts` (`matchOfRecord`),
+`syncMerge.ts` (`MergeInput.takenOver`, `MergeOutput.yielded`), `types.ts` (notice kind
+`takenOver`, runtime only); `src/lib/sync/holdState.ts` (new), `engine.ts`, `teamSync.ts`,
+`holdCommands.ts`, `core.ts`; `src/features/sync/SyncNotices.tsx`, `src/i18n/{en,de}/sync.ts`.
+
+Tests: `takeOverBlock.test.ts` (11 two-device scenarios: the M1 race; holds are read before the
+pull; held back and synced after a release; after the hold has run out; a device whose clock
+runs ahead still gives way; a refused refresh yields at once; taking the match back; sign-out;
+an unreadable hold list, twice; a device that never held the match). With the block switched
+off, 6 of the first 9 fail.
+`syncAccess.test.ts` (8 cases), `syncMerge.test.ts` (6), `syncRecords.test.ts` (1),
+`syncStatusUi.test.tsx` (the notice in English and German). One existing assertion in
+`syncMerge.test.ts` that compares the whole output object got the new field `yielded: []`.
+
+**Limits that remain** (DECISIONS #307): the block is in the app — the server's hold is still
+advisory, so a 10.0.0 app doesn't yield; the yield is forgotten when the app restarts (the
+device isn't scoring then; "the latest save wins" applies); a push that is already under way
+when the take-over happens can still land; deleting a held match is still possible (M15).
+
+### Numbers
+
+`npm run check`: green, **2287 tests in 176 suites** (2255 in 175 before the follow-ups);
+`src/domain` at 100 %; `npx expo export -p web` succeeds.
+
+### Release
+
+Unchanged: no version was bumped. The next build now also carries two things users can see (the
+sign-in button, the take-over behaviour), so its notes should mention them; whether it is called
+10.0.1 or 10.1.0 is the owner's choice.

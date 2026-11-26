@@ -16,6 +16,7 @@ import { goldenTeamData } from '@/test-utils/syncFixtures';
 import { TestDevice } from '@/test-utils/syncDevice';
 
 import type { PushItem } from '../backend';
+import { BackendError } from '../errors';
 import { holdMatch, releaseMatch } from '../holdCommands';
 import { createInvite } from '../memberCommands';
 import { joinTeam, uploadTeams } from '../teamCommands';
@@ -262,6 +263,41 @@ describe('the previous scorer after a take-over (audit M1)', () => {
     await a.act((e) => e.signOut());
     expect(a.engine.yielded.size).toBe(0);
     expect(a.runtime.holds).toEqual({});
+  });
+});
+
+describe('when the holds can’t be read (a server error, not "no connection")', () => {
+  const breakHolds = (d: TestDevice) => {
+    d.backend.listHolds = async () => {
+      throw new BackendError('unknown', 'holds');
+    };
+  };
+  const rename = (d: TestDevice) =>
+    d.edit((s) => ({
+      players: s.players.map((p) => (p.id === 'p1' ? { ...p, firstName: 'Renamed' } : p)),
+    }));
+
+  it('the teams still sync, and the status shows the error', async () => {
+    const { cloud, a } = await twoManagers();
+    breakHolds(a);
+    cloud.clock.tick(2000);
+    await rename(a);
+    await a.cycle();
+    expect(cloud.record(T1, 'player', 'p1')?.payload).toMatchObject({ firstName: 'Renamed' });
+    expect(a.runtime.status).toMatchObject({ phase: 'error', error: 'unknown', pending: 0 });
+  });
+
+  it('a yielded match stays yielded (the holds known so far count)', async () => {
+    const { cloud, a } = await takenOver();
+    await a.cycle();
+    expect(a.engine.yielded.has(M)).toBe(true);
+    breakHolds(a);
+    const pushed = watchPushes(a);
+    await score(a, 'us');
+    await rename(a);
+    await a.cycle();
+    expect(pushed.flat()).toEqual(['player:p1']);
+    expect(cloudRallies(cloud)).toEqual(['us']);
   });
 });
 
