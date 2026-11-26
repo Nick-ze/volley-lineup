@@ -5,6 +5,8 @@ import {
   formatInviteCode,
   INVITE_ALPHABET,
   INVITE_DAYS,
+  inviteDayOptions,
+  inviteDaysFor,
   inviteExpired,
   inviteUsedUp,
   joinLink,
@@ -172,6 +174,12 @@ describe('sortMembers', () => {
 describe('defaults', () => {
   it('offers 1, 7 and 30 days; a new invite is for a player for 7 days', () => {
     expect(INVITE_DAYS).toEqual([1, 7, 30]);
+    // Audit H5: manager codes are valid 7 days at most on the server.
+    expect(inviteDayOptions('player')).toEqual([1, 7, 30]);
+    expect(inviteDayOptions('manager')).toEqual([1, 7]);
+    expect(inviteDaysFor('manager', 30)).toBe(7);
+    expect(inviteDaysFor('manager', 1)).toBe(1);
+    expect(inviteDaysFor('player', 30)).toBe(30);
     expect(DEFAULT_INVITE_DAYS).toBe(7);
     expect(DEFAULT_INVITE_ROLE).toBe('player');
   });

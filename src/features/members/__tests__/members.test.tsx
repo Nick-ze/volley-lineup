@@ -209,19 +209,38 @@ describe('members: manager', () => {
     expect(sync.removeMember).toHaveBeenCalledWith('team1', 'u3');
   });
 
-  it('creates an invite for a manager, valid 30 days', async () => {
+  it('creates an invite for a player, valid 30 days', async () => {
     await renderManager();
     await fireEvent.press(screen.getByLabelText(t.members.newInviteLabel));
     expect(screen.getByTestId('new-invite-role-player')).toBeChecked();
     expect(screen.getByTestId('new-invite-days-7')).toBeChecked();
-    await fireEvent.press(screen.getByTestId('new-invite-role-manager'));
     await fireEvent.press(screen.getByText(t.members.newInviteDialog.dayOption(30)));
-    expect(screen.getByTestId('new-invite-role-manager')).toBeChecked();
     expect(screen.getByTestId('new-invite-days-30')).toBeChecked();
-    expect(screen.getByText(t.members.newInviteDialog.roleHint.manager)).toBeTruthy();
     await fireEvent.press(screen.getByLabelText(t.members.newInviteDialog.createLabel));
-    expect(sync.createInvite).toHaveBeenCalledWith('team1', 'manager', 30);
+    expect(sync.createInvite).toHaveBeenCalledWith('team1', 'player', 30);
     await waitFor(() => expect(sync.listInvites).toHaveBeenCalledTimes(2));
+  });
+
+  // Audit H5: the server refuses manager codes longer than 7 days. (This test used to pick
+  // "Manager · 30 days" and expect that call — an invite that always failed on the server.)
+  it('a manager invite offers 1 or 7 days only; a chosen 30 falls back to 7', async () => {
+    await renderManager();
+    await fireEvent.press(screen.getByLabelText(t.members.newInviteLabel));
+    await fireEvent.press(screen.getByText(t.members.newInviteDialog.dayOption(30)));
+    await fireEvent.press(screen.getByTestId('new-invite-role-manager'));
+    expect(screen.getByTestId('new-invite-role-manager')).toBeChecked();
+    expect(screen.getByText(t.members.newInviteDialog.roleHint.manager)).toBeTruthy();
+    expect(screen.queryByTestId('new-invite-days-30')).toBeNull();
+    expect(screen.getByTestId('new-invite-days-7')).toBeChecked();
+    await fireEvent.press(screen.getByTestId('new-invite-days-1'));
+    // Back to player: 30 days is offered again, the choice stays.
+    await fireEvent.press(screen.getByTestId('new-invite-role-player'));
+    expect(screen.getByTestId('new-invite-days-30')).toBeTruthy();
+    expect(screen.getByTestId('new-invite-days-1')).toBeChecked();
+    await fireEvent.press(screen.getByTestId('new-invite-role-manager'));
+    await fireEvent.press(screen.getByTestId('new-invite-days-7'));
+    await fireEvent.press(screen.getByLabelText(t.members.newInviteDialog.createLabel));
+    expect(sync.createInvite).toHaveBeenCalledWith('team1', 'manager', 7);
   });
 
   it('cancels a new invite without creating it', async () => {

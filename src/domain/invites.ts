@@ -14,11 +14,24 @@ export const INVITE_CODE_LENGTH = 10;
 /** The app's URL scheme (`app.json` → `expo.scheme`). */
 export const APP_SCHEME = 'volleylineup';
 
-/** How long a new invite is valid, in days (the server allows 1–30). */
+/** How long a new invite is valid, in days (the server allows 1–30; manager codes 1–7). */
 export const INVITE_DAYS = [1, 7, 30] as const;
 export type InviteDays = (typeof INVITE_DAYS)[number];
 export const DEFAULT_INVITE_DAYS: InviteDays = 7;
 export const DEFAULT_INVITE_ROLE: TeamRole = 'player';
+/** The longest a manager code may be valid (`create_invite` on the server refuses more). */
+export const MAX_MANAGER_INVITE_DAYS = 7;
+
+/** The validity choices for a new invite of `role`: manager codes at most 7 days. */
+export function inviteDayOptions(role: TeamRole): InviteDays[] {
+  return INVITE_DAYS.filter((days) => role !== 'manager' || days <= MAX_MANAGER_INVITE_DAYS);
+}
+
+/** `days` when `role` allows it, else the longest validity it allows. */
+export function inviteDaysFor(role: TeamRole, days: InviteDays): InviteDays {
+  const options = inviteDayOptions(role);
+  return options.includes(days) ? days : (Math.max(...options) as InviteDays);
+}
 
 const CODE_PATTERN = new RegExp(`^[${INVITE_ALPHABET}]{${INVITE_CODE_LENGTH}}$`);
 const CODE_PARAM = /[?&]code=([^&#\s]*)/i;
