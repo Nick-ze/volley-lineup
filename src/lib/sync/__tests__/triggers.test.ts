@@ -218,6 +218,28 @@ describe('a signed-in device with a shared team', () => {
     expect(d.data.sync.teams.t1).toBeDefined();
   });
 
+  it('the same check when the session can only be read after an offline start (audit M17)', async () => {
+    const { cloud, d } = await started();
+    d.backend.signInAs('ben@example.test');
+    d.runtime = { ...d.runtime, session: null };
+    const restore = d.backend.getSession.bind(d.backend);
+    d.backend.getSession = async () => {
+      throw new TypeError('Network request failed');
+    };
+    const before = cloud.calls.length;
+    await d.act(async (engine) => {
+      engine.setSession(null);
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(2000);
+      d.backend.getSession = restore;
+      await engine.syncNow();
+      expect(cloud.calls.slice(before)).toEqual(['signOut']);
+      expect(useSyncRuntime.getState()).toMatchObject({ session: null, restoring: false });
+      stop();
+    });
+    expect(d.data.sync.teams.t1).toBeDefined();
+  });
+
   it('a stored session of another account is kept when the old account has no teams here', async () => {
     const { d } = await started();
     d.backend.signInAs('ben@example.test');

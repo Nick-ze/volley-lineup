@@ -957,3 +957,13 @@ documentation and cleanup (marked "docs" / "cleanup").
 | L29                                        | left as it is (owner's instruction)                                                                                                                                                                                                                                                                                                                     | —    | —                                                                                    |
 | L30                                        | fixed: `teamMeta` removed; `TeamList` uses `useTeamAccess` / `useCanEdit`; `ci.yml` no longer hashes the missing `babel.config.js`; `scripts/screenshots.js` explains how to get Playwright when it is missing                                                                                                                                          | PR 1 | cleanup (existing `viewOnly.test.tsx`, `sharedTeamDelete.test.tsx` cover `TeamList`) |
 | L6, L17, L18, L31                          | second chat                                                                                                                                                                                                                                                                                                                                             | —    | —                                                                                    |
+
+**Review of PR 2** (an independent reviewer agent, its own copy, typecheck + 350 tests): no
+blocking finding. Fixed from its nits: the start-up check of M17 also runs when the session can
+only be read after an offline start (`triggers.test.ts` "the same check when the session can
+only be read after an offline start"); the boot re-checks that the engine is still running after
+reading the session; two misplaced doc comments. Left, as limits: "Checking your sign-in…" stays
+for as long as the session can't be read (offline or an outage, with an expired token) and has no
+offline hint; any HTTP 500 on a code request reads "The email couldn't be sent" (also a database
+outage of the auth server — the text is wrong then, nothing else); the join memo can answer
+"joined" for a team the user was removed from moments ago, until the next cycle unlinks it.

@@ -224,13 +224,13 @@ export function unlinkTeam(engine: SyncEngine, teamId: string): void {
   engine.rewire();
 }
 
-/** Joins a team with an invite code; the team downloads in the background. */
 /**
  * Codes this app run joined with, per engine and account (v10 audit L11): a double submit of a
  * single-use manager code would otherwise read "invalid code" although the first join worked.
  */
 const joinedCodes = new WeakMap<SyncEngine, Map<string, Joined & { userId: string }>>();
 
+/** Joins a team with an invite code; the team downloads in the background. */
 export const joinTeam = (engine: SyncEngine, code: string): Promise<SyncResult<Joined>> =>
   attempt(() =>
     engine.exclusive(async () => {
