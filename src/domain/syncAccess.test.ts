@@ -1,4 +1,11 @@
-import { holdStatus, matchAccess, teamAccess } from './syncAccess';
+import {
+  goneTeamLinks,
+  holdStatus,
+  isGoneLink,
+  matchAccess,
+  teamAccess,
+  withoutTeamLinks,
+} from './syncAccess';
 import type { MatchHold, SyncData, SyncedTeam } from './types';
 
 const linked = (role: SyncedTeam['role']): SyncedTeam => ({
@@ -78,5 +85,42 @@ describe('matchAccess', () => {
       block: 'held',
       holder: 'Anna',
     });
+  });
+});
+
+describe('links of teams that left the device (audit C1)', () => {
+  const synced = (patch: Partial<SyncedTeam>): SyncedTeam => ({ ...linked('manager'), ...patch });
+  const base = { 'team:t1': { v: 3, h: 'abc', at: '2026-11-26T10:00:00.000Z' } };
+
+  it('a link is gone when its team is missing and it has synced before', () => {
+    expect(isGoneLink(synced({ cursor: 7 }), false)).toBe(true);
+    expect(isGoneLink(synced({ base }), false)).toBe(true);
+    // Still on the device: never gone.
+    expect(isGoneLink(synced({ cursor: 7, base }), true)).toBe(false);
+    // Linked but nothing pulled yet (a download under way): not gone.
+    expect(isGoneLink(synced({}), false)).toBe(false);
+  });
+
+  it('lists the gone links of the sync state', () => {
+    const teams = {
+      here: synced({ cursor: 4 }),
+      gone: synced({ cursor: 4 }),
+      goneViewer: { ...linked('player'), base },
+      downloading: synced({}),
+    };
+    expect(goneTeamLinks({ teams }, [{ id: 'here' }, { id: 'other' }])).toEqual([
+      'gone',
+      'goneViewer',
+    ]);
+    expect(goneTeamLinks({ teams: {} }, [])).toEqual([]);
+  });
+
+  it('removes links; the same object when none of the ids is linked', () => {
+    const next = withoutTeamLinks(sync, ['mgr', 'unknown']);
+    expect(Object.keys(next.teams)).toEqual(['view']);
+    expect(next.account).toBe(sync.account);
+    expect(Object.keys(sync.teams)).toEqual(['mgr', 'view']); // not changed
+    expect(withoutTeamLinks(sync, ['unknown'])).toBe(sync);
+    expect(withoutTeamLinks(sync, new Set<string>())).toBe(sync);
   });
 });

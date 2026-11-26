@@ -54,11 +54,15 @@ describe('sharedTeamsOf', () => {
       edits: {},
       photos: [],
     });
-    expect(sharedTeamsOf({ a: linked('manager'), b: linked('player') })).toEqual([
+    const links = { a: linked('manager'), b: linked('player') };
+    expect(sharedTeamsOf(links, [{ id: 'a' }, { id: 'b' }, { id: 'local' }])).toEqual([
       { teamId: 'a', canEdit: true },
       { teamId: 'b', canEdit: false },
     ]);
-    expect(sharedTeamsOf({})).toEqual([]);
+    expect(sharedTeamsOf({}, [{ id: 'a' }])).toEqual([]);
+    // A link whose team isn't on the device protects nothing (audit C1).
+    expect(sharedTeamsOf(links, [{ id: 'b' }])).toEqual([{ teamId: 'b', canEdit: false }]);
+    expect(sharedTeamsOf(links, [])).toEqual([]);
   });
 });
 

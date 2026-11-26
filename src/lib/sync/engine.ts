@@ -41,7 +41,7 @@ import {
   whenHydrated,
 } from './storeOps';
 import { forgetPhotos } from './photoSync';
-import { needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
+import { dropGoneTeams, needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
 
 export interface EngineTiming {
   /** Delay of the first cycle after start (after the first screen is idle). */
@@ -153,6 +153,9 @@ export class SyncEngine implements EngineCore {
   private async boot(): Promise<void> {
     await whenHydrated();
     if (!this.started) return;
+    // Links an earlier version left behind for teams that were deleted with their profile
+    // (audit C1): dropped before anything else, signed in or not.
+    dropGoneTeams(this);
     const { account, teams } = appState().sync;
     const localOnly = !account && Object.keys(teams).length === 0;
     if (localOnly && !(await this.backend.hasStoredSession())) {

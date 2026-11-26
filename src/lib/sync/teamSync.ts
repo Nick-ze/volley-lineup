@@ -17,6 +17,7 @@ import {
   type MergeInput,
   type MergeOutput,
 } from '@/domain/syncMerge';
+import { goneTeamLinks, isGoneLink, withoutTeamLinks } from '@/domain/syncAccess';
 import { foreignKeys, type TeamSlice } from '@/domain/syncRecords';
 import { parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
 import type { SyncedTeam } from '@/domain/types';
@@ -53,7 +54,27 @@ export interface PullReport {
  * not gone.
  */
 export const isGone = (meta: SyncedTeam, slice: TeamSlice | undefined): boolean =>
-  !slice && (meta.cursor > 0 || Object.keys(meta.base).length > 0);
+  isGoneLink(meta, slice !== undefined);
+
+/**
+ * Unlinks every shared team that is gone from the device (audit C1). The store's own delete
+ * actions unlink in the same write; this catches links an earlier app version left behind. It
+ * needs no session: a stale link must not wait for the next sign-in, or a backup restored in
+ * between would be rebuilt under it and pushed as deletions.
+ */
+export function dropGoneTeams(core: EngineCore): void {
+  const s = appState();
+  const gone = goneTeamLinks(s.sync, s.teams);
+  if (gone.length === 0) return;
+  transaction((state) => {
+    const sync = withoutTeamLinks(state.sync, goneTeamLinks(state.sync, state.teams));
+    return sync === state.sync ? state : { sync };
+  });
+  for (const teamId of gone) {
+    forgetPhotos(core, teamId);
+    core.resetPending.delete(teamId);
+  }
+}
 
 /**
  * Whether the team's next pull replaces it with the cloud's copy (`resetToCloudMerge`): after a
@@ -190,6 +211,7 @@ export async function pullTeam(
  * next online cycle, or an older offline edit would win against a newer one from elsewhere.
  */
 export function noteAll(core: EngineCore): void {
+  dropGoneTeams(core);
   const now = isoNow(core.clock);
   transaction((s) => {
     let teams: Record<string, SyncedTeam> | null = null;

@@ -25,12 +25,19 @@ export interface SharedTeam {
 export type SyncImportResult =
   { ok: true; data: TransferData; skippedTeams: string[] } | { ok: false; error: 'MERGE_CONFLICT' };
 
-/** The shared teams of the sync state, with edit rights (managers edit, players view). */
-export function sharedTeamsOf(teams: SyncData['teams']): SharedTeam[] {
-  return Object.entries(teams).map(([teamId, linked]) => ({
-    teamId,
-    canEdit: linked.role === 'manager',
-  }));
+/**
+ * The shared teams of the sync state that are on the device, with edit rights (managers edit,
+ * players view). A link whose team isn't on the device protects nothing (audit C1): the file's
+ * team with that id is an ordinary team for the import.
+ */
+export function sharedTeamsOf(
+  teams: SyncData['teams'],
+  teamsOnDevice: readonly { id: string }[],
+): SharedTeam[] {
+  const here = new Set(teamsOnDevice.map((t) => t.id));
+  return Object.entries(teams)
+    .filter(([teamId]) => here.has(teamId))
+    .map(([teamId, linked]) => ({ teamId, canEdit: linked.role === 'manager' }));
 }
 
 /** For the import preview: the file's shared teams that will be merged / skipped. */

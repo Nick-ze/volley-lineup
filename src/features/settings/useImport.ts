@@ -70,7 +70,7 @@ export function useImport() {
       setState({ step: 'error', error: result.error });
       return;
     }
-    const shared = sharedTeamsOf(useAppStore.getState().sync.teams);
+    const shared = sharedTeamsOf(useAppStore.getState().sync.teams, useAppStore.getState().teams);
     const inFile = sharedTeamsInFile(result.file, shared);
     setState({
       step: 'preview',
@@ -89,7 +89,7 @@ export function useImport() {
     async (mode: ImportMode) => {
       if (state.step !== 'preview') return;
       const store = useAppStore.getState();
-      const shared = sharedTeamsOf(store.sync.teams);
+      const shared = sharedTeamsOf(store.sync.teams, store.teams);
       // Replace without shared teams needs no snapshot of the current data (as before v10).
       const current =
         mode === 'merge' || shared.length > 0 ? await transferSnapshot() : emptyTransfer();

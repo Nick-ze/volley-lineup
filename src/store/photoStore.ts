@@ -187,8 +187,16 @@ useAppStore.subscribe((state, prev) => {
 
 void whenPhotosLoaded();
 
+/**
+ * The main store's data plus the photos as they are right now, without waiting. Only after
+ * `whenPhotosLoaded()`; for code that must read and write the store in one step (the import).
+ */
+export function transferSnapshotNow(): TransferData {
+  return { ...selectAppData(useAppStore.getState()), photos: photoList() };
+}
+
 /** Everything an export needs: the main store's data plus the photos (waits for them). */
 export async function transferSnapshot(): Promise<TransferData> {
   await whenPhotosLoaded();
-  return { ...selectAppData(useAppStore.getState()), photos: photoList() };
+  return transferSnapshotNow();
 }

@@ -6,8 +6,10 @@
  *   is cached in the sync state, so this also works offline and while signed out.
  * - A match that another device is scoring live (an unexpired hold of another device) is
  *   read-only for everyone else (`block: 'held'`), until it expires or a manager takes over.
+ * - A shared team that leaves the device is unlinked in the same step (`goneTeamLinks`,
+ *   `withoutTeamLinks`): its bookkeeping must never meet other data under the same team id.
  */
-import type { MatchHold, SyncData, TeamRole } from './types';
+import type { MatchHold, SyncData, SyncedTeam, TeamRole } from './types';
 
 /** Why editing is blocked: a viewer (player role) or a match held by another device. */
 export type EditBlock = 'viewer' | 'held' | null;
@@ -57,4 +59,34 @@ export function matchAccess(
     return { canEdit: false, block: 'held', holder: hold.holderName };
   }
   return { canEdit: true, block: null };
+}
+
+/**
+ * True when a linked team that isn't on the device has synced before (something was pulled or
+ * pushed): it was deleted here, so it is unlinked — never deleted on the server (DECISIONS
+ * #259). A link that hasn't pulled anything yet (a download under way) is not gone.
+ */
+export function isGoneLink(link: SyncedTeam, onDevice: boolean): boolean {
+  return !onDevice && (link.cursor > 0 || Object.keys(link.base).length > 0);
+}
+
+/** Ids of the linked teams that are gone from the device (see `isGoneLink`). */
+export function goneTeamLinks(
+  sync: Pick<SyncData, 'teams'>,
+  teamsOnDevice: readonly { id: string }[],
+): string[] {
+  const here = new Set(teamsOnDevice.map((t) => t.id));
+  return Object.keys(sync.teams).filter((id) => isGoneLink(sync.teams[id], here.has(id)));
+}
+
+/** `sync` without the links of `teamIds` (the same object when none of them is linked). */
+export function withoutTeamLinks(sync: SyncData, teamIds: Iterable<string>): SyncData {
+  const teams = { ...sync.teams };
+  let changed = false;
+  for (const id of teamIds) {
+    if (!(id in teams)) continue;
+    delete teams[id];
+    changed = true;
+  }
+  return changed ? { ...sync, teams } : sync;
 }
