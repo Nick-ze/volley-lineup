@@ -7,6 +7,8 @@ import {
   parseRemoteRow,
   REPULL_CURSOR,
   storedSyncData,
+  textFits,
+  textIsWhole,
   withPullCursorsReset,
 } from './syncSchema';
 
@@ -198,5 +200,44 @@ describe('withPullCursorsReset (audit L6)', () => {
     expect(withPullCursorsReset(fresh)).toBe(fresh);
     const again = withPullCursorsReset({ deviceId: 'd1', account, teams: { t1: team } });
     expect(withPullCursorsReset(again)).toBe(again);
+  });
+});
+
+describe('textIsWhole', () => {
+  it('is true for ordinary text and whole emoji, at any depth', () => {
+    expect(textIsWhole('Anna')).toBe(true);
+    expect(textIsWhole('')).toBe(true);
+    expect(textIsWhole('🏐 Volleys 🏐')).toBe(true);
+    expect(textIsWhole({ name: 'Динамо 🏐', list: [{ note: '👍🏽' }], n: 7, none: null })).toBe(true);
+    expect(textIsWhole(null)).toBe(true);
+    expect(textIsWhole(12)).toBe(true);
+  });
+
+  it('is false for half of a character pair, wherever it stands', () => {
+    const high = '🏐'[0];
+    const low = '🏐'[1];
+    expect(textIsWhole(high)).toBe(false);
+    expect(textIsWhole(low)).toBe(false);
+    expect(textIsWhole(`x${high}`)).toBe(false);
+    expect(textIsWhole(`${high}x`)).toBe(false);
+    expect(textIsWhole(`${low}${high}`)).toBe(false);
+    expect(textIsWhole(`${high}${high}${low}`)).toBe(false);
+    expect(textIsWhole({ name: 'ok', list: [{ note: `cut ${high}` }] })).toBe(false);
+    expect(textIsWhole(['ok', low])).toBe(false);
+    // What is left of a name cut in the middle of an emoji.
+    expect(textIsWhole(`${'x'.repeat(59)}🏐`.slice(0, 60))).toBe(false);
+  });
+});
+
+describe('textFits', () => {
+  it('allows names up to 200 and other text up to 1000 characters, at any depth', () => {
+    expect(textFits({ name: 'x'.repeat(200), note: 'y'.repeat(1000) })).toBe(true);
+    expect(textFits({ name: 'x'.repeat(201) })).toBe(false);
+    expect(textFits({ note: 'y'.repeat(1001) })).toBe(false);
+    expect(textFits({ list: [{ firstName: 'x'.repeat(201) }] })).toBe(false);
+    expect(textFits({ list: ['y'.repeat(1000)], n: 7, none: null })).toBe(true);
+    expect(textFits(null)).toBe(true);
+    expect(textFits('z'.repeat(1001))).toBe(false);
+    expect(textFits('z'.repeat(201), 'lastName')).toBe(false);
   });
 });

@@ -1,11 +1,17 @@
 import { goldenTeamData, linkedTeam, sliceOf } from '@/test-utils/syncFixtures';
 
 import {
+  batchBytes,
   detectChanges,
   edgePhotoIds,
+  groupSignature,
+  halveBatch,
   pendingCount,
   pushBatches,
+  pushGroups,
   PUSH_LIMITS,
+  recordLabel,
+  sendableChanges,
   type LocalChange,
 } from './syncChanges';
 import { payloadHash, replaceTeamSlice, sliceToRecords, type TeamData } from './syncRecords';
@@ -258,5 +264,532 @@ describe('a whole team', () => {
     const team = syncedWith(data, 't1');
     const replaced = replaceTeamSlice(data, 't1', sliceOf(data, 't1'));
     expect(detectChanges(sliceOf(replaced, 't1'), team, T1).changes).toEqual([]);
+  });
+});
+
+/* ------------------------------------------------------------ v10 audit M3, M4, M5 */
+
+/** Every record of the golden team t1 as a change of a newly linked team (push order). */
+const allChanges = (data: TeamData = goldenTeamData()): LocalChange[] =>
+  detectChanges(sliceOf(data, 't1'), linkedTeam(), T1).changes;
+
+const keysOf = (changes: readonly LocalChange[]) => changes.map((c) => c.key);
+
+const LONG = 'x'.repeat(201);
+
+describe('pushGroups', () => {
+  it('keeps a match with its sets and everything else alone, in order', () => {
+    const groups = pushGroups(allChanges());
+    expect(groups.map(keysOf)).toEqual([
+      ['team:t1'],
+      ['season:s1'],
+      ['season:s2'],
+      ['opponent:o1'],
+      ['opponent:o2'],
+      ['opponent:o3'],
+      ...['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].map((id) => [`player:${id}`]),
+      ['match:m1', 'set:m1/1', 'set:m1/2', 'set:m1/3'],
+      ['match:m2', 'set:m2/1'],
+      ['preset:ps2'],
+      ['starters:t1'],
+    ]);
+  });
+
+  it('a set whose match isn’t among the changes travels alone', () => {
+    const sets = allChanges().filter((c) => c.kind === 'set');
+    expect(pushGroups(sets).map(keysOf)).toEqual(sets.map((c) => [c.key]));
+    expect(pushGroups([])).toEqual([]);
+  });
+});
+
+describe('halveBatch (audit M5)', () => {
+  it('splits a batch into smaller ones, groups kept whole and nothing lost', () => {
+    const batch = allChanges();
+    const halves = halveBatch(batch);
+    expect(halves.length).toBeGreaterThanOrEqual(2);
+    expect(halves.flat()).toEqual(pushGroups(batch).flat());
+    const half = Math.ceil(batchBytes(batch) / 2);
+    for (const part of halves) {
+      // Only a single group may be bigger than half.
+      if (pushGroups(part).length > 1) expect(batchBytes(part)).toBeLessThanOrEqual(half);
+    }
+    const m1 = halves.find((part) => part.some((c) => c.key === 'match:m1'));
+    expect(keysOf(m1 ?? [])).toEqual(
+      expect.arrayContaining(['match:m1', 'set:m1/1', 'set:m1/2', 'set:m1/3']),
+    );
+  });
+
+  it('two groups always part; one group can’t be split', () => {
+    const [team, season] = allChanges();
+    expect(halveBatch([team, season])).toEqual([[team], [season]]);
+    const match = allChanges().filter((c) => c.key === 'match:m1' || c.key.startsWith('set:m1/'));
+    expect(halveBatch(match)).toEqual([match]);
+  });
+
+  it('batchBytes adds up the changes (a deletion is small)', () => {
+    const [team, season] = allChanges();
+    expect(batchBytes([])).toBe(0);
+    expect(batchBytes([team, season])).toBe(batchBytes([team]) + batchBytes([season]));
+    const gone: LocalChange = { ...season, payload: null, hash: '' };
+    expect(batchBytes([gone])).toBe(4 + gone.key.length + 64);
+  });
+});
+
+describe('groupSignature', () => {
+  it('changes when any record of the group or its content changes', () => {
+    const group = allChanges().filter((c) => c.key === 'match:m2' || c.key === 'set:m2/1');
+    const signature = groupSignature(group);
+    expect(signature).toBe(`match:m2@${group[0].hash}|set:m2/1@${group[1].hash}`);
+    expect(groupSignature([group[0], { ...group[1], hash: 'other' }])).not.toBe(signature);
+    expect(groupSignature([group[0]])).not.toBe(signature);
+  });
+});
+
+describe('sendableChanges (audit M3, M4)', () => {
+  const withPlayer = (firstName: string): TeamData => renameP2(goldenTeamData(), firstName);
+  const reasons = (held: ReturnType<typeof sendableChanges>['held']) =>
+    Object.fromEntries(held.map((h) => [h.change.key, h.reason]));
+
+  it('sends everything of a team this app could read back itself', () => {
+    const changes = allChanges();
+    const { ready, held } = sendableChanges(changes, {}, 't1');
+    expect(ready).toEqual(pushGroups(changes).flat());
+    expect(held).toEqual([]);
+  });
+
+  it('holds a record with a name over 200 characters; the rest goes', () => {
+    const changes = allChanges(withPlayer(LONG));
+    const { ready, held } = sendableChanges(changes, {}, 't1');
+    expect(reasons(held)).toEqual({ 'player:p2': 'invalid' });
+    expect(keysOf(ready)).toEqual(
+      keysOf(pushGroups(changes).flat()).filter((k) => k !== 'player:p2'),
+    );
+  });
+
+  it('a name of exactly 200 characters still goes', () => {
+    const changes = allChanges(withPlayer('x'.repeat(200)));
+    expect(sendableChanges(changes, {}, 't1').held).toEqual([]);
+  });
+
+  it('holds everything of a new team whose own record can’t be sent', () => {
+    const data = goldenTeamData();
+    const long = { ...data, teams: data.teams.map((t) => ({ ...t, name: LONG })) };
+    const changes = allChanges(long);
+    const { ready, held } = sendableChanges(changes, {}, 't1');
+    expect(ready).toEqual([]);
+    expect(held).toHaveLength(22);
+    expect(reasons(held)['team:t1']).toBe('invalid');
+    expect(new Set(held.slice(1).map((h) => h.reason))).toEqual(new Set(['parent']));
+  });
+
+  it('an edit of a team the server already has holds only itself', () => {
+    const data = goldenTeamData();
+    const long = { ...data, teams: data.teams.map((t) => ({ ...t, name: LONG })) };
+    const changes = allChanges(long);
+    const base = { 'team:t1': { v: 1, h: 'old', at: T0 } };
+    const { ready, held } = sendableChanges(changes, base, 't1');
+    expect(reasons(held)).toEqual({ 'team:t1': 'invalid' });
+    expect(ready).toHaveLength(21);
+  });
+
+  it('a team record the server only has as deleted counts as new', () => {
+    const data = goldenTeamData();
+    const long = { ...data, teams: data.teams.map((t) => ({ ...t, name: LONG })) };
+    const base = { 'team:t1': { v: 1, h: '', at: T0, del: true as const } };
+    expect(sendableChanges(allChanges(long), base, 't1').ready).toEqual([]);
+  });
+
+  it('holds what is below a new season that waits: its opponents, their matches and sets', () => {
+    const data = goldenTeamData();
+    const long = {
+      ...data,
+      seasons: data.seasons.map((x) => (x.id === 's2' ? { ...x, name: LONG } : x)),
+    };
+    const { ready, held } = sendableChanges(allChanges(long), {}, 't1');
+    expect(reasons(held)).toEqual({
+      'season:s2': 'invalid',
+      'opponent:o3': 'parent',
+      'match:m2': 'parent',
+      'set:m2/1': 'parent',
+    });
+    expect(ready).toHaveLength(18);
+    expect(keysOf(ready)).toContain('match:m1');
+  });
+
+  it('a new match waits with all its sets when one of them can’t be sent', () => {
+    const data = goldenTeamData();
+    // Set 2 of m1 with a broken payload (its `setNumber` isn't the id's).
+    const broken = {
+      ...data,
+      matches: data.matches.map((m) =>
+        m.id === 'm1'
+          ? {
+              ...m,
+              sets: m.sets.map((x) => (x.setNumber === 2 ? { ...x, liberoId: 7 as never } : x)),
+            }
+          : m,
+      ),
+    };
+    const { ready, held } = sendableChanges(allChanges(broken), {}, 't1');
+    expect(reasons(held)).toEqual({
+      'match:m1': 'parent',
+      'set:m1/1': 'parent',
+      'set:m1/2': 'invalid',
+      'set:m1/3': 'parent',
+    });
+    expect(keysOf(ready)).toContain('match:m2');
+    // A match the server already has: only the broken set waits, the others still go.
+    const base = { 'match:m1': { v: 3, h: 'old', at: T0 } };
+    const known = sendableChanges(allChanges(broken), base, 't1');
+    expect(reasons(known.held)).toEqual({ 'set:m1/2': 'invalid' });
+  });
+
+  it('a match record that can’t be sent doesn’t hold its sets once the server has the match', () => {
+    const data = goldenTeamData();
+    const long = {
+      ...data,
+      matches: data.matches.map((m) => (m.id === 'm1' ? { ...m, opponent: LONG } : m)),
+    };
+    const fresh = sendableChanges(allChanges(long), {}, 't1');
+    expect(Object.keys(reasons(fresh.held))).toEqual([
+      'match:m1',
+      'set:m1/1',
+      'set:m1/2',
+      'set:m1/3',
+    ]);
+    const base = { 'match:m1': { v: 3, h: 'old', at: T0 } };
+    const known = sendableChanges(allChanges(long), base, 't1');
+    expect(reasons(known.held)).toEqual({ 'match:m1': 'invalid' });
+    expect(keysOf(known.ready)).toEqual(
+      expect.arrayContaining(['set:m1/1', 'set:m1/2', 'set:m1/3']),
+    );
+  });
+
+  it('holds a group the server refused with exactly this content, and what is new below it', () => {
+    const changes = allChanges();
+    const opponent = changes.filter((c) => c.key === 'opponent:o3');
+    const refused = new Set([groupSignature(opponent)]);
+    const { ready, held } = sendableChanges(changes, {}, 't1', refused);
+    expect(reasons(held)).toEqual({
+      'opponent:o3': 'refused',
+      'match:m2': 'parent',
+      'set:m2/1': 'parent',
+    });
+    expect(ready).toHaveLength(19);
+    // Once the record has changed it is tried again.
+    const data = goldenTeamData();
+    const renamed = {
+      ...data,
+      opponents: data.opponents.map((o) => (o.id === 'o3' ? { ...o, name: 'Renamed' } : o)),
+    };
+    expect(sendableChanges(allChanges(renamed), {}, 't1', refused).held).toEqual([]);
+  });
+
+  it('a refused match group waits as a whole and is tried again when one set has changed', () => {
+    const changes = allChanges();
+    const group = changes.filter((c) => c.key === 'match:m2' || c.key === 'set:m2/1');
+    const refused = new Set([groupSignature(group)]);
+    const first = sendableChanges(changes, {}, 't1', refused);
+    expect(reasons(first.held)).toEqual({ 'match:m2': 'refused', 'set:m2/1': 'refused' });
+    const changed = changes.map((c) => (c.key === 'set:m2/1' ? { ...c, hash: 'new' } : c));
+    expect(sendableChanges(changed, {}, 't1', refused).held).toEqual([]);
+  });
+
+  it('a record refused on its own waits alone when the server already has its match', () => {
+    const changes = allChanges();
+    const set = changes.filter((c) => c.key === 'set:m1/2');
+    const refused = new Set([groupSignature(set)]);
+    const base = { 'match:m1': { v: 3, h: 'old', at: T0 } };
+    const known = sendableChanges(changes, base, 't1', refused);
+    expect(reasons(known.held)).toEqual({ 'set:m1/2': 'refused' });
+    // A new match still waits with all its sets.
+    const fresh = sendableChanges(changes, {}, 't1', refused);
+    expect(reasons(fresh.held)).toEqual({
+      'match:m1': 'parent',
+      'set:m1/1': 'parent',
+      'set:m1/2': 'refused',
+      'set:m1/3': 'parent',
+    });
+  });
+
+  it('deletions always go, also below a record that waits; a refused deletion waits', () => {
+    const data = goldenTeamData();
+    const team = syncedWith(data, 't1');
+    const long = {
+      ...data,
+      seasons: data.seasons.map((x) => (x.id === 's2' ? { ...x, name: LONG } : x)),
+      matches: data.matches.filter((m) => m.id !== 'm2'),
+    };
+    const { changes } = detectChanges(sliceOf(long, 't1'), team, T1);
+    expect(keysOf(changes)).toEqual(['season:s2', 'match:m2', 'set:m2/1']);
+    const plan = sendableChanges(changes, team.base, 't1');
+    expect(reasons(plan.held)).toEqual({ 'season:s2': 'invalid' });
+    expect(keysOf(plan.ready)).toEqual(['match:m2', 'set:m2/1']);
+    const refused = new Set([groupSignature(changes.slice(1))]);
+    const again = sendableChanges(changes, team.base, 't1', refused);
+    expect(reasons(again.held)).toEqual({
+      'season:s2': 'invalid',
+      'match:m2': 'refused',
+      'set:m2/1': 'refused',
+    });
+  });
+});
+
+describe('sendableChanges: the deletion of a season or an opponent (review of the audit’s push PR)', () => {
+  const reasons = (held: ReturnType<typeof sendableChanges>['held']) =>
+    Object.fromEntries(held.map((h) => [h.change.key, h.reason]));
+  const data = goldenTeamData();
+  const team = syncedWith(data, 't1');
+  const plan = (next: TeamData, refused?: ReadonlySet<string>) => {
+    const { changes } = detectChanges(sliceOf(next, 't1'), team, T1);
+    return { changes, ...sendableChanges(changes, team.base, 't1', refused) };
+  };
+  /** m1 (the server has it under o1) now belongs to `opponent`, and o1 is deleted. */
+  const movedM1 = (opponent: TeamData['opponents'][number]): TeamData => ({
+    ...data,
+    opponents: [...data.opponents.filter((o) => o.id !== 'o1'), opponent],
+    matches: data.matches.map((m) =>
+      m.id === 'm1' ? { ...m, opponentId: opponent.id, opponent: 'New VC' } : m,
+    ),
+  });
+  const newOpponent = (name: string) => ({ ...data.opponents[0], id: 'ox', name });
+
+  it('waits while the move of a match the server has waits: other devices still have it there', () => {
+    const { ready, held } = plan(movedM1(newOpponent(LONG)));
+    expect(reasons(held)).toEqual({
+      'opponent:ox': 'invalid',
+      'match:m1': 'parent',
+      'opponent:o1': 'parent',
+    });
+    expect(ready).toEqual([]);
+  });
+
+  it('goes once the move can go — in one request with it, and after it', () => {
+    const { changes, ready, held, together } = plan(movedM1(newOpponent('New VC')));
+    expect(keysOf(changes)).toEqual(['opponent:ox', 'opponent:o1', 'match:m1']);
+    expect(held).toEqual([]);
+    expect(keysOf(ready)).toEqual(['opponent:ox', 'match:m1', 'opponent:o1']);
+    expect(ready[2].payload).toBeNull();
+    expect([...together].sort()).toEqual(['match:m1', 'opponent:o1', 'opponent:ox']);
+    expect(pushGroups(ready, together).map(keysOf)).toEqual([
+      ['opponent:ox', 'match:m1', 'opponent:o1'],
+    ]);
+  });
+
+  it('waits too when the server refused the match’s change', () => {
+    const moved = movedM1(newOpponent('New VC'));
+    const match = plan(moved).changes.filter((c) => c.key === 'match:m1');
+    const { ready, held } = plan(moved, new Set([groupSignature(match)]));
+    expect(reasons(held)).toEqual({ 'match:m1': 'refused', 'opponent:o1': 'parent' });
+    expect(keysOf(ready)).toEqual(['opponent:ox']);
+  });
+
+  it('a season’s deletion waits for such a match as well, and for an opponent the server has', () => {
+    // m2 (server: season s2, opponent o3) moves to o2 in s1; s2 goes with its opponent o3.
+    const moved: TeamData = {
+      ...data,
+      seasons: data.seasons.filter((x) => x.id !== 's2'),
+      opponents: data.opponents.filter((o) => o.id !== 'o3'),
+      matches: data.matches.map((m) =>
+        m.id === 'm2' ? { ...m, seasonId: 's1', opponentId: 'o2', opponent: LONG } : m,
+      ),
+    };
+    const first = plan(moved);
+    expect(reasons(first.held)).toEqual({
+      'match:m2': 'invalid',
+      'season:s2': 'parent',
+      'opponent:o3': 'parent',
+    });
+    expect(first.ready).toEqual([]);
+
+    // An opponent the server has can't be pushed as it is now: only the season's deletion waits
+    // (an opponent's deletion takes matches along, and no match's change waits).
+    const renamed: TeamData = {
+      ...data,
+      seasons: data.seasons.filter((x) => x.id !== 's2'),
+      opponents: data.opponents
+        .filter((o) => o.id !== 'o3' && o.id !== 'o1')
+        .map((o) => (o.id === 'o2' ? { ...o, name: LONG } : o)),
+      matches: data.matches.filter((m) => m.teamId !== 't1'),
+    };
+    const second = plan(renamed);
+    expect(reasons(second.held)).toEqual({ 'opponent:o2': 'invalid', 'season:s2': 'parent' });
+    expect(keysOf(second.ready).slice(0, 2)).toEqual(['opponent:o1', 'opponent:o3']);
+    expect([...second.together]).toEqual(['opponent:o1', 'opponent:o3']);
+  });
+
+  it('a new match that waits holds no deletion: the server has no copy of it anywhere', () => {
+    const fresh: TeamData = {
+      ...data,
+      opponents: data.opponents.filter((o) => o.id !== 'o2'),
+      matches: [
+        ...data.matches,
+        { ...data.matches[1], id: 'mx', seasonId: 's1', opponentId: 'o1', opponent: LONG },
+      ],
+    };
+    const { ready, held } = plan(fresh);
+    expect(reasons(held)).toEqual({ 'match:mx': 'invalid', 'set:mx/1': 'parent' });
+    expect(keysOf(ready)).toEqual(['opponent:o2']);
+  });
+
+  it('nothing has to travel together when no season or opponent is deleted', () => {
+    const next: TeamData = {
+      ...renameP2(data, 'Renamed'),
+      opponents: [...data.opponents, newOpponent('New VC')],
+      matches: data.matches.filter((m) => m.id !== 'm2'),
+    };
+    const { changes, ready, held, together } = plan(next);
+    expect(held).toEqual([]);
+    expect(ready).toEqual(changes);
+    expect(together.size).toBe(0);
+  });
+
+  it('what arrives with the deletion stands together where the first of it stood', () => {
+    // A season is started again under its name: the old one goes with what is in it, a new one
+    // comes with an opponent and a new match; m1 moves to another opponent; a player changes.
+    const again = { ...data.seasons[1], id: 'sx' };
+    const next: TeamData = {
+      ...renameP2(data, 'Renamed'),
+      teams: data.teams.map((x) => (x.id === 't1' ? { ...x, name: 'Renamed too' } : x)),
+      seasons: [...data.seasons.filter((x) => x.id !== 's2'), again],
+      opponents: [
+        ...data.opponents.filter((o) => o.id !== 'o3'),
+        { ...data.opponents[2], id: 'ox', seasonId: 'sx' },
+      ],
+      matches: data.matches.map((m) =>
+        m.id === 'm1'
+          ? { ...m, opponentId: 'o2', opponent: 'Upcoming VC' }
+          : m.id === 'm2'
+            ? { ...m, id: 'mx', seasonId: 'sx', opponentId: 'ox' }
+            : m,
+      ),
+    };
+    const { changes, ready, held, together } = plan(next);
+    expect(held).toEqual([]);
+    expect(keysOf(changes)).toEqual([
+      'team:t1',
+      'season:sx',
+      'season:s2',
+      'opponent:ox',
+      'opponent:o3',
+      'player:p2',
+      'match:m1',
+      'match:mx',
+      'match:m2',
+      'set:mx/1',
+      'set:m2/1',
+    ]);
+    // The new season and opponent, the moved match, then the deletions; the rest as it was.
+    expect(keysOf(ready)).toEqual([
+      'team:t1',
+      'season:sx',
+      'opponent:ox',
+      'match:m1',
+      'season:s2',
+      'opponent:o3',
+      'player:p2',
+      'match:mx',
+      'set:mx/1',
+      'match:m2',
+      'set:m2/1',
+    ]);
+    const structure = ['season:sx', 'opponent:ox', 'match:m1', 'season:s2', 'opponent:o3'];
+    expect([...together]).toEqual(structure);
+    expect(pushGroups(ready, together).map(keysOf)).toEqual([
+      ['team:t1'],
+      structure,
+      ['player:p2'],
+      ['match:mx', 'set:mx/1'],
+      ['match:m2', 'set:m2/1'],
+    ]);
+    // However small the batches: one request for them, and halving never parts them.
+    const small = pushBatches(ready, { count: 1, bytes: 1 }, together).map(keysOf);
+    expect(small).toContainEqual(structure);
+    expect(small).toHaveLength(5);
+    expect(halveBatch(ready, together).map(keysOf)).toContainEqual(
+      expect.arrayContaining(structure),
+    );
+    // Without the set (as the plain record order), each would travel alone.
+    expect(pushGroups(ready).map(keysOf)).toContainEqual(['season:s2']);
+    // Planned again (as after a refusal in the middle of a push), nothing changes.
+    const replanned = sendableChanges(ready, team.base, 't1');
+    expect(replanned.ready).toEqual(ready);
+    expect([...replanned.together]).toEqual(structure);
+  });
+
+  it('a changed set of a match that travels with the deletion goes on its own', () => {
+    const next: TeamData = {
+      ...data,
+      opponents: data.opponents.filter((o) => o.id !== 'o1'),
+      matches: data.matches.map((m) =>
+        m.id === 'm1'
+          ? {
+              ...m,
+              opponentId: 'o2',
+              opponent: 'Upcoming VC',
+              sets: m.sets.map((x, i) => (i === 0 ? { ...x, events: [] } : x)),
+            }
+          : m,
+      ),
+    };
+    const { ready, together } = plan(next);
+    expect(pushGroups(ready, together).map(keysOf)).toEqual([
+      ['match:m1', 'opponent:o1'],
+      ['set:m1/1'],
+    ]);
+  });
+});
+
+describe('sendableChanges: a text the database can’t store (review of the audit’s push PR)', () => {
+  it('holds a record with half an emoji in a name as refused; whole emoji go', () => {
+    const half = renameP2(goldenTeamData(), `Ann\ud83c`);
+    const { ready, held } = sendableChanges(allChanges(half), {}, 't1');
+    expect(held.map((h) => [h.change.key, h.reason])).toEqual([['player:p2', 'refused']]);
+    expect(keysOf(ready)).not.toContain('player:p2');
+    const whole = renameP2(goldenTeamData(), 'Ann 🏐');
+    expect(sendableChanges(allChanges(whole), {}, 't1').held).toEqual([]);
+  });
+
+  it('holds a deletion under such an id too (it could never have been stored)', () => {
+    const change: LocalChange = {
+      key: 'player:p\udc00',
+      kind: 'player',
+      id: 'p\udc00',
+      payload: null,
+      hash: '',
+      at: T1,
+    };
+    expect(sendableChanges([change], {}, 't1').held).toEqual([{ change, reason: 'refused' }]);
+  });
+});
+
+describe('recordLabel', () => {
+  const change = (kind: LocalChange['kind'], payload: LocalChange['payload']) => ({
+    kind,
+    payload,
+  });
+
+  it('names a record by its name fields', () => {
+    expect(recordLabel(change('player', { firstName: ' Anna ', lastName: 'Meier' }))).toBe(
+      'Anna Meier',
+    );
+    expect(recordLabel(change('player', { firstName: 'Anna', lastName: '' }))).toBe('Anna');
+    expect(recordLabel(change('match', { opponent: 'TV Muster', date: '2026-11-26' }))).toBe(
+      'TV Muster',
+    );
+    expect(recordLabel(change('season', { name: 'Winter Cup' }))).toBe('Winter Cup');
+    expect(recordLabel(change('team', { name: 'U18' }))).toBe('U18');
+  });
+
+  it('is empty for a record without a name and for a deletion', () => {
+    expect(recordLabel(change('set', { setNumber: 1 }))).toBe('');
+    expect(recordLabel(change('starters', { name: 7 }))).toBe('');
+    expect(recordLabel(change('player', null))).toBe('');
+  });
+
+  it('cuts a long name (by characters, not half emoji)', () => {
+    expect(recordLabel(change('team', { name: 'x'.repeat(41) }))).toBe(`${'x'.repeat(40)}…`);
+    expect(recordLabel(change('team', { name: 'x'.repeat(40) }))).toBe('x'.repeat(40));
+    expect(recordLabel(change('team', { name: '🏐'.repeat(5) }), 3)).toBe('🏐🏐🏐…');
   });
 });

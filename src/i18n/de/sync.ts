@@ -63,6 +63,27 @@ export const sync: Strings['sync'] = {
         : `${undone} Änderungen von diesem Gerät, die noch nicht synchronisiert waren, wurden zurückgenommen.`),
     waiting:
       'Eines deiner geteilten Teams kann noch nicht angezeigt werden: In der Cloud fehlen Daten davon, oder es wurde mit einer neueren Version dieser App gespeichert. Es erscheint von selbst, sobald das Gerät eines Trainers synchronisiert hat. Sonst aktualisiere die App.',
+    unsent: (
+      team: string,
+      label: string,
+      count: number,
+      reason: 'tooLong' | 'invalid' | 'refused',
+    ) => {
+      const first = label === '' ? 'Ein Eintrag' : `„${label}“`;
+      const what =
+        count <= 1
+          ? `${first} kann`
+          : count === 2
+            ? `${first} und 1 weiterer Eintrag können`
+            : `${first} und ${count - 1} weitere Einträge können`;
+      const why =
+        reason === 'tooLong'
+          ? 'Ein Name ist länger als 200 Zeichen oder ein anderer Text länger als 1000. Kürze ihn, dann wird von selbst synchronisiert.'
+          : reason === 'invalid'
+            ? 'Diese App könnte es aus der Cloud nicht wieder lesen (die Daten sind nicht wie erwartet). Es bleibt auf diesem Gerät.'
+            : 'Die Cloud hat es abgelehnt (zu groß, oder mit einer Kennung oder einem Zeichen, das die Cloud nicht speichern kann). Es bleibt auf diesem Gerät.';
+      return `${team}: ${what} nicht synchronisiert werden: ${why} Alles andere wird wie gewohnt synchronisiert.`;
+    },
     aTeam: 'einem geteilten Team',
     dismiss: 'Schließen',
     dismissLabel: (team: string) => `Schließen: Hinweis zu ${team}`,

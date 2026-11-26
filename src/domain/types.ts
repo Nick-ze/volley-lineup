@@ -355,7 +355,21 @@ export type SyncNotice =
    * A linked team can't be shown yet: its own record hasn't arrived or can't be read by this app
    * version (v10 audit M6). The team isn't on the device, so there is no name (`teamName` '').
    */
-  | { kind: 'waiting'; teamId: string; teamName: string };
+  | { kind: 'waiting'; teamId: string; teamName: string }
+  /**
+   * `count` records of the team can't be saved to the cloud as they are (v10 audit M3, M4):
+   * this app would refuse them itself when pulled (`tooLong`: a name over 200 or another text
+   * over 1000 characters; `invalid`: anything else it can't read back), or the server refused
+   * them (`refused`). `label` names the first one ('' when it has no name).
+   */
+  | {
+      kind: 'unsent';
+      teamId: string;
+      teamName: string;
+      count: number;
+      label: string;
+      reason: 'tooLong' | 'invalid' | 'refused';
+    };
 
 /** v10: an advisory lease on a match while one device scores it live (`match_holds`). */
 export interface MatchHold {

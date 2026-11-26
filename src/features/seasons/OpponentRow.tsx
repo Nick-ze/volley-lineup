@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
 import { Button, ListRow, TextField, useFormStyles, useListStyles } from '@/components';
 import {
   validateOpponentName,
@@ -49,6 +50,7 @@ export function OpponentRow({ record, editable, deletable, onOpen, onDelete }: O
       <View style={formStyles.card} testID={`opponent-edit-${opponent.id}`}>
         <TextField
           label={s.newName(opponent.name)}
+          maxLength={MAX_NAME_LENGTH}
           value={name}
           onChangeText={setName}
           error={seasonErrorText(t, error, 'opponent')}

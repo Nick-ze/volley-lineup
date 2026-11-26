@@ -11,7 +11,20 @@
  *   the pull lets that device's rows win, the push leaves the match and its sets out.
  * - photo clean-up after a push.
  */
-import { detectChanges, edgePhotoIds, pushBatches, type LocalChange } from '@/domain/syncChanges';
+import {
+  batchBytes,
+  detectChanges,
+  edgePhotoIds,
+  groupSignature,
+  halveBatch,
+  PUSH_LIMITS,
+  pushBatches,
+  pushGroups,
+  recordLabel,
+  sendableChanges,
+  type HeldChange,
+  type LocalChange,
+} from '@/domain/syncChanges';
 import {
   applyPushResults,
   mergeRemote,
@@ -19,15 +32,22 @@ import {
   resetToCloudMerge,
   type MergeInput,
   type MergeOutput,
+  type PushOutcome,
 } from '@/domain/syncMerge';
 import { goneTeamLinks, isGoneLink, withoutTeamLinks } from '@/domain/syncAccess';
 import { foreignKeys, matchOfRecord, parseRecordKey, type TeamSlice } from '@/domain/syncRecords';
-import { normalizeTimestamp, parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
+import {
+  normalizeTimestamp,
+  parseRemoteRow,
+  textFits,
+  type RemoteRecord,
+} from '@/domain/syncSchema';
 import type { SyncedTeam } from '@/domain/types';
 import { useSyncRuntime, type AppState } from '@/store';
 
 import type { PushItem } from './backend';
 import { isoNow, type EngineCore } from './core';
+import { isRefusedContent, isTimeout } from './errors';
 import { yieldedNow } from './holdState';
 import {
   collectGarbage,
@@ -40,6 +60,7 @@ import {
 } from './photoSync';
 import {
   appState,
+  dropNotices,
   notify,
   sliceOf,
   teamData,
@@ -102,6 +123,7 @@ export function dropGoneTeams(core: EngineCore): void {
     forgetPhotos(core, teamId);
     core.resetPending.delete(teamId);
     core.awaited.delete(teamId);
+    forgetHeld(core, teamId);
   }
 }
 
@@ -369,7 +391,61 @@ function noteChanges(core: EngineCore, teamId: string): LocalChange[] {
   return changes;
 }
 
-/** Pushes the team's local changes (managers only), then cleans up unused cloud photos. */
+/** A push gives up (offline, with the back-off) after this many timeouts; see `pushTeam`. */
+const MAX_PUSH_TIMEOUTS = 2;
+
+/**
+ * Batches aren't made smaller than this after timeouts: when this little doesn't get through,
+ * the connection is gone, not slow, and one bad moment must not make every later push of the
+ * app run go record by record.
+ */
+export const MIN_PUSH_BYTES = 16 * 1024;
+
+/**
+ * Tells the user that records of the team can't be saved to the cloud as they are (v10 audit
+ * M3, M4): once for the same records (also when the notice was dismissed), again when what it
+ * says has changed, and it is taken back when none is left.
+ */
+function reportHeld(core: EngineCore, teamId: string, held: readonly HeldChange[]): void {
+  const own = held.filter((h) => h.reason !== 'parent');
+  if (own.length === 0) {
+    if (core.unsent.delete(teamId)) dropNotices('unsent', teamId);
+    return;
+  }
+  const label = recordLabel(own[0].change);
+  const reason =
+    own[0].reason === 'refused'
+      ? 'refused'
+      : textFits(own[0].change.payload)
+        ? 'invalid'
+        : 'tooLong';
+  const said = `${own.length}|${reason}|${label}`;
+  if (core.unsent.get(teamId) === said) return;
+  core.unsent.set(teamId, said);
+  dropNotices('unsent', teamId);
+  notify({ kind: 'unsent', teamId, teamName: teamName(teamId), count: own.length, label, reason });
+}
+
+/**
+ * Forgets what this app run knows about records of the team that can't be pushed, and takes the
+ * notice back: the team is no longer synced from this device, or no longer edited here.
+ */
+export function forgetHeld(core: EngineCore, teamId: string): void {
+  core.refused.delete(teamId);
+  if (core.unsent.delete(teamId)) dropNotices('unsent', teamId);
+}
+
+/**
+ * Pushes the team's local changes (managers only), then cleans up unused cloud photos.
+ *
+ * Not everything may go (v10 audit M3, M4, `sendableChanges`): a record this app would refuse
+ * itself when pulled isn't sent; a batch the server refuses for its content is tried again in
+ * halves until the group it refuses is found — that one is remembered and waits, with whatever
+ * new belongs below it, and the rest is pushed. A batch that times out on a slow connection is
+ * tried again in halves too, and later batches stay that small for the app run (v10 audit M5,
+ * not below `MIN_PUSH_BYTES`); after `MAX_PUSH_TIMEOUTS` in one push the cycle ends as offline
+ * and the next one continues with the smaller batches.
+ */
 export async function pushTeam(core: EngineCore, teamId: string, deviceId: string): Promise<void> {
   const meta = appState().sync.teams[teamId];
   if (!meta || meta.role !== 'manager' || !sliceOf(appState(), teamId)) return;
@@ -379,15 +455,84 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
   const changes = noteChanges(core, teamId).filter(
     (c) => !takenOver.has(matchOfRecord(c.kind, c.id) ?? ''),
   );
+  const refused = core.refused.get(teamId) ?? new Set<string>();
+  const plan = sendableChanges(changes, meta.base, teamId, refused);
+  let held = plan.held;
+  // What has to arrive in one request (with the deletion of a season or opponent).
+  let together = plan.together;
+  // Said before anything is sent: what this device won't push is known without a connection.
+  if (held.length > 0) reportHeld(core, teamId, held);
   const { uploaded, ready } = await uploadPhotos(
     core,
     teamId,
-    changes,
-    edgePhotoIds(changes, meta.photos),
+    plan.ready,
+    edgePhotoIds(plan.ready, meta.photos),
   );
   let photos = uploaded;
-  for (const batch of pushBatches(ready)) {
-    const results = await core.backend.pushRecords(teamId, deviceId, batch.map(toItem));
+  let timeouts = 0;
+  // Every refusal below makes the batches smaller or sets a record aside, so the loop ends by
+  // itself; the count is a last line of defence against going round for ever.
+  let refusals = 0;
+  const maxRefusals = 8 * changes.length + 16;
+  const queue = pushBatches(ready, core.pushLimit, together);
+  for (let batch = queue.shift(); batch !== undefined; batch = queue.shift()) {
+    let results: PushOutcome[];
+    try {
+      results = await core.backend.pushRecords(teamId, deviceId, batch.map(toItem));
+    } catch (e) {
+      const single = pushGroups(batch, together).length === 1;
+      if (isTimeout(e)) {
+        const bytes = batchBytes(batch);
+        // One group can't be split, and a small batch that gets no answer isn't a matter of
+        // size: offline, as before. The exception is the group that travels with a season's or
+        // opponent's deletion, which is one request however many records it has: it is tried
+        // whole once more, and on a connection that has timed out before in this app run (the
+        // limit is lowered already) it goes in parts after all — in its order, the deletions
+        // last. Better than not at all.
+        const group = single && batch.length > 1 && together.has(batch[0].key);
+        if ((single && !group) || bytes <= MIN_PUSH_BYTES) throw e;
+        const inParts = group && core.pushLimit.bytes < PUSH_LIMITS.bytes;
+        // Too much for this connection (M5): this batch again in parts of at most half its
+        // size, and everything after it that small too.
+        core.pushLimit.bytes = Math.max(MIN_PUSH_BYTES, Math.ceil(bytes / 2));
+        timeouts += 1;
+        if (timeouts >= MAX_PUSH_TIMEOUTS) throw e;
+        if (inParts) together = new Set();
+        const left = [...batch, ...queue.flat()];
+        queue.splice(0, queue.length, ...pushBatches(left, core.pushLimit, together));
+        continue;
+      }
+      if (!isRefusedContent(e)) throw e;
+      refusals += 1;
+      if (refusals > maxRefusals) throw e;
+      if (!single) {
+        // Something in the batch (M4): the halves tell which.
+        queue.unshift(...halveBatch(batch, together));
+        continue;
+      }
+      const base = appState().sync.teams[teamId]?.base ?? meta.base;
+      const head = base[batch[0].key];
+      if (batch.length > 1 && (together.has(batch[0].key) || (head !== undefined && !head.del))) {
+        // A match the server already has needn't travel with its sets: each record alone
+        // tells which one is refused, and the others still go. The same for the records that
+        // travel with the deletion of a season or opponent, in their order (the deletions
+        // last); what is left of them once the refused one is known travels together again.
+        together = new Set();
+        queue.unshift(...batch.map((c) => [c]));
+        continue;
+      }
+      // The server refuses this group as it is: it waits until it has changed, and so does
+      // whatever new belongs below it (pushed alone, other devices would skip it for good).
+      refused.add(groupSignature(batch));
+      core.refused.set(teamId, refused);
+      const rest = sendableChanges([...batch, ...queue.flat()], base, teamId, refused);
+      // Everything that waits now, in the order the next cycle will find it.
+      held = sendableChanges(changes, meta.base, teamId, refused).held;
+      together = rest.together;
+      queue.splice(0, queue.length, ...pushBatches(rest.ready, core.pushLimit, together));
+      continue;
+    }
+    const pushed = batch;
     const now = isoNow(core.clock);
     const added = photos;
     transaction((s) => {
@@ -396,7 +541,7 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       const edits = detectChanges(sliceOf(s, teamId), current, now).edits;
       const applied = applyPushResults(
         { ...current, edits, photos: union(current.photos, added) },
-        batch,
+        pushed,
         results,
       );
       if (applied.stale.length === 0) {
@@ -411,8 +556,8 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       // server's row points at.
       const used = slicePhotoIds(out.slice);
       const arrived = remotePhotoIds(applied.stale).filter((id) => used.has(id));
-      const meta = { ...out.team, photos: union(out.team.photos, arrived) };
-      return { ...data, sync: withTeamMeta(s.sync, teamId, meta) };
+      const next = { ...out.team, photos: union(out.team.photos, arrived) };
+      return { ...data, sync: withTeamMeta(s.sync, teamId, next) };
     });
     photos = [];
   }
@@ -426,7 +571,13 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       };
     });
   }
-  await cleanUpPhotos(core, teamId);
+  reportHeld(core, teamId, held);
+  // A team or player record that waits may show another picture here than its row in the cloud:
+  // no clean-up then, or the picture that row still points at would be removed. A record whose
+  // own new picture couldn't be uploaded doesn't count: the clean-up is what makes room in a
+  // full folder, so that the upload works the next time.
+  const waiting = held.some((h) => h.change.kind === 'team' || h.change.kind === 'player');
+  if (!waiting) await cleanUpPhotos(core, teamId);
 }
 
 async function cleanUpPhotos(core: EngineCore, teamId: string): Promise<void> {
@@ -449,4 +600,5 @@ export function dropTeam(core: EngineCore, teamId: string): void {
   );
   forgetPhotos(core, teamId);
   core.awaited.delete(teamId);
+  forgetHeld(core, teamId);
 }

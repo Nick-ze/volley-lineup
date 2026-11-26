@@ -19,7 +19,7 @@
  */
 import { AppState, type NativeEventSubscription } from 'react-native';
 
-import { detectChanges } from '@/domain/syncChanges';
+import { detectChanges, PUSH_LIMITS } from '@/domain/syncChanges';
 import { backoffMs } from '@/domain/syncStatus';
 import type { SyncNotice } from '@/domain/types';
 import { createId } from '@/lib/id';
@@ -45,7 +45,7 @@ import {
   whenHydrated,
 } from './storeOps';
 import { forgetPhotos } from './photoSync';
-import { dropGoneTeams, needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
+import { dropGoneTeams, forgetHeld, needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
 
 export interface EngineTiming {
   /** Delay of the first cycle after start (after the first screen is idle). */
@@ -92,6 +92,9 @@ export class SyncEngine implements EngineCore {
   readonly notified = new Set<string>();
   readonly yielded = new Set<string>();
   readonly awaited = new Map<string, AwaitedTeam>();
+  readonly refused = new Map<string, Set<string>>();
+  readonly unsent = new Map<string, string>();
+  readonly pushLimit = { ...PUSH_LIMITS };
   private current: BackendSession | null = null;
   private started = false;
   private needsRestore = false;
@@ -271,6 +274,7 @@ export class SyncEngine implements EngineCore {
         this.resetPending.delete(teamId);
         this.promoting.delete(teamId);
         this.forgetAwaited(teamId);
+        forgetHeld(this, teamId);
       }
       if (gone.length > 0) dropHolds(gone);
       this.rewire();
@@ -482,12 +486,14 @@ export class SyncEngine implements EngineCore {
         this.resetPending.delete(teamId);
         this.promoting.delete(teamId);
         this.forgetAwaited(teamId);
+        forgetHeld(this, teamId);
         notify({ kind: 'removed', teamId, teamName: name });
       } else if (role !== meta.role) {
         if (meta.role === 'manager') {
           const undone = detectChanges(sliceOf(appState(), teamId), meta, '').changes.length;
           setTeamMeta(teamId, { ...meta, role, cursor: 0, edits: {} });
           this.resetPending.add(teamId);
+          forgetHeld(this, teamId);
           notify({ kind: 'demoted', teamId, teamName: teamName(teamId), undone });
         } else {
           // Promotion (audit H8): a view-only copy can differ from the cloud with no way to

@@ -166,6 +166,49 @@ describe('sync notices', () => {
     expect(useSyncRuntime.getState().notices).toEqual([]);
   });
 
+  it('names a record that can’t be synced, and why (audit M3, M4)', async () => {
+    const unsent: SyncNotice = {
+      kind: 'unsent',
+      teamId: 'u',
+      teamName: 'Foxtrot',
+      count: 1,
+      label: 'Anna Meier',
+      reason: 'tooLong',
+    };
+    useSyncRuntime.setState({ notices: [unsent] });
+    await renderApp('/teams');
+    expect(
+      screen.getByText(
+        'Foxtrot: “Anna Meier” can’t be synced: a name is longer than 200 characters, or another text longer than 1000. Shorten it and it syncs by itself. Everything else syncs as usual.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: t.sync.notices.dismissLabel('Foxtrot') }),
+    ).toBeTruthy();
+    const en = t.sync.notices.unsent;
+    expect(en('Foxtrot', '', 1, 'refused')).toBe(
+      'Foxtrot: A record can’t be synced: the cloud refused it (too large, or with an id or a character the cloud can’t store). It stays on this device. Everything else syncs as usual.',
+    );
+    expect(en('Foxtrot', 'Динамо', 2, 'refused')).toContain('“Динамо” and 1 more record can’t');
+    expect(en('Foxtrot', 'X', 4, 'tooLong')).toContain('“X” and 3 more records can’t');
+    expect(en('Foxtrot', 'X', 1, 'invalid')).toBe(
+      'Foxtrot: “X” can’t be synced: this app couldn’t read it back from the cloud (its data isn’t as expected). It stays on this device. Everything else syncs as usual.',
+    );
+    const german = de.sync.notices.unsent;
+    expect(german('Foxtrot', 'Anna Meier', 1, 'tooLong')).toBe(
+      'Foxtrot: „Anna Meier“ kann nicht synchronisiert werden: Ein Name ist länger als 200 Zeichen oder ein anderer Text länger als 1000. Kürze ihn, dann wird von selbst synchronisiert. Alles andere wird wie gewohnt synchronisiert.',
+    );
+    expect(german('Foxtrot', '', 1, 'refused')).toContain(
+      'Ein Eintrag kann nicht synchronisiert werden: Die Cloud hat es abgelehnt',
+    );
+    expect(german('Foxtrot', 'X', 2, 'refused')).toContain(
+      '„X“ und 1 weiterer Eintrag können nicht',
+    );
+    expect(german('Foxtrot', 'X', 3, 'invalid')).toContain(
+      '„X“ und 2 weitere Einträge können nicht',
+    );
+  });
+
   it('words the demotion without undone changes and several skipped records', () => {
     expect(t.sync.notices.demoted('Gamma', 0)).toBe('You can now only view Gamma.');
     expect(t.sync.notices.demoted('Gamma', 1)).toContain('1 unsynced change was undone');

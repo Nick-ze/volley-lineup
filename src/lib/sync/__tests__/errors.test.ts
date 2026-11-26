@@ -2,6 +2,8 @@ import {
   BackendError,
   backendError,
   isPhotosRemain,
+  isRefusedContent,
+  isTimeout,
   requestCodeError,
   toSyncError,
 } from '../errors';
@@ -106,5 +108,79 @@ describe('requestCodeError (audit M13)', () => {
     [null, 'unknown'],
   ])('maps a code request’s error %j', (error, code) => {
     expect(requestCodeError(error).code).toBe(code);
+  });
+});
+
+describe('isTimeout (audit M5)', () => {
+  const abort = Object.assign(new Error('The operation was aborted'), { name: 'AbortError' });
+
+  it.each([
+    [abort],
+    [Object.assign(new Error('signal timed out'), { name: 'TimeoutError' })],
+    [new TypeError('Network request failed (the answer timed out)')],
+    // postgrest-js reports a failed fetch as a message, with status 0.
+    [{ message: 'AbortError: The operation was aborted', code: '', status: 0 }],
+    [{ message: 'TypeError: Network request failed (the answer timed out)', status: 0 }],
+    // storage-js and auth-js wrap it.
+    [{ name: 'StorageUnknownError', message: 'x', originalError: abort }],
+    [
+      {
+        name: 'AuthRetryableFetchError',
+        message: 'The operation was aborted',
+        status: 0,
+        originalError: abort,
+      },
+    ],
+  ])('a request that got no answer in time: %j', (error) => {
+    expect(isTimeout(error)).toBe(true);
+    expect(toSyncError(error)).toBe('offline');
+    // The mark survives the wrapping every backend call does.
+    expect(backendError(error)).toMatchObject({ code: 'offline', raw: 'timeout' });
+    expect(isTimeout(backendError(error))).toBe(true);
+  });
+
+  it.each([
+    [new TypeError('Network request failed')],
+    [{ message: 'TypeError: Failed to fetch', status: 0 }],
+    [{ status: 540, message: 'Project paused' }],
+    [{ status: 503 }],
+    [new BackendError('offline')],
+    [{ code: '23514', message: 'check' }],
+    [new Error('The request timed out in my head')],
+    [null],
+    ['timed out'],
+  ])('anything else is not a timeout: %j', (error) => {
+    expect(isTimeout(error)).toBe(false);
+    expect(isTimeout(backendError(error))).toBe(false);
+  });
+
+  it('keeps a server code over the timeout mark, and stops at a deep chain of causes', () => {
+    expect(backendError({ code: 'PGRST000', message: 'AbortError: x', status: 0 }).raw).toBe(
+      'PGRST000',
+    );
+    const deep = {
+      originalError: {
+        originalError: { originalError: { originalError: { name: 'AbortError' } } },
+      },
+    };
+    expect(isTimeout({ name: 'FetchError', ...deep })).toBe(false);
+  });
+});
+
+describe('isRefusedContent (audit M4)', () => {
+  it('is true for the SQLSTATEs with which the server refuses what a push sends', () => {
+    for (const code of ['23514', '22023', '22P05', '22P02']) {
+      expect(isRefusedContent(backendError({ code, message: 'x' }))).toBe(true);
+      expect(isRefusedContent(new BackendError('unknown', code))).toBe(true);
+    }
+  });
+
+  it('is false for everything else', () => {
+    for (const code of ['42501', 'VL007', 'VL001', '57014', '']) {
+      expect(isRefusedContent(backendError({ code, message: 'x' }))).toBe(false);
+    }
+    expect(isRefusedContent({ code: '23514' })).toBe(false);
+    expect(isRefusedContent(new TypeError('Network request failed'))).toBe(false);
+    expect(isRefusedContent(null)).toBe(false);
   });
 });

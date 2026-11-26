@@ -40,6 +40,21 @@ export interface EngineCore {
    * the app run only (the first cycle after a restart pulls completely once).
    */
   readonly awaited: Map<string, AwaitedTeam>;
+  /**
+   * Per team, what the server refused to store as it is (`groupSignature`s, v10 audit M4): not
+   * sent again in this app run until something in it has changed.
+   */
+  readonly refused: Map<string, Set<string>>;
+  /**
+   * Per team, what its notice about records that can't be pushed last said (v10 audit M3, M4):
+   * it is shown again only when that has changed.
+   */
+  readonly unsent: Map<string, string>;
+  /**
+   * The size of a push batch. Lowered when a push timed out on a slow connection (v10 audit
+   * M5); it stays lowered for the app run.
+   */
+  readonly pushLimit: { count: number; bytes: number };
 }
 
 export interface AwaitedTeam {

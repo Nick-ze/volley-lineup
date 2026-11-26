@@ -92,7 +92,7 @@ export const MAX_NAME_LENGTH = 200;
 export const MAX_TEXT_LENGTH = 1000;
 
 /** True when every string in the value is short enough (names ≤ 200, other text ≤ 1000). */
-function textFits(value: unknown, field: string): boolean {
+export function textFits(value: unknown, field = ''): boolean {
   if (typeof value === 'string') {
     return value.length <= (NAME_FIELDS.has(field) ? MAX_NAME_LENGTH : MAX_TEXT_LENGTH);
   }
@@ -100,6 +100,27 @@ function textFits(value: unknown, field: string): boolean {
   if (value !== null && typeof value === 'object') {
     return Object.entries(value).every(([k, v]) => textFits(v, k));
   }
+  return true;
+}
+
+/**
+ * True when no text in the value has half of a character pair (a lone surrogate: what is left
+ * of an emoji that was cut in the middle). The database can't store such a text — it refuses
+ * the whole request (PostgreSQL's jsonb, SQLSTATE 22P02).
+ */
+export function textIsWhole(value: unknown): boolean {
+  if (typeof value === 'string') {
+    for (let i = 0; i < value.length; i += 1) {
+      const unit = value.charCodeAt(i);
+      if (unit < 0xd800 || unit > 0xdfff) continue;
+      const next = value.charCodeAt(i + 1);
+      if (unit > 0xdbff || !(next >= 0xdc00 && next <= 0xdfff)) return false;
+      i += 1;
+    }
+    return true;
+  }
+  if (Array.isArray(value)) return value.every(textIsWhole);
+  if (value !== null && typeof value === 'object') return Object.values(value).every(textIsWhole);
   return true;
 }
 

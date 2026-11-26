@@ -76,6 +76,31 @@ export const sync = {
      */
     waiting:
       'One of your shared teams can’t be shown yet: the cloud doesn’t have all of its data, or it was saved by a newer version of this app. It appears by itself once a manager’s device has synced. If it doesn’t, update the app.',
+    /**
+     * v10 audit M3, M4: records of the team that can't be saved to the cloud as they are. `label`
+     * names the first one ('' when it has no name), `count` is how many there are.
+     */
+    unsent: (
+      team: string,
+      label: string,
+      count: number,
+      reason: 'tooLong' | 'invalid' | 'refused',
+    ) => {
+      const first = label === '' ? 'A record' : `“${label}”`;
+      const what =
+        count <= 1
+          ? first
+          : count === 2
+            ? `${first} and 1 more record`
+            : `${first} and ${count - 1} more records`;
+      const why =
+        reason === 'tooLong'
+          ? 'a name is longer than 200 characters, or another text longer than 1000. Shorten it and it syncs by itself.'
+          : reason === 'invalid'
+            ? 'this app couldn’t read it back from the cloud (its data isn’t as expected). It stays on this device.'
+            : 'the cloud refused it (too large, or with an id or a character the cloud can’t store). It stays on this device.';
+      return `${team}: ${what} can’t be synced: ${why} Everything else syncs as usual.`;
+    },
     /** In `dismissLabel`, for a notice about a team without a name. */
     aTeam: 'a shared team',
     dismiss: 'Dismiss',
