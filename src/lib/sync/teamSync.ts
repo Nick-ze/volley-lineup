@@ -17,6 +17,7 @@ import {
   edgePhotoIds,
   groupSignature,
   halveBatch,
+  PUSH_LIMITS,
   pushBatches,
   pushGroups,
   recordLabel,
@@ -483,13 +484,20 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       if (isTimeout(e)) {
         const bytes = batchBytes(batch);
         // One group can't be split, and a small batch that gets no answer isn't a matter of
-        // size: offline, as before.
-        if (single || bytes <= MIN_PUSH_BYTES) throw e;
+        // size: offline, as before. The exception is the group that travels with a season's or
+        // opponent's deletion, which is one request however many records it has: it is tried
+        // whole once more, and on a connection that has timed out before in this app run (the
+        // limit is lowered already) it goes in parts after all — in its order, the deletions
+        // last. Better than not at all.
+        const group = single && batch.length > 1 && together.has(batch[0].key);
+        if ((single && !group) || bytes <= MIN_PUSH_BYTES) throw e;
+        const inParts = group && core.pushLimit.bytes < PUSH_LIMITS.bytes;
         // Too much for this connection (M5): this batch again in parts of at most half its
         // size, and everything after it that small too.
         core.pushLimit.bytes = Math.max(MIN_PUSH_BYTES, Math.ceil(bytes / 2));
         timeouts += 1;
         if (timeouts >= MAX_PUSH_TIMEOUTS) throw e;
+        if (inParts) together = new Set();
         const left = [...batch, ...queue.flat()];
         queue.splice(0, queue.length, ...pushBatches(left, core.pushLimit, together));
         continue;

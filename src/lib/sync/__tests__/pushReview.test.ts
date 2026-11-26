@@ -44,10 +44,10 @@ function t1(photos = false): TeamData {
 
 const TEAM_NAME = t1().teams[0].name;
 
-/** Two devices of one manager account sharing t1, both in sync. */
-async function inSync(photos = false) {
+/** Two devices of one manager account sharing t1 (or `data`), both in sync. */
+async function inSync(photos = false, data: TeamData = t1(photos)) {
   const cloud = new FakeCloud();
-  const a = new TestDevice(cloud, 'dev-a', t1(photos));
+  const a = new TestDevice(cloud, 'dev-a', data);
   if (photos) a.photos = { ph2: PHOTO, ph3: PHOTO };
   const b = new TestDevice(cloud, 'dev-b');
   await a.signIn('anna@example.test');
@@ -456,6 +456,101 @@ describe('a season or opponent deleted: what is left after a refusal, in small b
       ['match:m2 (del)', 'set:m2/1 (del)'],
     ]);
     expect(cloud.record(T1, 'season', 's2')?.deleted).toBe(true);
+  });
+});
+
+describe('a season or opponent deleted: a large group on a slow connection (M5)', () => {
+  const aborted = () =>
+    Object.assign(new Error('The operation was aborted'), { name: 'AbortError' });
+
+  /** o2 with 150 matches the cloud has, and an empty opponent; o2 is renamed, the empty one goes. */
+  async function largeGroup() {
+    const data = t1();
+    const old = data.matches.find((m) => m.id === 'm2') as Match;
+    const many: Match[] = Array.from({ length: 150 }, (_, i) => ({
+      ...old,
+      id: `mm-${i}`,
+      seasonId: 's1',
+      opponentId: 'o2',
+      opponent: 'Upcoming VC',
+      sets: old.sets.map((x) => ({ ...x, events: [] })),
+    }));
+    const empty: Opponent = {
+      id: 'oE',
+      seasonId: 's1',
+      name: 'Nobody',
+      createdAt: '2026-03-01T00:00:00.000Z',
+    };
+    const devices = await inSync(false, {
+      ...data,
+      opponents: [...data.opponents, empty],
+      matches: [...data.matches, ...many],
+    });
+    devices.cloud.clock.tick(60_000);
+    await devices.a.act(() => {
+      const store = useAppStore.getState();
+      store.renameOpponent('o2', 'Upcoming Volley'); // changes its 150 matches too
+      store.deleteOpponent('oE');
+    });
+    await editPlayer(devices.a, 'p3', { firstName: 'Fine' });
+    return devices;
+  }
+
+  it('a push that times out once: the group still travels whole in the next try', async () => {
+    const { cloud, a } = await largeGroup();
+    const pushed: string[][] = [];
+    const push = a.backend.pushRecords.bind(a.backend);
+    a.backend.pushRecords = async (
+      teamId: string,
+      deviceId: string,
+      items: readonly PushItem[],
+    ) => {
+      pushed.push(itemKeys(items));
+      if (pushed.length === 1) throw aborted();
+      return push(teamId, deviceId, items);
+    };
+    await a.cycle();
+    // More than a batch holds, so the group has a request of its own; it is tried again whole.
+    expect(pushed[0]).toHaveLength(152);
+    expect(pushed[1]).toEqual(pushed[0]);
+    expect(pushed[1][0]).toBe('opponent:o2');
+    expect(pushed[1][151]).toBe('opponent:oE (del)');
+    expect(pushed[2]).toEqual(['player:p3']);
+    expect(pushed).toHaveLength(3);
+    expect(a.engine.pushLimit.bytes).toBeLessThan(PUSH_LIMITS.bytes);
+    expect(a.runtime.status.pending).toBe(0);
+    expect(cloud.record(T1, 'opponent', 'oE')?.deleted).toBe(true);
+  });
+
+  it('too slow for the whole group: it goes in parts after all, the deletion last', async () => {
+    const { cloud, a } = await largeGroup();
+    const sent: string[][] = [];
+    const push = a.backend.pushRecords.bind(a.backend);
+    a.backend.pushRecords = async (
+      teamId: string,
+      deviceId: string,
+      items: readonly PushItem[],
+    ) => {
+      // An uplink that gets 20 kB through per request; the group is about 26 kB.
+      if (JSON.stringify(items).length > 20_000) throw aborted();
+      sent.push(itemKeys(items));
+      return push(teamId, deviceId, items);
+    };
+    // The first sync tries the whole group twice and ends as offline …
+    await a.act((e) => e.syncNow());
+    expect(a.runtime.status.phase).toBe('offline');
+    expect(sent).toEqual([]);
+    // … the next one sends it in parts.
+    await a.act((e) => e.syncNow());
+    expect(a.runtime.status).toMatchObject({ phase: 'synced', pending: 0 });
+    expect(cloudPayload(cloud, 'player', 'p3')?.firstName).toBe('Fine');
+    expect(cloudPayload(cloud, 'opponent', 'o2')?.name).toBe('Upcoming Volley');
+    expect(cloudPayload(cloud, 'match', 'mm-149')?.opponent).toBe('Upcoming Volley');
+    expect(cloud.record(T1, 'opponent', 'oE')?.deleted).toBe(true);
+    // In parts, but in order: the deletion after every match's change.
+    const all = sent.flat();
+    expect(all.indexOf('opponent:oE (del)')).toBeGreaterThan(all.indexOf('match:mm-149'));
+    expect(sent.length).toBeGreaterThan(1);
   });
 });
 

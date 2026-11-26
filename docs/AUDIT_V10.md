@@ -1102,7 +1102,7 @@ had that).
 Tests: `unsendable.test.ts` (M3, M4: 15 two-device cases), `slowUplink.test.ts` (M5: 6),
 `fetchWithTimeout.test.ts` (M5, M12: 15, three of them through the real supabase-js client),
 `syncChanges.test.ts` (the domain rules, 100 %), `errors.test.ts`, `syncStatusUi.test.tsx`,
-`nameFieldLimits.test.tsx`, and the reviews' sequences in `pushReview.test.ts` (28). The test
+`nameFieldLimits.test.tsx`, and the reviews' sequences in `pushReview.test.ts` (30). The test
 server (`fakeBackend.ts`) refuses what `push_records` refuses.
 
 **Independent review.** The reviewer compared the change with a copy without it (same test
@@ -1129,6 +1129,14 @@ probes on three copies: fixed, before the fixes, `main`):
 | With a change of a match held back for good (below), an opponent deleted and entered again under the same name: the new one is pushed, the old one's deletion waits, other managers' devices merge the two — the match on the first device then points at an opponent that is gone                                                                                                                                                                                     | left as a limit: a deletion carries no name, so the device can't tell this case from an ordinary new opponent, and holding every new opponent back would be worse |
 | Mutations no test noticed: the notice when only the name or only the reason changes                                                                                                                                                                                                                                                                                                                                                                                    | test added                                                                                                                                                        |
 
+**Third round**, on the one-request rule (22 more mutations; every earlier probe run again):
+"OK to merge". Two things came out of it:
+
+| Review finding                                                                                                                                                                                                                                                                                                                    | Done                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| On an uplink too slow for it, a large group (an opponent with 150 matches renamed, another opponent deleted) never got through, where `main`'s two batches did: one group was never split after a timeout                                                                                                                         | fixed: the group is tried whole once more; on a connection that has timed out before in the app run it goes in parts, in its order, the deletions last (2 cases)                                                                        |
+| Also on `main`, now shown with a test: this device moves a match and deletes its old opponent, but another device changed the same match later. The server keeps the other device's copy (still under the old opponent) and stores the deletion from the same request — the other device then deletes the match with the opponent | left as a follow-up: one request can't make the deletion depend on the move being accepted. A fix belongs on the pulling side (a newer row that puts a match back under an opponent this device deleted should bring the opponent back) |
+
 **Limits that remain (PR 2)**
 
 - While a changed match (or opponent) the cloud already has is held back, **no** opponent (or
@@ -1137,21 +1145,20 @@ probes on three copies: fixed, before the fixes, `main`):
   them. If, meanwhile, an opponent or season is deleted and entered again under the same name,
   other managers' devices merge the two (see the second round). With an opponent the server
   can't store ("Open questions" 9) the wait never ends.
-- When the server refuses the group that travels with a season's or opponent's deletion, its
-  records are sent one by one to find the refused one; a device that pulls during those few
-  requests can see a new season or opponent without the deletion of the old one of the same
-  name.
+- When the server refuses the group that travels with a season's or opponent's deletion (also
+  when it has more than the server's 200 records per request), its records are sent one by one
+  to find the refused one, and on a slow connection a large group goes in parts; a device that
+  pulls during those requests can see a new season or opponent without the deletion of the old
+  one of the same name.
 - A device with an opponent the server can't store ("Open questions" 9) that meets another
   device's opponent of the same name merges the two on its own copy only: the other devices keep
   theirs, with its matches.
-- Also on `main`, found by reading, not fixed: (1) the same "deletion without the move" can
-  still happen for a match another device took over from this one (its changes aren't pushed
-  while that hold lasts) when an opponent merge moves it — the app offers no way to do that by
-  hand; (2) when the server keeps another device's newer save of a match instead of this
-  device's move, the old opponent's deletion still goes in the same push — the ordinary "two
-  people changed the same thing" case, decided by save time; (3) for one cycle after the server
-  kept an older save of this device's own record, the clean-up can remove the picture that
-  record still shows.
+- Also on `main`, not fixed: (1) the same "deletion without the move" can still happen for a
+  match another device took over from this one (its changes aren't pushed while that hold
+  lasts) when an opponent merge moves it — found by reading; the app offers no way to do that
+  by hand; (2) the move the server doesn't accept, see the third round; (3) for one cycle after
+  the server kept an older save of this device's own record, the clean-up can remove the
+  picture that record still shows — found by reading.
 - After one timeout every later push of the app run, for every team, uses the smaller batches
   (DECISIONS #323).
 - Not run against the hosted database or its API layer.
