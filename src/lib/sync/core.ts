@@ -31,6 +31,8 @@ export interface EngineCore {
   readonly pendingPhotos: Map<string, Set<string>>;
   /** Notice keys already shown in this run (each shown once). */
   readonly notified: Set<string>;
+  /** Matches this device was scoring that another device holds now (`holdState.ts`). */
+  readonly yielded: Set<string>;
 }
 
 export const isoNow = (clock: Clock): string => new Date(clock.now()).toISOString();

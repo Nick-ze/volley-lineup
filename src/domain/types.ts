@@ -339,7 +339,9 @@ export type SyncNotice =
   | { kind: 'removed'; teamId: string; teamName: string }
   | { kind: 'deleted'; teamId: string; teamName: string }
   | { kind: 'demoted'; teamId: string; teamName: string; undone: number }
-  | { kind: 'skipped'; teamId: string; teamName: string; count: number };
+  | { kind: 'skipped'; teamId: string; teamName: string; count: number }
+  /** Another device took over scoring a match: `undone` unsynced changes here gave way. */
+  | { kind: 'takenOver'; teamId: string; teamName: string; holder: string; undone: number };
 
 /** v10: an advisory lease on a match while one device scores it live (`match_holds`). */
 export interface MatchHold {

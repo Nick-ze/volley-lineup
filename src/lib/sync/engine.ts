@@ -4,9 +4,10 @@
  *   1. memberships: a team the account no longer belongs to is unlinked (local copy kept, with a
  *      notice); a changed role is stored; a demotion undoes the unsynced changes and the next
  *      pull replaces the team with the cloud's content (`resetToCloudMerge`, with a notice);
- *   2. per team: pull + merge (`teamSync.ts`), then push — not in a cycle that skipped rows of
- *      the team because their ids belong to another team on the device (error notice);
- *   3. live holds of the shared teams into the runtime store.
+ *   2. live holds of the shared teams into the runtime store — before anything is pushed, so a
+ *      match another device took over from this one is no longer saved from here (audit M1);
+ *   3. per team: pull + merge (`teamSync.ts`), then push — not in a cycle that skipped rows of
+ *      the team because their ids belong to another team on the device (error notice).
  * Offline / a paused server → status offline and a retry with a growing delay. Nothing here
  * throws to the UI or blocks a screen.
  *
@@ -27,6 +28,7 @@ import { useAppStore, useSyncRuntime, type AppState as StoreState } from '@/stor
 import type { BackendSession, SessionEvent, SyncBackend } from './backend';
 import { isoNow, systemClock, type Clock, type EngineCore } from './core';
 import { toSyncError } from './errors';
+import { setHolds } from './holdState';
 import {
   appState,
   dropHolds,
@@ -78,6 +80,7 @@ export class SyncEngine implements EngineCore {
   private readonly promoting = new Set<string>();
   readonly pendingPhotos = new Map<string, Set<string>>();
   readonly notified = new Set<string>();
+  readonly yielded = new Set<string>();
   private current: BackendSession | null = null;
   private started = false;
   private needsRestore = false;
@@ -343,21 +346,27 @@ export class SyncEngine implements EngineCore {
       emitStatus({ type: 'start' });
       await this.refreshMemberships(session.userId);
       const deviceId = appState().sync.deviceId ?? '';
-      let firstError: ReturnType<typeof toSyncError> | null = null;
-      for (const teamId of linkedTeamIds(session.userId)) {
+      const errors: ReturnType<typeof toSyncError>[] = [];
+      /** A step whose own failure doesn't end the cycle (no connection / signed out does). */
+      const step = async (run: () => Promise<void>) => {
         try {
-          await this.syncTeam(teamId, deviceId);
+          await run();
         } catch (e) {
           const code = toSyncError(e);
           if (code === 'offline' || code === 'signedOut' || code === 'notSignedIn') throw e;
-          firstError ??= code;
+          errors.push(code);
         }
+      };
+      // Holds before the teams: a take-over must be known before this device pushes (audit
+      // M1). If they can't be read, the teams still sync, with the holds known so far.
+      await step(() => this.refreshHolds(session.userId));
+      for (const teamId of linkedTeamIds(session.userId)) {
+        await step(() => this.syncTeam(teamId, deviceId));
       }
-      await this.refreshHolds(session.userId);
       this.failures = 0;
       emitStatus(
-        firstError
-          ? { type: 'failed', code: firstError, retryAt: null }
+        errors.length > 0
+          ? { type: 'failed', code: errors[0], retryAt: null }
           : { type: 'done', at: isoNow(this.clock) },
       );
       updatePending(this.userId());
@@ -445,7 +454,7 @@ export class SyncEngine implements EngineCore {
 
   private async refreshHolds(userId: string): Promise<void> {
     const holds = await this.backend.listHolds(linkedTeamIds(userId));
-    useSyncRuntime.setState({ holds: Object.fromEntries(holds.map((h) => [h.matchId, h])) });
+    setHolds(this, Object.fromEntries(holds.map((h) => [h.matchId, h])));
   }
 
   /* ---------------------------------------------------------------- sign-out */
@@ -461,7 +470,7 @@ export class SyncEngine implements EngineCore {
       this.ownSignOut = false;
     }
     this.setSession(null);
-    useSyncRuntime.setState({ holds: {} });
+    setHolds(this, {});
     emitStatus({ type: 'disabled' });
   }
 }

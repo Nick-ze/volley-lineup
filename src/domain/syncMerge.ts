@@ -29,6 +29,7 @@ import {
 import { referencedPlayerIds, repairSlice, type RepairIssue } from './syncRepair';
 import { normalizeTimestamp, parsePayload, type RemoteRecord } from './syncSchema';
 import {
+  matchOfRecord,
   payloadHash,
   RECORD_KINDS,
   recordKey,
@@ -53,6 +54,13 @@ export interface MergeInput {
   local: { profileId: string };
   /** Entity keys used by the device's other teams (`foreignKeys`). */
   foreignIds: ReadonlySet<string>;
+  /**
+   * Matches this device yielded to another scorer (`yieldedMatches`): a new row of such a match
+   * or of one of its sets that **another device** saved wins against any unsynced change here,
+   * whatever the save times. `deviceId` is this device's: its own earlier save coming back (a
+   * push whose answer was lost) is not the scorer's and follows the usual rule.
+   */
+  takenOver?: { matches: ReadonlySet<string>; deviceId: string };
 }
 
 export type SkipReason = 'foreignId' | 'orphan' | 'invalid';
@@ -65,6 +73,8 @@ export interface MergeOutput {
   skipped: { key: string; reason: SkipReason }[];
   /** What `repairSlice` did (e.g. duplicate jersey numbers to warn about). */
   issues: RepairIssue[];
+  /** Keys of `takenOver` matches whose unsynced local change gave way to the scorer's row. */
+  yielded: string[];
 }
 
 const time = (iso: string | undefined): number =>
@@ -172,7 +182,8 @@ export function mergeRemote(input: MergeInput): MergeOutput {
  */
 export function resetToCloudMerge(input: MergeInput): MergeOutput {
   const hasTeam = input.rows.some((r) => r.kind === 'team' && r.id === input.teamId);
-  if (!hasTeam) return { slice: input.slice, team: input.team, skipped: [], issues: [] };
+  if (!hasTeam)
+    return { slice: input.slice, team: input.team, skipped: [], issues: [], yielded: [] };
   return merge(input, true);
 }
 
@@ -182,6 +193,8 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
   const base: Record<string, SyncBase> = { ...team.base };
   const edits: Record<string, SyncEdit> = { ...team.edits };
   const skipped: MergeOutput['skipped'] = [];
+  const takenOver = input.takenOver;
+  const yielded: string[] = [];
   const upserted = new Map<string, Prior>();
   const pending = new Set<string>();
   /** Players the cloud has that a reset pull can't apply here: their references stay. */
@@ -204,7 +217,12 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
     const local = records.get(key);
     const dirty = !cloudWins && (known ? (local ? payloadHash(local) : '') !== known.h : !!local);
     const edit = edits[key];
-    const remoteWins = !dirty || edit === undefined || time(row.at) >= time(edit.at);
+    const yields =
+      dirty &&
+      takenOver !== undefined &&
+      row.deviceId !== takenOver.deviceId &&
+      takenOver.matches.has(matchOfRecord(row.kind, row.id) ?? '');
+    const remoteWins = !dirty || yields || edit === undefined || time(row.at) >= time(edit.at);
     base[key] = {
       v: row.version,
       h: payload === null ? '' : payloadHash(payload),
@@ -212,6 +230,7 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
       ...(payload === null ? { del: true as const } : {}),
     };
     if (!remoteWins) continue;
+    if (yields) yielded.push(key);
     delete edits[key];
     if (payload === null) {
       if (local) pending.add(key);
@@ -239,7 +258,7 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
       ? team
       : { ...team, base, edits };
   if (!records.has(recordKey('team', teamId))) {
-    return { slice: input.slice, team: nextTeam, skipped, issues: [] };
+    return { slice: input.slice, team: nextTeam, skipped, issues: [], yielded };
   }
   const descriptions = new Map<string, string>();
   for (const p of input.slice?.players ?? []) {
@@ -260,7 +279,7 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
   );
   const repaired = repairSlice(built, keep);
   const slice = sameSlice(input.slice, repaired.slice) ? input.slice : repaired.slice;
-  return { slice, team: nextTeam, skipped, issues: repaired.issues };
+  return { slice, team: nextTeam, skipped, issues: repaired.issues, yielded };
 }
 
 /**

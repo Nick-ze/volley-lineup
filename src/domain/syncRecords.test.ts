@@ -2,6 +2,7 @@ import { emptyTeamData, goldenTeamData, sliceOf } from '@/test-utils/syncFixture
 
 import {
   foreignKeys,
+  matchOfRecord,
   parseRecordKey,
   parseSetRecordId,
   payloadHash,
@@ -48,6 +49,16 @@ describe('record keys', () => {
     expect(parseSetRecordId('a/b/5')).toEqual({ matchId: 'a/b', setNumber: 5 });
     for (const bad of ['m1', '/1', 'm1/6', 'm1/0', 'm1/x', 'm1/12']) {
       expect(parseSetRecordId(bad)).toBeNull();
+    }
+  });
+
+  it('matchOfRecord: a match and its sets belong to the match, nothing else does', () => {
+    expect(matchOfRecord('match', 'm1')).toBe('m1');
+    expect(matchOfRecord('set', 'm1/3')).toBe('m1');
+    expect(matchOfRecord('set', 'a/b/5')).toBe('a/b');
+    expect(matchOfRecord('set', 'm1')).toBeNull();
+    for (const kind of ['team', 'season', 'opponent', 'player', 'preset', 'starters'] as const) {
+      expect(matchOfRecord(kind, 'm1')).toBeNull();
     }
   });
 });

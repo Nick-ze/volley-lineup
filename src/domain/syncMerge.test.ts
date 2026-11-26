@@ -257,6 +257,107 @@ describe('mergeRemote: conflicts (most recent save wins)', () => {
   });
 });
 
+describe('mergeRemote: a match another device took over (audit M1)', () => {
+  const SET = 'set:m2/1';
+  const point = (winner: 'us' | 'them') => ({ type: 'point', winner });
+  const withEvents = (s: TeamSlice, events: unknown[]): TeamSlice => ({
+    ...s,
+    matches: s.matches.map((m) =>
+      m.id === 'm2' ? { ...m, sets: m.sets.map((x) => ({ ...x, events })) as typeof m.sets } : m,
+    ),
+  });
+  const eventsOf = (s: TeamSlice | undefined) =>
+    s?.matches.find((m) => m.id === 'm2')?.sets[0]?.events ?? [];
+  /** This device scored a rally at T3; the new scorer's save of the set is older (T2). */
+  const scoredHere = () => locally(golden(), (s) => withEvents(s, [point('us')]), T3);
+  const scorerRow = (at = T2, deviceId = 'dev2') =>
+    row(SET, { ...payload(SET), events: [point('them')] }, at, { deviceId });
+  /** This device is `dev1`; it yielded these matches. */
+  const taken = (...matches: string[]) => ({ matches: new Set(matches), deviceId: 'dev1' });
+
+  it('without a take-over the later local save wins, as always', () => {
+    const { slice, team } = scoredHere();
+    const out = merge({ slice, team, rows: [scorerRow()] });
+    expect(eventsOf(out.slice)).toEqual([point('us')]);
+    expect(out.yielded).toEqual([]);
+    expect(out.team.edits[SET]).toBe(team.edits[SET]);
+  });
+
+  it('the scorer’s row replaces an unsynced change to a set of the match, even a later one', () => {
+    const { slice, team } = scoredHere();
+    const out = merge({ slice, team, rows: [scorerRow()], takenOver: taken('m2') });
+    expect(eventsOf(out.slice)).toEqual([point('them')]);
+    expect(out.yielded).toEqual([SET]);
+    expect(out.team.edits).toEqual({});
+    expect(detectChanges(out.slice, out.team, T3).changes).toEqual([]);
+  });
+
+  it('the scorer’s row replaces an unsynced change to the match itself', () => {
+    const { slice, team } = locally(
+      golden(),
+      (s) => ({
+        ...s,
+        matches: s.matches.map((m) => (m.id === 'm2' ? { ...m, home: true } : m)),
+      }),
+      T3,
+    );
+    const incoming = row('match:m2', { ...payload('match:m2'), date: '2026-12-06' }, T2);
+    const out = merge({ slice, team, rows: [incoming], takenOver: taken('m2') });
+    expect(out.slice?.matches.find((m) => m.id === 'm2')).toMatchObject({
+      home: false,
+      date: '2026-12-06',
+    });
+    expect(out.yielded).toEqual(['match:m2']);
+  });
+
+  it('reports nothing when this device had no unsynced change to the record', () => {
+    const slice = golden();
+    const out = merge({ slice, rows: [scorerRow()], takenOver: taken('m2') });
+    expect(eventsOf(out.slice)).toEqual([point('them')]);
+    expect(out.yielded).toEqual([]);
+  });
+
+  it('leaves other matches and other records to "the latest save wins"', () => {
+    const { slice, team } = locally(
+      golden(),
+      (s) => withPlayer(withEvents(s, [point('us')]), 'p2', { firstName: 'Local' }),
+      T3,
+    );
+    const rows = [
+      row('player:p2', { ...payload('player:p2'), firstName: 'Remote' }, T2),
+      scorerRow(),
+    ];
+    // Another match was taken over, not m2.
+    const out = merge({ slice, team, rows, takenOver: taken('m1') });
+    expect((out.slice as TeamSlice).players[1].firstName).toBe('Local');
+    expect(eventsOf(out.slice)).toEqual([point('us')]);
+    expect(out.yielded).toEqual([]);
+    // m2 taken over: its set gives way, the player still doesn't.
+    const gaveWay = merge({ slice, team, rows, takenOver: taken('m2') });
+    expect((gaveWay.slice as TeamSlice).players[1].firstName).toBe('Local');
+    expect(eventsOf(gaveWay.slice)).toEqual([point('them')]);
+    expect(gaveWay.yielded).toEqual([SET]);
+  });
+
+  it('this device’s own earlier save coming back is not the scorer’s (a lost push answer)', () => {
+    const { slice, team } = scoredHere();
+    const own = scorerRow(T2, 'dev1');
+    const out = merge({ slice, team, rows: [own], takenOver: taken('m2') });
+    expect(eventsOf(out.slice)).toEqual([point('us')]); // the later local save stays
+    expect(out.yielded).toEqual([]);
+    expect(out.team.edits[SET]).toBe(team.edits[SET]);
+    expect(out.team.base[SET]).toMatchObject({ v: own.version });
+  });
+
+  it('keeps an unsynced change the scorer hasn’t saved over (no new row)', () => {
+    const { slice, team } = scoredHere();
+    const out = merge({ slice, team, rows: [], takenOver: taken('m2') });
+    expect(out.slice).toBe(slice);
+    expect(out.team).toBe(team);
+    expect(out.yielded).toEqual([]);
+  });
+});
+
 describe('mergeRemote: invalid and foreign rows', () => {
   it('skips and reports invalid rows (no base)', () => {
     const slice = golden();
@@ -717,7 +818,7 @@ describe('resetToCloudMerge (after a demotion)', () => {
     const team = synced(base);
     const rows = [row('player:p2', { ...payload('player:p2'), firstName: 'Cloud' })];
     const out = merge({ slice: base, team, rows, reset: true });
-    expect(out).toEqual({ slice: base, team, skipped: [], issues: [] });
+    expect(out).toEqual({ slice: base, team, skipped: [], issues: [], yielded: [] });
     expect(out.slice).toBe(base);
     expect(out.team).toBe(team);
   });

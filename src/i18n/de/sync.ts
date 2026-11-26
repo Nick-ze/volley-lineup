@@ -38,6 +38,11 @@ export const sync: Strings['sync'] = {
       count === 1
         ? `${team}: 1 Eintrag aus der Cloud war ungültig und wurde übersprungen.`
         : `${team}: ${count} Einträge aus der Cloud waren ungültig und wurden übersprungen.`,
+    takenOver: (team: string, holder: string, undone: number) =>
+      `${holder || 'Jemand anderes'} hat bei einem Spiel von ${team} das Zählen übernommen. ` +
+      (undone === 1
+        ? '1 Änderung von diesem Gerät, die noch nicht synchronisiert war, wurde zurückgenommen.'
+        : `${undone} Änderungen von diesem Gerät, die noch nicht synchronisiert waren, wurden zurückgenommen.`),
     dismiss: 'Schließen',
     dismissLabel: (team: string) => `Schließen: Hinweis zu ${team}`,
   },

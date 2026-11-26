@@ -501,8 +501,8 @@ The engine runs detection 1.5 s after any store data change (it subscribes to th
 2. `team_members where user_id = me` → for linked teams of this user:
    - missing → **unlink** (keep the local copy) plus a notice ("You're no longer a member of X" / "X was deleted from the cloud");
    - role changed → update it (demotion → `resetToCloud`).
-3. Per team: pull + merge; then `match_holds` for linked teams goes into the runtime `holds`.
-4. Detect, push, photo GC.
+3. `match_holds` for linked teams goes into the runtime `holds` — before the pull and the push since the v10 audit follow-up (DECISIONS #306), so a take-over is known before this device saves. Then per team: pull + merge.
+4. Detect, push, photo GC. A match this device was scoring that another device holds now is left out of the push (§3.8).
 5. Status `synced` (with `lastSyncedAt`), `offline` (with `retryAt`) or `error`.
 
 Triggers:
@@ -526,6 +526,7 @@ Triggers:
 - Another device holding it (from the runtime `holds`, `held_until > now`) → the whole match is read-only. Builder and live show "Being scored on Anna's device"; managers get **Take over** (`p_take_over`).
 - Viewers always get read-only live plus the 15 s poll, which works as a live ticker.
 - **Advisory only.** Offline devices can't claim a hold, and scoring offline always works. If two devices do score the same set concurrently, the later save of the whole set wins. This is documented as a limitation.
+- **After a take-over** (v10 audit follow-up, DECISIONS #306–#307): the device that was scoring (its own hold still running) yields the match while the other device's hold lasts — it doesn't push the match or its sets, and the new scorer's saves replace its unsynced changes to them (notice `takenOver`); changes the new scorer never saved over wait and sync when the hold ends. This is done by the app (`src/lib/sync/holdState.ts`, `yieldedMatches` in `src/domain/syncAccess.ts`); the server's hold stays advisory, and a device that never held the match — or whose own hold had already run out — still follows "the later save wins".
 
 ### 3.9 First sign-in
 

@@ -38,6 +38,12 @@ export const sync = {
       count === 1
         ? `${team}: 1 record from the cloud couldn’t be read and was skipped.`
         : `${team}: ${count} records from the cloud couldn’t be read and were skipped.`,
+    /** v10 audit M1: another device took over scoring; this device's unsynced changes gave way. */
+    takenOver: (team: string, holder: string, undone: number) =>
+      `${holder || 'Someone else'} took over scoring a match of ${team}. ` +
+      (undone === 1
+        ? '1 change made here that hadn’t synced yet was undone.'
+        : `${undone} changes made here that hadn’t synced yet were undone.`),
     dismiss: 'Dismiss',
     dismissLabel: (team: string) => `Dismiss: notice about ${team}`,
   },

@@ -113,6 +113,52 @@ describe('sign in with an email code', () => {
   });
 });
 
+describe('"I already have a code" (docs/AUDIT_V10.md M13: fewer sign-in emails)', () => {
+  async function withCode(email = 'coach@example.com') {
+    await renderApp('/account/sign-in');
+    await typeEmail(email);
+    await press('sign-in-have-code');
+  }
+
+  it('opens the code step without sending an email', async () => {
+    await withCode(' coach@example.com ');
+    expect(screen.getByTestId('sign-in-code')).toBeTruthy();
+    expect(sync.requestCode).not.toHaveBeenCalled();
+    // The text doesn't claim an email was sent just now.
+    expect(screen.getByText(s.codeFromBefore('coach@example.com'))).toBeTruthy();
+    expect(screen.queryByText(s.codeSent('coach@example.com'))).toBeNull();
+  });
+
+  it('signs in with the code of an earlier email', async () => {
+    await withCode(' coach@example.com ');
+    await typeCode('123456');
+    await press('sign-in-verify');
+    expect(sync.verifyCode).toHaveBeenCalledWith('coach@example.com', '123456');
+    expect(sync.requestCode).not.toHaveBeenCalled();
+  });
+
+  it('needs a valid email first', async () => {
+    await withCode('coach');
+    expect(screen.getByText(s.emailInvalid)).toBeTruthy();
+    expect(screen.queryByTestId('sign-in-code')).toBeNull();
+  });
+
+  it('lets a new code be requested at once (no resend wait: nothing was sent)', async () => {
+    await withCode();
+    const resend = screen.getByTestId('sign-in-resend');
+    expect(resend.props.accessibilityState?.disabled).toBeFalsy();
+    expect(screen.getByText(s.resend)).toBeTruthy();
+    await press('sign-in-resend');
+    expect(sync.requestCode).toHaveBeenCalledWith('coach@example.com');
+    expect(await screen.findByText(s.codeSent('coach@example.com'))).toBeTruthy();
+  });
+
+  it('is named by its visible text', async () => {
+    await renderApp('/account/sign-in');
+    expect(screen.getByLabelText(s.haveCode)).toBeTruthy();
+  });
+});
+
 describe('account switch', () => {
   const switched = {
     ok: true as const,

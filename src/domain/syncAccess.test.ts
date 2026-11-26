@@ -5,6 +5,7 @@ import {
   matchAccess,
   teamAccess,
   withoutTeamLinks,
+  yieldedMatches,
 } from './syncAccess';
 import type { MatchHold, SyncData, SyncedTeam } from './types';
 
@@ -85,6 +86,63 @@ describe('matchAccess', () => {
       block: 'held',
       holder: 'Anna',
     });
+  });
+});
+
+describe('yieldedMatches (audit M1: a match another device took over from this one)', () => {
+  const ME = 'dev1';
+  const none = new Set<string>();
+  const mine = { m1: hold(ME) };
+  const theirs = { m1: hold('dev2') };
+
+  it('yields a match this device was scoring once another device holds it', () => {
+    expect([...yieldedMatches(none, mine, theirs, ME, NOW)]).toEqual(['m1']);
+  });
+
+  it('not when this device’s own hold had run out: the other device only claimed a free match', () => {
+    // The scorer in a hall without a connection may still be the one scoring.
+    for (const until of ['2026-11-26T09:50:00Z', '2026-11-26T10:00:00Z']) {
+      expect(yieldedMatches(none, { m1: hold(ME, until) }, theirs, ME, NOW).size).toBe(0);
+    }
+  });
+
+  it('also when the holder’s device isn’t known (a refused claim)', () => {
+    expect([...yieldedMatches(none, mine, { m1: hold('') }, ME, NOW)]).toEqual(['m1']);
+  });
+
+  it('never yields a match this device didn’t hold', () => {
+    expect(yieldedMatches(none, {}, theirs, ME, NOW).size).toBe(0);
+    expect(yieldedMatches(none, theirs, theirs, ME, NOW).size).toBe(0);
+    expect(yieldedMatches(none, { m2: { ...hold(ME), matchId: 'm2' } }, theirs, ME, NOW).size).toBe(
+      0,
+    );
+  });
+
+  it('stays yielded while the other hold lasts, whatever this device knew last', () => {
+    const yielded = new Set(['m1']);
+    expect([...yieldedMatches(yielded, theirs, theirs, ME, NOW)]).toEqual(['m1']);
+    expect([...yieldedMatches(yielded, {}, { m1: hold('dev3') }, ME, NOW)]).toEqual(['m1']);
+  });
+
+  it('ends when the other hold is released, has run out or was taken back here', () => {
+    const yielded = new Set(['m1']);
+    expect(yieldedMatches(yielded, theirs, {}, ME, NOW).size).toBe(0);
+    const expired = { m1: hold('dev2', '2026-11-26T10:00:00Z') };
+    expect(yieldedMatches(yielded, theirs, expired, ME, NOW).size).toBe(0);
+    expect(yieldedMatches(yielded, theirs, mine, ME, NOW).size).toBe(0);
+  });
+
+  it('keeps each match apart', () => {
+    const m2 = { ...hold('dev2'), matchId: 'm2' };
+    const out = yieldedMatches(none, { m1: hold(ME), m2 }, { m1: hold('dev2'), m2 }, ME, NOW);
+    expect([...out]).toEqual(['m1']);
+  });
+
+  it('yields nothing without a device id', () => {
+    expect(yieldedMatches(new Set(['m1']), { m1: hold('') }, { m1: hold('') }, '', NOW).size).toBe(
+      0,
+    );
+    expect(yieldedMatches(none, mine, theirs, null, NOW).size).toBe(0);
   });
 });
 

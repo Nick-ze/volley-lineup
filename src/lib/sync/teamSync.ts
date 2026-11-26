@@ -6,6 +6,8 @@
  *   before, in the same write. The cursor doesn't move while the team itself hasn't arrived.
  * - push (managers): changes noted, photos uploaded first, batches pushed; every result is
  *   applied in one store write (records the server kept a newer save of are merged back).
+ * - a match this device was scoring that another device took over (`holdState.ts`, audit M1):
+ *   the pull lets that device's rows win, the push leaves the match and its sets out.
  * - photo clean-up after a push.
  */
 import { detectChanges, edgePhotoIds, pushBatches, type LocalChange } from '@/domain/syncChanges';
@@ -18,13 +20,14 @@ import {
   type MergeOutput,
 } from '@/domain/syncMerge';
 import { goneTeamLinks, isGoneLink, withoutTeamLinks } from '@/domain/syncAccess';
-import { foreignKeys, type TeamSlice } from '@/domain/syncRecords';
+import { foreignKeys, matchOfRecord, parseRecordKey, type TeamSlice } from '@/domain/syncRecords';
 import { parseRemoteRow, type RemoteRecord } from '@/domain/syncSchema';
 import type { SyncedTeam } from '@/domain/types';
-import type { AppState } from '@/store';
+import { useSyncRuntime, type AppState } from '@/store';
 
 import type { PushItem } from './backend';
 import { isoNow, type EngineCore } from './core';
+import { yieldedNow } from './holdState';
 import {
   collectGarbage,
   downloadPhotos,
@@ -34,7 +37,16 @@ import {
   slicePhotoIds,
   uploadPhotos,
 } from './photoSync';
-import { appState, sliceOf, teamData, transaction, withSlice, withTeamMeta } from './storeOps';
+import {
+  appState,
+  notify,
+  sliceOf,
+  teamData,
+  teamName,
+  transaction,
+  withSlice,
+  withTeamMeta,
+} from './storeOps';
 
 /** Rows per `pull_changes` page. */
 export const PULL_PAGE = 500;
@@ -48,7 +60,17 @@ export interface PullReport {
   present: boolean;
   /** A `reset` pull replaced the team with the cloud's copy (its team row was in the pull). */
   replaced: boolean;
+  /** Unsynced changes to matches another device took over that gave way to the scorer's rows. */
+  yielded: number;
 }
+
+const NOTHING_PULLED: PullReport = {
+  foreign: 0,
+  invalid: 0,
+  present: false,
+  replaced: false,
+  yielded: 0,
+};
 
 /**
  * True when a linked team is gone from the device (deleted locally): its sync state is dropped,
@@ -119,6 +141,7 @@ function mergeInto(
   rows: readonly RemoteRecord[],
   now: string,
   reset = false,
+  takenOver?: MergeInput['takenOver'],
 ): { out: MergeOutput; data: ReturnType<typeof withSlice>; changed: boolean } {
   const slice = sliceOf(s, teamId);
   const edits = detectChanges(slice, meta, now).edits;
@@ -129,6 +152,7 @@ function mergeInto(
     rows,
     local: { profileId: profileFor(s, slice) },
     foreignIds: foreignKeys(teamData(s), teamId),
+    takenOver,
   };
   const out = reset ? resetToCloudMerge(input) : mergeRemote(input);
   return { out, data: withSlice(s, teamId, out.slice), changed: out.slice !== slice };
@@ -154,10 +178,10 @@ export async function pullTeam(
   reset = false,
 ): Promise<PullReport> {
   const start = appState().sync.teams[teamId];
-  if (!start) return { foreign: 0, invalid: 0, present: false, replaced: false };
+  if (!start) return { ...NOTHING_PULLED };
   if (isGone(start, sliceOf(appState(), teamId))) {
     dropTeam(core, teamId);
-    return { foreign: 0, invalid: 0, present: false, replaced: false };
+    return { ...NOTHING_PULLED };
   }
   const rows: RemoteRecord[] = [];
   let invalid = 0;
@@ -179,12 +203,18 @@ export async function pullTeam(
   }
   const missing = await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
-  const report: PullReport = { foreign: 0, invalid, present: false, replaced: false };
+  const report: PullReport = { ...NOTHING_PULLED, invalid };
   const now = isoNow(core.clock);
+  // Matches another device took over from this one (audit M1): other devices' rows win here.
+  const yielded = yieldedNow(core);
+  const takenOver =
+    yielded.size > 0 ? { matches: yielded, deviceId: appState().sync.deviceId ?? '' } : undefined;
+  let gaveWay: string[] = [];
   transaction((s) => {
     const meta = s.sync.teams[teamId];
     if (!meta) return s;
-    const { out, data, changed } = mergeInto(s, teamId, meta, rows, now, reset);
+    const { out, data, changed } = mergeInto(s, teamId, meta, rows, now, reset, takenOver);
+    gaveWay = out.yielded;
     report.foreign = out.skipped.filter((x) => x.reason === 'foreignId').length;
     report.invalid += out.skipped.filter((x) => x.reason === 'invalid').length;
     report.present = out.slice !== undefined;
@@ -208,7 +238,17 @@ export async function pullTeam(
     };
   });
   settleDownloads(core, teamId);
+  report.yielded = gaveWay.length;
+  if (gaveWay.length > 0) notifyTakenOver(teamId, gaveWay);
   return report;
+}
+
+/** Tells the user that changes here gave way to the device that took over scoring. */
+function notifyTakenOver(teamId: string, keys: readonly string[]): void {
+  const first = parseRecordKey(keys[0]);
+  const matchId = first ? matchOfRecord(first.kind, first.id) : null;
+  const holder = (matchId ? useSyncRuntime.getState().holds[matchId]?.holderName : '') ?? '';
+  notify({ kind: 'takenOver', teamId, teamName: teamName(teamId), holder, undone: keys.length });
 }
 
 /**
@@ -258,7 +298,12 @@ function noteChanges(core: EngineCore, teamId: string): LocalChange[] {
 export async function pushTeam(core: EngineCore, teamId: string, deviceId: string): Promise<void> {
   const meta = appState().sync.teams[teamId];
   if (!meta || meta.role !== 'manager' || !sliceOf(appState(), teamId)) return;
-  const changes = noteChanges(core, teamId);
+  // A match another device took over from this one isn't saved from here while that device's
+  // hold lasts (audit M1): its changes stay noted and wait.
+  const takenOver = yieldedNow(core);
+  const changes = noteChanges(core, teamId).filter(
+    (c) => !takenOver.has(matchOfRecord(c.kind, c.id) ?? ''),
+  );
   const { uploaded, ready } = await uploadPhotos(
     core,
     teamId,
