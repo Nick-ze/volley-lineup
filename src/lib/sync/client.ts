@@ -8,6 +8,7 @@ import './polyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+import { keepSessionOnOutage } from './authFetch';
 import { keepTokenFresh } from './autoRefresh';
 import { syncConfig, type SyncConfig } from './config';
 import { BackendError } from './errors';
@@ -34,7 +35,8 @@ export function getClient(): SupabaseClient {
       autoRefreshToken: true,
       detectSessionInUrl: false,
     },
-    global: { fetch: fetchWithTimeout() },
+    // Outages must not sign the device out (authFetch.ts).
+    global: { fetch: keepSessionOnOutage(fetchWithTimeout()) },
     // No postgrest retries (it retries failed GETs ~3 times over ~7 s): the engine has its own
     // offline back-off, and the retries kept the badge on "Syncing…" while offline.
     db: { retry: false },
