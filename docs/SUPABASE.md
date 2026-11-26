@@ -24,7 +24,7 @@ Files:
 | Path                                                      | What                                                                        |
 | --------------------------------------------------------- | --------------------------------------------------------------------------- |
 | `supabase/migrations/*.sql`                               | The whole schema, applied in file-name order                                |
-| `supabase/tests/rls.sql`                                  | RLS and RPC tests T1–T33, in one rolled-back transaction                    |
+| `supabase/tests/rls.sql`                                  | RLS and RPC tests T1–T34, in one rolled-back transaction                    |
 | `supabase/tests/test-users.sql`, `test-users-cleanup.sql` | Password test users for the live check and QA                               |
 | `supabase/config.toml`, `supabase/templates/*.html`       | Supabase CLI config (local / self-hosted) and the code-only email templates |
 | `scripts/sync-live-check.mjs`                             | End-to-end check against the real project (not in CI)                       |
@@ -108,11 +108,15 @@ and 10 × 150 × 256 kB = 375 MB of photos.
   `set_config('app.bypass_member_guard', 'on', true)`.
 - **Member changes lock the team row** (`select … for update`): the guard, `leave_team`,
   `remove_member`, `set_member_role`, `create_invite`, `join_team` (team first, then the invite
-  row) and `delete_my_account` (all the caller's teams, in id order). Two managers demoting or
+  row), `delete_team` and `delete_my_account` (all the caller's teams, in id order). Two managers demoting or
   removing each other at the same moment are serialized, so a team never ends up without a
-  manager, and a join can't deadlock with a removal. `set_member_role`, `remove_member` and
-  `create_invite` check the caller's role **again once they hold the lock**: a call that waited
-  behind the caller's own demotion or removal is refused (`42501`).
+  manager, and a join can't deadlock with a removal. `set_member_role`, `remove_member`,
+  `create_invite` and `delete_team` (since `20261126140000`, audit M9) check the caller's role
+  **again once they hold the lock**: a call that waited behind the caller's own demotion or
+  removal is refused (`42501`).
+- **No default privileges for the API roles** (audit L1, `20261126140000`): a table `postgres`
+  creates in `public` gives `anon`, `authenticated` and `service_role` nothing until a migration
+  grants it, so a migration that forgets `revoke all` exposes nothing.
 - **The AFTER triggers on `team_members` run as their owner** (`security definer`:
   `drop_empty_team`, `drop_member_holds`, `revoke_manager_invites`). When a user is deleted in
   the dashboard, the cascade's AFTER triggers fire as `supabase_auth_admin`, which has no rights
@@ -159,14 +163,14 @@ and 10 × 150 × 256 kB = 375 MB of photos.
 
 The files in `supabase/migrations` are the whole schema and must be applied in file-name order,
 once, to an empty project. Their names start with the version (`YYYYMMDDHHMMSS`). The later files
-(`20261126120000_v10_audit_invite_revocation.sql`, `20261126130000_v10_audit_member_triggers.sql`)
-change earlier ones with `create or replace` / `alter function` and never drop anything.
+(`20261126120000_v10_audit_invite_revocation.sql`, `20261126130000_v10_audit_member_triggers.sql`,
+`20261126140000_v10_audit_medium_low.sql`) change earlier ones with `create or replace` / `alter function` and never drop anything.
 
 - **The hosted project** is applied with the MCP tool `apply_migration`, one file at a time in
   order. That records each migration under the time it ran, so afterwards the orchestrator sets
   the recorded versions in `supabase_migrations.schema_migrations` to the file versions
-  (`20261125090000` … `20261125090600`, and `20261126120000` / `20261126130000` from the v10
-  audit). Then `supabase db push` sees them as applied and stays in sync.
+  (`20261125090000` … `20261125090600`, and `20261126120000` / `20261126130000` /
+  `20261126140000` from the v10 audit). Then `supabase db push` sees them as applied and stays in sync.
 - **Other projects** (new, self-hosted, local): `supabase link --project-ref <ref>` and
   `supabase db push`, or psql in file order:
   `for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done`
@@ -190,26 +194,27 @@ claims, and rolls everything back at the end, so it leaves nothing behind.
 
 A failing check raises `FAIL T<n> …` and stops. Success ends with `ALL RLS TESTS PASSED`.
 
-| Tests    | What                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| T1–T3    | create teams (team id shape), push and pull (ISO ms times, device id, clock `updated_at`), invite and join                              |
-| T4–T6    | a stranger reads nothing, can't call any team RPC, can't hijack a team id                                                               |
-| T7–T9    | a player reads records and members but no invites, can't write through RPCs or tables, can't read removals                              |
-| T10      | a manager of another team has no access                                                                                                 |
-| T11–T13b | storage: upload, read and delete by role, one folder level only, at most 150 photos                                                     |
-| T14–T16  | last write wins with the device tie-break, clock clamp, millisecond times, tombstones                                                   |
-| T17      | CHECKs and limits (kinds, 64 kB, infinite times, batch size, byte budget with row overhead, 20 MB and 20 000 records, 10 created teams) |
-| T18, T23 | last manager and last member                                                                                                            |
-| T19, T20 | leaving / removed members lose access; T20b: old codes refused after a removal, a new code works                                        |
-| T21, T22 | expired, revoked and unknown codes; codes never downgrade; T22b: manager codes are single use                                           |
-| T24      | live holds: refusal, take-over, expiry, release; T24b: 50 active holds, pruning                                                         |
-| T25, T26 | account deletion: `anon` refused, blocked teams (VL001), photos first (VL008), sole teams deleted                                       |
-| T27      | delete for everyone (photos first, VL008); T27b: leftover photos make an id `'taken'`; dashboard deletion                               |
-| T28, T29 | `anon`: keepalive only, no tables, no RPCs                                                                                              |
-| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks and their order, role re-check, the member triggers  |
-| T31      | a manager made a player can't become manager again with a spare manager code, nor create a code or change a role                        |
-| T32      | removing a member revokes every open code: a second account can't use one; a code created afterwards works                              |
-| T33      | a player leaving revokes nothing; a manager leaving revokes the manager codes; `delete_team` still works                                |
+| Tests    | What                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| T1–T3    | create teams (team id shape), push and pull (ISO ms times, device id, clock `updated_at`), invite and join                                 |
+| T4–T6    | a stranger reads nothing, can't call any team RPC, can't hijack a team id                                                                  |
+| T7–T9    | a player reads records and members but no invites, can't write through RPCs or tables, can't read removals                                 |
+| T10      | a manager of another team has no access                                                                                                    |
+| T11–T13b | storage: upload, read and delete by role, one folder level only, at most 150 photos                                                        |
+| T14–T16  | last write wins with the device tie-break, clock clamp, millisecond times, tombstones                                                      |
+| T17      | CHECKs and limits (kinds, 64 kB, infinite times, batch size, byte budget with row overhead, 20 MB and 20 000 records, 10 created teams)    |
+| T18, T23 | last manager and last member                                                                                                               |
+| T19, T20 | leaving / removed members lose access; T20b: old codes refused after a removal, a new code works                                           |
+| T21, T22 | expired, revoked and unknown codes; codes never downgrade; T22b: manager codes are single use                                              |
+| T24      | live holds: refusal, take-over, expiry, release; T24b: 50 active holds, pruning                                                            |
+| T25, T26 | account deletion: `anon` refused, blocked teams (VL001), photos first (VL008), sole teams deleted                                          |
+| T27      | delete for everyone (photos first, VL008); T27b: leftover photos make an id `'taken'`; dashboard deletion                                  |
+| T28, T29 | `anon`: keepalive only, no tables, no RPCs                                                                                                 |
+| T30      | catalogue: grants, `search_path`, RLS and policies, private bucket, team-row locks and their order, role re-check, the member triggers     |
+| T31      | a manager made a player can't become manager again with a spare manager code, nor create a code or change a role                           |
+| T32      | removing a member revokes every open code: a second account can't use one; a code created afterwards works                                 |
+| T33      | a player leaving revokes nothing; a manager leaving revokes the manager codes; `delete_team` still works                                   |
+| T34      | no default table privileges for the API roles in `public`; `rls_auto_enable()` not callable through the API, its event trigger still works |
 
 The team-row locks prevent a race between two sessions; one transaction can't reproduce it, so
 T30 checks that the functions take the lock.
@@ -295,10 +300,8 @@ members of the Supabase organization.
 7. Check the region is **eu-central-2 (Zurich)** (Project Settings → General).
 8. If GitHub disabled the keep-alive workflow, enable it again (see [Keep-alive](#keep-alive)).
 
-Optional: in the SQL editor run
-`revoke execute on function public.rls_auto_enable() from public, anon, authenticated;` to clear
-the two advisor warnings about the project's own `rls_auto_enable()` event-trigger function (see
-below).
+Nothing to do for `public.rls_auto_enable()` any more: migration `20261126140000` revokes its
+EXECUTE from the API roles (audit L2; the step used to be an optional owner step).
 
 ## Advisor warnings that are intended
 
@@ -312,9 +315,11 @@ After the migrations, the **security** advisor lists these WARNs on purpose:
   `auth.uid()` and the caller's role before writing. `pull_changes` and
   `account_deletion_check` are `SECURITY INVOKER` and don't appear. No RPC is executable by
   `anon` (lint 0028 stays clean for them).
-- **`public.rls_auto_enable()`** (lints 0028 and 0029): not ours. Supabase created it for the
-  project's "enable RLS on new tables" option before any migration ran. It is an event-trigger
-  function, so calling it through the API fails; the owner can revoke EXECUTE (command above).
+- **`public.rls_auto_enable()`**: not ours. Supabase created it for the project's "enable RLS on
+  new tables" option before any migration ran. It used to show up under lints 0028 and 0029;
+  migration `20261126140000` (audit L2) revokes EXECUTE from `public`, `anon` and
+  `authenticated`, which clears both. The event trigger `ensure_rls` still runs it (EXECUTE is
+  only checked for calls; rls.sql T34 checks that a new table still gets RLS).
 - **"RLS Enabled No Policy"** (INFO, lint 0008) on `private.team_removals`: on purpose. The table
   lives in the unexposed `private` schema and is closed to every API role; only the RPCs
   (`remove_member`, `join_team`) read and write it.

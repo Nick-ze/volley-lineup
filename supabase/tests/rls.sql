@@ -1,4 +1,4 @@
--- RLS and RPC tests for the v10 schema (T1–T33). See docs/SUPABASE.md.
+-- RLS and RPC tests for the v10 schema (T1–T34). See docs/SUPABASE.md.
 --
 -- Run as `postgres` on a database that has every file in supabase/migrations applied, e.g. the
 -- Supabase SQL editor, psql, or the MCP tool `execute_sql`. Everything happens inside one
@@ -1095,7 +1095,7 @@ begin
   from unnest(array['private.guard_last_manager()', 'public.leave_team(text)',
                     'public.set_member_role(text,uuid,text)', 'public.remove_member(text,uuid)',
                     'public.create_invite(text,text,integer)', 'public.join_team(text,text)',
-                    'public.delete_my_account()']) f
+                    'public.delete_my_account()', 'public.delete_team(text)']) f
   where pg_get_functiondef(f::regprocedure) !~* 'from public\.teams t\s.*for update';
   perform pg_temp.check(v_bad is null, 'T30 team row locked in: ' || coalesce(v_bad, ''));
 
@@ -1103,7 +1103,7 @@ begin
   -- caller's own demotion or removal must not run with the old role.
   select string_agg(f, ', ') into v_bad
   from unnest(array['public.set_member_role(text,uuid,text)', 'public.remove_member(text,uuid)',
-                    'public.create_invite(text,text,integer)']) f
+                    'public.create_invite(text,text,integer)', 'public.delete_team(text)']) f
   where pg_get_functiondef(f::regprocedure) !~* 'for update;.*is_team_manager';
   perform pg_temp.check(v_bad is null, 'T30 role checked again under the lock in: ' || coalesce(v_bad, ''));
   perform pg_temp.check(exists (select 1 from pg_trigger
@@ -1127,6 +1127,36 @@ begin
   perform pg_temp.check(pg_get_functiondef('public.join_team(text,text)'::regprocedure)
                           ~* 'from public\.teams t\s.*for update.*from public\.invites i\s.*for update',
                         'T30 join_team locks the team before the invite');
+
+  -- T34 (audit L1) a table `postgres` creates in `public` gives the API roles nothing by
+  -- default: a migration that forgets `revoke all` exposes nothing.
+  create table public.rls_t34_probe (id int primary key);
+  perform pg_temp.check(not has_table_privilege('anon', 'public.rls_t34_probe',
+                              'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+                        and not has_table_privilege('authenticated', 'public.rls_t34_probe',
+                              'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+                        and not has_table_privilege('service_role', 'public.rls_t34_probe',
+                              'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER'),
+                        'T34 no default table privileges for the API roles in public');
+  perform pg_temp.check(not exists (
+                          select 1 from pg_default_acl d, aclexplode(d.defaclacl) a
+                          where d.defaclrole = 'postgres'::regrole
+                            and d.defaclnamespace = 'public'::regnamespace
+                            and d.defaclobjtype = 'r'
+                            and a.grantee in ('anon'::regrole, 'authenticated'::regrole,
+                                              'service_role'::regrole)),
+                        'T34 no default table ACL entries for the API roles');
+  -- T34 (audit L2) Supabase's rls_auto_enable() can't be called through the API, and its event
+  -- trigger still works (the probe table got RLS) where the project has it.
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    perform pg_temp.check(not has_function_privilege('anon', 'public.rls_auto_enable()', 'execute')
+                          and not has_function_privilege('authenticated', 'public.rls_auto_enable()', 'execute'),
+                          'T34 rls_auto_enable not executable by anon / authenticated');
+    perform pg_temp.check((select relrowsecurity from pg_class
+                           where oid = 'public.rls_t34_probe'::regclass),
+                          'T34 the RLS event trigger still enables RLS on new tables');
+  end if;
+  drop table public.rls_t34_probe;
 
   raise notice 'ALL RLS TESTS PASSED';
 end $$;
