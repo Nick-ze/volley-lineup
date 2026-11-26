@@ -674,18 +674,12 @@ rate limit is enough; 3 six digits stay; 4 yes; 5 yes. Questions 4 and 5 were th
    it sees the take-over (a behaviour change in live mode)?
 5. **"I already have a code"** on the sign-in screen (M13): saves emails when the app was closed
    while the user looked for the code. Wanted?
-6. **Two small things to do once** (see "After the fixes"): run `supabase/tests/rls.sql` in the SQL
-   editor, and the next time you delete a user who belongs to a team in the dashboard
+6. **Two small things to do once** (see "After the fixes"): ~~run `supabase/tests/rls.sql` in the SQL
+   editor~~ (done 2026-11-26, passed on the final schema), and the next time you delete a user who belongs to a team in the dashboard
    (Authentication → Users), check that it works — the fix for that could only be tested on a
    local Postgres, not through the real dashboard.
-7. **Apply the medium / low migration** (added 2026-11-26, "Medium / low fix log"):
-   `supabase/migrations/20261126140000_v10_audit_medium_low.sql` is reviewed and merged but not
-   applied — the connector's confirmation prompt got no answer. Either answer that prompt in a
-   chat where you are watching (ask the agent to dry-run and apply it, then run `rls.sql`), or in
-   the SQL editor: paste the file and run it, then
-   `insert into supabase_migrations.schema_migrations (version, name) values ('20261126140000', 'v10_audit_medium_low');`
-   and run `supabase/tests/rls.sql` (its last result must be `ALL RLS TESTS PASSED`; it now
-   includes T34). Until then the database works as before (M9, L1, L2 stay open there).
+7. ~~Apply the medium / low migration~~ — **done** on 2026-11-26 with the owner confirming the
+   prompts; the whole `rls.sql` passed afterwards (see "Medium / low fix log").
 8. **L11, the rest** (optional): a single-use manager code whose join worked but whose answer was
    lost on the network still reads "invalid code" when entered again (the person is a member
    anyway; the team appears after the next sync). A fix is a server change: `join_team` would
@@ -988,9 +982,9 @@ documentation and cleanup (marked "docs" / "cleanup").
 | L28                                        | fixed: `.env*` ignored; `app.config.js` refuses a secret key; `syncConfig()` ignores `sb_secret_`                                                                                                                                                                                                                                                       | PR 3 | `__tests__/appConfig.test.ts`, `config.test.ts`                                                                                                                                                             |
 | L32                                        | fixed: persist `merge` → `storedSyncData` (zod, loose)                                                                                                                                                                                                                                                                                                  | PR 3 | `appStore.test.ts` (3 malformed slices, 1 valid with newer fields), `syncSchema.test.ts`                                                                                                                    |
 | L33                                        | fixed: `require` inside `getClient()`; `authStorageKey` without `URL`. **Not run on a phone**                                                                                                                                                                                                                                                           | PR 3 | `clientLazy.test.ts`; web build: no request before Send code, then the client works                                                                                                                         |
-| M9                                         | **written, not applied yet** (see below): `20261126140000_v10_audit_medium_low.sql`: `delete_team` checks the role again under the team row lock                                                                                                                                                                                                        | PR 4 | `rls.sql` T30 (`delete_team` in the lock and re-check lists)                                                                                                                                                |
-| L1                                         | **written, not applied yet**: same migration: no default table privileges for `anon` / `authenticated` / `service_role` in `public`                                                                                                                                                                                                                     | PR 4 | `rls.sql` T34 (a probe table, `pg_default_acl`)                                                                                                                                                             |
-| L2                                         | **written, not applied yet**: same migration: `rls_auto_enable()` EXECUTE revoked from `public` / `anon` / `authenticated` (was an optional owner step)                                                                                                                                                                                                 | PR 4 | `rls.sql` T34 (not callable; its event trigger still enables RLS)                                                                                                                                           |
+| M9                                         | fixed (applied 2026-11-26): `20261126140000_v10_audit_medium_low.sql`: `delete_team` checks the role again under the team row lock                                                                                                                                                                                                                      | PR 4 | `rls.sql` T30 (`delete_team` in the lock and re-check lists)                                                                                                                                                |
+| L1                                         | fixed (applied): same migration: no default table privileges for `anon` / `authenticated` / `service_role` in `public`                                                                                                                                                                                                                                  | PR 4 | `rls.sql` T34 (a probe table, `pg_default_acl`)                                                                                                                                                             |
+| L2                                         | fixed (applied): same migration: `rls_auto_enable()` EXECUTE revoked from `public` / `anon` / `authenticated` (was an optional owner step)                                                                                                                                                                                                              | PR 4 | `rls.sql` T34 (not callable; its event trigger still enables RLS)                                                                                                                                           |
 | L6, L17, L18, L31                          | second chat                                                                                                                                                                                                                                                                                                                                             | —    | —                                                                                                                                                                                                           |
 
 **Review of PR 2** (an independent reviewer agent, its own copy, typecheck + 350 tests): no
@@ -1003,18 +997,22 @@ offline hint; any HTTP 500 on a code request reads "The email couldn't be sent" 
 outage of the auth server — the text is wrong then, nothing else); the join memo can answer
 "joined" for a team the user was removed from moments ago, until the next cycle unlinks it.
 
-**Database (PR 4): the migration is in the repository but NOT applied to the live project.**
-`20261126140000_v10_audit_medium_low.sql` was reviewed by an independent reviewer agent against
-the live catalogue (no blocking finding; nits: two managers deleting the same team at once — the
-second now reads "forbidden" instead of a silent success; tables `supabase_admin` creates in
-`public` keep Supabase's own defaults, out of scope; T30 reads function text only). Every attempt
-to run SQL that changes something — the dry run (the whole `rls.sql` with the migration spliced
-in), a small targeted dry run, and `apply_migration` itself — made the Supabase connector ask for a
-confirmation that nobody answered within 230 s, so nothing ran (checked after the first one:
-the live `delete_team` still has the old body, no probe table, 9 migrations recorded). As a
-consequence the whole `rls.sql` was not run either (the open check from before stays open). The
-app doesn't depend on the migration: it only tightens the database. Owner step: see "Open
-questions" 7.
+**Database (PR 4): applied to the live project on 2026-11-26, with the owner confirming the
+connector's prompts** (earlier attempts while nobody watched timed out: a whole-script dry run, a
+targeted dry run and `apply_migration` — nothing ran then). Order: a targeted dry run in a
+rolled-back transaction (the migration, the T30 / T34 checks and a stranger's `delete_team` →
+42501: passed), `apply_migration`, the recorded version set to `20261126140000`, then the whole
+`supabase/tests/rls.sql` (T1–T34) once: **`ALL RLS TESTS PASSED`**, nothing left behind (0 users,
+teams, members, records, invites, holds, objects; no probe table). Afterwards: the live
+`delete_team` body matches the file (md5), owner `postgres`, `security definer`, EXECUTE for
+`authenticated` only; no default table privileges for the API roles in `public`;
+`rls_auto_enable()` not callable by `anon` / `authenticated`; 10 migrations recorded. Security
+advisor: exactly the intended items (12 RPCs under 0029, the `team_removals` INFO) — both
+`rls_auto_enable` warnings are gone. This also closes the open check "run the whole `rls.sql`"
+from "After the fixes". The independent reviewer's nits (not changed): two managers deleting the
+same team at once — the second now reads "forbidden" instead of a silent success; tables
+`supabase_admin` creates in `public` keep Supabase's own defaults (out of scope); T30 reads
+function text only.
 
 **Not fixed in this chat, and why**
 
