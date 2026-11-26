@@ -46,6 +46,8 @@ export interface PullReport {
   invalid: number;
   /** The team is on the device after the pull. */
   present: boolean;
+  /** A `reset` pull replaced the team with the cloud's copy (its team row was in the pull). */
+  replaced: boolean;
 }
 
 /**
@@ -152,10 +154,10 @@ export async function pullTeam(
   reset = false,
 ): Promise<PullReport> {
   const start = appState().sync.teams[teamId];
-  if (!start) return { foreign: 0, invalid: 0, present: false };
+  if (!start) return { foreign: 0, invalid: 0, present: false, replaced: false };
   if (isGone(start, sliceOf(appState(), teamId))) {
     dropTeam(core, teamId);
-    return { foreign: 0, invalid: 0, present: false };
+    return { foreign: 0, invalid: 0, present: false, replaced: false };
   }
   const rows: RemoteRecord[] = [];
   let invalid = 0;
@@ -177,7 +179,7 @@ export async function pullTeam(
   }
   const missing = await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
-  const report: PullReport = { foreign: 0, invalid, present: false };
+  const report: PullReport = { foreign: 0, invalid, present: false, replaced: false };
   const now = isoNow(core.clock);
   transaction((s) => {
     const meta = s.sync.teams[teamId];
@@ -186,6 +188,8 @@ export async function pullTeam(
     report.foreign = out.skipped.filter((x) => x.reason === 'foreignId').length;
     report.invalid += out.skipped.filter((x) => x.reason === 'invalid').length;
     report.present = out.slice !== undefined;
+    // `resetToCloudMerge` only replaces the team when its own row is among the rows.
+    report.replaced = reset && rows.some((r) => r.kind === 'team' && r.id === teamId);
     const cursor = out.slice ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow) : meta.cursor;
     // Not-found photos aren't in the cloud folder (any more): forget them, so a manager that
     // has one uploads it again with its next change.

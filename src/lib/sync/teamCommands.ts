@@ -46,8 +46,10 @@ const newMeta = (userId: string, role: TeamRole, edits: SyncedTeam['edits'] = {}
 function linkCloudTeam(engine: SyncEngine, userId: string, teamId: string, role: TeamRole): void {
   const meta = appState().sync.teams[teamId];
   if (meta) {
-    if (meta.role !== role || meta.userId !== userId)
-      setTeamMeta(teamId, { ...meta, role, userId });
+    // The role of a team that is already linked changes only in the cycle's membership check,
+    // which replaces the local copy with the cloud's first — after a demotion and, since the
+    // v10 audit (H8), after a promotion too (e.g. a manager code used by a player).
+    if (meta.userId !== userId) setTeamMeta(teamId, { ...meta, userId });
     return;
   }
   const slice = sliceOf(appState(), teamId);

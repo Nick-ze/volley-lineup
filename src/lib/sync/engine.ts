@@ -73,6 +73,8 @@ const dataChanged = (a: StoreState, b: StoreState) => DATA_KEYS.some((k) => a[k]
 
 export class SyncEngine implements EngineCore {
   readonly resetPending = new Set<string>();
+  /** Teams this account was made manager of: the role is stored after their reset pull. */
+  private readonly promoting = new Set<string>();
   readonly pendingPhotos = new Map<string, Set<string>>();
   readonly notified = new Set<string>();
   private current: BackendSession | null = null;
@@ -371,6 +373,12 @@ export class SyncEngine implements EngineCore {
     const reset = needsReset(this, teamId);
     const report = await pullTeam(this, teamId, reset);
     if (reset && report.present) this.resetPending.delete(teamId);
+    if (this.promoting.has(teamId) && report.replaced && report.foreign === 0) {
+      // The copy is the cloud's now: from here on this device's changes may be pushed.
+      this.promoting.delete(teamId);
+      const meta = appState().sync.teams[teamId];
+      if (meta) setTeamMeta(teamId, { ...meta, role: 'manager' });
+    }
     const skipped = report.foreign + report.invalid;
     if (skipped > 0)
       this.noticeOnce({ kind: 'skipped', teamId, teamName: teamName(teamId), count: skipped });
@@ -395,6 +403,7 @@ export class SyncEngine implements EngineCore {
         unlinkTeams([teamId]);
         forgetPhotos(this, teamId);
         this.resetPending.delete(teamId);
+        this.promoting.delete(teamId);
         notify({ kind: 'removed', teamId, teamName: name });
       } else if (role !== meta.role) {
         if (meta.role === 'manager') {
@@ -402,8 +411,18 @@ export class SyncEngine implements EngineCore {
           setTeamMeta(teamId, { ...meta, role, cursor: 0, edits: {} });
           this.resetPending.add(teamId);
           notify({ kind: 'demoted', teamId, teamName: teamName(teamId), undone });
-        } else setTeamMeta(teamId, { ...meta, role });
-      }
+        } else {
+          // Promotion (audit H8): a view-only copy can differ from the cloud with no way to
+          // heal, and as a manager's copy every difference would be pushed as an edit made
+          // now (missing records as deletions). So the copy is first replaced by the cloud's,
+          // like after a demotion; the stored role stays `player` (cursor 0: `needsReset`,
+          // also after a restart) until that pull has worked (`syncTeam`).
+          if (meta.cursor !== 0 || Object.keys(meta.edits).length > 0)
+            setTeamMeta(teamId, { ...meta, cursor: 0, edits: {} });
+          this.resetPending.add(teamId);
+          this.promoting.add(teamId);
+        }
+      } else this.promoting.delete(teamId);
     }
   }
 

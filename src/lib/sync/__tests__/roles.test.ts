@@ -209,6 +209,78 @@ describe('role changes seen by a sync', () => {
   });
 });
 
+describe('promotion of a view-only copy that differs from the cloud (audit H8)', () => {
+  const sizes = (d: TestDevice) => {
+    const slice = teamSlice(d.data, T1);
+    return slice ? [slice.players.length, slice.matches.length, slice.presets.length] : null;
+  };
+
+  /** Ben's view-only copy has lost the team's content locally; nothing heals it. */
+  async function divergedViewer() {
+    const ctx = await shared('player');
+    const full = sizes(ctx.a);
+    ctx.cloud.clock.tick(3_600_000);
+    await ctx.b.cycle();
+    await ctx.b.edit((s) => ({
+      players: s.players.filter((p) => p.teamId !== T1),
+      matches: s.matches.filter((m) => m.teamId !== T1),
+      presets: s.presets.filter((p) => p.teamId !== T1),
+    }));
+    await ctx.b.cycle();
+    expect(sizes(ctx.b)).toEqual([0, 0, 0]);
+    ctx.cloud.clock.tick(86_400_000);
+    return { ...ctx, full };
+  }
+
+  it('the copy is replaced by the cloud’s before the device may push; nothing is deleted', async () => {
+    const { cloud, a, b, full } = await divergedViewer();
+    await a.act((e) => setMemberRole(e, T1, benId(cloud), 'manager'));
+    await b.cycle();
+    expect(b.data.sync.teams[T1].role).toBe('manager');
+    expect(sizes(b)).toEqual(full);
+    await b.cycle();
+    await a.cycle();
+    expect(sizes(a)).toEqual(full);
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
+    expect(a.runtime.status.pending).toBe(0);
+  });
+
+  it('offline at the promotion: still view-only (nothing pushed), manager once the pull worked', async () => {
+    const { cloud, a, b, full } = await divergedViewer();
+    await a.act((e) => setMemberRole(e, T1, benId(cloud), 'manager'));
+    // The membership answer arrives, the pull doesn't.
+    const pull = b.backend.pullChanges.bind(b.backend);
+    b.backend.pullChanges = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await b.cycle();
+    expect(b.data.sync.teams[T1]).toMatchObject({ role: 'player', cursor: 0 });
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
+    // Also after an app restart (a new engine with the stored state) and back online.
+    b.backend.pullChanges = pull;
+    b.engine.resetPending.clear();
+    await b.act((e) => e.syncNow());
+    expect(b.data.sync.teams[T1].role).toBe('manager');
+    expect(sizes(b)).toEqual(full);
+    await a.cycle();
+    expect(sizes(a)).toEqual(full);
+  });
+
+  it('a player who uses a manager code is promoted the same way', async () => {
+    const { cloud, a, b, full } = await divergedViewer();
+    const code = await a.act((e) => createInvite(e, T1, 'manager', 7));
+    if (!code.ok) throw new Error('no code');
+    const joined = await b.act((e) => joinTeam(e, code.value.code));
+    expect(joined).toMatchObject({ ok: true, value: { role: 'manager' } });
+    await b.cycle();
+    expect(b.data.sync.teams[T1].role).toBe('manager');
+    expect(sizes(b)).toEqual(full);
+    await a.cycle();
+    expect(sizes(a)).toEqual(full);
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
+  });
+});
+
 describe('ids of another local team', () => {
   it("skips such rows, doesn't push the team in that cycle and says so once", async () => {
     const { cloud, a, b } = await shared('manager');
