@@ -862,17 +862,20 @@ browser on the web build (no request left the page).
 ### The previous scorer after a take-over (M1)
 
 - A sync cycle now reads the live holds **first** (before the pull and the push; it was last).
-- A match this device was scoring that another device holds now is **yielded** while that hold
-  lasts — also when the device learns it from a refused hold refresh, and also after its own
-  live screen has closed.
-- While yielded: the match and its sets are **not pushed** from this device, and a row the new
-  scorer saves for them **replaces** this device's unsynced change, whatever the save times say.
+- A match this device was scoring (its own hold was still running) that another device holds
+  now is **yielded** while that hold lasts — also when the device learns it from a refused hold
+  refresh, and also after its own live screen has closed.
+- While yielded: the match and its sets are **not pushed** from this device, and a row another
+  device saves for them **replaces** this device's unsynced change, whatever the save times say.
   The user gets a notice on the Teams tab ("Anna took over scoring a match of U18. 1 change made
   here that hadn't synced yet was undone.").
 - **Nothing is thrown away without a newer save**: a rally the new scorer never saved over stays
   on the device, counts as "waiting" in the status, and is synced when the hold ends (released,
   run out after 15 minutes, or taken back on this device).
-- A device that never held the match behaves as before.
+- A device that never held the match behaves as before. So does a device whose own hold had
+  **run out** (the scorer without a connection for more than 15 minutes): the server only gives
+  a running hold away on "Take over", so a lapsed one was not taken over — another device just
+  claimed the free match.
 - If the hold list can't be read (a server error; not "no connection"), the teams still sync
   with the holds known so far and the status shows the error — before, the holds were read
   last, so such an error never stood in the way of the data.
@@ -882,23 +885,48 @@ Files: `src/domain/syncAccess.ts` (`yieldedMatches`), `syncRecords.ts` (`matchOf
 `takenOver`, runtime only); `src/lib/sync/holdState.ts` (new), `engine.ts`, `teamSync.ts`,
 `holdCommands.ts`, `core.ts`; `src/features/sync/SyncNotices.tsx`, `src/i18n/{en,de}/sync.ts`.
 
-Tests: `takeOverBlock.test.ts` (11 two-device scenarios: the M1 race; holds are read before the
+Tests: `takeOverBlock.test.ts` (15 two-device scenarios: the M1 race; holds are read before the
 pull; held back and synced after a release; after the hold has run out; a device whose clock
 runs ahead still gives way; a refused refresh yields at once; taking the match back; sign-out;
-an unreadable hold list, twice; a device that never held the match). With the block switched
-off, 6 of the first 9 fail.
-`syncAccess.test.ts` (8 cases), `syncMerge.test.ts` (6), `syncRecords.test.ts` (1),
-`syncStatusUi.test.tsx` (the notice in English and German). One existing assertion in
-`syncMerge.test.ts` that compares the whole output object got the new field `yielded: []`.
+a scorer whose own hold ran out, twice; this device's own save coming back; an unreadable hold
+list, three times; a device that never held the match). `syncAccess.test.ts` (8 cases),
+`syncMerge.test.ts` (7), `syncRecords.test.ts` (1), `syncStatusUi.test.tsx` (the notice in
+English and German). One existing assertion in `syncMerge.test.ts` that compares the whole
+output object got the new field `yielded: []`.
 
-**Limits that remain** (DECISIONS #307): the block is in the app — the server's hold is still
-advisory, so a 10.0.0 app doesn't yield; the yield is forgotten when the app restarts (the
-device isn't scoring then; "the latest save wins" applies); a push that is already under way
-when the take-over happens can still land; deleting a held match is still possible (M15).
+**Independent review** (a reviewer agent that hadn't written the code, with its own scratch
+tests on a copy). What it found, and what was done:
+
+| Review finding                                                                                                                                                                                                                                                                           | Done                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A new way to lose rallies: the first version also yielded when the device's own hold had merely run out. The real scorer, offline for 15+ minutes, then gave way to the previous scorer's still-open live screen (which re-claims every 5 minutes) and its offline rallies were replaced | fixed: only a hold that was still running counts as taken over. The reviewer's sequence is a test; the outcome is the same as on 10.0.0 (the scorer's rallies win) |
+| This device's own earlier save, pulled back after a lost push answer, replaced its newer set with a "took over" notice                                                                                                                                                                   | fixed: only another device's row wins by force (test)                                                                                                              |
+| The check "has the known hold run out?" at push time had no test                                                                                                                                                                                                                         | test added                                                                                                                                                         |
+| Both test devices had the same profile name, so the holder's name in the notice proved nothing                                                                                                                                                                                           | the devices are "Coach" and "Ben" now                                                                                                                              |
+| If the new scorer has already left live (hold released) before the old device syncs again, the old device doesn't yield                                                                                                                                                                  | left, as a limit (below): nothing tells the old device then; the latest save wins as on 10.0.0                                                                     |
+| Expiry is judged by the device's clock; a clock 15 minutes ahead never yields                                                                                                                                                                                                            | left, as a limit (the same clock wins every conflict anyway, M2)                                                                                                   |
+| A third device's older edit of the match also wins against the yielded device's later one                                                                                                                                                                                                | left: restricting the rule to the current holder's rows would reopen the overwrite after two take-overs in a row                                                   |
+
+The reviewer's mutation runs (no push filter, no forced win, holds read after the teams, a hold
+error aborting the cycle, a release clearing the yield, and others) were all caught by the
+tests; it found nothing in the sign-in change. After the fixes each new test was checked to
+fail when its fix is undone.
+
+**Limits that remain** (DECISIONS #307; in all of them "the latest save wins", as on 10.0.0):
+
+- The block is in the app — the server's hold is still advisory, so a 10.0.0 app doesn't yield.
+- The new scorer's hold has already ended (it left the live screen) before the old device syncs
+  again.
+- The old device's own hold had run out before it learned of the take-over (offline for more
+  than 10–15 minutes).
+- A device clock that is minutes off.
+- The yield is forgotten when the app restarts (the device isn't scoring then).
+- A push that is already under way when the take-over happens can still land.
+- Deleting a held match is still possible (M15).
 
 ### Numbers
 
-`npm run check`: green, **2287 tests in 176 suites** (2255 in 175 before the follow-ups);
+`npm run check`: green, **2292 tests in 176 suites** (2255 in 175 before the follow-ups);
 `src/domain` at 100 %; `npx expo export -p web` succeeds.
 
 ### Release

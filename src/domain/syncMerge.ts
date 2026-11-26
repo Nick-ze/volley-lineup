@@ -56,9 +56,11 @@ export interface MergeInput {
   foreignIds: ReadonlySet<string>;
   /**
    * Matches this device yielded to another scorer (`yieldedMatches`): a new row of such a match
-   * or of one of its sets wins against any unsynced change here, whatever the save times.
+   * or of one of its sets that **another device** saved wins against any unsynced change here,
+   * whatever the save times. `deviceId` is this device's: its own earlier save coming back (a
+   * push whose answer was lost) is not the scorer's and follows the usual rule.
    */
-  takenOver?: ReadonlySet<string>;
+  takenOver?: { matches: ReadonlySet<string>; deviceId: string };
 }
 
 export type SkipReason = 'foreignId' | 'orphan' | 'invalid';
@@ -74,8 +76,6 @@ export interface MergeOutput {
   /** Keys of `takenOver` matches whose unsynced local change gave way to the scorer's row. */
   yielded: string[];
 }
-
-const NO_MATCHES: ReadonlySet<string> = new Set();
 
 const time = (iso: string | undefined): number =>
   iso === undefined ? Number.NEGATIVE_INFINITY : Date.parse(iso);
@@ -193,7 +193,7 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
   const base: Record<string, SyncBase> = { ...team.base };
   const edits: Record<string, SyncEdit> = { ...team.edits };
   const skipped: MergeOutput['skipped'] = [];
-  const takenOver = input.takenOver ?? NO_MATCHES;
+  const takenOver = input.takenOver;
   const yielded: string[] = [];
   const upserted = new Map<string, Prior>();
   const pending = new Set<string>();
@@ -217,7 +217,11 @@ function merge(input: MergeInput, cloudWins: boolean): MergeOutput {
     const local = records.get(key);
     const dirty = !cloudWins && (known ? (local ? payloadHash(local) : '') !== known.h : !!local);
     const edit = edits[key];
-    const yields = dirty && takenOver.has(matchOfRecord(row.kind, row.id) ?? '');
+    const yields =
+      dirty &&
+      takenOver !== undefined &&
+      row.deviceId !== takenOver.deviceId &&
+      takenOver.matches.has(matchOfRecord(row.kind, row.id) ?? '');
     const remoteWins = !dirty || yields || edit === undefined || time(row.at) >= time(edit.at);
     base[key] = {
       v: row.version,

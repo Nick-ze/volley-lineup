@@ -1,8 +1,9 @@
 /**
  * v10 audit M1: the live holds this device knows (runtime store) and the matches it has yielded
  * to another scorer. Every change of the known holds goes through `setHolds`, so the engine
- * notices at once when a match this device was scoring is held by another device — from a
- * cycle's hold list or from a refused claim — and stops saving that match (`yieldedNow`).
+ * notices at once when a match this device was scoring (its own hold still running) is held by
+ * another device — from a cycle's hold list or from a refused claim — and stops saving that
+ * match (`yieldedNow`). The rule itself is `yieldedMatches` in `src/domain/syncAccess.ts`.
  */
 import { holdStatus, yieldedMatches } from '@/domain/syncAccess';
 import type { MatchHold } from '@/domain/types';

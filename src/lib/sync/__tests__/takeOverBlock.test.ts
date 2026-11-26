@@ -44,6 +44,8 @@ async function twoManagers(skewMs = 0) {
   const b = new TestDevice(cloud, 'dev-b');
   await a.signIn('anna@example.test');
   await b.signIn('ben@example.test');
+  // The holder's name is the device's profile name: A is "Coach", B is "Ben".
+  await b.edit((x) => ({ profiles: x.profiles.map((p) => ({ ...p, name: 'Ben' })) }));
   await a.act((e) => uploadTeams(e, [T1]));
   await a.cycle();
   const invite = await a.act((e) => createInvite(e, T1, 'manager', 7));
@@ -131,7 +133,7 @@ describe('the previous scorer after a take-over (audit M1)', () => {
     expect(rallies(b)).toEqual(['us', 'them', 'them']);
     // A is told, and the match is read-only there now.
     expect(takenOverNotices(a)).toEqual([
-      { kind: 'takenOver', teamId: T1, teamName: TEAM_NAME, holder: 'Coach', undone: 1 },
+      { kind: 'takenOver', teamId: T1, teamName: TEAM_NAME, holder: 'Ben', undone: 1 },
     ]);
     expect(a.runtime.holds[M]?.deviceId).toBe('dev-b');
   });
@@ -223,7 +225,7 @@ describe('the previous scorer after a take-over (audit M1)', () => {
     const { cloud, a } = await takenOver();
     expect(a.engine.yielded.size).toBe(0);
     const refresh = await a.act((e) => holdMatch(e, T1, M)); // the live screen's 5-minute refresh
-    expect(refresh).toEqual({ ok: true, value: { granted: false, holder: 'Coach' } });
+    expect(refresh).toEqual({ ok: true, value: { granted: false, holder: 'Ben' } });
     expect(a.engine.yielded.has(M)).toBe(true);
     const pushed = watchPushes(a);
     await score(a, 'us');
@@ -266,6 +268,87 @@ describe('the previous scorer after a take-over (audit M1)', () => {
   });
 });
 
+describe('a scorer whose own hold ran out (no connection in the hall) is not "taken over"', () => {
+  /** B, the scorer, loses its connection and keeps scoring until its hold has run out. */
+  async function scorerOffline(devices: Awaited<ReturnType<typeof takenOver>>) {
+    const { cloud, b } = devices;
+    for (let i = 0; i < 3; i += 1) {
+      cloud.clock.tick(60_000);
+      await score(b, 'them');
+      cloud.fail = 'offline';
+      await b.cycle();
+      cloud.fail = null;
+    }
+    cloud.clock.tick(16 * 60_000);
+  }
+
+  it('keeps its rallies when the previous scorer’s open live screen re-claims the match', async () => {
+    const devices = await takenOver();
+    const { cloud, a, b } = devices;
+    await score(a, 'us');
+    await a.cycle(); // A yields; its rally waits
+    await scorerOffline(devices);
+    // A's live screen is still open: its 5-minute refresh gets the free match, and A's
+    // waiting rally is synced (the hold it yielded to has run out).
+    const refresh = await a.act((e) => holdMatch(e, T1, M));
+    expect(refresh).toEqual({ ok: true, value: { granted: true } });
+    await a.cycle();
+    expect(cloudRallies(cloud)).toEqual(['us', 'us']);
+    // B is back: its own hold had run out, so nobody "took over" — its later rallies win.
+    await b.cycle();
+    expect(b.engine.yielded.size).toBe(0);
+    expect(takenOverNotices(b)).toEqual([]);
+    expect(rallies(b)).toEqual(['us', 'them', 'them', 'them']);
+    expect(cloudRallies(cloud)).toEqual(['us', 'them', 'them', 'them']);
+    expect(b.runtime.status.pending).toBe(0);
+    await a.cycle();
+    expect(rallies(a)).toEqual(['us', 'them', 'them', 'them']);
+  });
+
+  it('syncs its rallies at once when another device merely claimed the free match', async () => {
+    const devices = await takenOver();
+    const { cloud, a, b } = devices;
+    await a.cycle(); // A yields (nothing waiting)
+    await scorerOffline(devices);
+    await a.act((e) => holdMatch(e, T1, M)); // A's open live screen claims the free match
+    await b.cycle();
+    expect(b.engine.yielded.size).toBe(0);
+    expect(cloudRallies(cloud)).toEqual(['us', 'them', 'them', 'them']);
+    expect(b.runtime.status.pending).toBe(0);
+  });
+});
+
+describe('only another device’s save counts as the scorer’s', () => {
+  it('this device’s own earlier save coming back (a lost push answer) undoes nothing', async () => {
+    const { cloud, a, b } = await twoManagers();
+    await a.act((e) => holdMatch(e, T1, M));
+    cloud.clock.tick(2000);
+    await score(a, 'us');
+    // The push reaches the server, but its answer is lost.
+    const push = a.backend.pushRecords.bind(a.backend);
+    a.backend.pushRecords = async (...args) => {
+      await push(...args);
+      throw new TypeError('Network request failed');
+    };
+    await a.cycle();
+    a.backend.pushRecords = push;
+    expect(cloudRallies(cloud)).toEqual(['us']);
+    cloud.clock.tick(2000);
+    await score(a, 'them'); // scored on top, not synced yet
+    cloud.clock.tick(2000);
+    await b.act((e) => holdMatch(e, T1, M, true)); // B takes over and saves nothing
+    cloud.clock.tick(2000);
+    await a.act((e) => e.syncNow()); // A yields; the pull brings A's own earlier save
+    expect(a.engine.yielded.has(M)).toBe(true);
+    expect(rallies(a)).toEqual(['us', 'them']);
+    expect(takenOverNotices(a)).toEqual([]);
+    // Once B is done, A's rally is synced.
+    await b.act((e) => releaseMatch(e, T1, M));
+    await a.cycle();
+    expect(cloudRallies(cloud)).toEqual(['us', 'them']);
+  });
+});
+
 describe('when the holds can’t be read (a server error, not "no connection")', () => {
   const breakHolds = (d: TestDevice) => {
     d.backend.listHolds = async () => {
@@ -285,6 +368,16 @@ describe('when the holds can’t be read (a server error, not "no connection")',
     await a.cycle();
     expect(cloud.record(T1, 'player', 'p1')?.payload).toMatchObject({ firstName: 'Renamed' });
     expect(a.runtime.status).toMatchObject({ phase: 'error', error: 'unknown', pending: 0 });
+  });
+
+  it('a known hold that has run out no longer holds anything back', async () => {
+    const { cloud, a } = await takenOver();
+    await score(a, 'us');
+    await a.cycle(); // A yields; its rally waits
+    breakHolds(a);
+    cloud.clock.tick(16 * 60_000); // the other device's hold, as last known, has run out
+    await a.cycle();
+    expect(cloudRallies(cloud)).toEqual(['us', 'us']);
   });
 
   it('a yielded match stays yielded (the holds known so far count)', async () => {

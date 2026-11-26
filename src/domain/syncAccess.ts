@@ -45,12 +45,18 @@ export function holdStatus(
 /**
  * The matches this device has yielded to another scorer (v10 audit M1), after its known holds
  * change from `prev` to `next`: a match another device holds now (unexpired) that this device
- * was the scorer of — its own hold was the last one it knew, expired or not — or had already
- * yielded. It stays yielded until that other hold ends (released, expired, or taken back here).
+ * was the scorer of — its own hold was the last one it knew and **hadn't run out** — or had
+ * already yielded. It stays yielded until that other hold ends (released, expired, or taken back
+ * here).
  *
- * While a match is yielded, this device doesn't push the match or its sets, and whatever the
- * scorer saves for them replaces this device's unsynced changes, whatever the clocks say. A
- * device that never held the match isn't affected (its changes follow "the latest save wins").
+ * Only a hold that was still running can have been taken over: the server gives a running hold
+ * to another device only on "Take over". A device whose own hold had run out (the scorer in a
+ * hall without a connection) may still be the one scoring, while the other device merely
+ * claimed the free match — it doesn't yield, and "the latest save wins" as always.
+ *
+ * While a match is yielded, this device doesn't push the match or its sets, and whatever
+ * another device saves for them replaces this device's unsynced changes, whatever the clocks
+ * say. A device that never held the match isn't affected either.
  */
 export function yieldedMatches(
   yielded: ReadonlySet<string>,
@@ -63,7 +69,8 @@ export function yieldedMatches(
   if (!deviceId) return out;
   for (const [matchId, hold] of Object.entries(next)) {
     if (holdStatus(hold, deviceId, now) !== 'other') continue;
-    if (yielded.has(matchId) || prev[matchId]?.deviceId === deviceId) out.add(matchId);
+    const wasScorer = holdStatus(prev[matchId], deviceId, now) === 'mine';
+    if (yielded.has(matchId) || wasScorer) out.add(matchId);
   }
   return out;
 }

@@ -141,7 +141,7 @@ function mergeInto(
   rows: readonly RemoteRecord[],
   now: string,
   reset = false,
-  takenOver?: ReadonlySet<string>,
+  takenOver?: MergeInput['takenOver'],
 ): { out: MergeOutput; data: ReturnType<typeof withSlice>; changed: boolean } {
   const slice = sliceOf(s, teamId);
   const edits = detectChanges(slice, meta, now).edits;
@@ -205,8 +205,10 @@ export async function pullTeam(
 
   const report: PullReport = { ...NOTHING_PULLED, invalid };
   const now = isoNow(core.clock);
-  // Matches another device took over from this one (audit M1): its rows win here.
-  const takenOver = yieldedNow(core);
+  // Matches another device took over from this one (audit M1): other devices' rows win here.
+  const yielded = yieldedNow(core);
+  const takenOver =
+    yielded.size > 0 ? { matches: yielded, deviceId: appState().sync.deviceId ?? '' } : undefined;
   let gaveWay: string[] = [];
   transaction((s) => {
     const meta = s.sync.teams[teamId];

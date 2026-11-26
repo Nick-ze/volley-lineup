@@ -99,9 +99,11 @@ describe('yieldedMatches (audit M1: a match another device took over from this o
     expect([...yieldedMatches(none, mine, theirs, ME, NOW)]).toEqual(['m1']);
   });
 
-  it('also when this device’s own hold had run out (offline for a while)', () => {
-    const expired = { m1: hold(ME, '2026-11-26T09:50:00Z') };
-    expect([...yieldedMatches(none, expired, theirs, ME, NOW)]).toEqual(['m1']);
+  it('not when this device’s own hold had run out: the other device only claimed a free match', () => {
+    // The scorer in a hall without a connection may still be the one scoring.
+    for (const until of ['2026-11-26T09:50:00Z', '2026-11-26T10:00:00Z']) {
+      expect(yieldedMatches(none, { m1: hold(ME, until) }, theirs, ME, NOW).size).toBe(0);
+    }
   });
 
   it('also when the holder’s device isn’t known (a refused claim)', () => {
