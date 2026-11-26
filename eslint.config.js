@@ -15,8 +15,25 @@ const BACKEND_PATTERNS = [
     message: 'Backend code lives in src/lib/sync only: use `@/lib/sync` or the hooks in `@/store`.',
   },
   {
-    group: ['@/lib/sync/*', '**/lib/sync/*'],
+    // `./sync/*`: a sibling in `src/lib` (v10 audit L25).
+    group: ['@/lib/sync/*', '**/lib/sync/*', './sync/*'],
     message: 'Import the barrel `@/lib/sync`, not its internals.',
+  },
+];
+
+/**
+ * The same for `require()` and dynamic `import()`, which `no-restricted-imports` doesn't see
+ * (v10 audit L25).
+ */
+const BACKEND_CALL = '/^(@supabase\\/|supabase$|@\\/lib\\/sync\\/|(\\.\\.?\\/)+(lib\\/)?sync\\/)/';
+const BACKEND_SYNTAX = [
+  {
+    selector: `CallExpression[callee.name='require'] > Literal.arguments[value=${BACKEND_CALL}]`,
+    message: 'Backend code lives in src/lib/sync only: use `@/lib/sync` or the hooks in `@/store`.',
+  },
+  {
+    selector: `ImportExpression > Literal.source[value=${BACKEND_CALL}]`,
+    message: 'Backend code lives in src/lib/sync only: use `@/lib/sync` or the hooks in `@/store`.',
   },
 ];
 
@@ -24,14 +41,7 @@ module.exports = defineConfig([
   expoConfig,
   prettierConfig,
   {
-    ignores: [
-      'dist/*',
-      'node_modules/*',
-      '.expo/*',
-      'coverage/*',
-      '.claude/*',
-      'supabase/functions/*',
-    ],
+    ignores: ['dist/*', 'node_modules/*', '.expo/*', 'coverage/*', '.claude/*'],
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -68,6 +78,22 @@ module.exports = defineConfig([
     },
   },
   {
+    // v10 audit L25: the backend rule also covers `require()` / `import()` in app code…
+    files: ['app/**/*.{ts,tsx}', 'src/**/*.{ts,tsx}'],
+    ignores: ['src/i18n/**'],
+    rules: { 'no-restricted-syntax': ['error', ...BACKEND_SYNTAX] },
+  },
+  {
+    // …test files (they may read the English strings) and the scripts (the live check is the
+    // one script that talks to the backend on purpose).
+    files: ['**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}', 'scripts/**/*.{js,mjs}'],
+    ignores: ['scripts/sync-live-check.mjs'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: BACKEND_PATTERNS }],
+      'no-restricted-syntax': ['error', ...BACKEND_SYNTAX],
+    },
+  },
+  {
     // v10: inside the sync module the backend may be used (the i18n rule still applies); so may
     // the engine tests' in-memory backend.
     files: [
@@ -88,6 +114,12 @@ module.exports = defineConfig([
           ],
         },
       ],
+      'no-restricted-syntax': 'off',
     },
+  },
+  {
+    // The sync module's own tests use its internals and the English strings.
+    files: ['src/lib/sync/**/*.test.{ts,tsx}', 'src/lib/sync/__tests__/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 ]);

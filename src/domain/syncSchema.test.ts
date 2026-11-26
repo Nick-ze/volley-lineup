@@ -1,7 +1,7 @@
 import { goldenTeamData, sliceOf } from '@/test-utils/syncFixtures';
 
 import { sliceToRecords } from './syncRecords';
-import { normalizeTimestamp, parsePayload, parseRemoteRow } from './syncSchema';
+import { normalizeTimestamp, parsePayload, parseRemoteRow, storedSyncData } from './syncSchema';
 
 const records = sliceToRecords(sliceOf(goldenTeamData(), 't1'));
 const payload = (key: string) => records.get(key) as Record<string, unknown>;
@@ -126,5 +126,26 @@ describe('parseRemoteRow', () => {
     expect(parseRemoteRow({ ...row, deleted: 'no' })).toBeNull();
     expect(parseRemoteRow({ ...row, payload: { firstName: 'A' } })).toBeNull();
     expect(parseRemoteRow({ ...row, device_id: 'd'.repeat(65) })).toBeNull();
+  });
+});
+
+describe('storedSyncData (audit L32)', () => {
+  const team = { userId: 'u1', role: 'player', cursor: 0, base: {}, edits: {}, photos: [] };
+  const valid = { deviceId: 'd1', account: null, teams: { t1: team } };
+
+  it('keeps a valid slice as it is', () => {
+    expect(storedSyncData(valid)).toBe(valid);
+  });
+
+  it.each([
+    [null, null],
+    ['text', null],
+    [{ deviceId: 'd1' }, 'd1'],
+    [{ deviceId: 7, account: null, teams: {} }, null],
+    [{ deviceId: 'd1', account: { userId: 'u1' }, teams: {} }, 'd1'],
+    [{ deviceId: 'd1', account: null, teams: { t1: { ...team, role: 'owner' } } }, 'd1'],
+    [{ deviceId: 'd1', account: null, teams: { t1: { ...team, base: { k: { v: 'x' } } } } }, 'd1'],
+  ])('replaces a malformed slice %j with the empty one', (value, deviceId) => {
+    expect(storedSyncData(value)).toEqual({ deviceId, account: null, teams: {} });
   });
 });

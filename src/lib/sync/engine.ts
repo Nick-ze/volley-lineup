@@ -275,8 +275,12 @@ export class SyncEngine implements EngineCore {
     if (isApplying() || !dataChanged(s, prev) || Object.keys(s.sync.teams).length === 0) return;
     clearTimeout(this.timers.debounce);
     this.timers.debounce = setTimeout(() => {
-      noteAll(this);
-      updatePending(this.userId());
+      try {
+        noteAll(this);
+        updatePending(this.userId());
+      } catch {
+        // The cycle kicked below notes again and reports the failure (audit L20).
+      }
       if (this.failures === 0) this.kick();
     }, this.timing.debounceMs);
   }
@@ -310,11 +314,16 @@ export class SyncEngine implements EngineCore {
       return this.cycling;
     }
     const loop = async () => {
-      do {
-        this.again = false;
-        await this.exclusive(() => this.cycle());
-      } while (this.again);
-      this.cycling = null;
+      // Always cleared (v10 audit L20): a cycle that threw must not leave its rejected promise
+      // behind for every later `runCycle`.
+      try {
+        do {
+          this.again = false;
+          await this.exclusive(() => this.cycle());
+        } while (this.again);
+      } finally {
+        this.cycling = null;
+      }
     };
     this.cycling = loop();
     return this.cycling;
@@ -350,9 +359,10 @@ export class SyncEngine implements EngineCore {
   /* ---------------------------------------------------------------- the cycle */
 
   private async cycle(): Promise<void> {
-    // First, before any network call: changes get the time they were made, online or not.
-    noteAll(this);
     try {
+      // First, before any network call: changes get the time they were made, online or not.
+      // Inside the `try` (audit L20, L32): a failure here is reported, not thrown at a caller.
+      noteAll(this);
       if (this.needsRestore) {
         const restored = await this.backend.getSession();
         // The start-up check (audit M17) for a session that could only be read now (offline
@@ -416,7 +426,11 @@ export class SyncEngine implements EngineCore {
       this.setRestoring(false);
       emitStatus({ type: 'failed', code, retryAt: null });
     }
-    updatePending(this.userId());
+    try {
+      updatePending(this.userId());
+    } catch {
+      // The same broken state that failed the cycle (audit L20): the status already says so.
+    }
   }
 
   private async syncTeam(teamId: string, deviceId: string): Promise<void> {

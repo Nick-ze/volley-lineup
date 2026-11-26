@@ -79,6 +79,14 @@ describe('web printHtml', () => {
     expect(frame()).toBeNull();
   });
 
+  it('sandboxes the frame: no scripts, pop-ups, forms or navigation (audit L4)', async () => {
+    void printHtml('<p>sheet</p>');
+    const sandbox = frame()?.getAttribute('sandbox') ?? null;
+    expect(sandbox).not.toBeNull();
+    expect((sandbox ?? '').split(/\s+/).sort()).toEqual(['allow-modals', 'allow-same-origin']);
+    frame()?.dispatchEvent(new Event('load'));
+  });
+
   it('keeps the page title when none is given and removes the frame after a timeout', async () => {
     await start('<p/>');
     expect(document.title).toBe('Volley Lineup');

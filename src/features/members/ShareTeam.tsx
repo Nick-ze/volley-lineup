@@ -13,7 +13,10 @@ import { useMembersStyles } from './membersStyles';
 
 /** The error a share left for this screen (`?shareError=`), when it names one. */
 function errorParam(t: Strings, value: string | string[] | undefined): SyncErrorCode | null {
-  return typeof value === 'string' && value in t.sync.errors ? (value as SyncErrorCode) : null;
+  // Own keys only: `in` also accepts "__proto__", "constructor"… (v10 audit L19).
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(t.sync.errors, value)
+    ? (value as SyncErrorCode)
+    : null;
 }
 
 /**

@@ -56,12 +56,19 @@ const AUTH_CODES: Readonly<Record<string, SyncErrorCode>> = {
 };
 
 const OFFLINE_NAMES = new Set([
-  'TypeError',
   'AbortError',
   'TimeoutError',
   'AuthRetryableFetchError',
   'FetchError',
 ]);
+
+/**
+ * What `fetch` says when there is no connection: React Native "Network request failed", Chrome
+ * "Failed to fetch", Safari "Load failed", Firefox "NetworkError when attempting to fetch
+ * resource", Node "fetch failed"; `authFetch.ts` and `fetchWithTimeout.ts` use the first.
+ */
+const NETWORK_MESSAGE =
+  /network request failed|failed to fetch|load failed|networkerror|fetch failed|network error/i;
 
 type Fields = Partial<Record<'name' | 'message' | 'code' | 'status' | 'statusCode', unknown>> & {
   originalError?: unknown;
@@ -101,7 +108,12 @@ export function toSyncError(error: unknown): SyncErrorCode {
   if (SQL_CODES[code]) return SQL_CODES[code];
   if (AUTH_CODES[code]) return AUTH_CODES[code];
   if (name === 'AuthSessionMissingError') return 'notSignedIn';
-  if (OFFLINE_NAMES.has(name) || /^(TypeError|AbortError|FetchError|TimeoutError):/.test(message)) {
+  if (OFFLINE_NAMES.has(name) || /^(AbortError|FetchError|TimeoutError):/.test(message)) {
+    return 'offline';
+  }
+  // v10 audit L5: a TypeError is "offline" only when it is fetch's own "no connection" error, so
+  // a programming error isn't hidden behind the offline badge.
+  if ((name === 'TypeError' || /^TypeError:/.test(message)) && NETWORK_MESSAGE.test(message)) {
     return 'offline';
   }
   if (e.originalError !== undefined) return toSyncError(e.originalError);
