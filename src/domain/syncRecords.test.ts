@@ -15,6 +15,8 @@ import {
   teamSlice,
   type RecordPayload,
   type TeamSlice,
+  playerRecordHash,
+  teamRecordHash,
 } from './syncRecords';
 import type { LineupPreset } from './types';
 
@@ -371,5 +373,26 @@ describe('foreignKeys', () => {
     const keys = foreignKeys(goldenTeamData(), 't1');
     expect([...keys].sort()).toEqual(['match:m3', 'opponent:o4', 'player:p9', 'season:s3']);
     expect(foreignKeys(goldenTeamData(), 'gone')).toContain('player:p1');
+  });
+});
+
+describe('playerRecordHash / teamRecordHash (audit M18)', () => {
+  it('are the hashes of the records `sliceToRecords` builds', () => {
+    const slice = sliceOf(goldenTeamData(), 't1');
+    const records = sliceToRecords(slice);
+    for (const player of slice.players) {
+      const payload = records.get(recordKey('player', player.id));
+      expect(playerRecordHash(player)).toBe(payload && payloadHash(payload));
+    }
+    const team = records.get(recordKey('team', 't1'));
+    expect(teamRecordHash(slice.team)).toBe(team && payloadHash(team));
+  });
+
+  it('don’t change with the device-only fields', () => {
+    const slice = sliceOf(goldenTeamData(), 't1');
+    const player = slice.players[0];
+    expect(playerRecordHash({ ...player, description: 'secret' })).toBe(playerRecordHash(player));
+    expect(playerRecordHash({ ...player, firstName: 'Other' })).not.toBe(playerRecordHash(player));
+    expect(teamRecordHash({ ...slice.team, profileId: 'other' })).toBe(teamRecordHash(slice.team));
   });
 });

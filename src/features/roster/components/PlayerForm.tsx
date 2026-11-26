@@ -28,6 +28,8 @@ export interface PlayerFormProps {
   onDelete?: () => void;
   /** True when the player is part of a played set: deleting is not allowed (explained). */
   deleteBlocked?: boolean;
+  /** v10: another reason deleting is blocked (already translated), instead of the played set. */
+  deleteBlockedText?: string;
 }
 
 /** Add / edit a player (with photo) with inline validation. */
@@ -37,6 +39,7 @@ export function PlayerForm({
   onDone,
   onDelete,
   deleteBlocked = false,
+  deleteBlockedText,
 }: PlayerFormProps) {
   const formStyles = useFormStyles();
   const t = useT();
@@ -104,7 +107,7 @@ export function PlayerForm({
             label={s.delete}
             variant="danger"
             disabled={deleteBlocked}
-            accessibilityHint={deleteBlocked ? s.deleteBlocked : undefined}
+            accessibilityHint={deleteBlocked ? (deleteBlockedText ?? s.deleteBlocked) : undefined}
             onPress={() => ask(t.roster.confirm.deletePlayer(fullName(player)), onDelete)}
           />
         )}
@@ -112,7 +115,7 @@ export function PlayerForm({
         <Button label={t.common.save} disabled={photoBusy} onPress={() => save() && onDone()} />
       </View>
       {player && onDelete && deleteBlocked ? (
-        <Text style={formStyles.hint}>{s.deleteBlocked}</Text>
+        <Text style={formStyles.hint}>{deleteBlockedText ?? s.deleteBlocked}</Text>
       ) : null}
       <ConfirmDialog {...dialogProps} />
     </View>

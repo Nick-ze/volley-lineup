@@ -1,7 +1,9 @@
 import {
   goneTeamLinks,
+  heldMatchIds,
   holdStatus,
   isGoneLink,
+  isUnchangedRecord,
   matchAccess,
   teamAccess,
   withoutTeamLinks,
@@ -180,5 +182,54 @@ describe('links of teams that left the device (audit C1)', () => {
     expect(Object.keys(sync.teams)).toEqual(['mgr', 'view']); // not changed
     expect(withoutTeamLinks(sync, ['unknown'])).toBe(sync);
     expect(withoutTeamLinks(sync, new Set<string>())).toBe(sync);
+  });
+});
+
+describe('heldMatchIds (audit M15)', () => {
+  const NOW = Date.parse('2026-11-26T10:00:00Z');
+  const holds = {
+    m1: hold('dev-other'),
+    m2: hold('dev-me'),
+    m3: hold('dev-other', '2026-11-26T09:59:59Z'),
+  };
+
+  it('lists the matches another device holds right now, in the order asked', () => {
+    expect(heldMatchIds(holds, 'dev-me', NOW, ['m4', 'm3', 'm2', 'm1'])).toEqual(['m1']);
+    expect(heldMatchIds(holds, 'dev-x', NOW, ['m1', 'm2', 'm3'])).toEqual(['m1', 'm2']);
+    // Without a device id every unexpired hold is another device's.
+    expect(heldMatchIds(holds, null, NOW, ['m1', 'm2'])).toEqual(['m1', 'm2']);
+  });
+
+  it('is empty without holds or matches', () => {
+    expect(heldMatchIds({}, 'dev-me', NOW, ['m1'])).toEqual([]);
+    expect(heldMatchIds(holds, 'dev-me', NOW, [])).toEqual([]);
+  });
+
+  it('a hold whose end can’t be read counts as running (the claim gives it an end: audit L17)', () => {
+    expect(holdStatus(hold('dev-other', ''), 'dev-me', NOW)).toBe('other');
+    expect(heldMatchIds({ m1: hold('dev-other', '') }, 'dev-me', NOW, ['m1'])).toEqual(['m1']);
+  });
+});
+
+describe('isUnchangedRecord (audit M18)', () => {
+  const link = (base: SyncedTeam['base']): Pick<SyncData, 'teams'> => ({
+    teams: { t1: { userId: 'u1', role: 'manager', cursor: 3, base, edits: {}, photos: [] } },
+  });
+  const AT = '2026-11-26T10:00:00.000Z';
+
+  it('is true when the record is exactly what the server last had', () => {
+    const sync = link({ 'player:p1': { v: 2, h: 'abc', at: AT } });
+    expect(isUnchangedRecord(sync, 't1', 'player:p1', 'abc')).toBe(true);
+  });
+
+  it('is false for a changed record, a new one, a deleted one and a team that isn’t shared', () => {
+    const sync = link({
+      'player:p1': { v: 2, h: 'abc', at: AT },
+      'player:p2': { v: 3, h: '', at: AT, del: true },
+    });
+    expect(isUnchangedRecord(sync, 't1', 'player:p1', 'changed')).toBe(false);
+    expect(isUnchangedRecord(sync, 't1', 'player:p9', 'abc')).toBe(false);
+    expect(isUnchangedRecord(sync, 't1', 'player:p2', '')).toBe(false);
+    expect(isUnchangedRecord(sync, 'local', 'player:p1', 'abc')).toBe(false);
   });
 });

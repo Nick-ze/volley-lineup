@@ -1,12 +1,21 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
-import { isPlayerInPlayedSet } from '@/domain/playerUsage';
+import { isPlayerInPlayedSet, removePlayerEverywhere } from '@/domain/playerUsage';
 import { PlayerForm } from '@/features/roster/components/PlayerForm';
 import { ViewOnlyScreen } from '@/features/sync/ViewOnlyScreen';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { useAppStore, useCanEdit, usePlayer, useTeam } from '@/store';
+import {
+  canEditTeamNow,
+  heldMatchesNow,
+  useAppStore,
+  useCanEdit,
+  useHeldMatches,
+  useMatchesForTeam,
+  usePlayer,
+  useTeam,
+} from '@/store';
 
 /**
  * `/team/[teamId]/player?playerId=` — add (no id) or edit a player. Modal. v10: view-only members
@@ -18,6 +27,12 @@ export default function PlayerEditorScreen() {
   const team = useTeam(teamId);
   const player = usePlayer(playerId);
   const deleteBlocked = useAppStore((s) => !!playerId && isPlayerInPlayedSet(s.matches, playerId));
+  // v10 audit M15: deleting a player takes them out of every lineup, also of a match another
+  // device is scoring live right now — not while that device holds the match.
+  const lineups = useMatchesForTeam(teamId).filter(
+    (m) => !!playerId && m.sets.some((set) => removePlayerEverywhere(set, playerId) !== set),
+  );
+  const holder = [...useHeldMatches(lineups.map((m) => m.id)).values()][0];
   const goBack = useGoBack(`/team/${teamId}`);
   const router = useRouter();
   const canEdit = useCanEdit(teamId);
@@ -47,10 +62,24 @@ export default function PlayerEditorScreen() {
         teamId={team.id}
         player={player}
         onDone={goBack}
-        deleteBlocked={deleteBlocked}
+        deleteBlocked={deleteBlocked || holder !== undefined}
+        deleteBlockedText={
+          holder && !deleteBlocked ? t.sync.readOnly.heldNoDelete(holder.holderName) : undefined
+        }
         onDelete={
           player
             ? () => {
+                // Asked again at the moment of the answer (v10 audit L18, M15), with the
+                // lineups as they are then: the scorer may have put the player in meanwhile.
+                const now = useAppStore
+                  .getState()
+                  .matches.filter(
+                    (m) =>
+                      m.teamId === team.id &&
+                      m.sets.some((set) => removePlayerEverywhere(set, player.id) !== set),
+                  );
+                const held = heldMatchesNow(now.map((m) => m.id));
+                if (!canEditTeamNow(team.id) || held.length > 0) return;
                 // Not goBack(): the previous screen may be this player's detail screen.
                 router.dismissTo(`/team/${team.id}`);
                 useAppStore.getState().deletePlayer(player.id);

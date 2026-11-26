@@ -1,5 +1,6 @@
 import { mergeData, replaceData, type TransferData } from './exportSchema';
 import {
+  importChangesMatches,
   importWithSharedTeams,
   sharedTeamsInFile,
   sharedTeamsOf,
@@ -338,5 +339,144 @@ describe('importWithSharedTeams: a file with a shared team’s records under ano
     const current = device();
     const result = unwrap(importWithSharedTeams(current, goldenData(), 'replace', SHARED_Y1));
     expect(count(result.data, 'y1')).toBe(count(current, 'y1'));
+  });
+});
+
+describe('importWithSharedTeams: a shared team’s picture that isn’t downloaded yet (audit L31)', () => {
+  /** The device: t1 is shared and p1's cloud picture (ph2) hasn't arrived; so hasn't t1's own. */
+  function waitingForPhotos(): TransferData {
+    const data = goldenData();
+    return { ...data, photos: data.photos.filter((p) => p.id !== 'ph2' && p.id !== 'ph3') };
+  }
+  /** A file that has nothing to do with the shared team. */
+  function otherFile(): TransferData {
+    const file = goldenData();
+    const t2 = ofTeam(file, 't2');
+    return {
+      profiles: file.profiles.filter((p) => p.id === t2.team?.profileId),
+      teams: t2.team ? [{ ...t2.team, name: 'From the file' }] : [],
+      players: t2.players,
+      matches: t2.matches,
+      presets: t2.presets,
+      seasons: t2.seasons,
+      opponents: t2.opponents,
+      photos: [],
+    };
+  }
+  const photoIds = (data: TransferData) => data.photos.map((p) => p.id).sort();
+
+  it('the device’s own data would fail the plain check (the reason every import was refused)', () => {
+    expect(mergeData(waitingForPhotos(), otherFile())).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+  });
+
+  it.each([MANAGER, VIEWER])('Merge works; the waiting pictures keep their ids', (...shared) => {
+    const current = waitingForPhotos();
+    const { data } = unwrap(importWithSharedTeams(current, otherFile(), 'merge', shared));
+    expect(data.teams.find((t) => t.id === 't2')?.name).toBe('From the file');
+    expect(data.teams.find((t) => t.id === 't1')?.photoId).toBe('ph3');
+    expect(data.players.find((p) => p.id === 'p1')?.photoId).toBe('ph2');
+    // No stand-in is written: only real photos, and none for the waiting ids.
+    expect(data.photos.some((p) => p.id === 'ph2' || p.id === 'ph3')).toBe(false);
+    expect(data.photos.every((p) => p.dataUri !== '')).toBe(true);
+    expect(data.photos.every((p) => current.photos.includes(p))).toBe(true);
+  });
+
+  it.each([MANAGER, VIEWER])('Replace works too', (...shared) => {
+    const current = waitingForPhotos();
+    const { data } = unwrap(importWithSharedTeams(current, otherFile(), 'replace', shared));
+    expect(data.teams.map((t) => t.id).sort()).toEqual(['t1', 't2']);
+    expect(data.players.find((p) => p.id === 'p1')?.photoId).toBe('ph2');
+    expect(data.photos.some((p) => p.id === 'ph2' || p.id === 'ph3')).toBe(false);
+    expect(data.photos.every((p) => p.dataUri !== '')).toBe(true);
+  });
+
+  it('a file that has the picture brings it back (manager: the file wins per id)', () => {
+    const current = waitingForPhotos();
+    const file = goldenData();
+    const { data } = unwrap(importWithSharedTeams(current, file, 'merge', MANAGER));
+    const ph2 = file.photos.find((p) => p.id === 'ph2');
+    expect(ph2?.dataUri).not.toBe('');
+    expect(data.photos.find((p) => p.id === 'ph2')).toEqual(ph2);
+    expect(data.photos.find((p) => p.id === 'ph3')).toEqual(
+      file.photos.find((p) => p.id === 'ph3'),
+    );
+    expect(data.photos.every((p) => p.dataUri !== '')).toBe(true);
+  });
+
+  it.each([
+    ['merge', MANAGER],
+    ['replace', MANAGER],
+    ['merge', VIEWER],
+    ['replace', VIEWER],
+  ] as const)(
+    '%s: a backup that has the picture brings it back, whatever the role',
+    (mode, shared) => {
+      // Found by the review: on a view-only device Replace kept the stand-in and lost the picture.
+      const file = goldenData();
+      const { data } = unwrap(importWithSharedTeams(waitingForPhotos(), file, mode, [...shared]));
+      expect(data.photos.find((p) => p.id === 'ph2')).toEqual(
+        file.photos.find((p) => p.id === 'ph2'),
+      );
+      expect(data.photos.every((p) => p.dataUri !== '')).toBe(true);
+      expect(data.players.find((p) => p.id === 'p1')?.photoId).toBe('ph2');
+    },
+  );
+
+  it('a missing picture of a team that isn’t shared is still refused', () => {
+    const data = goldenData();
+    const t2Player = data.players.find((p) => p.teamId === 't2');
+    if (!t2Player) throw new Error('no t2 player');
+    const current = {
+      ...data,
+      players: data.players.map((p) => (p.id === t2Player.id ? { ...p, photoId: 'gone' } : p)),
+    };
+    expect(importWithSharedTeams(current, otherFile(), 'merge', MANAGER)).toEqual({
+      ok: false,
+      error: 'MERGE_CONFLICT',
+    });
+  });
+
+  it('with every picture on the device nothing changes (same result as before)', () => {
+    const current = goldenData();
+    const merged = unwrap(importWithSharedTeams(current, changedFile(), 'merge', MANAGER));
+    const plain = mergeData(current, changedFile());
+    if (!plain.ok) throw new Error(plain.error);
+    expect(merged.data.photos).toEqual(plain.data.photos);
+    expect(photoIds(merged.data)).toEqual(photoIds(plain.data));
+  });
+});
+
+describe('importChangesMatches (audit M15, review)', () => {
+  const current = goldenData().matches;
+  const edited = current.map((m) =>
+    m.id === 'm2' ? { ...m, sets: m.sets.map((x) => ({ ...x, events: [] })), opponent: 'X' } : m,
+  );
+
+  it('is false when no match is being scored live', () => {
+    expect(importChangesMatches(current, [], [])).toBe(false);
+  });
+
+  it('is true when the result changes or drops such a match', () => {
+    expect(importChangesMatches(current, edited, ['m2'])).toBe(true);
+    expect(
+      importChangesMatches(
+        current,
+        current.filter((m) => m.id !== 'm2'),
+        ['m2'],
+      ),
+    ).toBe(true);
+  });
+
+  it('is false when the result leaves it as it is — the same object or the same content', () => {
+    expect(importChangesMatches(current, current, ['m2'])).toBe(false);
+    const copy = JSON.parse(JSON.stringify(current)) as typeof current;
+    expect(importChangesMatches(current, copy, ['m2'])).toBe(false);
+    // Another match changes: that one isn't being scored.
+    expect(importChangesMatches(current, edited, ['m1'])).toBe(false);
+    // A held match this device doesn't have can't be changed by the import.
+    expect(importChangesMatches(current, edited, ['unknown'])).toBe(false);
   });
 });

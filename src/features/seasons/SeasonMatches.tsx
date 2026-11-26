@@ -5,7 +5,14 @@ import { Button, ConfirmDialog, TextField, useConfirm, useListStyles } from '@/c
 import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useAppStore, useCanEdit, useMatchesForSeason, useSeason } from '@/store';
+import {
+  canEditMatchNow,
+  useAppStore,
+  useCanEdit,
+  useHeldMatches,
+  useMatchesForSeason,
+  useSeason,
+} from '@/store';
 
 import { MatchRow } from './MatchRow';
 
@@ -21,7 +28,7 @@ export interface SeasonMatchesProps {
 /**
  * The season's matches, newest first, with the v6.2 search (opponent or date) and an optional
  * opponent filter (set by tapping an opponent on the Opponents tab). v10: view-only members get
- * no New match and no Delete.
+ * no New match and no Delete; a match another device is scoring live has no Delete either.
  */
 export function SeasonMatches({
   seasonId,
@@ -35,6 +42,8 @@ export function SeasonMatches({
   const all = useMatchesForSeason(seasonId);
   const deleteMatch = useAppStore((st) => st.deleteMatch);
   const canEdit = useCanEdit(useSeason(seasonId)?.teamId);
+  // v10 audit M15: a match another device is scoring live can't be deleted here meanwhile.
+  const held = useHeldMatches(all.map((m) => m.id));
   const { ask, dialogProps } = useConfirm();
   const s = t.roster.matches;
   const [query, setQuery] = useState('');
@@ -87,8 +96,13 @@ export function SeasonMatches({
             match={m}
             onOpen={() => onOpenMatch(m.id)}
             onDelete={
-              canEdit
-                ? () => ask(t.roster.confirm.deleteMatch(m.opponent), () => deleteMatch(m.id))
+              canEdit && !held.has(m.id)
+                ? () =>
+                    ask(t.roster.confirm.deleteMatch(m.opponent), () => {
+                      // Asked again at the moment of the answer: the role may have changed or
+                      // a device may have started scoring while the question was open (L18).
+                      if (canEditMatchNow(m.id)) deleteMatch(m.id);
+                    })
                 : undefined
             }
           />

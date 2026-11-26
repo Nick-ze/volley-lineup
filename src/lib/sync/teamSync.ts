@@ -50,12 +50,14 @@ import { isoNow, type EngineCore } from './core';
 import { isRefusedContent, isTimeout } from './errors';
 import { yieldedNow } from './holdState';
 import {
+  checkFolder,
   collectGarbage,
   downloadPhotos,
   forgetPhotos,
   remotePhotoIds,
   settleDownloads,
   slicePhotoIds,
+  uploadedPhotos,
   uploadPhotos,
 } from './photoSync';
 import {
@@ -298,7 +300,7 @@ export async function pullTeam(
     return { ...NOTHING_PULLED, waiting: true };
   }
   core.awaited.delete(teamId);
-  const missing = await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
+  await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
   const report: PullReport = { ...NOTHING_PULLED, invalid };
   const now = isoNow(core.clock);
@@ -320,9 +322,9 @@ export async function pullTeam(
     const cursor = out.slice
       ? nextCursor(reset ? 0 : meta.cursor, rows, serverNow ?? '')
       : meta.cursor;
-    // Not-found photos aren't in the cloud folder (any more): forget them, so a manager that
-    // has one uploads it again with its next change.
-    const photos = union(meta.photos, remotePhotoIds(rows)).filter((id) => !missing.has(id));
+    // A photo the cloud answered "not found" for stays listed (v10 audit M18): taken off the
+    // list, its `photoId` was cleared after the next restart and pushed as "no photo".
+    const photos = union(meta.photos, remotePhotoIds(rows));
     const same =
       out.team === meta &&
       cursor === meta.cursor &&
@@ -462,11 +464,12 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
   let together = plan.together;
   // Said before anything is sent: what this device won't push is known without a connection.
   if (held.length > 0) reportHeld(core, teamId, held);
+  await checkFolder(core, teamId, plan.ready, meta.photos);
   const { uploaded, ready } = await uploadPhotos(
     core,
     teamId,
     plan.ready,
-    edgePhotoIds(plan.ready, meta.photos),
+    edgePhotoIds(plan.ready, uploadedPhotos(core, teamId, meta.photos)),
   );
   let photos = uploaded;
   let timeouts = 0;

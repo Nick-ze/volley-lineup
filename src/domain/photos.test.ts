@@ -11,6 +11,7 @@ import {
   referencedPhotoIds,
   withoutDescription,
   isSafePhotoId,
+  withCloudPhotos,
 } from './photos';
 
 const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==';
@@ -60,6 +61,52 @@ describe('cloud photos of shared teams', () => {
     expect(isCloudPhoto(sync, 't2', 'ph1')).toBe(false);
     expect(isCloudPhoto({ teams: {} }, 't1', 'ph1')).toBe(false);
     expect(isCloudPhoto(sync, 't1', undefined)).toBe(false);
+  });
+});
+
+describe('withCloudPhotos (audit M18, review)', () => {
+  const team = (photos: string[]) => ({
+    userId: 'u1',
+    role: 'manager' as const,
+    cursor: 5,
+    base: {},
+    edits: {},
+    photos,
+  });
+  const sync = {
+    deviceId: 'dev1',
+    account: null,
+    teams: { t1: team(['ph1']), t2: team([]) },
+  };
+
+  it('puts ids on the lists of their teams, each once, after what is there', () => {
+    const next = withCloudPhotos(
+      sync,
+      new Map([
+        ['t1', new Set(['ph2', 'ph1', 'ph3'])],
+        ['t2', new Set(['ph9'])],
+      ]),
+    );
+    expect(next.teams.t1.photos).toEqual(['ph1', 'ph2', 'ph3']);
+    expect(next.teams.t2.photos).toEqual(['ph9']);
+    expect(next.deviceId).toBe('dev1');
+    // The input isn't changed.
+    expect(sync.teams.t1.photos).toEqual(['ph1']);
+  });
+
+  it('is the same object when nothing is new, and for a team that isn’t linked', () => {
+    expect(withCloudPhotos(sync, new Map())).toBe(sync);
+    expect(withCloudPhotos(sync, new Map([['t1', new Set(['ph1'])]]))).toBe(sync);
+    expect(withCloudPhotos(sync, new Map([['gone', new Set(['ph1'])]]))).toBe(sync);
+    const next = withCloudPhotos(
+      sync,
+      new Map([
+        ['gone', new Set(['x'])],
+        ['t2', new Set(['ph9'])],
+      ]),
+    );
+    expect(next.teams.t1).toBe(sync.teams.t1);
+    expect(next.teams.t2.photos).toEqual(['ph9']);
   });
 });
 

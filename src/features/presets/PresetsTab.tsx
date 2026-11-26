@@ -18,7 +18,7 @@ import {
 } from '@/domain/presets';
 import type { LineupPreset } from '@/domain/types';
 import { useT } from '@/i18n';
-import { useAppStore, usePresetsForTeam, useTeamAccess } from '@/store';
+import { canEditTeamNow, useAppStore, usePresetsForTeam, useTeamAccess } from '@/store';
 
 import { PresetNameDialog } from './PresetNameDialog';
 
@@ -42,6 +42,9 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
   const { ask, dialogProps } = useConfirm();
   const [dialog, setDialog] = useState<Dialog>(null);
   const { canEdit, block } = useTeamAccess(teamId);
+  // v10 audit L18: a name dialog that was open when this device became view-only is closed,
+  // not just hidden — it must not come back by itself when the device may edit again.
+  if (!canEdit && dialog) setDialog(null);
 
   const duplicate = (p: LineupPreset) => {
     const all = useAppStore.getState().presets;
@@ -100,7 +103,12 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
                       accessibilityLabel={s.deleteLabel(p.name)}
                       variant="danger"
                       compact
-                      onPress={() => ask(s.confirmDelete(p.name), () => deletePreset(p.id))}
+                      onPress={() =>
+                        ask(s.confirmDelete(p.name), () => {
+                          // The role may have changed while the question was open (L18).
+                          if (canEditTeamNow(teamId)) deletePreset(p.id);
+                        })
+                      }
                     />
                   </>
                 ) : undefined
@@ -110,7 +118,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
         })}
       </View>
       <ConfirmDialog {...dialogProps} />
-      {dialog?.mode === 'new' ? (
+      {canEdit && dialog?.mode === 'new' ? (
         <PresetNameDialog
           teamId={teamId}
           title={t.presets.nameDialog.newTitle}
@@ -119,11 +127,11 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
           onCancel={() => setDialog(null)}
           onSubmit={(name) => {
             setDialog(null);
-            onOpenPreset(addPreset({ teamId, name }).id);
+            if (canEditTeamNow(teamId)) onOpenPreset(addPreset({ teamId, name }).id);
           }}
         />
       ) : null}
-      {dialog?.mode === 'rename' ? (
+      {canEdit && dialog?.mode === 'rename' ? (
         <PresetNameDialog
           teamId={teamId}
           title={t.presets.nameDialog.renameTitle}
@@ -132,7 +140,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
           exceptId={dialog.preset.id}
           onCancel={() => setDialog(null)}
           onSubmit={(name) => {
-            updatePreset(dialog.preset.id, { name });
+            if (canEditTeamNow(teamId)) updatePreset(dialog.preset.id, { name });
             setDialog(null);
           }}
         />

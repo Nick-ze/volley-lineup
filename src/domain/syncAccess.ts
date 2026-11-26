@@ -30,6 +30,22 @@ export function teamAccess(sync: SyncData, teamId: string): TeamAccess {
   return { shared: true, role: linked.role, canEdit, block: canEdit ? null : 'viewer' };
 }
 
+/**
+ * True when a shared team's record on the device is exactly what the server last had (`hash`:
+ * the record's payload hash): there is nothing of this device's in it. The photo prune uses it
+ * (v10 audit M18): the `photoId` of such a record came from the cloud and is never cleared here,
+ * also when the picture isn't on the device and the cloud's folder list doesn't name it.
+ */
+export function isUnchangedRecord(
+  sync: Pick<SyncData, 'teams'>,
+  teamId: string,
+  key: string,
+  hash: string,
+): boolean {
+  const known = sync.teams[teamId]?.base[key];
+  return known !== undefined && !known.del && known.h === hash;
+}
+
 export type HoldStatus = 'none' | 'mine' | 'other';
 
 /** Whether a hold is missing / expired, this device's, or another device's (`now` in ms). */
@@ -40,6 +56,20 @@ export function holdStatus(
 ): HoldStatus {
   if (!hold || Date.parse(hold.heldUntil) <= now) return 'none';
   return hold.deviceId === deviceId ? 'mine' : 'other';
+}
+
+/**
+ * The matches among `matchIds` that another device is scoring live right now: an unexpired hold
+ * of another device (v10 audit M15). They can't be deleted from this device meanwhile — neither
+ * the match itself nor, with it, its season or team.
+ */
+export function heldMatchIds(
+  holds: Readonly<Record<string, MatchHold>>,
+  deviceId: string | null,
+  now: number,
+  matchIds: readonly string[],
+): string[] {
+  return matchIds.filter((id) => holdStatus(holds[id], deviceId, now) === 'other');
 }
 
 /**

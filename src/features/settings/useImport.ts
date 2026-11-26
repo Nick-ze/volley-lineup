@@ -6,13 +6,28 @@ import {
   type ImportSummary,
   type TransferData,
 } from '@/domain/exportSchema';
-import { importWithSharedTeams, sharedTeamsInFile, sharedTeamsOf } from '@/domain/syncImport';
+import {
+  importChangesMatches,
+  importWithSharedTeams,
+  sharedTeamsInFile,
+  sharedTeamsOf,
+} from '@/domain/syncImport';
 import type { ExportFile } from '@/domain/types';
 import { pickTextFile } from '@/lib/fileTransfer';
-import { putPhotos, transferSnapshotNow, useAppStore, whenPhotosLoaded } from '@/store';
+import {
+  heldMatchesNow,
+  putPhotos,
+  transferSnapshotNow,
+  useAppStore,
+  whenPhotosLoaded,
+} from '@/store';
 
-/** v10: `SHARED_CONFLICT` = Replace clashes with a team shared on this device. */
-export type ImportError = ImportErrorCode | 'MERGE_CONFLICT' | 'SHARED_CONFLICT' | 'READ_FAILED';
+/**
+ * v10: `SHARED_CONFLICT` = Replace clashes with a team shared on this device; `LIVE_MATCH` = the
+ * file would change a match another device is scoring live right now.
+ */
+export type ImportError =
+  ImportErrorCode | 'MERGE_CONFLICT' | 'SHARED_CONFLICT' | 'LIVE_MATCH' | 'READ_FAILED';
 export type ImportMode = 'merge' | 'replace';
 
 export type ImportState =
@@ -104,6 +119,14 @@ export function useImport() {
         // Replace only fails because of a kept shared team ("use Replace instead" wouldn't help).
         const error = mode === 'replace' ? 'SHARED_CONFLICT' : result.error;
         setState({ step: 'error', error });
+        return;
+      }
+      // v10 audit M15 (found by the review): not while another device is scoring a match live
+      // that the file would change. Its copy would replace the scorer's rallies here, be pushed
+      // as this device's newer save, and take them from every device.
+      const live = heldMatchesNow(store.matches.map((m) => m.id));
+      if (importChangesMatches(store.matches, result.data.matches, live)) {
+        setState({ step: 'error', error: 'LIVE_MATCH' });
         return;
       }
       // The pictures are in memory at once (`putPhotos` sets them before its first await) and

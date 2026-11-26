@@ -172,6 +172,10 @@ const presetPayload = memoByIdentity((preset: LineupPreset): RecordPayload => {
   return kind === 'starters' ? { presetId: id, ...rest } : { kind, ...rest };
 });
 
+/** The hash of a player's / a team's sync record (what `base` holds for it once synced). */
+export const playerRecordHash = (player: Player): string => payloadHash(playerPayload(player));
+export const teamRecordHash = (team: Team): string => payloadHash(teamPayload(team));
+
 /* ---------------------------------------------------------------- slices */
 
 /** The team with everything that belongs to it, or undefined when the team isn't there. */

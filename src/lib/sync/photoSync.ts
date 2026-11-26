@@ -47,22 +47,26 @@ function publishPending(core: EngineCore): void {
 /**
  * Downloads the photos of pulled records (and earlier failures, and `stored`: cloud photos the
  * records already on the device refer to) that the device doesn't have. They stay "pending"
- * until `settleDownloads` (after the records were applied). Returns the ids the cloud doesn't
- * have (not found: e.g. removed by another device meanwhile), so they are no longer counted as
- * uploaded and a manager that has one uploads it again. Rethrows when the connection is gone.
+ * until `settleDownloads` (after the records were applied). Rethrows when the connection is gone.
+ *
+ * A photo the cloud doesn't have ("not found": e.g. removed by another device meanwhile) keeps
+ * its place in the team's cloud photo list (v10 audit M18) — the records that point at it keep
+ * their `photoId` on this device and can still be changed and pushed. It is asked for again
+ * every cycle, as before (another device may upload it again), and remembered for the app run
+ * (`core.lostPhotos`) so that this device uploads it once it has the picture (`uploadedPhotos`).
  */
 export async function downloadPhotos(
   core: EngineCore,
   teamId: string,
   rows: readonly RemoteRecord[],
   stored: readonly string[] = [],
-): Promise<Set<string>> {
-  const missing = new Set<string>();
+): Promise<void> {
   const pending = core.pendingPhotos.get(teamId) ?? new Set<string>();
   const wanted = new Set([...remotePhotoIds(rows), ...pending, ...stored]);
-  if (wanted.size === 0) return missing;
+  if (wanted.size === 0) return;
   await whenPhotosLoaded();
   core.pendingPhotos.set(teamId, pending);
+  const lost = core.lostPhotos.get(teamId) ?? new Set<string>();
   let offline: unknown = null;
   for (const id of wanted) {
     if (id in usePhotoStore.getState().photos) continue;
@@ -72,13 +76,72 @@ export async function downloadPhotos(
     try {
       const uri = await core.backend.downloadPhoto(teamId, id);
       if (isPhotoDataUri(uri)) await setPhoto(id, uri);
+      lost.delete(id);
     } catch (e) {
       if (toSyncError(e) === 'offline') offline = e;
-      else if (isNotFound(e)) missing.add(id);
+      else if (isNotFound(e)) {
+        lost.add(id);
+        core.lostPhotos.set(teamId, lost);
+      }
     }
   }
   if (offline) throw offline;
-  return missing;
+}
+
+/**
+ * The team's cloud photo list as far as an upload is concerned: without the photos the cloud
+ * answered "not found" for that this device has (again) — e.g. brought back by an import. Their
+ * next change uploads them again, which repairs the cloud folder for everyone.
+ */
+export function uploadedPhotos(
+  core: EngineCore,
+  teamId: string,
+  known: readonly string[],
+): string[] {
+  const lost = core.lostPhotos.get(teamId);
+  if (!lost || lost.size === 0) return [...known];
+  const have = usePhotoStore.getState().photos;
+  return known.filter((id) => !(lost.has(id) && id in have));
+}
+
+/**
+ * Before a team or player record with a picture is pushed, once per app run and team: asks what
+ * the team's cloud folder really holds (v10 audit M18, found by the review). A photo the stored
+ * list names that isn't there counts as lost (`core.lostPhotos`), so a device that has the
+ * picture uploads it again with the record (`uploadedPhotos`) — also after a restart, when the
+ * "not found" answers of the last app run are forgotten, and from a device that always had the
+ * picture and so never asked the cloud for it. One small request; when it fails, the push goes
+ * on without it and the next one asks again. Rethrows when the connection is gone.
+ */
+export async function checkFolder(
+  core: EngineCore,
+  teamId: string,
+  changes: readonly LocalChange[],
+  known: readonly string[],
+): Promise<void> {
+  if (core.checkedFolders.has(teamId)) return;
+  const listed = new Set(known);
+  const ids = changes.flatMap((c) => {
+    const id = c.kind === 'team' || c.kind === 'player' ? photoIdOf(c.payload) : null;
+    return id !== null && listed.has(id) ? [id] : [];
+  });
+  if (ids.length === 0) return;
+  await whenPhotosLoaded();
+  const have = usePhotoStore.getState().photos;
+  if (!ids.some((id) => id in have)) return;
+  let folder: Set<string>;
+  try {
+    folder = new Set(await core.backend.listPhotos(teamId));
+  } catch (e) {
+    if (toSyncError(e) === 'offline') throw e;
+    return;
+  }
+  core.checkedFolders.add(teamId);
+  const missing = known.filter((id) => !folder.has(id));
+  if (missing.length === 0) return;
+  const lost = core.lostPhotos.get(teamId) ?? new Set<string>();
+  for (const id of missing) lost.add(id);
+  core.lostPhotos.set(teamId, lost);
 }
 
 /** After applying: photos now on the device are no longer pending. */
@@ -93,6 +156,8 @@ export function settleDownloads(core: EngineCore, teamId: string): void {
 
 /** Forgets a team's pending downloads (it was unlinked). */
 export function forgetPhotos(core: EngineCore, teamId: string): void {
+  core.lostPhotos.delete(teamId);
+  core.checkedFolders.delete(teamId);
   if (core.pendingPhotos.delete(teamId)) publishPending(core);
 }
 
@@ -120,6 +185,7 @@ export async function uploadPhotos(
     try {
       await core.backend.uploadPhoto(teamId, id, uri);
       uploaded.push(id);
+      core.lostPhotos.get(teamId)?.delete(id);
     } catch (e) {
       if (toSyncError(e) === 'offline') throw e;
       failed.add(id);

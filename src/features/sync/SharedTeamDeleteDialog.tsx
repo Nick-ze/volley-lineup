@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { Button, Dialog } from '@/components';
 import type { Team, TeamRole } from '@/domain/types';
 import { useT } from '@/i18n';
+import { heldMatchesNow, useHeldMatches, useMatchesForTeam } from '@/store';
 import { makeStyles, spacing, typography } from '@/theme';
 
 import { useSharedTeamDelete } from './useSharedTeamDelete';
@@ -27,6 +28,9 @@ export function SharedTeamDeleteDialog({ team, role, onClose }: SharedTeamDelete
   );
   const manager = role === 'manager';
   const title = manager ? s.title(team.name) : s.removeTitle(team.name);
+  // v10 audit M15: not for everyone while another device is scoring one of its matches live.
+  const matchIds = useMatchesForTeam(team.id).map((m) => m.id);
+  const holder = [...useHeldMatches(matchIds).values()][0];
   // While a request runs, the dialog can't be closed (its result removes the team or explains).
   const close = () => {
     if (!busy) onClose();
@@ -44,6 +48,11 @@ export function SharedTeamDeleteDialog({ team, role, onClose }: SharedTeamDelete
       }}
     >
       <Text style={styles.body}>{manager ? s.managerBody : s.playerBody}</Text>
+      {manager && holder ? (
+        <Text style={styles.body} testID="shared-team-delete-held">
+          {t.sync.readOnly.heldNoDelete(holder.holderName)}
+        </Text>
+      ) : null}
       {error ? (
         <Text
           style={styles.error}
@@ -68,8 +77,11 @@ export function SharedTeamDeleteDialog({ team, role, onClose }: SharedTeamDelete
             label={s.deleteEverywhere}
             accessibilityLabel={s.deleteEverywhereLabel(team.name)}
             variant="danger"
-            disabled={busy}
-            onPress={() => void deleteEverywhere()}
+            disabled={busy || holder !== undefined}
+            accessibilityHint={holder ? t.sync.readOnly.heldNoDelete(holder.holderName) : undefined}
+            onPress={() => {
+              if (heldMatchesNow(matchIds).length === 0) void deleteEverywhere();
+            }}
             testID="team-delete-everywhere"
           />
         ) : (
