@@ -6,7 +6,7 @@ import { useAppStore } from '@/store';
 
 export interface NamedTeam {
   id: string;
-  /** null: not on this device and not in the cloud list either. */
+  /** null: not on this device and no name in the cloud list either. */
   name: string | null;
   /** On this device (so its Members screen can open). */
   local: boolean;
@@ -22,7 +22,8 @@ async function nameTeams(ids: string[]): Promise<NamedTeam[]> {
   }
   return ids.map((id) => ({
     id,
-    name: local.get(id) ?? cloud.get(id) ?? null,
+    // v10 audit L22: a cloud team without its team record yet has an empty name.
+    name: local.get(id) || cloud.get(id) || null,
     local: local.has(id),
   }));
 }

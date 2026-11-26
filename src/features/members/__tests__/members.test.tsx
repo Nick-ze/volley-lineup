@@ -159,7 +159,7 @@ describe('members: local team', () => {
     await renderApp(URL);
     await fireEvent.press(screen.getByTestId('members-share-team'));
     await waitFor(() => expect(screen).toHavePathname('/team/team-new/members'));
-    expect(await screen.findByText(t.members.errors.tooMany)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.tooMany)).toBeTruthy();
     expect(screen.getByTestId('members-share-team')).toBeTruthy();
   });
 
@@ -168,14 +168,14 @@ describe('members: local team', () => {
     jest.mocked(sync.uploadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await renderApp(URL);
     await fireEvent.press(screen.getByTestId('members-share-team'));
-    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
 
     jest.mocked(sync.uploadTeams).mockResolvedValueOnce({
       ok: true,
       value: [{ teamId: 'team1', result: 'failed' }],
     });
     await fireEvent.press(screen.getByTestId('members-share-team'));
-    expect(await screen.findByText(t.members.errors.unknown)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.unknown)).toBeTruthy();
   });
 });
 
@@ -315,7 +315,7 @@ describe('members: manager', () => {
     await fireEvent.press(screen.getByLabelText(t.members.leave.label('Herren 1')));
     await fireEvent.press(screen.getByTestId('confirm'));
     expect(sync.leaveTeam).toHaveBeenCalledWith('team1');
-    expect(await screen.findByText(t.members.errors.lastManager)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.lastManager)).toBeTruthy();
     expect(screen).toHavePathname(URL);
   });
 
@@ -324,14 +324,14 @@ describe('members: manager', () => {
     jest.mocked(sync.leaveTeam).mockResolvedValueOnce({ ok: false, error: 'lastMember' });
     await fireEvent.press(screen.getByTestId('members-leave'));
     await fireEvent.press(screen.getByTestId('confirm'));
-    expect(await screen.findByText(t.members.errors.lastMember)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.lastMember)).toBeTruthy();
   });
 
   it('shows a failed action (e.g. a forbidden role change)', async () => {
     await renderManager();
     jest.mocked(sync.setMemberRole).mockResolvedValueOnce({ ok: false, error: 'forbidden' });
     await fireEvent.press(screen.getByTestId('member-role-u2'));
-    expect(await screen.findByText(t.members.errors.forbidden)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.forbidden)).toBeTruthy();
   });
 });
 
@@ -395,10 +395,10 @@ describe('members: loading', () => {
     jest.mocked(sync.listMembers).mockResolvedValueOnce({ ok: true, value: MEMBERS });
     jest.mocked(sync.listInvites).mockResolvedValue({ ok: true, value: [] });
     await renderApp(URL);
-    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
     await fireEvent.press(screen.getByLabelText(t.members.list.retryLabel));
     expect(await screen.findByText('Bob')).toBeTruthy();
-    expect(screen.queryByText(t.members.errors.offline)).toBeNull();
+    expect(screen.queryByText(t.sync.errors.offline)).toBeNull();
   });
 
   it('a manager whose invites fail to load still sees the members', async () => {
@@ -406,7 +406,7 @@ describe('members: loading', () => {
     jest.mocked(sync.listMembers).mockResolvedValue({ ok: true, value: MEMBERS });
     jest.mocked(sync.listInvites).mockResolvedValueOnce({ ok: false, error: 'unknown' });
     await renderApp(URL);
-    expect(await screen.findByText(t.members.errors.unknown)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.unknown)).toBeTruthy();
     expect(screen.getByText('Bob')).toBeTruthy();
     expect(screen.queryByTestId('invite-section')).toBeNull();
   });
@@ -414,7 +414,7 @@ describe('members: loading', () => {
   it('signed out: "Sign in first" instead of "Try again"', async () => {
     jest.mocked(sync.listMembers).mockResolvedValueOnce({ ok: false, error: 'notSignedIn' });
     await renderApp(URL);
-    expect(await screen.findByText(t.members.errors.notSignedIn)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.notSignedIn)).toBeTruthy();
     expect(screen.queryByTestId('members-retry')).toBeNull();
     expect(screen.getByTestId('members-sign-in')).toBeTruthy();
   });
@@ -433,7 +433,7 @@ describe('members: loading', () => {
     await renderApp(URL);
     expect(await screen.findByText(t.members.list.loading)).toBeTruthy();
     expect(screen.queryByTestId('members-sign-in')).toBeNull();
-    expect(screen.queryByText(t.members.errors.notSignedIn)).toBeNull();
+    expect(screen.queryByText(t.sync.errors.notSignedIn)).toBeNull();
 
     await act(async () =>
       useSyncRuntime.setState({
@@ -454,7 +454,7 @@ describe('members: loading', () => {
       status: { ...r.status, phase: 'offline' },
     }));
     await renderApp(URL);
-    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
     expect(screen.getByTestId('members-retry')).toBeEnabled();
     expect(screen.queryByText(t.members.list.loading)).toBeNull();
     expect(screen.queryByTestId('members-sign-in')).toBeNull();
@@ -485,7 +485,7 @@ describe('members: loading', () => {
     await act(async () => answer({ ok: false, error: 'offline' }));
     expect(screen.getByText('Bob')).toBeTruthy();
     expect(screen.queryByText(t.members.list.loading)).toBeNull();
-    expect(screen.queryByText(t.members.errors.offline)).toBeNull();
+    expect(screen.queryByText(t.sync.errors.offline)).toBeNull();
     expect(screen.getByTestId('members-leave')).toBeEnabled();
   });
 

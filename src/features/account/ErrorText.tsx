@@ -7,7 +7,7 @@ export function ErrorText({ error, testID }: { error: SyncErrorCode | null; test
   const t = useT();
   return (
     <StatusMessage
-      status={error ? { tone: 'error', text: t.account.errors[error] } : null}
+      status={error ? { tone: 'error', text: t.sync.errors[error] } : null}
       testID={testID}
     />
   );

@@ -66,6 +66,15 @@ export const DEFAULT_TIMING: EngineTiming = {
 
 const DATA_KEYS = ['teams', 'players', 'seasons', 'opponents', 'matches', 'presets'] as const;
 
+/**
+ * A stored session of another user than the linked account, while that account still has teams
+ * linked here (v10 audit M17).
+ */
+function strandedSession(userId: string): boolean {
+  const account = appState().sync.account;
+  return account !== null && account.userId !== userId && linkedTeamIds(account.userId).length > 0;
+}
+
 /** Runs `fn` once the JS thread is idle (soon, where there is no idle callback). */
 function whenIdle(fn: () => void): void {
   if (typeof requestIdleCallback === 'function') requestIdleCallback(fn, { timeout: 5000 });
@@ -171,6 +180,17 @@ export class SyncEngine implements EngineCore {
     }
     try {
       const session = await this.backend.getSession();
+      if (!this.started) return;
+      if (session && strandedSession(session.userId)) {
+        // v10 audit M17: a sign-in that ended without its link (the screen closed during the
+        // code check or on the "switch account" question). The linked account's teams would
+        // silently stop syncing under it: sign out, so the UI says "Sign in" again.
+        await this.signOut();
+        this.setRestoring(false);
+        this.rewire();
+        updatePending(this.userId());
+        return;
+      }
       if (session || !this.current) this.setSession(session);
       this.setRestoring(false);
     } catch (e) {
@@ -334,7 +354,16 @@ export class SyncEngine implements EngineCore {
     noteAll(this);
     try {
       if (this.needsRestore) {
-        this.setSession(await this.backend.getSession());
+        const restored = await this.backend.getSession();
+        // The start-up check (audit M17) for a session that could only be read now (offline
+        // at start).
+        if (restored && strandedSession(restored.userId)) {
+          this.needsRestore = false;
+          await this.signOut();
+          this.setRestoring(false);
+          return;
+        }
+        this.setSession(restored);
         this.setRestoring(false);
       }
       const session = this.current;

@@ -2,6 +2,24 @@ import type { Strings } from '../en';
 
 /** v10: Sync-Status und Gründe für „Nur ansehen“. */
 export const sync: Strings['sync'] = {
+  errors: {
+    offline: 'Keine Verbindung. Versuch es nochmal, wenn du online bist.',
+    forbidden: 'Das darfst du nicht.',
+    lastManager: 'Mach zuerst jemand anderen zum Trainer.',
+    lastMember: 'Du bist das einzige Mitglied: Lösche das Team stattdessen für alle.',
+    inviteInvalid: 'Dieser Einladungscode ist falsch, abgelaufen oder schon verwendet.',
+    notSignedIn: 'Melde dich zuerst an (Profil → Cloud-Sync).',
+    signedOut: 'Du wurdest abgemeldet. Melde dich nochmal an.',
+    invalidCode:
+      'Falscher oder abgelaufener Code. Prüfe die E-Mail oder lass dir einen neuen Code schicken.',
+    rateLimited: 'Zu viele Versuche. Warte kurz und versuch es nochmal.',
+    tooMany:
+      'Grenze erreicht: höchstens 10 Teams pro Konto und 20 offene Einladungen und 20 MB Daten pro Team.',
+    mailFailed: 'Die E-Mail mit dem Code konnte nicht gesendet werden. Versuch es später nochmal.',
+    emailRejected:
+      'Mit dieser E-Mail-Adresse kannst du dich nicht anmelden. Prüfe sie oder nimm eine andere.',
+    unknown: 'Etwas ist schiefgelaufen. Versuch es nochmal.',
+  },
   status: {
     off: 'Nicht angemeldet',
     noTeams: 'Keine geteilten Teams',
@@ -25,7 +43,7 @@ export const sync: Strings['sync'] = {
   },
   notices: {
     removed: (team: string) =>
-      `Du bist nicht mehr Mitglied von ${team}. Das Team bleibt als lokale Kopie auf diesem Gerät.`,
+      `Du bist nicht mehr Mitglied von ${team}: Du wurdest entfernt oder das Team wurde gelöscht. Das Team bleibt als lokale Kopie auf diesem Gerät.`,
     deleted: (team: string) =>
       `${team} wurde aus der Cloud gelöscht. Das Team bleibt als lokale Kopie auf diesem Gerät.`,
     demoted: (team: string, undone: number) =>
@@ -61,14 +79,6 @@ export const sync: Strings['sync'] = {
     leaveLabel: (team: string) => `Team verlassen: ${team}`,
     cancel: 'Abbrechen',
     cancelLabel: 'Abbrechen: Team behalten',
-    errors: {
-      offline: 'Dafür brauchst du eine Verbindung. Versuch es online noch einmal.',
-      lastManager: 'Mach zuerst jemand anderen zum Trainer.',
-      lastMember: 'Du bist das einzige Mitglied: Lösche das Team stattdessen für alle.',
-      forbidden: 'Das können nur Trainer.',
-      signIn: 'Melde dich zuerst an (Profil → Cloud-Sync).',
-      unknown: 'Das hat nicht geklappt. Versuch es noch einmal.',
-    },
   },
   import: {
     shared: (names: string[]) =>

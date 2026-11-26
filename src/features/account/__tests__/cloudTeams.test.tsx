@@ -87,12 +87,35 @@ describe('cloud teams setup', () => {
     ).toBeTruthy();
   });
 
+  it('says why one team failed, with the shared text for a limit (audit M16)', async () => {
+    jest.mocked(sync.uploadTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'team1', result: 'failed', error: 'tooMany' }],
+    });
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('upload-team1'));
+    await fireEvent.press(screen.getByTestId('upload-selected'));
+    expect(
+      await screen.findByText(s.upload.failedBecause('Herren 1', t.sync.errors.tooMany)),
+    ).toBeTruthy();
+    expect(t.sync.errors.tooMany).toMatch(/10 teams per account/);
+  });
+
   it('says why an upload failed', async () => {
     jest.mocked(sync.uploadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await renderApp('/account/teams');
     await fireEvent.press(await screen.findByTestId('upload-team1'));
     await fireEvent.press(screen.getByTestId('upload-selected'));
-    expect(await screen.findByText(t.account.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
+  });
+
+  it('names a cloud team whose name hasn’t synced yet (audit L22)', async () => {
+    jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'c9', name: '', role: 'manager', onDevice: false }],
+    });
+    await renderApp('/account/teams');
+    expect(await screen.findByText(s.download.unnamed)).toBeTruthy();
   });
 
   it('downloads the ticked cloud teams', async () => {
@@ -109,7 +132,7 @@ describe('cloud teams setup', () => {
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
     useAppStore.setState((st) => ({ sync: { ...st.sync, teams: { t2: linked, team1: linked } } }));
     await renderApp('/account/teams');
-    expect(await screen.findByText(t.account.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
     expect(screen.getByText(s.upload.empty)).toBeTruthy();
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({ ok: true, value: [] });
     await fireEvent.press(screen.getByRole('button', { name: s.retry }));

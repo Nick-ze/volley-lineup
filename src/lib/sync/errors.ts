@@ -48,6 +48,11 @@ const AUTH_CODES: Readonly<Record<string, SyncErrorCode>> = {
   session_expired: 'signedOut',
   user_not_found: 'signedOut',
   bad_jwt: 'signedOut',
+  // v10 audit M13: the address can't be used to sign in.
+  email_address_invalid: 'emailRejected',
+  email_address_not_authorized: 'emailRejected',
+  signup_disabled: 'emailRejected',
+  email_provider_disabled: 'emailRejected',
 };
 
 const OFFLINE_NAMES = new Set([
@@ -71,6 +76,20 @@ function httpStatus(e: Fields): number {
   return /^\d+$/.test(code) ? Number(code) : -1;
 }
 
+/**
+ * v10 audit M13: an error of a code request. An answer with HTTP 500 means the auth server
+ * couldn't send the email (`authFetch.ts` lets exactly that one through; auth-js reports it with
+ * `status: 500`, a lost connection with 0); a refused address format reads as a refused address.
+ */
+export function requestCodeError(error: unknown): BackendError {
+  const e = (typeof error === 'object' && error !== null ? error : {}) as Fields;
+  if (httpStatus(e) === 500) return new BackendError('mailFailed', text(e.code));
+  if (text(e.code) === 'validation_failed') {
+    return new BackendError('emailRejected', 'validation_failed');
+  }
+  return backendError(error);
+}
+
 /** The app's error code for anything a backend call threw or returned as `error`. */
 export function toSyncError(error: unknown): SyncErrorCode {
   if (error instanceof BackendError) return error.code;
@@ -89,8 +108,10 @@ export function toSyncError(error: unknown): SyncErrorCode {
   const status = httpStatus(e);
   if (status === 0 || status >= 500) return 'offline';
   if (status === 429) return 'rateLimited';
-  if (status === 401 || status === 403) return 'forbidden';
+  // Before the 401 / 403 rule: an old auth server without error codes answers a wrong code
+  // with 403 and this message (v10 audit L16).
   if (/token has expired or is invalid/i.test(message)) return 'invalidCode';
+  if (status === 401 || status === 403) return 'forbidden';
   return 'unknown';
 }
 

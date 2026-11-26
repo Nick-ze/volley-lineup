@@ -82,20 +82,6 @@ export const members: Strings['members'] = {
       `${team} verlassen? Das Team wird von diesem Gerät entfernt und du bekommst keine Änderungen mehr.`,
     confirmButton: 'Verlassen',
   },
-  errors: {
-    offline: 'Dafür brauchst du eine Verbindung. Versuch es nochmals, wenn du online bist.',
-    forbidden: 'Das dürfen nur Trainer.',
-    lastManager: 'Mach zuerst eine andere Person zum Trainer.',
-    lastMember: 'Du bist das einzige Mitglied: lösche das Team stattdessen.',
-    inviteInvalid: 'Dieser Code ist ungültig oder abgelaufen.',
-    notSignedIn: 'Melde dich zuerst an.',
-    signedOut: 'Du wurdest abgemeldet. Melde dich nochmals an.',
-    invalidCode: 'Dieser Code ist ungültig oder abgelaufen.',
-    rateLimited: 'Zu viele Versuche. Warte kurz und versuch es nochmals.',
-    tooMany:
-      'Zu viele Einladungen oder Teams. Widerrufe zuerst eine Einladung oder entferne ein Team.',
-    unknown: 'Etwas ist schiefgelaufen. Versuch es nochmals.',
-  },
   join: {
     title: 'Team beitreten',
     intro:

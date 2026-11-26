@@ -57,6 +57,7 @@ const mockClient = {
     signInWithOtp: jest.fn(async () => ({ data: {}, error: null })),
     verifyOtp: jest.fn(async () => ({ data: { session: { user }, user }, error: null })),
     signOut: jest.fn(async () => ({ error: null })),
+    refreshSession: jest.fn(async (): Promise<{ error: unknown }> => ({ error: null })),
   },
 };
 
@@ -177,6 +178,63 @@ describe('supabase backend: records', () => {
     expect(await backend.teamNames([])).toEqual({});
     mockClient.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
     await expect(backend.memberships()).rejects.toMatchObject({ code: 'notSignedIn' });
+  });
+
+  it('memberships: a session that can’t be refreshed offline reads offline (audit M11)', async () => {
+    mockClient.auth.getSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 },
+    });
+    await expect(backend.memberships()).rejects.toMatchObject({ code: 'offline' });
+    mockClient.auth.getSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: { code: 'refresh_token_not_found', status: 400 },
+    });
+    await expect(backend.memberships()).rejects.toMatchObject({ code: 'signedOut' });
+  });
+});
+
+describe('supabase backend: a refused access token (audit L15)', () => {
+  const refused: Result = {
+    data: null,
+    error: { code: 'PGRST301', message: 'JWT expired' },
+    status: 401,
+  };
+
+  it('refreshes the session once and sends the request again', async () => {
+    mockClient.rpc.mockResolvedValueOnce(refused).mockResolvedValueOnce(ok('created'));
+    expect(await backend.createTeam('t1', 'Anna')).toBe('created');
+    expect(mockClient.auth.refreshSession).toHaveBeenCalledTimes(1);
+    expect(mockClient.rpc).toHaveBeenCalledTimes(2);
+
+    mockClient.from.mockReturnValueOnce(
+      query({ data: null, error: { code: 'PGRST303', message: 'claims' }, status: 401 }),
+    );
+    mockClient.from.mockReturnValueOnce(query(ok([{ team_id: 't1', role: 'manager' }])));
+    expect(await backend.memberships()).toEqual([{ teamId: 't1', role: 'manager' }]);
+    expect(mockClient.auth.refreshSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('only once: refused again, or the refresh fails → signed out', async () => {
+    mockClient.rpc.mockResolvedValueOnce(refused).mockResolvedValueOnce(refused);
+    await expect(backend.createTeam('t1', 'Anna')).rejects.toMatchObject({ code: 'signedOut' });
+    expect(mockClient.rpc).toHaveBeenCalledTimes(2);
+
+    mockClient.rpc.mockClear();
+    mockClient.rpc.mockResolvedValueOnce(refused);
+    mockClient.auth.refreshSession.mockResolvedValueOnce({ error: { code: 'session_expired' } });
+    await expect(backend.createTeam('t1', 'Anna')).rejects.toMatchObject({ code: 'signedOut' });
+    expect(mockClient.rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('other errors are not retried', async () => {
+    mockClient.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: '42501', message: 'forbidden' },
+      status: 403,
+    });
+    await expect(backend.createTeam('t1', 'Anna')).rejects.toMatchObject({ code: 'forbidden' });
+    expect(mockClient.auth.refreshSession).not.toHaveBeenCalled();
   });
 });
 

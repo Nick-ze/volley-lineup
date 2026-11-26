@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { normalizeInviteCode } from '@/domain/invites';
 import type { SyncErrorCode, TeamRole } from '@/domain/types';
@@ -18,19 +18,24 @@ export function useJoin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<JoinError | null>(null);
   const [joined, setJoined] = useState<Joined | null>(null);
+  // A second Enter / tap while a join runs sends nothing (v10 audit L11).
+  const running = useRef(false);
 
   const join = useCallback(async (input: string) => {
+    if (running.current) return;
     const code = normalizeInviteCode(input);
     if (!code) {
       setError('format');
       return;
     }
+    running.current = true;
     setBusy(true);
     setError(null);
     const result = await joinTeam(code);
     if (!result.ok) {
       setError(result.error);
       setBusy(false);
+      running.current = false;
       return;
     }
     // The join result names the team; without it the cloud team list may (best effort).
@@ -43,6 +48,7 @@ export function useJoin() {
     }
     setJoined({ ...result.value, name });
     setBusy(false);
+    running.current = false;
   }, []);
 
   const clearError = useCallback(() => setError(null), []);

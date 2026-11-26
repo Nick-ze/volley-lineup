@@ -322,6 +322,10 @@ export type SyncErrorCode =
   | 'invalidCode'
   | 'rateLimited'
   | 'tooMany'
+  /** v10 audit M13: the auth server couldn't send the code email (e.g. the mail quota is used up). */
+  | 'mailFailed'
+  /** v10 audit M13: the address can't sign in (invalid, not allowed, or sign-ups are off). */
+  | 'emailRejected'
   | 'unknown';
 
 export interface SyncStatus {
@@ -337,6 +341,7 @@ export interface SyncStatus {
 /** v10: something the user should know after a sync (shown once as a banner). */
 export type SyncNotice =
   | { kind: 'removed'; teamId: string; teamName: string }
+  /** Not sent: the server can't tell a deletion from a removal, so `removed` covers both (L24). */
   | { kind: 'deleted'; teamId: string; teamName: string }
   | { kind: 'demoted'; teamId: string; teamName: string; undone: number }
   | { kind: 'skipped'; teamId: string; teamName: string; count: number }

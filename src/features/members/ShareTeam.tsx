@@ -13,7 +13,7 @@ import { useMembersStyles } from './membersStyles';
 
 /** The error a share left for this screen (`?shareError=`), when it names one. */
 function errorParam(t: Strings, value: string | string[] | undefined): SyncErrorCode | null {
-  return typeof value === 'string' && value in t.members.errors ? (value as SyncErrorCode) : null;
+  return typeof value === 'string' && value in t.sync.errors ? (value as SyncErrorCode) : null;
 }
 
 /**

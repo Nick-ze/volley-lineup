@@ -59,7 +59,7 @@ describe('sign in with an email code', () => {
 
     jest.mocked(sync.verifyCode).mockResolvedValueOnce({ ok: false, error: 'invalidCode' });
     await press('sign-in-verify');
-    expect(await screen.findByText(t.account.errors.invalidCode)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.invalidCode)).toBeTruthy();
     expect(sync.linkAccountToProfile).not.toHaveBeenCalled();
 
     await press('sign-in-verify');
@@ -86,12 +86,26 @@ describe('sign in with an email code', () => {
     await renderApp('/account/sign-in');
     await typeEmail('coach@example.com');
     await press('sign-in-send');
-    expect(await screen.findByText(t.account.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
     expect(screen.queryByTestId('sign-in-code')).toBeNull();
 
     jest.mocked(sync.requestCode).mockResolvedValueOnce({ ok: false, error: 'rateLimited' });
     await press('sign-in-send');
-    expect(await screen.findByText(t.account.errors.rateLimited)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.rateLimited)).toBeTruthy();
+  });
+
+  it('has its own texts for a failed send and a refused address (audit M13)', async () => {
+    jest.mocked(sync.requestCode).mockResolvedValueOnce({ ok: false, error: 'mailFailed' });
+    await renderApp('/account/sign-in');
+    await typeEmail('coach@example.com');
+    await press('sign-in-send');
+    expect(await screen.findByText(t.sync.errors.mailFailed)).toBeTruthy();
+    expect(screen.queryByText(t.sync.errors.offline)).toBeNull();
+    expect(screen.queryByTestId('sign-in-code')).toBeNull();
+
+    jest.mocked(sync.requestCode).mockResolvedValueOnce({ ok: false, error: 'emailRejected' });
+    await press('sign-in-send');
+    expect(await screen.findByText(t.sync.errors.emailRejected)).toBeTruthy();
   });
 
   it('sends one request while one is under way (double Enter)', async () => {
@@ -188,6 +202,43 @@ describe('account switch', () => {
     expect(sync.signOut).not.toHaveBeenCalled();
     expect(sync.linkAccountToProfile).toHaveBeenCalledWith('prof1');
     expect(screen).toHavePathname('/account/teams');
+  });
+
+  it('the screen closing on the question signs out (audit M17)', async () => {
+    await toCodeStep();
+    await typeCode('123456');
+    jest.mocked(sync.verifyCode).mockResolvedValueOnce(switched);
+    await press('sign-in-verify');
+    expect(await screen.findByText(s.switchConfirm('old@example.com', 2))).toBeTruthy();
+    expect(sync.signOut).not.toHaveBeenCalled();
+    await act(async () => screen.unmount());
+    expect(sync.signOut).toHaveBeenCalledTimes(1);
+    expect(sync.linkAccountToProfile).not.toHaveBeenCalled();
+  });
+
+  it('the screen closing during the code check signs out once it answers (audit M17)', async () => {
+    await toCodeStep();
+    await typeCode('123456');
+    let answer: (value: typeof switched) => void = () => {};
+    jest
+      .mocked(sync.verifyCode)
+      .mockReturnValueOnce(new Promise<typeof switched>((resolve) => (answer = resolve)));
+    await press('sign-in-verify');
+    await act(async () => screen.unmount());
+    expect(sync.signOut).not.toHaveBeenCalled();
+    await act(async () => answer(switched));
+    expect(sync.signOut).toHaveBeenCalledTimes(1);
+    expect(sync.linkAccountToProfile).not.toHaveBeenCalled();
+  });
+
+  it('closing after an answer signs nothing out', async () => {
+    await toCodeStep();
+    await typeCode('123456');
+    jest.mocked(sync.verifyCode).mockResolvedValueOnce(switched);
+    await press('sign-in-verify');
+    await fireEvent.press(await screen.findByRole('button', { name: s.switchContinue }));
+    await act(async () => screen.unmount());
+    expect(sync.signOut).not.toHaveBeenCalled();
   });
 });
 

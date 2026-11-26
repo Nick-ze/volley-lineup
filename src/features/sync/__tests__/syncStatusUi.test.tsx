@@ -90,6 +90,14 @@ describe('sync notices', () => {
     { kind: 'skipped', teamId: 'd', teamName: 'Delta', count: 1 },
   ];
 
+  it('the “no longer a member” notice also covers a team deleted for everyone (audit L24)', () => {
+    // The server can't tell the two apart; both reach the device as `removed`.
+    expect(t.sync.notices.removed('Alpha')).toBe(
+      'You’re no longer a member of Alpha: you were removed or the team was deleted. It stays on this device as a local copy.',
+    );
+    expect(de.sync.notices.removed('Alpha')).toMatch(/entfernt oder das Team wurde gelöscht/);
+  });
+
   it('shows each notice and removes it on Dismiss', async () => {
     useSyncRuntime.setState({ notices });
     await renderApp('/teams');

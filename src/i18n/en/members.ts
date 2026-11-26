@@ -1,5 +1,3 @@
-import type { SyncErrorCode } from '@/domain/types';
-
 /** v10: team members, roles, invite codes, joining a team. */
 export const members = {
   title: 'Members',
@@ -83,19 +81,6 @@ export const members = {
       `Leave ${team}? It is removed from this device and you get no more changes.`,
     confirmButton: 'Leave',
   },
-  errors: {
-    offline: 'Needs a connection. Try again when you are online.',
-    forbidden: 'Only managers can do that.',
-    lastManager: 'Make someone else manager first.',
-    lastMember: 'You’re the only member: delete the team instead.',
-    inviteInvalid: 'This code is invalid or expired.',
-    notSignedIn: 'Sign in first.',
-    signedOut: 'You were signed out. Sign in again.',
-    invalidCode: 'This code is invalid or expired.',
-    rateLimited: 'Too many tries. Wait a moment and try again.',
-    tooMany: 'Too many invites or teams. Revoke an invite or remove a team first.',
-    unknown: 'Something went wrong. Try again.',
-  } satisfies Record<SyncErrorCode, string>,
   join: {
     title: 'Join a team',
     intro: 'Enter the invite code you got from a team manager, or paste the invite link.',

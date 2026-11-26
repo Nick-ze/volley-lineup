@@ -42,6 +42,42 @@ describe('Profile tab → Cloud sync', () => {
     expect(screen).toHavePathname('/account/sign-in');
   });
 
+  it.each([
+    ['/profile', 'profile-sign-in'],
+    ['/account', 'account-sign-in'],
+    ['/account/sign-in', 'sign-in-send'],
+    ['/join', 'join-submit'],
+  ])(
+    '%s waits for the stored session on a cold start: no "Sign in" yet (audit M14)',
+    async (path, signInTestId) => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {}); // modal route as first screen
+      link(false);
+      useSyncRuntime.setState({ session: null, restoring: true });
+      await renderApp(path);
+      expect(screen.getByText(s.restoring)).toBeTruthy();
+      expect(screen.queryByTestId(signInTestId)).toBeNull();
+      expect(screen.queryByLabelText(s.signInLabel)).toBeNull();
+      expect(screen.queryByText(t.members.join.signInNeeded)).toBeNull();
+      // The session arrives: signed in, as before.
+      await act(async () =>
+        useSyncRuntime.setState({
+          session: { userId: 'user-1', email: 'coach@example.com' },
+          restoring: false,
+        }),
+      );
+      expect(screen.queryByText(s.restoring)).toBeNull();
+      jest.mocked(console.warn).mockRestore();
+    },
+  );
+
+  it('without a stored session it says "Sign in" once restoring ends', async () => {
+    link(false);
+    useSyncRuntime.setState({ session: null, restoring: true });
+    await renderApp('/profile');
+    await act(async () => useSyncRuntime.setState({ restoring: false }));
+    expect(screen.getByLabelText(s.signInLabel)).toBeTruthy();
+  });
+
   it('signed in: email, status and Account', async () => {
     link(true, 1);
     await renderApp('/profile');

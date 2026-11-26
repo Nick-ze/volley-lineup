@@ -29,6 +29,12 @@ export function SignedOutPanel({ link, testID }: SignedOutPanelProps) {
           <Button label={t.account.signIn.openProfiles} onPress={() => router.replace('/')} />
         </>
       );
+    case 'restoring':
+      return (
+        <Text style={styles.text} testID="account-restoring" accessibilityLiveRegion="polite">
+          {s.restoring}
+        </Text>
+      );
     case 'otherProfile':
       return (
         <Text style={styles.text} testID="account-other-profile">

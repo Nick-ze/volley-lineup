@@ -14,7 +14,7 @@ export function SyncErrorNote({ error }: { error: SyncErrorCode | null }) {
   if (!error) return null;
   return (
     <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">
-      {t.members.errors[error]}
+      {t.sync.errors[error]}
     </Text>
   );
 }

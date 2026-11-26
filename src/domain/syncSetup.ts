@@ -51,6 +51,8 @@ export type AccountLink =
   | { kind: 'noProfile' }
   | { kind: 'signedOut' }
   | { kind: 'signedIn'; email: string }
+  /** v10 audit M14: this profile's account, and the stored session is still being read. */
+  | { kind: 'restoring' }
   /** The device's account belongs to another local profile: sign in there, not here. */
   | { kind: 'otherProfile'; email: string; profileName: string };
 
@@ -59,12 +61,15 @@ export function accountLink(
   account: SyncAccount | null,
   profileId: string | null,
   profiles: readonly Pick<ManagerProfile, 'id' | 'name'>[],
+  restoring = false,
 ): AccountLink {
   if (!profileId) return { kind: 'noProfile' };
   if (account && account.profileId !== profileId) {
     const owner = profiles.find((p) => p.id === account.profileId);
     if (owner) return { kind: 'otherProfile', email: account.email, profileName: owner.name };
   }
+  // Not "signed out" yet: a cold start reads the stored session first (DECISIONS #289).
+  if (!session && restoring && account?.profileId === profileId) return { kind: 'restoring' };
   const linkedHere = account?.profileId === profileId && account.userId === session?.userId;
   return session && linkedHere ? { kind: 'signedIn', email: session.email } : { kind: 'signedOut' };
 }

@@ -80,10 +80,10 @@ describe('join a team', () => {
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({ ok: false, error: 'inviteInvalid' });
     await renderApp('/join?code=ABCDE-FGHJK');
     await fireEvent.press(screen.getByTestId('join-submit'));
-    expect(await screen.findByText(t.members.errors.inviteInvalid)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.inviteInvalid)).toBeTruthy();
     // Typing again clears the message.
     await fireEvent.changeText(codeField(), 'ABCDE-FGHJ');
-    expect(screen.queryByText(t.members.errors.inviteInvalid)).toBeNull();
+    expect(screen.queryByText(t.sync.errors.inviteInvalid)).toBeNull();
   });
 
   it('the code field is set up for codes (no autocorrect, caps, spelling) and takes links', async () => {
@@ -104,10 +104,10 @@ describe('join a team', () => {
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({ ok: false, error: 'inviteInvalid' });
     await renderApp('/join?code=ABCDEFGHJK');
     await fireEvent.press(screen.getByTestId('join-submit'));
-    expect(await screen.findByText(t.members.errors.inviteInvalid)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.inviteInvalid)).toBeTruthy();
     await act(async () => router.setParams({ code: 'yz234-56789' }));
     expect(codeField().props.value).toBe('YZ234-56789');
-    expect(screen.queryByText(t.members.errors.inviteInvalid)).toBeNull();
+    expect(screen.queryByText(t.sync.errors.inviteInvalid)).toBeNull();
   });
 
   it('the server saying "not signed in" offers "Sign in first"', async () => {
@@ -115,7 +115,7 @@ describe('join a team', () => {
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({ ok: false, error: 'notSignedIn' });
     await renderApp('/join?code=ABCDEFGHJK');
     await fireEvent.press(screen.getByTestId('join-submit'));
-    expect(await screen.findByText(t.members.errors.notSignedIn)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.notSignedIn)).toBeTruthy();
     expect(screen.queryByTestId('join-submit')).toBeNull();
     await fireEvent.press(screen.getByLabelText(t.members.local.signInLabel));
     expect(screen).toHavePathname('/account/sign-in');
@@ -135,7 +135,7 @@ describe('join a team', () => {
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await renderApp('/join?code=ABCDEFGHJK');
     await fireEvent.press(screen.getByTestId('join-submit'));
-    expect(await screen.findByText(t.members.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
   });
 
   it('signed out: "Sign in first" instead of Join', async () => {

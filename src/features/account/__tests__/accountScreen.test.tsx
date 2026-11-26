@@ -52,6 +52,23 @@ describe('account screen', () => {
     expect(screen).toHavePathname('/account/sign-in');
   });
 
+  it('a session the server ended says “You were signed out” here too (audit L23)', async () => {
+    useAppStore.setState((st) => ({
+      sync: {
+        ...st.sync,
+        account: { userId: 'user-1', email: 'coach@example.com', profileId: PROFILE_ID },
+      },
+    }));
+    useSyncRuntime.setState({
+      session: null,
+      status: { ...initialSyncStatus(), phase: 'error', error: 'signedOut' },
+    });
+    await renderApp('/account');
+    expect(screen.getByText(t.sync.errors.signedOut)).toBeTruthy();
+    expect(screen.queryByText(s.signedOut)).toBeNull();
+    expect(screen.getByTestId('account-sign-in')).toBeTruthy();
+  });
+
   it('signed in: email, status, Sync now, shared teams with roles and the links', async () => {
     signIn(2);
     await renderApp('/account');
@@ -95,7 +112,7 @@ describe('account screen', () => {
       status: { ...initialSyncStatus(), phase: 'error', error: 'signedOut' },
     });
     await renderApp('/account');
-    expect(screen.getByText(t.account.errors.signedOut)).toBeTruthy();
+    expect(screen.getByText(t.sync.errors.signedOut)).toBeTruthy();
     expect(screen.getByText(s.notSynced)).toBeTruthy();
   });
 
@@ -148,6 +165,21 @@ describe('delete account', () => {
     expect(screen).toHavePathname('/team/team1/members');
   });
 
+  it('names a cloud team without a name yet instead of leaving it blank (audit L22)', async () => {
+    signIn();
+    jest.mocked(sync.accountDeletionCheck).mockResolvedValueOnce({
+      ok: true,
+      value: { deleteTeams: ['nameless'], blockedTeams: [] },
+    });
+    jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'nameless', name: '', role: 'manager', onDevice: false }],
+    });
+    await renderApp('/account');
+    await fireEvent.press(screen.getByTestId('delete-account'));
+    expect(await screen.findByText(d.confirm([d.notOnDevice]))).toBeTruthy();
+  });
+
   it('confirms (naming sole-member teams), deletes and keeps local data', async () => {
     signIn();
     jest.mocked(sync.accountDeletionCheck).mockResolvedValueOnce({
@@ -175,7 +207,7 @@ describe('delete account', () => {
 
     jest.mocked(sync.accountDeletionCheck).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await fireEvent.press(screen.getByTestId('delete-account'));
-    expect(await screen.findByText(t.account.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
     expect(sync.deleteAccount).not.toHaveBeenCalled();
   });
 
@@ -185,7 +217,7 @@ describe('delete account', () => {
     await renderApp('/account');
     await fireEvent.press(screen.getByTestId('delete-account'));
     await fireEvent.press(await screen.findByTestId('confirm'));
-    expect(await screen.findByText(t.account.errors.unknown)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.unknown)).toBeTruthy();
     expect(screen.queryByText(d.done)).toBeNull();
   });
 });
