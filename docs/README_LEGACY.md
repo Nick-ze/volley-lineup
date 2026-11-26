@@ -189,6 +189,12 @@ opened by an older app.
   confidential descriptions and profile photos never leave the device; delete account removes the server data.
 - Store v13 adds the device-only `sync` state. The export file is unchanged (schema 10).
 
+**On `main` after 10.0.0, not released yet** (`docs/AUDIT_V10.md`): the audit's critical and high fixes, "I already
+have a code", the take-over block, and the medium / low fixes (DECISIONS #309–#316) — among them own texts for a code
+email the mail server couldn't send, "Checking your sign-in…" while the stored session is read at start, one shared set
+of error texts, and hardening (sandboxed print frame, safe photo paths, a checked `sync` slice at load, supabase-js
+loaded only when needed). The next build should be 10.0.1 or 10.1.0 (owner's choice).
+
 ---
 
 ## Backend

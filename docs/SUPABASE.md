@@ -300,8 +300,10 @@ members of the Supabase organization.
 7. Check the region is **eu-central-2 (Zurich)** (Project Settings → General).
 8. If GitHub disabled the keep-alive workflow, enable it again (see [Keep-alive](#keep-alive)).
 
-Nothing to do for `public.rls_auto_enable()` any more: migration `20261126140000` revokes its
-EXECUTE from the API roles (audit L2; the step used to be an optional owner step).
+`public.rls_auto_enable()`: migration `20261126140000` revokes its EXECUTE from the API roles
+(audit L2; this used to be an optional owner step). **That migration is not applied to the hosted
+project yet** (2026-11-26: the connector's confirmation got no answer): apply it as described in
+`docs/AUDIT_V10.md` "Open questions" 7, which also does this step.
 
 ## Advisor warnings that are intended
 
@@ -317,8 +319,8 @@ After the migrations, the **security** advisor lists these WARNs on purpose:
   `anon` (lint 0028 stays clean for them).
 - **`public.rls_auto_enable()`**: not ours. Supabase created it for the project's "enable RLS on
   new tables" option before any migration ran. It used to show up under lints 0028 and 0029;
-  migration `20261126140000` (audit L2) revokes EXECUTE from `public`, `anon` and
-  `authenticated`, which clears both. The event trigger `ensure_rls` still runs it (EXECUTE is
+  migration `20261126140000` (audit L2; not applied yet on 2026-11-26) revokes EXECUTE from
+  `public`, `anon` and `authenticated`, which clears both. The event trigger `ensure_rls` still runs it (EXECUTE is
   only checked for calls; rls.sql T34 checks that a new table still gets RLS).
 - **"RLS Enabled No Policy"** (INFO, lint 0008) on `private.team_removals`: on purpose. The table
   lives in the unexposed `private` schema and is closed to every API role; only the RPCs
