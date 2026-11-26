@@ -722,19 +722,21 @@ the team's members**.
 
 ## 45. v10.0 acceptance checklist
 
-- [ ] Without signing in the app behaves like 9.2: no network calls; screens unchanged except Profile → Account, the team header's Members button and the Teams tab's sync / join entries.
-- [ ] Sign in with a 6-digit email code (EN + DE); wrong / expired code and offline messages; resend after 60 s.
-- [ ] First sign-in offers Upload (nothing pre-selected) and Download; nothing uploads without a tap.
-- [ ] Edits on device A appear on device B after Sync now / focus / ≤ 60 s; the same record edited on both → the later save wins per record (player, match, set, preset, starters, season, opponent, team fields).
-- [ ] Deletions sync (tombstones); a deleted season with a newer match added elsewhere comes back instead of losing the match.
-- [ ] Descriptions never leave the device and survive pulls; team and player photos sync (private bucket); profile photos stay local.
-- [ ] Offline or paused project: the app works, the badge says Offline with the pending count, no error screen, nothing lost; it syncs when back.
-- [ ] Roles: a player sees everything read-only, with a reason on every edit control (builder drag + tap, live, presets, starters, roster, seasons, opponents, matches, team rename / photo, import of that team).
-- [ ] Managers create, share and revoke invite codes (they expire); joining by code and by link works; roles change; members can be removed; the last manager can't leave or demote themselves.
-- [ ] A removed member's team stops syncing and stays as a local copy with a notice.
-- [ ] Live: the scoring device holds the match; other managers see "Being scored live on …" + Take over; viewers see the score update within ~15 s.
-- [ ] Delete team: "this device" vs "for everyone"; Leave team. Delete all data and deleting the linked profile sign out and keep the cloud teams. Delete account removes the server data (blocked while the user is the last manager of a team with other members) and keeps local data.
-- [ ] Import Replace / Merge never removes a shared team; viewer teams are skipped.
-- [ ] Store v12 → v13 migration (and v1 → v13); export schema 10 unchanged; golden byte-identical; old files import.
-- [ ] RLS script passes on the real project (stranger can't read, player can't write, manager of A can't touch B, removed member loses access); Supabase security / performance advisors clean or each warning explained; keepalive workflow green on dispatch.
-- [ ] `@supabase/*` imported only in `src/lib/sync` (lint); lint, format, typecheck and tests pass; `src/domain` at 100 %; a component test per feature; new screens have tour pages; 375 / 1280 px, EN + DE, dark + light, dyslexia font.
+- [x] Without signing in the app behaves like 9.2: no network calls; screens unchanged except Profile → Cloud sync, the team header's Members / Share button and the Teams tab's sync / join entries.
+- [x] Sign in with a 6-digit email code (EN + DE); wrong / expired code and offline messages; resend after 60 s.
+- [x] First sign-in offers Upload (nothing pre-selected) and Download; nothing uploads without a tap.
+- [x] Edits on device A appear on device B after Sync now / focus / ≤ 60 s; the same record edited on both → the later save wins per record (player, match, set, preset, starters, season, opponent, team fields).
+- [x] Deletions sync (tombstones); a deleted season with a newer match added elsewhere comes back instead of losing the match.
+- [x] Descriptions never leave the device and survive pulls; team and player photos sync (private bucket); profile photos stay local.
+- [x] Offline or paused project: the app works, the badge says Offline with the pending count, no error screen, nothing lost; it syncs when back.
+- [x] Roles: a player sees everything read-only, with a reason on every edit control (builder drag + tap, live, presets, starters, roster, seasons, opponents, matches, team rename / photo, import of that team).
+- [x] Managers create, share and revoke invite codes (they expire); joining by code and by link works; roles change; members can be removed; the last manager can't leave or demote themselves.
+- [x] A removed member's team stops syncing and stays as a local copy with a notice.
+- [x] Live: the scoring device holds the match; other managers see "Being scored live on …" + Take over; viewers see the score update within ~15 s.
+- [x] Delete team: "this device" vs "for everyone"; Leave team. Delete all data and deleting the linked profile sign out and keep the cloud teams. Delete account removes the server data (blocked while the user is the last manager of a team with other members) and keeps local data.
+- [x] Import Replace / Merge never removes a shared team; viewer teams are skipped.
+- [x] Store v12 → v13 migration (and v1 → v13); export schema 10 unchanged; golden byte-identical; old files import.
+- [x] RLS script passes on the real project (stranger can't read, player can't write, manager of A can't touch B, removed member loses access); Supabase security / performance advisors clean or each warning explained; keepalive workflow green on dispatch.
+- [x] `@supabase/*` imported only in `src/lib/sync` (lint); lint, format, typecheck and tests pass; `src/domain` at 100 %; a component test per feature; new screens have tour pages; 375 / 1280 px, EN + DE, dark + light, dyslexia font.
+
+_Checked 2026-11-26 by the QA agent on the web build against the live project (two to four browser sessions as devices, password test users removed afterwards), then re-checked after the QA fixes (PR #93). Not checked on a real phone: see HANDOFF._
