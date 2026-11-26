@@ -19,12 +19,12 @@ release is `v10.0.0`.
 
 | Severity      | Count | Fixed in this audit              |
 | ------------- | ----- | -------------------------------- |
-| CRITICAL      | 0     | –                                |
-| HIGH          | 9     | all 9 (see "Fix log" at the end) |
-| MEDIUM        | 17    | none (listed with the exact fix) |
-| LOW / CLEANUP | 30    | none                             |
+| CRITICAL      | 1     | yes (see "Fix log" at the end)   |
+| HIGH          | 10    | all 10                           |
+| MEDIUM        | 19    | none (listed with the exact fix) |
+| LOW / CLEANUP | 33    | none                             |
 
-H1–H4 come from the lead audit, H5–H9 from the side audits (each checked against the code by the
+H1–H4 come from the lead audit, C1 and H5–H10 from the side audits (each checked against the code by the
 lead auditor before it was listed).
 
 Short version: the database's access rules are sound — a stranger, a signed-out caller, a player,
@@ -36,7 +36,10 @@ team after one device's failed download (**H3**), and a pull cursor that can ski
 (**H4**). The side audits added: a manager invite option that always fails (**H5**), duplicate
 jersey numbers from two devices that silently make the backup file unloadable (**H6**), a paused
 project signing every device out (**H7**), a promoted viewer pushing an out-of-date copy to
-everyone (**H8**), and a Merge import that can empty a shared team (**H9**).
+everyone (**H8**), a Merge import that can empty a shared team (**H9**), an import that can undo a sync that
+happens while it runs (**H10**) — and the one CRITICAL: after the linked profile is deleted, its
+shared teams stay linked, and restoring a backup then deletes cloud records for every member
+(**C1**).
 
 ---
 
@@ -149,7 +152,33 @@ Each finding: where, why it happens, the exact fix. Status is filled in at the e
 
 ### CRITICAL
 
-None.
+#### C1 — Deleting the linked profile leaves its shared teams linked; restoring a backup then deletes cloud records for everyone
+
+- **Where**: `src/store/appStore.ts:79–93` (`deleteProfile` removes the teams and clears only
+  `sync.account`; `sync.teams[…]` stays), `:103–110` (`deleteTeam`), `:227–244` (`replaceAll`);
+  `src/lib/sync/teamSync.ts:54–55, 121–124` (a team that is gone is only unlinked inside
+  `pullTeam`, which needs a session); `src/domain/syncImport.ts:29–34` and
+  `src/features/settings/useImport.ts:73, 92` (`sharedTeamsOf` trusts every link);
+  `src/store/syncState.test.ts:84–93` asserts the leftover link as intended.
+- **What happens** (reproduced by the side audit with the engine and the fake cloud, Merge and
+  Replace):
+  1. A manager's device has shared team T, fully synced.
+  2. They delete the linked profile (the confirm says: you'll be signed out, shared teams stay
+     in the cloud). The device is signed out now, so no sync cycle ever drops T's link.
+  3. To get their teams back they import a backup that contains T. T is rebuilt under the stale
+     link, next to its old `base` (what the server had) and cursor.
+  4. They sign in again with the same account. `detectChanges` sees every record the backup
+     lacks as deleted and every other difference as an edit made now.
+  5. The push deletes everything created since the backup and overwrites the rest — on every
+     member's device.
+- **Why**: DECISIONS #259 ("a team that disappears locally is unlinked, never deleted on the
+  server") is implemented lazily in the pull; the design (§3.10) assumed "detection unlinks
+  them", but without a session nothing runs.
+- **Fix**: unlink at once, in the same store write: `deleteProfile`, `deleteTeam` and
+  `replaceAll` drop the links of the teams they remove. Devices that already hold such a link
+  (10.0.0) drop it when the engine starts and whenever it notes changes (no session needed).
+  `sharedTeamsOf` ignores links whose team isn't on the device. Tests: store, engine scenario
+  (the steps above), import.
 
 ### HIGH
 
@@ -326,6 +355,21 @@ None.
   in the file has the id of a record of a shared team but belongs to another team. Pure domain
   check + tests.
 
+#### H10 — An import can undo a sync that happens while it runs
+
+- **Where**: `src/features/settings/useImport.ts:91–106`: `await transferSnapshot()` → compute →
+  `await replacePhotos / putPhotos` (writes every photo) → `store.replaceAll(result.data)`;
+  `replaceAll` keeps `sync` (`appStore.ts:240–243`).
+- **What happens** (reproduced by the side audit with a fixed interleaving, both modes): while
+  the photos are written, a sync cycle applies another manager's new record and notes it in
+  `base`. `replaceAll` then writes data computed from the older snapshot: the new record is gone
+  locally but known in `base`, so it is deleted for everyone, and changed records go back to
+  their older content. The file doesn't need to contain the shared team. The window is the
+  photo write, so it grows with the number of photos.
+- **Why**: two awaits between reading the data and writing it back.
+- **Fix**: write the photos first, then read the data, compute and `replaceAll` without waiting
+  in between.
+
 ### MEDIUM (not fixed; exact fix given)
 
 - **M1 — Take over: the previous scorer can still overwrite the new one once.** `holdCommands.ts`,
@@ -406,6 +450,17 @@ None.
   account's teams silently stop syncing and the UI says "Sign in". Fix: at start, sign out when
   the session's user differs from the linked account and that account still has teams.
 
+- **M18 — A photo the cloud answers "not found" for is still cleared after a restart** (the rest
+  of H3, DECISIONS #285's known limit): `teamSync.ts` removes such ids from `meta.photos`, so
+  the prune's new check doesn't cover them; a manager device then pushes "no photo" and a
+  device that still had the picture drops it. Fix: keep the id listed and let the prune clear a
+  shared team's `photoId` only when that record has a local, unsynced change.
+- **M19 — Every sync cycle rewrites the whole stored data three times, also when nothing
+  changed.** `storeOps.ts:22–33` returns the same state for "no change", but zustand's persist
+  writes after every `set`. About 1 + 2 × teams writes of the full blob per minute in the
+  foreground. Fix: in `transaction`, compute the result first and don't call the store when it
+  is the same object.
+
 ### LOW / CLEANUP (not fixed)
 
 - **L1** Default privileges for tables created by `postgres` in `public` still give `anon`,
@@ -481,6 +536,20 @@ for role postgres in schema public revoke all on tables from anon, authenticated
   role inline instead of `useTeamAccess`; `ci.yml:45–46` hashes a `babel.config.js` that doesn't
   exist; `scripts/screenshots.js` needs an undeclared `playwright`.
 
+- **L31** A shared team's photo that is still waiting for its download blocks every import on
+  that device (`exportMerge.ts:107` fails the consistency check on a `photoId` without a photo;
+  Merge says "conflict", Replace is refused). The H3 fix keeps such ids across restarts, so this
+  lasts until the download works. Fix: accept dangling photo ids of shared teams in the import's
+  check.
+- **L32** The `sync` slice isn't validated when the stored data is loaded (`appStore.ts:260–285`
+  has no `merge`): a corrupted `sync` value (`null`, no `teams`) makes the Teams tab and
+  "Delete all data" throw. No released version writes such a value. Fix: replace a malformed
+  slice with the empty one; move `noteAll` inside the cycle's `try`.
+- **L33** On phones the URL polyfill and supabase-js are loaded at app start for everyone
+  (`client.ts:6, 9`; only the client instance is created lazily). Never run on Hermes (see
+  HANDOFF); a start-up problem there would also hit users without an account. Fix: `require`
+  both inside `getClient()`.
+
 ---
 
 ## Checked and found correct
@@ -505,8 +574,10 @@ for role postgres in schema public revoke all on tables from anon, authenticated
   content, also after a restart.
 - **Account deletion**: blocked for the last manager; photos first, then the team rows and the
   user in one transaction; local data stays.
-- **A team deleted locally** is unlinked, never deleted on the server; a team deleted on the
-  server is unlinked on every device with a notice, local copies stay.
+- **A team deleted locally** through the team list ("Remove from this device", Leave, Delete for
+  everyone) is unlinked first, never deleted on the server; a team deleted on the server is
+  unlinked on every device with a notice, local copies stay. (Deleting the whole **profile**
+  does not unlink: C1.)
 - **Malformed server data**: rows go through zod (`parseRemoteRow`), answers of every RPC and
   table read through a schema (`supabaseBackend.ts`); a bad `server_now` leaves the cursor where
   it is.
@@ -557,7 +628,28 @@ M11–M17, L15–L30). What they checked and found correct:
 
 **Existing users and backups**
 
-_Pending._
+- **A user who never signs in makes no network call.** Measured on a production web build with
+  every non-local request blocked and counted: a fresh user (new profile, new team, every tab,
+  the v10 screens opened without submitting) and a user upgraded from stored v12 data made 0
+  requests, 0 `fetch` calls, opened no socket and started no timer; the supabase-js client was
+  never created. The path: `SyncHost` → `startSync` → `boot()` returns when there is no
+  account, no linked team and no stored session (`engine.ts:156–162`); screens call no command
+  without a session. A signed-out device that still has a linked account creates the client at
+  start (one token-refresh timer), as intended.
+- **"Sees no change"** holds except for three new entry points that are there by design (PLAN
+  §45): "Join a team" on the Teams tab, "Share" in the team header, the "Cloud sync" card on the
+  Profile tab. On web, supabase-js is part of the start chunk (see L33 for phones).
+- **Store v12 → v13** adds only the empty `sync` slice; all collections and device settings are
+  byte-identical. The v1 → v13 chain ends in the right shape; odd v1–v12 inputs never throw. A
+  stored version newer than the app is left untouched (as before v10).
+- **Export**: a store with a full `sync` slice exports byte-identically to one without; no
+  device id, user id, email, role, cursor or hash appears; `schemaVersion` stays 10; the golden
+  files (v1–v9 and the v10 round trip) are unchanged and load.
+- **"Delete all data"** clears the data and the sync state in one write. `sync.account` never
+  points at a missing profile. Replace keeps a shared team that is on the device with its
+  profile; a manager's copy in the file is merged, a viewer's skipped.
+- Sign-out with local scope removes the stored session before the network call, so it works
+  offline.
 
 ---
 
