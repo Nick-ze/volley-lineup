@@ -667,6 +667,10 @@ M11–M17, L15–L30). What they checked and found correct:
    it sees the take-over (a behaviour change in live mode)?
 5. **"I already have a code"** on the sign-in screen (M13): saves emails when the app was closed
    while the user looked for the code. Wanted?
+6. **Two small things to do once** (see "After the fixes"): run `supabase/tests/rls.sql` in the SQL
+   editor, and the next time you delete a user who belongs to a team in the dashboard
+   (Authentication → Users), check that it works — the fix for that could only be tested on a
+   local Postgres, not through the real dashboard.
 
 ## Owner dashboard steps
 
@@ -811,8 +815,15 @@ a local-only device makes no store write and no call at start.
 **Final numbers.** `npm run check`: green, **2255 tests in 175 suites** (2173 in 168 before the audit);
 `src/domain` at 100 %; web export succeeds; CI on the PR green.
 
-**Last run.** _Pending when this was committed: the full `rls.sql` on the final schema (both
-migrations)._
+**Last run.** On the final schema (both migrations) the catalogue checks (T30) and the invite
+tests (T31–T33) were run again, word for word from the file, in rolled-back transactions: all
+pass. A last run of the **whole** script could not be completed: the connector asked for a
+confirmation that nobody was there to give, and nothing was executed. So T1–T29 were last run
+after the first migration (pass); the second one only changes which role three trigger
+functions run as and revokes nothing on this project. To close the gap, run
+`supabase/tests/rls.sql` once in the SQL editor (it rolls itself back): the last result must be
+`ALL RLS TESTS PASSED`. The database is as before the audit: 0 users, teams, members, records,
+invites, holds and objects, the `keepalive` row, 9 migrations recorded.
 
 ### Should 10.0.1 be released?
 
