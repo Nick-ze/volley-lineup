@@ -100,3 +100,10 @@ export function withoutDanglingPhoto<T extends { photoId?: string }>(
   if (item.photoId === undefined || photoIds.has(item.photoId)) return item;
   return omitOptional(item, 'photoId');
 }
+
+/**
+ * v10 audit L26: a photo id that may become a storage path segment (`<teamId>/<photoId>`). The
+ * app's ids are UUIDs (or `id-…` without crypto); anything with `/`, `.` or other characters —
+ * e.g. a co-manager's crafted `../<other team>/<id>` — is refused before it reaches the server.
+ */
+export const isSafePhotoId = (id: string): boolean => /^[A-Za-z0-9_-]{1,100}$/.test(id);

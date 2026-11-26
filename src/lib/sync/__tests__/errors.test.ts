@@ -30,10 +30,23 @@ describe('toSyncError', () => {
     [{ status: 503, message: 'Service Unavailable' }, 'offline'],
     [{ status: 540, message: 'Project paused' }, 'offline'],
     [{ name: 'AuthRetryableFetchError', status: 0 }, 'offline'],
-    [{ name: 'StorageUnknownError', originalError: new TypeError('x') }, 'offline'],
+    // storage-js wraps fetch's own error (before audit L5 any TypeError counted, e.g. 'x').
+    [{ name: 'StorageUnknownError', originalError: new TypeError('Failed to fetch') }, 'offline'],
+    [new TypeError('Load failed'), 'offline'],
+    [new TypeError('NetworkError when attempting to fetch resource.'), 'offline'],
+    [new TypeError('Network request failed (HTTP 540)'), 'offline'],
+    [{ message: 'TypeError: Network request failed', code: '' }, 'offline'],
     [{ statusCode: '502', message: 'Bad gateway' }, 'offline'],
   ])('a lost connection or a paused / failing server is offline: %j', (error, code) => {
     expect(toSyncError(error)).toBe(code);
+  });
+
+  it.each([
+    [new TypeError("Cannot read properties of undefined (reading 'id')")],
+    [{ name: 'StorageUnknownError', originalError: new TypeError('x is not a function') }],
+    [{ message: "TypeError: Cannot read properties of null (reading 'rows')", code: '' }],
+  ])('a programming error is not "offline" (audit L5): %j', (error) => {
+    expect(toSyncError(error)).toBe('unknown');
   });
 
   it.each([

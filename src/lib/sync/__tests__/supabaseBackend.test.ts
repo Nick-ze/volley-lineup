@@ -404,6 +404,30 @@ describe('supabase backend: photos', () => {
     );
   });
 
+  it.each(['../t2/ph1', 'ph1/../../t2/x', '.', 'a.b', '', 'x'.repeat(101), 'ph 1', 'ph1%2F'])(
+    'never uses a photo id that could leave the team’s folder as a path (%s, audit L26)',
+    async (id) => {
+      await expect(
+        backend.uploadPhoto('t1', id, 'data:image/png;base64,iVBORw0KGgo='),
+      ).rejects.toMatchObject({ code: 'unknown', raw: 'photo_id' });
+      await expect(backend.downloadPhoto('t1', id)).rejects.toMatchObject({ raw: 'photo_id' });
+      await backend.removePhotos('t1', [id, 'ph1']);
+      expect(bucket.upload).not.toHaveBeenCalled();
+      expect(bucket.download).not.toHaveBeenCalled();
+      expect(bucket.remove).toHaveBeenCalledWith(['t1/ph1']);
+    },
+  );
+
+  it('accepts the app’s own photo ids', async () => {
+    for (const id of ['ph1', '0b6f2c1e-8a8e-4c9b-9a51-3c1f3f2a9d10', 'id-lx2k3-1-abc123de']) {
+      await backend.uploadPhoto('t1', id, 'data:image/png;base64,iVBORw0KGgo=');
+      expect(bucket.upload).toHaveBeenLastCalledWith(`t1/${id}`, expect.any(Uint8Array), {
+        contentType: 'image/png',
+        upsert: false,
+      });
+    }
+  });
+
   it('lists every page (hidden placeholders left out) and removes in chunks', async () => {
     const page = Array.from({ length: 1000 }, (_, i) => ({ name: `p${i}` }));
     bucket.list

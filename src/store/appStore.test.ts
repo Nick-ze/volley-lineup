@@ -348,6 +348,62 @@ describe('whole data', () => {
     expect(store().profiles[0].id).toBe(profile.id);
     expect(store().hydrated).toBe(true);
   });
+
+  it.each([
+    ['null', null],
+    ['without teams', { deviceId: 'dev-1', account: null }],
+    ['a team without bookkeeping', { deviceId: 'dev-1', account: null, teams: { t1: {} } }],
+  ])(
+    'a malformed stored sync slice (%s) loads as the empty one (audit L32)',
+    async (_name, sync) => {
+      const { profile } = seed();
+      await new Promise((r) => setTimeout(r, 0));
+      const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
+      useAppStore.setState({ ...emptyData() });
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ ...saved, state: { ...saved.state, sync } }),
+      );
+      await useAppStore.persist.rehydrate();
+      expect(store().profiles[0].id).toBe(profile.id);
+      expect(store().sync).toEqual({
+        deviceId: sync === null ? null : 'dev-1',
+        account: null,
+        teams: {},
+      });
+      // What threw before: the Teams tab's shared-team lookups and "Delete all data".
+      expect(() => store().resetAll()).not.toThrow();
+    },
+  );
+
+  it('a valid stored sync slice loads unchanged, also with fields of a newer version', async () => {
+    seed();
+    await new Promise((r) => setTimeout(r, 0));
+    const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
+    const sync = {
+      deviceId: 'dev-1',
+      account: { userId: 'u1', email: 'a@example.test', profileId: 'p1' },
+      teams: {
+        t1: {
+          userId: 'u1',
+          role: 'manager',
+          cursor: 4,
+          base: { 'team:t1': { v: 4, h: 'abc', at: '2026-01-01T00:00:00.000Z' } },
+          edits: {},
+          photos: [],
+          later: 1,
+        },
+      },
+      lastSyncedAt: '2026-01-01T00:00:00.000Z',
+    };
+    useAppStore.setState({ ...emptyData() });
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...saved, state: { ...saved.state, sync } }),
+    );
+    await useAppStore.persist.rehydrate();
+    expect(store().sync).toEqual(sync);
+  });
 });
 
 /**

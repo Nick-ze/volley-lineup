@@ -163,6 +163,16 @@ describe('members: local team', () => {
     expect(screen.getByTestId('members-share-team')).toBeTruthy();
   });
 
+  it.each(['__proto__', 'constructor', 'toString', 'nonsense'])(
+    'ignores a `shareError` that isn’t an error code (%s, audit L19)',
+    async (value) => {
+      signIn();
+      await renderApp(`${URL}?shareError=${value}`);
+      expect(screen.getByTestId('members-share-team')).toBeTruthy();
+      expect(screen.queryByText(t.sync.errors.unknown)).toBeNull();
+    },
+  );
+
   it('shows why sharing failed', async () => {
     signIn();
     jest.mocked(sync.uploadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });

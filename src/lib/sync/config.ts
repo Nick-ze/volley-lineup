@@ -15,6 +15,9 @@ export function syncConfig(): SyncConfig | null {
   const { url, publishableKey } = value as Record<string, unknown>;
   if (typeof url !== 'string' || typeof publishableKey !== 'string') return null;
   if (!url.startsWith('https://') || publishableKey.length === 0) return null;
+  // Never use a secret key, should one have been bundled anyway (v10 audit L28; `app.config.js`
+  // refuses to build with one).
+  if (publishableKey.startsWith('sb_secret_')) return null;
   return { url, publishableKey };
 }
 

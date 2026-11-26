@@ -10,6 +10,7 @@ import {
   PHOTO_SIZE,
   referencedPhotoIds,
   withoutDescription,
+  isSafePhotoId,
 } from './photos';
 
 const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==';
@@ -104,5 +105,16 @@ describe('descriptions', () => {
     expect(withoutDescription(player)).toEqual({ id: 'p' });
     const plain: { id: string; description?: string } = { id: 'q' };
     expect(withoutDescription(plain)).toBe(plain);
+  });
+});
+
+describe('isSafePhotoId (audit L26)', () => {
+  it('accepts the app’s ids and refuses path tricks', () => {
+    expect(isSafePhotoId('0b6f2c1e-8a8e-4c9b-9a51-3c1f3f2a9d10')).toBe(true);
+    expect(isSafePhotoId('id-lx2k3-1-abc123de')).toBe(true);
+    expect(isSafePhotoId('ph_1')).toBe(true);
+    for (const id of ['', '../t2/x', 'a/b', '.', '..', 'a.b', 'x'.repeat(101), 'ä']) {
+      expect(isSafePhotoId(id)).toBe(false);
+    }
   });
 });

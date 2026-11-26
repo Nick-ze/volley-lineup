@@ -22,6 +22,7 @@ import {
   teamSchema,
 } from './exportFormat';
 import { parseSetRecordId, RECORD_KINDS, type RecordKind, type RecordPayload } from './syncRecords';
+import type { SyncData } from './types';
 
 /** A record as pulled from the server (or returned by a push that wasn't applied). */
 export interface RemoteRecord {
@@ -140,4 +141,38 @@ export function parseRemoteRow(row: unknown): RemoteRecord | null {
   }
   const payload = parsePayload(kind, id, parsed.data.payload);
   return payload === null ? null : { ...record, payload };
+}
+
+/* ---------------------------------------------------------------- the stored `sync` slice */
+
+const storedSyncTeam = z.looseObject({
+  userId: z.string(),
+  role: z.enum(['manager', 'player']),
+  cursor: z.number(),
+  base: z.record(z.string(), z.looseObject({ v: z.number(), h: z.string(), at: z.string() })),
+  edits: z.record(z.string(), z.looseObject({ at: z.string(), h: z.string() })),
+  photos: z.array(z.string()),
+});
+
+const storedSync = z.looseObject({
+  deviceId: z.string().nullable(),
+  account: z
+    .looseObject({ userId: z.string(), email: z.string(), profileId: z.string() })
+    .nullable(),
+  teams: z.record(z.string(), storedSyncTeam),
+});
+
+/**
+ * The stored `sync` slice as loaded, or the empty slice when it is malformed (v10 audit L32: a
+ * `null` slice or one without `teams` made the Teams tab and "Delete all data" throw). A valid
+ * slice is returned as it is, so fields a newer app version added are kept. A malformed one keeps
+ * only a valid device id; its links are lost, the teams stay on the device as local teams.
+ */
+export function storedSyncData(value: unknown): SyncData {
+  if (storedSync.safeParse(value).success) return value as SyncData;
+  const deviceId =
+    typeof value === 'object' && value !== null && 'deviceId' in value
+      ? (value as { deviceId: unknown }).deviceId
+      : null;
+  return { deviceId: typeof deviceId === 'string' ? deviceId : null, account: null, teams: {} };
 }

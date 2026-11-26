@@ -6,9 +6,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
+import { isSafePhotoId } from '@/domain/photos';
 import type { PushOutcome } from '@/domain/syncMerge';
 import { RECORD_KINDS, type RecordPayload } from '@/domain/syncRecords';
 import { normalizeTimestamp } from '@/domain/syncSchema';
+import { isServerSafeTeamId } from '@/domain/syncUpload';
 import type { MatchHold } from '@/domain/types';
 
 import type { BackendSession, SyncBackend } from './backend';
@@ -96,6 +98,13 @@ const toInvite = (row: z.infer<typeof inviteRow>): Invite => ({
   uses: row.uses ?? 0,
   maxUses: row.max_uses ?? null,
 });
+
+/** A team folder and photo id that can't leave the team's own folder (v10 audit L26). */
+function checkPhotoPath(teamId: string, photoId: string): void {
+  if (!isServerSafeTeamId(teamId) || !isSafePhotoId(photoId)) {
+    throw new BackendError('unknown', 'photo_id');
+  }
+}
 
 const sessionOf = (user: { id: string; email?: string } | null | undefined) =>
   user ? { userId: user.id, email: user.email ?? '' } : null;
@@ -355,6 +364,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async uploadPhoto(teamId, photoId, dataUri) {
+      checkPhotoPath(teamId, photoId);
       const photo = dataUriToBytes(dataUri);
       if (!photo) throw new BackendError('unknown', 'photo');
       const { error } = await bucket().upload(`${teamId}/${photoId}`, photo.bytes, {
@@ -365,6 +375,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async downloadPhoto(teamId, photoId) {
+      checkPhotoPath(teamId, photoId);
       const { data: blob, error } = await bucket().download(`${teamId}/${photoId}`);
       if (error)
         throw isMissing(error) ? new BackendError('unknown', 'not_found') : backendError(error);
@@ -385,8 +396,11 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async removePhotos(teamId, photoIds) {
-      for (let i = 0; i < photoIds.length; i += 1000) {
-        const paths = photoIds.slice(i, i + 1000).map((id) => `${teamId}/${id}`);
+      checkPhotoPath(teamId, 'x');
+      // An id that could leave the team's folder is never sent (v10 audit L26).
+      const ids = photoIds.filter(isSafePhotoId);
+      for (let i = 0; i < ids.length; i += 1000) {
+        const paths = ids.slice(i, i + 1000).map((id) => `${teamId}/${id}`);
         await query(() => bucket().remove(paths));
       }
     },

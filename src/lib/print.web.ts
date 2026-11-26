@@ -13,6 +13,10 @@ export const printHtml: PrintHtml = (html, options = {}) =>
     frame.setAttribute('aria-hidden', 'true');
     frame.setAttribute('data-testid', 'print-frame');
     frame.tabIndex = -1;
+    // A second line of defence (v10 audit L4): the sheet's text is escaped, and nothing in the
+    // frame may run scripts, open pop-ups, submit forms or navigate the app. Same origin so this
+    // page can call print() on it; modals so the print dialog may open.
+    frame.setAttribute('sandbox', 'allow-same-origin allow-modals');
     // Off-screen but laid out (display:none would make some browsers print a blank page).
     Object.assign(frame.style, {
       position: 'fixed',

@@ -7,6 +7,7 @@ import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
 import { goneTeamLinks, withoutTeamLinks } from '@/domain/syncAccess';
+import { storedSyncData } from '@/domain/syncSchema';
 import { withSeen } from '@/domain/tour';
 import type { LineupPreset, Match, Opponent, Season, SyncData } from '@/domain/types';
 import { createId } from '@/lib/id';
@@ -301,6 +302,15 @@ export const useAppStore = create<AppStore>()(
         tourSeen: s.tourSeen,
         sync: s.sync,
       }),
+      // v10 audit L32: a malformed stored `sync` slice is replaced by the empty one.
+      merge: (persisted, current) => {
+        const loaded = (persisted ?? {}) as Partial<AppState>;
+        return {
+          ...current,
+          ...loaded,
+          sync: storedSyncData('sync' in loaded ? loaded.sync : current.sync),
+        };
+      },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
       },
