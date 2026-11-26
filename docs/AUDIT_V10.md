@@ -721,29 +721,32 @@ they are the same hole: the role re-check under the lock in `set_member_role` / 
 
 ### Files changed
 
-- **Database**: `supabase/migrations/20261126120000_v10_audit_invite_revocation.sql` (new),
-  `supabase/tests/rls.sql`.
-- **Domain** (`src/domain/`): `syncAccess.ts`, `syncImport.ts`, `invites.ts`, `photos.ts`,
-  `roster.ts` and their tests.
+- **Database**: `supabase/migrations/20261126120000_v10_audit_invite_revocation.sql` and
+  `20261126130000_v10_audit_member_triggers.sql` (new), `supabase/tests/rls.sql`.
+- **Domain** (`src/domain/`): `syncAccess.ts`, `syncImport.ts`, `syncMerge.ts`, `invites.ts`,
+  `photos.ts`, `roster.ts` and their tests.
 - **Store**: `appStore.ts`, `photoStore.ts`, `syncState.test.ts`.
 - **Sync** (`src/lib/sync/`): `engine.ts`, `teamSync.ts`, `teamCommands.ts`, `photoSync.ts`,
   `client.ts`, `authFetch.ts` (new), `supabaseBackend.ts`, `types.ts`, `__mocks__/index.ts`;
-  tests `staleLink`, `photoRestart`, `pullCursor`, `authFetch` (new), `roles`,
-  `supabaseBackend`; `src/test-utils/fakeBackend.ts`.
+  `storeOps.ts`; tests `staleLink`, `photoRestart`, `pullCursor`, `authFetch`, `auditReview`
+  (new), `roles`, `supabaseBackend`; `src/test-utils/fakeBackend.ts`.
 - **Screens**: `features/members/NewInviteDialog.tsx`, `features/roster/components/RosterTab.tsx`,
   `features/settings/{useImport.ts,useExport.ts,ExportSection.tsx}` and tests
   (`members.test.tsx`, `duplicateNumbers.test.tsx`, `exportWarning.test.tsx`,
   `importShared.test.tsx`).
 - **Texts** (EN + DE): `i18n/*/members.ts`, `roster.ts`, `transfer.ts`.
-- **Docs**: this file, `docs/DECISIONS.md` (#292–#302), `docs/SUPABASE.md`, `docs/HANDOFF.md`.
+- **Docs**: this file, `docs/DECISIONS.md` (#292–#303), `docs/SUPABASE.md`, `docs/HANDOFF.md`.
 
-49 files, about 2 800 lines added (1 700 of them tests and this report). No stored data shape
+About 55 files, 3 500 lines added (most of them tests and this report). No stored data shape
 changed: store version 13, export schema 10, app version 10.0.0.
 
-### Migration applied
+### Migrations applied
 
-`20261126120000_v10_audit_invite_revocation.sql`, applied to `qzeergfqfwovcvdarwua` with the
-connector on 2026-11-26 after the PR's checks were green, and recorded under the file's version.
+`20261126120000_v10_audit_invite_revocation.sql` and, after the review,
+`20261126130000_v10_audit_member_triggers.sql` (three `alter function … security definer` and a
+one-time revoke of older codes: see "After the fixes"). Both were applied to
+`qzeergfqfwovcvdarwua` with the connector on 2026-11-26, each after the PR's checks were green,
+and recorded under the file's version. The details below are for the first one.
 
 - Before: the migration plus the whole test script (T1–T33) ran in one rolled-back transaction
   on the live project — `ALL RLS TESTS PASSED`, nothing left behind. `join_team`'s lock order
@@ -759,15 +762,62 @@ connector on 2026-11-26 after the PR's checks were green, and recorded under the
 
 ### Test results
 
-- `npm run check` (lint, format, typecheck, tests): green. **2239 tests in 174 suites** (2173 in 168 before
-  the audit); `src/domain` at 100 % statements, branches, functions and lines.
+- `npm run check` (lint, format, typecheck, tests): green. **2255 tests in 175 suites** after the
+  review's corrections (2239 in 174 before them, 2173 in 168 before the audit); `src/domain` at
+  100 % statements, branches, functions and lines.
 - `npx expo export -p web`: succeeds.
 - CI on the PR: green (`test`, `lint · format · typecheck`, `web export`).
 - Independent review of the fixes by two reviewer agents: see "After the fixes" below.
 
+### After the fixes
+
+**Post-migration test run.** `supabase/tests/rls.sql` (T1–T33) on the migrated live database:
+`ALL RLS TESTS PASSED`, nothing left behind (0 users, teams, records, invites, objects). The
+text that reached the database was compared with the file through the database's statement
+log: identical. (The script takes about 40 s, mostly the 20 000-row limit test; the connector's
+call limit is 230 s.) After the second migration (`20261126130000`) the new T30
+checks were confirmed on the live schema directly (the three AFTER triggers run as their owner,
+`join_team` locks the team first, no trigger function is executable by an API role); the full script
+was then run once more (result: see "Last run" at the end of this section).
+
+**Independent review.** Two reviewer agents that had not written the code looked at the fixes:
+one at the database migration and the outage wrapper (with a local Postgres, two-session tests
+and a pgbench stress mix of all RPCs), one at the app code (with its own scratch tests). Neither
+found a blocker. What they found, and what was done:
+
+| Review finding                                                                                                                                                                                                                                                                                                                       | Done                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| H8: a promotion never completed while one row's id belonged to another local team, and pulled from 0 every cycle                                                                                                                                                                                                                     | fixed (`42e6854`): no longer waits on such rows; armed once per app run                                                                             |
+| H8: after the reset pull the bookkeeping still held entries the pull hadn't confirmed (a viewer that adopted an old copy; a row the device can't read)                                                                                                                                                                               | fixed (`42e6854`): `resetToCloudMerge` leaves `base` exactly matching the device (`syncMerge.test.ts` "leaves nothing to push")                     |
+| H3: the refused-push branch listed a photo also when the newer row lost locally; the clean-up could then remove a photo the server's row points at                                                                                                                                                                                   | fixed (`42e6854`): listed only when the merged team refers to it                                                                                    |
+| H10: a change of the data during the photo write could still make the prune drop the file's pictures; a refused import could overwrite a same-id picture                                                                                                                                                                             | fixed (`42e6854`): compute first, photos into memory and `replaceAll` in one step                                                                   |
+| C1: a link that hasn't pulled yet (a download under way) still adopted a team an import brings under its id                                                                                                                                                                                                                          | fixed (`42e6854`): such a link is dropped by `replaceAll`                                                                                           |
+| C1: links removed by the store left pending photos / reset / holds in memory                                                                                                                                                                                                                                                         | fixed (`42e6854`)                                                                                                                                   |
+| H1: codes that had outlived a demotion or removal made **before** the migration stayed valid                                                                                                                                                                                                                                         | fixed (`4a9b2a6`, migration `20261126130000`): revoked once. The hosted project had no invites                                                      |
+| The AFTER triggers on `team_members` run as the role that deleted the auth user: deleting a team member in the dashboard fails (also on 10.0.0)                                                                                                                                                                                      | fixed (`4a9b2a6`, migration `20261126130000`): the three functions are `security definer`. Not tried through the real dashboard (no user to delete) |
+| H1 before `0527af6`: `join_team` locked the invite before the team — 84 deadlocks in 63 000 mixed calls on the reviewer's bench                                                                                                                                                                                                      | already fixed by `0527af6`: 0 in 248 000 (the base schema had 21 in 95 000)                                                                         |
+| Nits: the revoking statements skip a code that expires in the same instant; `join_team` locks the team row for a revoked code too; `delete_team` checks the role before the lock (M9); "Two players have number 7" also for three; the export warning shows for a single clean team; a failing photo download is retried every cycle | left; listed here                                                                                                                                   |
+
+New tests for these: `auditReview.test.ts` (8 cases), `syncMerge.test.ts` (5 cases),
+`importShared.test.tsx` (3 cases), `rls.sql` T30 (the member triggers).
+
+**Verified by the reviewers** (not repeated above): the migration closes all three parts of H1
+in two-session runs (the old schema lets the demoted manager back in, the new one answers
+`42501` / `VL002`); owner, `security definer`, `search_path` and grants of the replaced
+functions are unchanged; the wrapper of H7 matches how auth-js calls `fetch`, causes no refresh
+loop (the same retry rhythm as a plain 503) and still lets a real "signed out" answer through;
+a local-only device makes no store write and no call at start.
+
+**Final numbers.** `npm run check`: green, **2255 tests in 175 suites** (2173 in 168 before the audit);
+`src/domain` at 100 %; web export succeeds; CI on the PR green.
+
+**Last run.** _Pending when this was committed: the full `rls.sql` on the final schema (both
+migrations)._
+
 ### Should 10.0.1 be released?
 
-**Yes.** The database fix (H1) is live for every app version already. The other ten fixes are in
+**Yes.** The database fixes (H1, and deleting users in the dashboard) are live for every app
+version already. The other ten fixes are in
 the app and reach users only with a new build. C1 alone justifies it: on 10.0.0, "delete my
 profile → restore my backup → sign in again" deletes a shared team's newer data for every
 member, and H3 / H8 / H9 / H10 are further ways to lose shared data. H7 costs you one sign-in
@@ -775,7 +825,3 @@ email per device each time the project pauses. Nothing in the fixes changes stor
 10.0.0 → 10.0.1 is a plain update (and going back would work too). Not done here, as asked:
 no version bump, no APK. To release: bump `app.json` + `package.json` to 10.0.1, add the version
 to `docs/README_LEGACY.md` and the README's "What's new", then HANDOFF §5.
-
-### After the fixes
-
-_Filled in when the post-migration test run and the two independent reviews have reported._
