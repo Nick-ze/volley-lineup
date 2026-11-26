@@ -76,7 +76,8 @@ export function DownloadPanel({ teams, loading, loadError, reload }: DownloadPan
         {teams.map((c) => (
           <CheckRow
             key={c.teamId}
-            label={c.name}
+            // v10 audit L22: the team record hasn't arrived in the cloud yet.
+            label={c.name || s.download.unnamed}
             detail={t.account.screen.roles[c.role]}
             checked={!unchecked.has(c.teamId)}
             onToggle={() => toggle(c.teamId)}

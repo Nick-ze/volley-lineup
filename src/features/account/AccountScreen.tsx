@@ -26,7 +26,7 @@ export function AccountScreen() {
   const router = useRouter();
   useTourPage('account');
   const link = useAccountLink();
-  const { pending } = useSyncStatus();
+  const { pending, error } = useSyncStatus();
   const { ask, dialogProps } = useConfirm();
   const [deleted, setDeleted] = useState(false);
   const notice = (
@@ -41,7 +41,14 @@ export function AccountScreen() {
         {notice}
         <Section
           title={t.account.signIn.title}
-          hint={link.kind === 'signedOut' ? s.signedOut : undefined}
+          hint={
+            link.kind !== 'signedOut'
+              ? undefined
+              : // v10 audit L23: a session the server ended says so here too.
+                error === 'signedOut'
+                ? t.sync.errors.signedOut
+                : s.signedOut
+          }
         >
           <SignedOutPanel link={link} testID="account-sign-in" />
         </Section>

@@ -110,7 +110,7 @@ describe('deleting a shared team as a manager', () => {
     failWith(sync.deleteTeamEverywhere, 'offline');
     await openDelete();
     await press(s.deleteEverywhereLabel(NAME));
-    expect(await screen.findByText(s.errors.offline)).toBeTruthy();
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
     expect(teamIds()).toEqual(['team1']);
     expect(sync.unlinkTeam).not.toHaveBeenCalled();
     // Cancel closes the dialog, the team stays.
@@ -144,12 +144,12 @@ describe('deleting a shared team as a player', () => {
   });
 
   it.each<[SyncErrorCode, string]>([
-    ['lastManager', s.errors.lastManager],
-    ['lastMember', s.errors.lastMember],
-    ['forbidden', s.errors.forbidden],
-    ['signedOut', s.errors.signIn],
-    ['notSignedIn', s.errors.signIn],
-    ['unknown', s.errors.unknown],
+    ['lastManager', t.sync.errors.lastManager],
+    ['lastMember', t.sync.errors.lastMember],
+    ['forbidden', t.sync.errors.forbidden],
+    ['signedOut', t.sync.errors.signedOut],
+    ['notSignedIn', t.sync.errors.notSignedIn],
+    ['unknown', t.sync.errors.unknown],
   ])('a failed leave (%s) shows its reason and keeps the team', async (error, text) => {
     failWith(sync.leaveTeam, error);
     await openDelete();

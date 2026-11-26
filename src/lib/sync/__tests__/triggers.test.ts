@@ -197,6 +197,41 @@ describe('a signed-in device with a shared team', () => {
     });
   });
 
+  it('a stored session of another account, whose sign-in never linked it, is signed out at start (audit M17)', async () => {
+    const { cloud, d } = await started();
+    // The sign-in screen closed on the "switch account" question: Ben's session, Anna's link.
+    d.backend.signInAs('ben@example.test');
+    d.runtime = { ...d.runtime, session: null };
+    const before = cloud.calls.length;
+    await d.act(async (engine) => {
+      engine.setSession(null);
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(5000);
+      // Signed out, and nothing was pulled or pushed under Ben.
+      expect(cloud.calls.slice(before)).toEqual(['signOut']);
+      expect(useSyncRuntime.getState()).toMatchObject({ session: null, restoring: false });
+      expect(await d.backend.getSession()).toBeNull();
+      stop();
+    });
+    // Anna's link and team stay: signing in as Anna again syncs them.
+    expect(d.data.sync.account?.email).toBe('anna@example.test');
+    expect(d.data.sync.teams.t1).toBeDefined();
+  });
+
+  it('a stored session of another account is kept when the old account has no teams here', async () => {
+    const { d } = await started();
+    d.backend.signInAs('ben@example.test');
+    d.runtime = { ...d.runtime, session: null };
+    await d.act(async (engine) => {
+      useAppStore.setState((st) => ({ sync: { ...st.sync, teams: {} } }));
+      engine.setSession(null);
+      const stop = engine.start();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(useSyncRuntime.getState().session?.email).toBe('ben@example.test');
+      stop();
+    });
+  });
+
   it('says "restoring" from start until the stored session is read (offline: until online)', async () => {
     const { d } = await started();
     d.runtime = { ...d.runtime, session: null };

@@ -63,6 +63,21 @@ describe('joining with a code', () => {
     expect(records(b)).toEqual(records(a));
   });
 
+  it('a single-use manager code entered twice answers "joined" again (audit L11)', async () => {
+    const { cloud, b, joined, invite } = await shared('manager');
+    expect(joined).toEqual({ ok: true, value: { teamId: T1, role: 'manager', name: NAME } });
+    const calls = cloud.calls.filter((c) => c === 'joinTeam').length;
+    expect(await b.act((e) => joinTeam(e, invite.code))).toEqual(joined);
+    expect(cloud.calls.filter((c) => c === 'joinTeam')).toHaveLength(calls);
+    // Another account on the same device still gets the server's answer: the code is used.
+    await b.act((e) => e.signOut());
+    await b.signIn('carla@example.test');
+    expect(await b.act((e) => joinTeam(e, invite.code))).toEqual({
+      ok: false,
+      error: 'inviteInvalid',
+    });
+  });
+
   it('a wrong code is inviteInvalid; signed out it is notSignedIn without a call', async () => {
     const { cloud, b } = await shared('player');
     expect(await b.act((e) => joinTeam(e, 'AAAAAAAAAA'))).toEqual({

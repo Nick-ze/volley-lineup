@@ -6,7 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 import { keepSessionOnOutage } from '../authFetch';
-import { toSyncError } from '../errors';
+import { requestCodeError, toSyncError } from '../errors';
 
 const AUTH = 'https://test.supabase.co/auth/v1';
 const REFRESH = `${AUTH}/token?grant_type=refresh_token`;
@@ -24,7 +24,8 @@ describe('keepSessionOnOutage', () => {
   it('turns an outage answer of the auth API into a network error', async () => {
     for (const status of [500, 503, 540, 599]) {
       await expect(call(REFRESH, status)).rejects.toThrow(TypeError);
-      await expect(call(`${AUTH}/otp`, status)).rejects.toThrow(TypeError);
+      // A plain 500 on a code request is the mail server failing (v10 audit M13, next test).
+      if (status !== 500) await expect(call(`${AUTH}/otp`, status)).rejects.toThrow(TypeError);
     }
     const error = await call(REFRESH, 540).catch((e: unknown) => e);
     expect(toSyncError(error)).toBe('offline');
@@ -36,6 +37,13 @@ describe('keepSessionOnOutage', () => {
     await expect(call(new Request(REFRESH, { method: 'POST' }), 429)).rejects.toThrow(TypeError);
     expect((await call(`${AUTH}/otp`, 429)).status).toBe(429);
     expect((await call(`${AUTH}/verify`, 429)).status).toBe(429);
+  });
+
+  it('passes a code request’s plain 500 through: the email couldn’t be sent (audit M13)', async () => {
+    expect((await call(`${AUTH}/otp`, 500)).status).toBe(500);
+    expect((await call(`${AUTH}/otp?redirect_to=x`, 500)).status).toBe(500);
+    await expect(call(`${AUTH}/otp`, 540)).rejects.toThrow(TypeError);
+    await expect(call(`${AUTH}/verify`, 500)).rejects.toThrow(TypeError);
   });
 
   it('passes everything else through: real auth answers and the other APIs', async () => {
@@ -131,5 +139,40 @@ describe('with the real supabase-js client', () => {
     const refused = () => json(400, { code: 'refresh_token_not_found', message: 'Invalid' });
     const { stored } = await getSession(refused, true);
     expect(stored).toBe(false);
+  });
+
+  /** The error of a code request whose server answers with `response` (audit M13). */
+  async function requestCode(response: () => Response) {
+    const client = createClient('https://test.supabase.co', 'sb_publishable_x', {
+      auth: { storage, storageKey: KEY, persistSession: true, detectSessionInUrl: false },
+      global: { fetch: keepSessionOnOutage(answering(response)) },
+    });
+    const { error } = await client.auth.signInWithOtp({ email: 'anna@example.test' });
+    return toSyncError(requestCodeError(error));
+  }
+
+  it('a code request the mail server couldn’t send reads mailFailed, not offline (M13)', async () => {
+    const failed = () =>
+      json(500, {
+        code: 500,
+        error_code: 'unexpected_failure',
+        msg: 'Error sending magic link email',
+      });
+    expect(await requestCode(failed)).toBe('mailFailed');
+    // A paused project or a gateway error is still "offline".
+    expect(await requestCode(() => json(540, { message: 'paused' }))).toBe('offline');
+    expect(await requestCode(() => json(503, {}))).toBe('offline');
+  });
+
+  it.each([
+    ['email_address_invalid', 400],
+    ['email_address_not_authorized', 400],
+    ['signup_disabled', 422],
+    ['email_provider_disabled', 422],
+    ['validation_failed', 400],
+  ])('a refused address (%s) reads emailRejected (M13)', async (code, status) => {
+    expect(await requestCode(() => json(status, { error_code: code, msg: 'refused' }))).toBe(
+      'emailRejected',
+    );
   });
 });

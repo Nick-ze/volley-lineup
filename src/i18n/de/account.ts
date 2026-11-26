@@ -36,20 +36,6 @@ export const account: Strings['account'] = {
       ' Weiter?',
     switchContinue: 'Weiter',
   },
-  errors: {
-    offline: 'Keine Verbindung. Prüfe dein Internet und versuch es nochmal.',
-    forbidden: 'Das darfst du nicht.',
-    lastManager: 'Mach zuerst jemand anderen zum Trainer.',
-    lastMember: 'Du bist das letzte Mitglied dieses Teams.',
-    inviteInvalid: 'Dieser Einladungscode ist falsch oder abgelaufen.',
-    notSignedIn: 'Melde dich zuerst an.',
-    signedOut: 'Du wurdest abgemeldet. Melde dich nochmal an.',
-    invalidCode:
-      'Falscher oder abgelaufener Code. Prüfe die E-Mail oder lass dir einen neuen Code schicken.',
-    rateLimited: 'Zu viele Versuche. Warte kurz und versuch es nochmal.',
-    tooMany: 'Zu viele auf einmal. Versuch es mit weniger.',
-    unknown: 'Etwas ist schiefgelaufen. Versuch es nochmal.',
-  },
   profileSection: {
     title: 'Cloud-Sync',
     signedOut:
@@ -57,6 +43,7 @@ export const account: Strings['account'] = {
     signIn: 'Anmelden',
     signInLabel: 'Anmelden, um deine Teams zu synchronisieren',
     signedIn: (email) => `Angemeldet als ${email}`,
+    restoring: 'Anmeldung wird geprüft …',
     open: 'Cloud-Sync öffnen',
     openLabel: 'Cloud-Sync öffnen: Sync-Status und geteilte Teams',
     otherProfile: (email, profile) =>
@@ -116,6 +103,7 @@ export const account: Strings['account'] = {
         failed: 'konnte nicht hochgeladen werden',
       },
       result: (team, result) => `${team}: ${result}`,
+      failedBecause: (team, reason) => `${team}: konnte nicht hochgeladen werden. ${reason}`,
     },
     download: {
       title: 'Aus der Cloud herunterladen',
@@ -123,6 +111,7 @@ export const account: Strings['account'] = {
       empty: 'Keine weiteren Teams in der Cloud.',
       button: 'Herunterladen',
       done: (n) => `${teams(n)} heruntergeladen.`,
+      unnamed: 'Team noch ohne Namen',
     },
   },
   signOutNote,

@@ -13,7 +13,7 @@ import type { MatchHold } from '@/domain/types';
 
 import type { BackendSession, SyncBackend } from './backend';
 import { hasStoredSession, whenClientCreated } from './client';
-import { BackendError, backendError } from './errors';
+import { BackendError, backendError, requestCodeError } from './errors';
 import { blobToBytes, bytesToDataUri, dataUriToBytes } from './photoData';
 import type { Invite } from './types';
 
@@ -25,9 +25,27 @@ interface Response {
   status?: number;
 }
 
-/** The data of a supabase-js response, or a `BackendError`. */
-async function data(request: PromiseLike<Response>): Promise<unknown> {
-  const { data: value, error, status } = await request;
+/**
+ * PostgREST refused the access token: expired (PGRST301) or its claims are not valid yet
+ * (PGRST303). With a device clock more than ~90 s slow, supabase-js still thinks the token is
+ * fresh, so the session is fine: a refresh gets a token by the server's clock (v10 audit L15).
+ */
+const tokenRefused = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  ['PGRST301', 'PGRST303'].includes(String((error as { code?: unknown }).code));
+
+/**
+ * The data of a supabase-js response, or a `BackendError`. `make` starts the request; one that
+ * was refused for its token is sent again once after `refresh` worked (nothing ran on the server).
+ */
+async function data(
+  make: () => PromiseLike<Response>,
+  refresh?: () => Promise<boolean>,
+): Promise<unknown> {
+  let response = await make();
+  if (refresh && tokenRefused(response.error) && (await refresh())) response = await make();
+  const { data: value, error, status } = response;
   if (error) {
     const fields = typeof error === 'object' ? error : { message: String(error) };
     throw backendError(status === undefined ? fields : { status, ...fields });
@@ -83,7 +101,17 @@ const sessionOf = (user: { id: string; email?: string } | null | undefined) =>
   user ? { userId: user.id, email: user.email ?? '' } : null;
 
 export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend {
-  const rpc = (fn: string, args: Record<string, unknown> = {}) => data(client().rpc(fn, args));
+  const refresh = async (): Promise<boolean> => {
+    try {
+      const { error } = await client().auth.refreshSession();
+      return !error;
+    } catch {
+      return false;
+    }
+  };
+  const query = (make: () => PromiseLike<Response>) => data(make, refresh);
+  const rpc = (fn: string, args: Record<string, unknown> = {}) =>
+    query(() => client().rpc(fn, args));
   const bucket = () => client().storage.from(PHOTO_BUCKET);
 
   return {
@@ -119,7 +147,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
         email,
         options: { shouldCreateUser: true },
       });
-      if (error) throw backendError(error);
+      if (error) throw requestCodeError(error);
     },
 
     async verifyCode(email, code): Promise<BackendSession> {
@@ -141,10 +169,13 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async memberships() {
-      const { data: auth } = await client().auth.getSession();
+      // v10 audit M11: an expired token that can't be refreshed offline is "offline", not
+      // "sign in first".
+      const { data: auth, error } = await client().auth.getSession();
+      if (error) throw backendError(error);
       const userId = auth.session?.user.id;
       if (!userId) throw new BackendError('notSignedIn');
-      const rows = await data(
+      const rows = await query(() =>
         client().from('team_members').select('team_id, role').eq('user_id', userId),
       );
       return parse(z.array(z.object({ team_id: z.string(), role })), rows).map((r) => ({
@@ -155,7 +186,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
 
     async teamNames(teamIds) {
       if (teamIds.length === 0) return {};
-      const rows = await data(
+      const rows = await query(() =>
         client()
           .from('team_records')
           .select('team_id, name:payload->>name')
@@ -212,7 +243,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async listMembers(teamId) {
-      const rows = await data(
+      const rows = await query(() =>
         client()
           .from('team_members')
           .select('user_id, display_name, role, joined_at')
@@ -239,7 +270,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     },
 
     async listInvites(teamId) {
-      const rows = await data(
+      const rows = await query(() =>
         client()
           .from('invites')
           .select('id, code, role, expires_at, revoked_at, uses, max_uses')
@@ -270,7 +301,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
 
     async listHolds(teamIds): Promise<MatchHold[]> {
       if (teamIds.length === 0) return [];
-      const rows = await data(
+      const rows = await query(() =>
         client()
           .from('match_holds')
           .select('team_id, match_id, user_id, device_id, holder_name, held_until')
@@ -346,7 +377,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     async listPhotos(teamId) {
       const names: string[] = [];
       for (let offset = 0; ; offset += 1000) {
-        const rows = await data(bucket().list(teamId, { limit: 1000, offset }));
+        const rows = await query(() => bucket().list(teamId, { limit: 1000, offset }));
         const page = parse(z.array(z.object({ name: z.string() })), rows);
         names.push(...page.map((r) => r.name).filter((n) => !n.startsWith('.')));
         if (page.length < 1000) return names;
@@ -356,7 +387,7 @@ export function createSupabaseBackend(client: () => SupabaseClient): SyncBackend
     async removePhotos(teamId, photoIds) {
       for (let i = 0; i < photoIds.length; i += 1000) {
         const paths = photoIds.slice(i, i + 1000).map((id) => `${teamId}/${id}`);
-        await data(bucket().remove(paths));
+        await query(() => bucket().remove(paths));
       }
     },
 

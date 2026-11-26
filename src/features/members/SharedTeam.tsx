@@ -65,7 +65,7 @@ export function SharedTeam({ teamId, teamName, cachedRole }: SharedTeamProps) {
         />
       ))}
       {needsSignIn(state.loadError) ? (
-        <SignInFirst message={t.members.errors[state.loadError ?? 'notSignedIn']} />
+        <SignInFirst message={t.sync.errors[state.loadError ?? 'notSignedIn']} />
       ) : (
         <SyncErrorNote error={state.loadError} />
       )}

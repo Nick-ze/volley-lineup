@@ -1,5 +1,27 @@
+import type { SyncErrorCode } from '@/domain/types';
+
 /** v10: sync status and view-only reasons (shared by the account screen and every feature). */
 export const sync = {
+  /**
+   * v10 audit M16: every error a sync command can return, as one short message for every screen
+   * (sign-in, cloud sync, members, join, deleting a shared team).
+   */
+  errors: {
+    offline: 'No connection. Try again when you’re online.',
+    forbidden: 'You’re not allowed to do that.',
+    lastManager: 'Make someone else manager first.',
+    lastMember: 'You’re the only member: delete the team for everyone instead.',
+    inviteInvalid: 'This invite code is wrong, has expired or was already used.',
+    notSignedIn: 'Sign in first (Profile → Cloud sync).',
+    signedOut: 'You were signed out. Sign in again.',
+    invalidCode: 'Wrong or expired code. Check the email or send a new code.',
+    rateLimited: 'Too many tries. Wait a moment and try again.',
+    tooMany:
+      'Limit reached: at most 10 teams per account, and 20 open invites and 20 MB of data per team.',
+    mailFailed: 'The email with the code couldn’t be sent. Try again later.',
+    emailRejected: 'This email address can’t be used to sign in. Check it or use another one.',
+    unknown: 'Something went wrong. Try again.',
+  } satisfies Record<SyncErrorCode, string>,
   status: {
     off: 'Not signed in',
     /** Signed in, but no team of the account is shared on this device. */
@@ -24,8 +46,12 @@ export const sync = {
     label: (text: string) => `${text}: open cloud sync`,
   },
   notices: {
+    /**
+     * The server can't tell a removal from "delete for everyone" (DECISIONS #284), so the text
+     * names both (v10 audit L24).
+     */
     removed: (team: string) =>
-      `You’re no longer a member of ${team}. It stays on this device as a local copy.`,
+      `You’re no longer a member of ${team}: you were removed or the team was deleted. It stays on this device as a local copy.`,
     deleted: (team: string) =>
       `${team} was deleted from the cloud. It stays on this device as a local copy.`,
     demoted: (team: string, undone: number) =>
@@ -63,14 +89,6 @@ export const sync = {
     leaveLabel: (team: string) => `Leave team: ${team}`,
     cancel: 'Cancel',
     cancelLabel: 'Cancel: keep the team',
-    errors: {
-      offline: 'Needs a connection. Try again when you’re online.',
-      lastManager: 'Make someone else manager first.',
-      lastMember: 'You’re the only member: delete the team for everyone instead.',
-      forbidden: 'Only managers can do that.',
-      signIn: 'Sign in first (Profile → Cloud sync).',
-      unknown: 'That didn’t work. Try again.',
-    },
   },
   import: {
     shared: (names: string[]) => `Shared teams: ${names.join(', ')} (changes sync to all members).`,

@@ -6,7 +6,14 @@ import { Button, Screen, TextField } from '@/components';
 import { formatInviteCode, normalizeInviteCode } from '@/domain/invites';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { selectCurrentProfile, useAppStore, useSession, useTeam } from '@/store';
+import {
+  selectCurrentProfile,
+  useAppStore,
+  useSession,
+  useSessionRestoring,
+  useSyncAccount,
+  useTeam,
+} from '@/store';
 
 import { needsSignIn, SignInFirst } from './MembersNotes';
 import { useMembersStyles } from './membersStyles';
@@ -29,6 +36,9 @@ export function JoinScreen() {
   const params = useLocalSearchParams<{ code?: string }>();
   const profile = useAppStore(selectCurrentProfile);
   const session = useSession();
+  // v10 audit M14: on a cold start the stored session is read first; not "Sign in first" yet.
+  const restoring = useSessionRestoring();
+  const account = useSyncAccount();
   const [code, setCode] = useState(() => initialCode(params.code));
   const [codeParam, setCodeParam] = useState(params.code);
   const { busy, error, joined, join, clearError, reset } = useJoin();
@@ -44,8 +54,9 @@ export function JoinScreen() {
   const s = t.members.join;
   // Signed out (or the server says so): "Sign in first" instead of "Join".
   const signIn = !session || needsSignIn(error);
+  const waiting = !session && restoring && account !== null;
   const errorText =
-    error === 'format' ? s.badFormat : error && !signIn ? t.members.errors[error] : undefined;
+    error === 'format' ? s.badFormat : error && !signIn ? t.sync.errors[error] : undefined;
   return (
     <Screen>
       {joined ? (
@@ -71,8 +82,12 @@ export function JoinScreen() {
             onSubmitEditing={signIn ? undefined : () => void join(code)}
             testID="join-code"
           />
-          {signIn ? (
-            <SignInFirst message={needsSignIn(error) ? t.members.errors[error] : s.signInNeeded} />
+          {waiting ? (
+            <Text style={styles.text} testID="account-restoring">
+              {t.account.profileSection.restoring}
+            </Text>
+          ) : signIn ? (
+            <SignInFirst message={needsSignIn(error) ? t.sync.errors[error] : s.signInNeeded} />
           ) : (
             <Button
               label={busy ? s.joining : s.submit}

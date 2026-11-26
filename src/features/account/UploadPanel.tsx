@@ -15,6 +15,8 @@ import { ErrorText } from './ErrorText';
 interface Outcome {
   name: string;
   result: UploadResult;
+  /** Why a team failed (v10 audit M16). */
+  error?: SyncErrorCode;
 }
 
 /**
@@ -54,7 +56,11 @@ export function UploadPanel({ teams }: { teams: Team[] }) {
     const nameOf = (id: string, i: number) =>
       names.get(id) ?? stored.find((team) => team.id === id)?.name ?? names.get(ids[i] ?? '');
     setOutcomes(
-      result.value.map((r, i) => ({ name: nameOf(r.teamId, i) ?? '', result: r.result })),
+      result.value.map((r, i) => ({
+        name: nameOf(r.teamId, i) ?? '',
+        result: r.result,
+        error: r.result === 'failed' ? r.error : undefined,
+      })),
     );
   };
 
@@ -82,7 +88,9 @@ export function UploadPanel({ teams }: { teams: Team[] }) {
       <ErrorText error={error} testID="upload-error" />
       {outcomes.map((o, i) => (
         <Text key={i} style={styles.result} accessibilityLiveRegion="polite">
-          {s.result(o.name, s.results[o.result])}
+          {o.error
+            ? s.failedBecause(o.name, t.sync.errors[o.error])
+            : s.result(o.name, s.results[o.result])}
         </Text>
       ))}
     </Section>

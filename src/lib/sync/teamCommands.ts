@@ -225,10 +225,24 @@ export function unlinkTeam(engine: SyncEngine, teamId: string): void {
 }
 
 /** Joins a team with an invite code; the team downloads in the background. */
+/**
+ * Codes this app run joined with, per engine and account (v10 audit L11): a double submit of a
+ * single-use manager code would otherwise read "invalid code" although the first join worked.
+ */
+const joinedCodes = new WeakMap<SyncEngine, Map<string, Joined & { userId: string }>>();
+
 export const joinTeam = (engine: SyncEngine, code: string): Promise<SyncResult<Joined>> =>
   attempt(() =>
     engine.exclusive(async () => {
       const session = requireSession(engine);
+      const known = joinedCodes.get(engine)?.get(code);
+      if (known && known.userId === session.userId) {
+        const meta = appState().sync.teams[known.teamId];
+        if (meta?.userId === session.userId) {
+          const { userId: _user, ...again } = known;
+          return { ...again, role: meta.role };
+        }
+      }
       const joined = await engine.backend.joinTeam(code, displayName());
       // The name is a nicety: a failure here doesn't undo the join.
       const names = await engine.backend
@@ -237,6 +251,10 @@ export const joinTeam = (engine: SyncEngine, code: string): Promise<SyncResult<J
       linkCloudTeam(engine, session.userId, joined.teamId, joined.role);
       engine.rewire();
       engine.kick();
-      return { ...joined, name: names[joined.teamId] ?? null };
+      const result = { ...joined, name: names[joined.teamId] ?? null };
+      const codes = joinedCodes.get(engine) ?? new Map<string, Joined & { userId: string }>();
+      codes.set(code, { ...result, userId: session.userId });
+      joinedCodes.set(engine, codes);
+      return result;
     }),
   );

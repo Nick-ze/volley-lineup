@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { codeInput, CODE_LENGTH, isPlausibleEmail } from '@/domain/syncSetup';
 import type { SyncErrorCode } from '@/domain/types';
@@ -32,6 +32,18 @@ export function useSignIn() {
   /** Whether the code step was reached by sending an email now (not by "I already have a code"). */
   const [sent, setSent] = useState(false);
   const resend = useResendTimer();
+  // v10 audit M17: the screen closing during the code check or on the "switch account" question
+  // must not leave the new account's session behind without a link (the old account's teams
+  // would silently stop syncing): sign out then.
+  const mounted = useRef(true);
+  const unanswered = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (unanswered.current) void signOut();
+    };
+  }, []);
 
   const send = async () => {
     // A second Enter / tap while a request is under way sends nothing.
@@ -86,16 +98,24 @@ export function useSignIn() {
       return;
     }
     setError(null);
-    if (result.value.switchedFrom) setSwitchedFrom(result.value.switchedFrom);
-    else finish();
+    if (result.value.switchedFrom) {
+      if (!mounted.current) {
+        void signOut();
+        return;
+      }
+      unanswered.current = true;
+      setSwitchedFrom(result.value.switchedFrom);
+    } else finish();
   };
 
   const confirmSwitch = () => {
+    unanswered.current = false;
     setSwitchedFrom(null);
     finish();
   };
 
   const cancelSwitch = () => {
+    unanswered.current = false;
     setSwitchedFrom(null);
     setCodeText('');
     setStep('email');

@@ -65,6 +65,19 @@ describe('accountLink', () => {
     expect(accountLink(other, account, 'p1', profiles)).toEqual({ kind: 'signedOut' });
   });
 
+  it('is restoring while the stored session of this profile’s account is read (audit M14)', () => {
+    expect(accountLink(null, account, 'p1', profiles, true)).toEqual({ kind: 'restoring' });
+    // Signed out as before: no account, another profile's, or the session is already there.
+    expect(accountLink(null, null, 'p1', profiles, true)).toEqual({ kind: 'signedOut' });
+    expect(accountLink(session, account, 'p1', profiles, true)).toEqual({
+      kind: 'signedIn',
+      email: 'coach@example.com',
+    });
+    expect(accountLink(null, account, 'p2', profiles, true)).toMatchObject({
+      kind: 'otherProfile',
+    });
+  });
+
   it('names the other profile the account is linked to', () => {
     expect(accountLink(null, account, 'p2', profiles)).toEqual({
       kind: 'otherProfile',

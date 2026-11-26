@@ -1,5 +1,4 @@
 /** v10: account, sign-in with an email code, cloud teams (upload / download), delete account. */
-import type { SyncErrorCode } from '@/domain/types';
 
 const changes = (n: number) => (n === 1 ? '1 change' : `${n} changes`);
 const teams = (n: number) => (n === 1 ? '1 team' : `${n} teams`);
@@ -35,20 +34,6 @@ export const account = {
       ' Continue?',
     switchContinue: 'Continue',
   },
-  /** Every error a sync command can return, as a short message. */
-  errors: {
-    offline: 'No connection. Check your internet and try again.',
-    forbidden: 'You’re not allowed to do this.',
-    lastManager: 'Make someone else manager first.',
-    lastMember: 'You’re the last member of this team.',
-    inviteInvalid: 'This invite code is wrong or has expired.',
-    notSignedIn: 'Sign in first.',
-    signedOut: 'You were signed out. Sign in again.',
-    invalidCode: 'Wrong or expired code. Check the email or send a new code.',
-    rateLimited: 'Too many tries. Wait a moment and try again.',
-    tooMany: 'Too many at once. Try again with fewer.',
-    unknown: 'Something went wrong. Try again.',
-  } satisfies Record<SyncErrorCode, string>,
   /** The section on the Profile tab. */
   profileSection: {
     title: 'Cloud sync',
@@ -56,6 +41,8 @@ export const account = {
     signIn: 'Sign in',
     signInLabel: 'Sign in to sync your teams',
     signedIn: (email: string) => `Signed in as ${email}`,
+    /** v10 audit M14: the stored session is still being read (cold start; offline until online). */
+    restoring: 'Checking your sign-in…',
     open: 'Open cloud sync',
     openLabel: 'Open cloud sync: sync status and shared teams',
     otherProfile: (email: string, profile: string) =>
@@ -115,6 +102,8 @@ export const account = {
         failed: 'couldn’t upload',
       },
       result: (team: string, result: string) => `${team}: ${result}`,
+      /** v10 audit M16: a failed team with its reason. */
+      failedBecause: (team: string, reason: string) => `${team}: couldn’t upload. ${reason}`,
     },
     download: {
       title: 'Download from the cloud',
@@ -122,6 +111,8 @@ export const account = {
       empty: 'No other teams in the cloud.',
       button: 'Download',
       done: (n: number) => `${teams(n)} downloaded.`,
+      /** v10 audit L22: a cloud team whose name hasn't been synced yet. */
+      unnamed: 'Team without a name yet',
     },
   },
   /** Delete all data / delete profile while signed in. */

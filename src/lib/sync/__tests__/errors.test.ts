@@ -1,4 +1,10 @@
-import { BackendError, backendError, isPhotosRemain, toSyncError } from '../errors';
+import {
+  BackendError,
+  backendError,
+  isPhotosRemain,
+  requestCodeError,
+  toSyncError,
+} from '../errors';
 
 describe('toSyncError', () => {
   it.each([
@@ -36,6 +42,17 @@ describe('toSyncError', () => {
       { name: 'AuthApiError', message: 'Token has expired or is invalid', status: 400 },
       'invalidCode',
     ],
+    // v10 audit L16: an old auth server's wrong code (403, no error code) is a wrong code.
+    [
+      { name: 'AuthApiError', message: 'Token has expired or is invalid', status: 403 },
+      'invalidCode',
+    ],
+    [
+      { name: 'AuthApiError', message: 'Token has expired or is invalid', status: 401 },
+      'invalidCode',
+    ],
+    [{ code: 'email_address_invalid', status: 400 }, 'emailRejected'],
+    [{ code: 'signup_disabled', status: 422 }, 'emailRejected'],
     [{ code: 'over_email_send_rate_limit', status: 429 }, 'rateLimited'],
     [{ status: 429 }, 'rateLimited'],
     [{ code: 'refresh_token_not_found', status: 400 }, 'signedOut'],
@@ -59,5 +76,22 @@ describe('toSyncError', () => {
     expect(isPhotosRemain(wrapped)).toBe(true);
     expect(isPhotosRemain(new Error('x'))).toBe(false);
     expect(backendError('oops')).toMatchObject({ code: 'unknown', raw: '' });
+  });
+});
+
+describe('requestCodeError (audit M13)', () => {
+  it.each([
+    [
+      { name: 'AuthRetryableFetchError', message: 'Error sending magic link email', status: 500 },
+      'mailFailed',
+    ],
+    [{ name: 'AuthApiError', code: 'unexpected_failure', status: 500 }, 'mailFailed'],
+    [{ name: 'AuthApiError', code: 'validation_failed', status: 400 }, 'emailRejected'],
+    [{ name: 'AuthRetryableFetchError', status: 0 }, 'offline'],
+    [{ name: 'AuthRetryableFetchError', status: 503 }, 'offline'],
+    [{ code: 'over_email_send_rate_limit', status: 429 }, 'rateLimited'],
+    [null, 'unknown'],
+  ])('maps a code request’s error %j', (error, code) => {
+    expect(requestCodeError(error).code).toBe(code);
   });
 });

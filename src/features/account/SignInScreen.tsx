@@ -24,6 +24,17 @@ export function SignInScreen() {
   const link = useAccountLink();
   const form = useSignIn();
 
+  if (link.kind === 'restoring') {
+    // v10 audit M14: the stored session isn't read yet; a code request now would be needless.
+    return (
+      <Screen testID="sign-in-screen">
+        <Text style={styles.text} testID="account-restoring">
+          {t.account.profileSection.restoring}
+        </Text>
+      </Screen>
+    );
+  }
+
   if (link.kind === 'noProfile' || link.kind === 'otherProfile') {
     return (
       <Screen testID="sign-in-screen">
