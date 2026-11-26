@@ -6,7 +6,7 @@
  * URIs in their own storage (one key per photo, `src/store/photoStore.ts`), so the main store
  * stays small. Profiles, players and teams only hold a `photoId`.
  */
-import type { ManagerProfile, Photo, Player, Team } from './types';
+import type { ManagerProfile, Photo, Player, SyncData, Team } from './types';
 
 /** Longest side of a stored picture, in px. */
 export const PHOTO_SIZE = 256;
@@ -25,6 +25,20 @@ const DATA_URI = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 /** True for a small base64 JPEG / PNG / WebP data URI. */
 export function isPhotoDataUri(value: string): boolean {
   return value.length <= MAX_PHOTO_DATA_LENGTH && DATA_URI.test(value);
+}
+
+/**
+ * v10: true when `photoId` is a photo of the shared team `teamId` that its cloud folder has
+ * (`sync.teams[teamId].photos`, stored together with the team's records). Such a photo may not
+ * be on the device yet (a download that failed, also before the last restart): its `photoId`
+ * must stay — clearing it on a manager device would be pushed to every member as "no photo".
+ */
+export function isCloudPhoto(
+  sync: Pick<SyncData, 'teams'>,
+  teamId: string,
+  photoId: string | undefined,
+): boolean {
+  return photoId !== undefined && (sync.teams[teamId]?.photos.includes(photoId) ?? false);
 }
 
 /** The photo ids that profiles, players and teams refer to. */

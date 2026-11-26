@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 import type { TransferData } from '@/domain/exportSchema';
-import { referencedPhotoIds } from '@/domain/photos';
+import { isCloudPhoto, referencedPhotoIds } from '@/domain/photos';
 import type { Photo } from '@/domain/types';
 
 import { selectAppData, useAppStore } from './appStore';
@@ -93,7 +93,8 @@ export async function putPhotos(list: readonly Photo[]): Promise<void> {
 /**
  * v10: photo ids that shared teams refer to but that haven't been downloaded yet. The prune
  * leaves those `photoId`s alone (otherwise a manager device would push "no photo" to everyone).
- * Set by the sync engine; replaced as a whole on every call.
+ * Set by the sync engine; replaced as a whole on every call. In memory only: after a restart the
+ * prune relies on the stored list of the team's cloud photos instead (`isCloudPhoto`).
  */
 let pendingRemotePhotos: ReadonlySet<string> = new Set();
 
@@ -121,9 +122,15 @@ export async function prunePhotos(): Promise<void> {
   if (!hydrated || !app.hydrated) return;
   const dangling = (x: { photoId?: string }) =>
     x.photoId !== undefined && !(x.photoId in photos) && !pendingRemotePhotos.has(x.photoId);
+  // v10 audit H3: a shared team's cloud photo that isn't on the device (yet) keeps its `photoId`,
+  // whatever the in-memory download list says (it is empty after a restart).
+  const players = app.players.filter(
+    (p) => dangling(p) && !isCloudPhoto(app.sync, p.teamId, p.photoId),
+  );
+  const teams = app.teams.filter((x) => dangling(x) && !isCloudPhoto(app.sync, x.id, x.photoId));
   for (const p of app.profiles.filter(dangling)) app.updateProfile(p.id, { photoId: undefined });
-  for (const p of app.players.filter(dangling)) app.updatePlayer(p.id, { photoId: undefined });
-  for (const x of app.teams.filter(dangling)) app.updateTeam(x.id, { photoId: undefined });
+  for (const p of players) app.updatePlayer(p.id, { photoId: undefined });
+  for (const x of teams) app.updateTeam(x.id, { photoId: undefined });
   const keep = referencedPhotoIds(app);
   const orphans = Object.keys(photos).filter((id) => !keep.has(id));
   if (orphans.length === 0) return;

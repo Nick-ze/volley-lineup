@@ -30,6 +30,7 @@ import {
   forgetPhotos,
   remotePhotoIds,
   settleDownloads,
+  slicePhotoIds,
   uploadPhotos,
 } from './photoSync';
 import { appState, sliceOf, teamData, transaction, withSlice, withTeamMeta } from './storeOps';
@@ -110,6 +111,19 @@ function mergeInto(
   return { out, data: withSlice(s, teamId, out.slice), changed: out.slice !== slice };
 }
 
+/**
+ * Photo ids the team's records on the device refer to that its cloud folder has (`meta.photos`):
+ * `downloadPhotos` fetches those the device lacks. Derived from the stored state, so a download
+ * that failed before a restart — or a photo that arrived with a refused push's newer row — is
+ * fetched by the next pull (audit H3).
+ */
+function storedCloudPhotos(teamId: string): string[] {
+  const s = appState();
+  const cloud = s.sync.teams[teamId]?.photos ?? [];
+  if (cloud.length === 0) return [];
+  return [...slicePhotoIds(sliceOf(s, teamId))].filter((id) => cloud.includes(id));
+}
+
 /** Pulls and applies everything new of the team (`reset`: from 0, the cloud replaces all). */
 export async function pullTeam(
   core: EngineCore,
@@ -137,7 +151,7 @@ export async function pullTeam(
     if (page.rows.length < PULL_PAGE || top <= after) break;
     after = top;
   }
-  const missing = await downloadPhotos(core, teamId, rows);
+  const missing = await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
   const report: PullReport = { foreign: 0, invalid, present: false };
   const now = isoNow(core.clock);
@@ -237,7 +251,14 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       if (applied.stale.length === 0) {
         return { sync: withTeamMeta(s.sync, teamId, applied.team) };
       }
-      const { out, data } = mergeInto(s, teamId, applied.team, applied.stale, now);
+      // Rows the server kept a newer save of are applied here without a pull: the photos they
+      // point at are in the cloud folder (their writer uploaded them first). Listed in the same
+      // write, the prune keeps those `photoId`s and the next pull downloads them (audit H3).
+      const stale = {
+        ...applied.team,
+        photos: union(applied.team.photos, remotePhotoIds(applied.stale)),
+      };
+      const { out, data } = mergeInto(s, teamId, stale, applied.stale, now);
       return { ...data, sync: withTeamMeta(s.sync, teamId, out.team) };
     });
     photos = [];

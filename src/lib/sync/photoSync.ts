@@ -45,20 +45,21 @@ function publishPending(core: EngineCore): void {
 }
 
 /**
- * Downloads the photos of pulled records (and earlier failures) that the device doesn't have.
- * They stay "pending" until `settleDownloads` (after the records were applied). Returns the ids
- * the cloud doesn't have (not found: e.g. removed by another device meanwhile), so they are no
- * longer counted as uploaded and a manager that has one uploads it again. Rethrows when the
- * connection is gone.
+ * Downloads the photos of pulled records (and earlier failures, and `stored`: cloud photos the
+ * records already on the device refer to) that the device doesn't have. They stay "pending"
+ * until `settleDownloads` (after the records were applied). Returns the ids the cloud doesn't
+ * have (not found: e.g. removed by another device meanwhile), so they are no longer counted as
+ * uploaded and a manager that has one uploads it again. Rethrows when the connection is gone.
  */
 export async function downloadPhotos(
   core: EngineCore,
   teamId: string,
   rows: readonly RemoteRecord[],
+  stored: readonly string[] = [],
 ): Promise<Set<string>> {
   const missing = new Set<string>();
   const pending = core.pendingPhotos.get(teamId) ?? new Set<string>();
-  const wanted = new Set([...remotePhotoIds(rows), ...pending]);
+  const wanted = new Set([...remotePhotoIds(rows), ...pending, ...stored]);
   if (wanted.size === 0) return missing;
   await whenPhotosLoaded();
   core.pendingPhotos.set(teamId, pending);

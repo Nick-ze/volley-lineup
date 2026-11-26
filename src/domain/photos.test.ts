@@ -1,4 +1,5 @@
 import {
+  isCloudPhoto,
   isPhotoDataUri,
   isValidDescription,
   keepReferencedPhotos,
@@ -32,6 +33,32 @@ describe('photo data URIs', () => {
   it('uses 256 px pictures at JPEG quality 0.7', () => {
     expect(PHOTO_SIZE).toBe(256);
     expect(PHOTO_QUALITY).toBe(0.7);
+  });
+});
+
+describe('cloud photos of shared teams', () => {
+  const sync = {
+    teams: {
+      t1: {
+        userId: 'u1',
+        role: 'player' as const,
+        cursor: 5,
+        base: {},
+        edits: {},
+        photos: ['ph1'],
+      },
+    },
+  };
+
+  it('is a cloud photo when the shared team lists it', () => {
+    expect(isCloudPhoto(sync, 't1', 'ph1')).toBe(true);
+  });
+
+  it('is not one for another photo, another team, a local team or no photo', () => {
+    expect(isCloudPhoto(sync, 't1', 'ph2')).toBe(false);
+    expect(isCloudPhoto(sync, 't2', 'ph1')).toBe(false);
+    expect(isCloudPhoto({ teams: {} }, 't1', 'ph1')).toBe(false);
+    expect(isCloudPhoto(sync, 't1', undefined)).toBe(false);
   });
 });
 
