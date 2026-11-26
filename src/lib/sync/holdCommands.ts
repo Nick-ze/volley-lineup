@@ -8,22 +8,24 @@
  * whole set without them. The match stays read-only here (the other device's hold is still in the
  * runtime holds) until that pull has been tried; offline, the take-over is still granted.
  *
+ * A claim that is refused for a match this device was scoring (the 5-minute refresh after
+ * someone took over) yields the match at once (`holdState.ts`, audit M1): from then on this
+ * device doesn't save it to the cloud while the other device's hold lasts. Taking the match back
+ * pulls while it is still yielded, so what the other scorer saved replaces this device's
+ * unsynced changes to it before this device scores again.
+ *
  * Every hold command (claim, take-over, release) runs through `engine.exclusive`, so they reach
  * the server in the order they were called and never between a sync cycle's steps: a release
  * called while a take-over waits behind a cycle can't overtake it and leave a stale hold.
  */
-import type { MatchHold } from '@/domain/types';
 import { useSyncRuntime } from '@/store';
 
 import type { SyncEngine } from './engine';
+import { putHold, removeOwnHold } from './holdState';
 import { attempt, requireSession } from './result';
 import { appState, displayName } from './storeOps';
 import { needsReset, pullTeam } from './teamSync';
 import type { SyncResult } from './types';
-
-function putHold(hold: MatchHold): void {
-  useSyncRuntime.setState((r) => ({ holds: { ...r.holds, [hold.matchId]: hold } }));
-}
 
 /**
  * Brings the team up to date before this device scores, like a cycle's pull (a pending reset
@@ -50,7 +52,7 @@ async function claim(
   const r = await engine.backend.holdMatch(teamId, matchId, deviceId, displayName(), takeOver);
   if (r.granted) {
     if (takeOver) await catchUp(engine, teamId);
-    putHold({
+    putHold(engine, {
       matchId,
       teamId,
       deviceId,
@@ -61,7 +63,7 @@ async function claim(
     return { granted: true };
   }
   const known = useSyncRuntime.getState().holds[matchId];
-  putHold({
+  putHold(engine, {
     matchId,
     teamId,
     // The server doesn't say which device: any other than this one makes the match read-only.
@@ -97,11 +99,7 @@ export async function releaseMatch(
       requireSession(engine);
       const deviceId = appState().sync.deviceId ?? '';
       await engine.backend.releaseMatch(teamId, matchId, deviceId);
-      useSyncRuntime.setState((r) => {
-        if (r.holds[matchId]?.deviceId !== deviceId) return r;
-        const { [matchId]: _released, ...holds } = r.holds;
-        return { holds };
-      });
+      removeOwnHold(engine, matchId, deviceId);
     }),
   );
 }

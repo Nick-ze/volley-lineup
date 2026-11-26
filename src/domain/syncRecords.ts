@@ -95,6 +95,13 @@ export function parseSetRecordId(id: string): { matchId: string; setNumber: SetN
   return { matchId, setNumber: n as SetNumber };
 }
 
+/** The match a record is part of (the match's own record or one of its sets), else null. */
+export function matchOfRecord(kind: RecordKind, id: string): string | null {
+  if (kind === 'match') return id;
+  if (kind === 'set') return parseSetRecordId(id)?.matchId ?? null;
+  return null;
+}
+
 /* ---------------------------------------------------------------- hash */
 
 /** JSON with sorted object keys and `undefined` properties dropped (arrays: `null`). */

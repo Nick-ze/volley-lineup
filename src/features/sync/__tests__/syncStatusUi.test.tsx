@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import type { SyncNotice, SyncPhase, TeamRole } from '@/domain/types';
+import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
 import * as sync from '@/lib/sync';
 import { initialSyncStatus, useAppStore, useSyncRuntime } from '@/store';
@@ -113,6 +114,33 @@ describe('sync notices', () => {
   it('shows nothing without notices', async () => {
     await renderApp('/teams');
     expect(screen.queryByTestId('sync-notices')).toBeNull();
+  });
+
+  it('tells the previous scorer that another device took over (audit M1)', async () => {
+    const taken: SyncNotice = {
+      kind: 'takenOver',
+      teamId: 'e',
+      teamName: 'Echo',
+      holder: 'Anna',
+      undone: 2,
+    };
+    useSyncRuntime.setState({ notices: [taken] });
+    await renderApp('/teams');
+    expect(
+      screen.getByText(
+        'Anna took over scoring a match of Echo. 2 changes made here that hadn’t synced yet were undone.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: t.sync.notices.dismissLabel('Echo') })).toBeTruthy();
+    expect(t.sync.notices.takenOver('Echo', '', 1)).toBe(
+      'Someone else took over scoring a match of Echo. 1 change made here that hadn’t synced yet was undone.',
+    );
+    expect(de.sync.notices.takenOver('Echo', 'Anna', 1)).toBe(
+      'Anna hat bei einem Spiel von Echo das Zählen übernommen. 1 Änderung von diesem Gerät, die noch nicht synchronisiert war, wurde zurückgenommen.',
+    );
+    expect(de.sync.notices.takenOver('Echo', '', 3)).toBe(
+      'Jemand anderes hat bei einem Spiel von Echo das Zählen übernommen. 3 Änderungen von diesem Gerät, die noch nicht synchronisiert waren, wurden zurückgenommen.',
+    );
   });
 
   it('words the demotion without undone changes and several skipped records', () => {

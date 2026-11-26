@@ -9,7 +9,7 @@ import { makeStyles, radius, spacing, typography } from '@/theme';
 /** Narrowest the notice text gets before Dismiss wraps below it (px). */
 const TEXT_MIN_WIDTH = 200;
 
-/** What a notice says (removed from a team, team deleted, demoted, records skipped). */
+/** What a notice says (removed, team deleted, demoted, records skipped, scoring taken over). */
 export function syncNoticeText(t: Strings, notice: SyncNotice): string {
   const s = t.sync.notices;
   switch (notice.kind) {
@@ -21,6 +21,8 @@ export function syncNoticeText(t: Strings, notice: SyncNotice): string {
       return s.demoted(notice.teamName, notice.undone);
     case 'skipped':
       return s.skipped(notice.teamName, notice.count);
+    case 'takenOver':
+      return s.takenOver(notice.teamName, notice.holder, notice.undone);
   }
 }
 

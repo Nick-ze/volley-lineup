@@ -8,6 +8,8 @@
  *   read-only for everyone else (`block: 'held'`), until it expires or a manager takes over.
  * - A shared team that leaves the device is unlinked in the same step (`goneTeamLinks`,
  *   `withoutTeamLinks`): its bookkeeping must never meet other data under the same team id.
+ * - A match this device was scoring that another device took over is "yielded" while that
+ *   device's hold lasts (`yieldedMatches`): this device stops saving it to the cloud.
  */
 import type { MatchHold, SyncData, SyncedTeam, TeamRole } from './types';
 
@@ -38,6 +40,32 @@ export function holdStatus(
 ): HoldStatus {
   if (!hold || Date.parse(hold.heldUntil) <= now) return 'none';
   return hold.deviceId === deviceId ? 'mine' : 'other';
+}
+
+/**
+ * The matches this device has yielded to another scorer (v10 audit M1), after its known holds
+ * change from `prev` to `next`: a match another device holds now (unexpired) that this device
+ * was the scorer of — its own hold was the last one it knew, expired or not — or had already
+ * yielded. It stays yielded until that other hold ends (released, expired, or taken back here).
+ *
+ * While a match is yielded, this device doesn't push the match or its sets, and whatever the
+ * scorer saves for them replaces this device's unsynced changes, whatever the clocks say. A
+ * device that never held the match isn't affected (its changes follow "the latest save wins").
+ */
+export function yieldedMatches(
+  yielded: ReadonlySet<string>,
+  prev: Readonly<Record<string, MatchHold>>,
+  next: Readonly<Record<string, MatchHold>>,
+  deviceId: string | null,
+  now: number,
+): Set<string> {
+  const out = new Set<string>();
+  if (!deviceId) return out;
+  for (const [matchId, hold] of Object.entries(next)) {
+    if (holdStatus(hold, deviceId, now) !== 'other') continue;
+    if (yielded.has(matchId) || prev[matchId]?.deviceId === deviceId) out.add(matchId);
+  }
+  return out;
 }
 
 export interface MatchAccess {
