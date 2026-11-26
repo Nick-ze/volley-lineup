@@ -141,7 +141,10 @@ export async function pullTeam(
   let serverNow = '';
   for (let after = reset ? 0 : start.cursor; ;) {
     const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
-    serverNow = page.serverNow;
+    // The cursor's 10 s overlap counts from the FIRST page's server time (audit H4): a write
+    // still uncommitted when page 1 was read can sit below page 1's newest rows, and no later
+    // page returns it. Every later page is read later, so the first time is safe for all rows.
+    if (serverNow === '') serverNow = page.serverNow;
     for (const raw of page.rows) {
       const row = parseRemoteRow(raw);
       if (row) rows.push(row);
