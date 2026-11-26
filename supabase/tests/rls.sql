@@ -1,4 +1,4 @@
--- RLS and RPC tests for the v10 schema (T1–T30). See docs/SUPABASE.md.
+-- RLS and RPC tests for the v10 schema (T1–T33). See docs/SUPABASE.md.
 --
 -- Run as `postgres` on a database that has every file in supabase/migrations applied, e.g. the
 -- Supabase SQL editor, psql, or the MCP tool `execute_sql`. Everything happens inside one
@@ -887,6 +887,128 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------------------------
+-- T31 / T32 / T33 invite codes don't outlive the access of the people who know them
+-- (docs/AUDIT_V10.md H1, migration 20261126120000). Own users and team: DA (manager),
+-- DB (second manager), DB2 (DB's second account), DP (player).
+-- ---------------------------------------------------------------------------------------------
+
+reset role;
+insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data, raw_user_meta_data,
+                        created_at, updated_at)
+select '00000000-0000-0000-0000-000000000000', u.id, 'authenticated', 'authenticated', u.email,
+       '{"provider":"email","providers":["email"]}', '{}', now(), now()
+from (values ('d0000000-0000-4000-8000-000000000001'::uuid, 'rls-da@example.test'),
+             ('d0000000-0000-4000-8000-000000000002'::uuid, 'rls-db@example.test'),
+             ('d0000000-0000-4000-8000-000000000003'::uuid, 'rls-db2@example.test'),
+             ('d0000000-0000-4000-8000-000000000004'::uuid, 'rls-dp@example.test')) u (id, email);
+
+select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.check(public.create_team('team-d', 'Dora') = 'created', 'T31 DA creates team-d');
+  perform set_config('test.d_manager', public.create_invite('team-d', 'manager', 7) ->> 'code', true);
+  perform set_config('test.d_player', public.create_invite('team-d', 'player', 30) ->> 'code', true);
+end $$;
+
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000004'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.check(public.join_team(current_setting('test.d_player'), 'Pit') ->> 'role' = 'player', 'T31 DP joins as player');
+end $$;
+
+-- DB joins as manager and, as a manager may, creates a spare manager code and keeps it.
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000002'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.check(public.join_team(current_setting('test.d_manager'), 'Bea') ->> 'role' = 'manager', 'T31 DB joins as manager');
+  perform set_config('test.d_spare', public.create_invite('team-d', 'manager', 7) ->> 'code', true);
+  perform pg_temp.check((select count(*) from public.invites where team_id = 'team-d' and role = 'manager' and revoked_at is null and uses = 0) = 1, 'T31 one unused manager code is open');
+end $$;
+
+-- T31 DA makes DB a player: the open manager codes are revoked, the player code stays.
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform public.set_member_role('team-d', 'd0000000-0000-4000-8000-000000000002', 'player');
+  perform pg_temp.check((select count(*) from public.invites where team_id = 'team-d' and role = 'manager' and revoked_at is null) = 0, 'T31 a demotion revokes the open manager codes');
+  perform pg_temp.check((select revoked_at is null from public.invites where code = current_setting('test.d_player')), 'T31 a demotion keeps the player code');
+end $$;
+
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000002'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T31 demoted DB uses the spare manager code', format('select public.join_team(%L, %L)', current_setting('test.d_spare'), 'Bea'), 'VL002');
+  perform pg_temp.check((select role from public.team_members where team_id = 'team-d' and user_id = 'd0000000-0000-4000-8000-000000000002') = 'player', 'T31 DB is still a player');
+  perform pg_temp.expect_error('T31 demoted DB creates a code', $q$select public.create_invite('team-d', 'manager', 7)$q$, '42501');
+  perform pg_temp.expect_error('T31 demoted DB changes a role', $q$select public.set_member_role('team-d', 'd0000000-0000-4000-8000-000000000004', 'manager')$q$, '42501');
+  perform pg_temp.check(public.join_team(current_setting('test.d_player'), 'Bea') ->> 'role' = 'player', 'T31 the player code still works (DB stays a player)');
+end $$;
+
+-- T32 DA removes DB: every open code of the team is revoked, so DB's second account can't use
+-- the player code DB knows; a code created afterwards works.
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform set_config('test.d_manager2', public.create_invite('team-d', 'manager', 7) ->> 'code', true);
+  perform public.remove_member('team-d', 'd0000000-0000-4000-8000-000000000002');
+  perform pg_temp.check((select count(*) from public.invites where team_id = 'team-d' and revoked_at is null) = 0, 'T32 a removal revokes every open code');
+end $$;
+
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000003'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.expect_error('T32 second account, old player code', format('select public.join_team(%L, %L)', current_setting('test.d_player'), 'Bea 2'), 'VL002');
+  perform pg_temp.expect_error('T32 second account, old manager code', format('select public.join_team(%L, %L)', current_setting('test.d_manager2'), 'Bea 2'), 'VL002');
+  perform pg_temp.check((select count(*) from public.team_members) = 0, 'T32 the second account joined nothing');
+  perform pg_temp.check((select count(*) from public.team_records where team_id = 'team-d') = 0
+                        and public.pull_changes('team-d', 0) -> 'rows' = '[]'::jsonb, 'T32 the second account reads nothing');
+end $$;
+
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform set_config('test.d_new', public.create_invite('team-d', 'player', 7) ->> 'code', true);
+end $$;
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000003'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.check(public.join_team(current_setting('test.d_new'), 'Bea 2') ->> 'role' = 'player', 'T32 a code created after the removal works');
+end $$;
+
+-- T33 leaving: a player's leave revokes nothing; a manager's leave revokes the manager codes.
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform set_config('test.d_manager3', public.create_invite('team-d', 'manager', 7) ->> 'code', true);
+end $$;
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000003'); set local role authenticated;
+do $$
+begin
+  perform public.leave_team('team-d');
+end $$;
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.check((select count(*) from public.invites where team_id = 'team-d' and revoked_at is null) = 2, 'T33 a player leaving revokes nothing');
+  perform public.set_member_role('team-d', 'd0000000-0000-4000-8000-000000000004', 'manager');
+  perform pg_temp.check((select revoked_at is null from public.invites where code = current_setting('test.d_manager3')), 'T33 a promotion revokes nothing');
+end $$;
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000004'); set local role authenticated;
+do $$
+begin
+  perform public.leave_team('team-d');
+end $$;
+reset role; select pg_temp.as_user('d0000000-0000-4000-8000-000000000001'); set local role authenticated;
+do $$
+begin
+  perform pg_temp.check((select revoked_at is not null from public.invites where code = current_setting('test.d_manager3')), 'T33 a manager leaving revokes the open manager codes');
+  perform pg_temp.check((select revoked_at is null from public.invites where code = current_setting('test.d_new')), 'T33 a manager leaving keeps the player codes');
+  perform public.delete_team('team-d');
+  perform pg_temp.check((select count(*) from public.teams) = 0, 'T33 delete_team still works with the invite trigger');
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------------------------
 -- T28 / T29 anon
 -- ---------------------------------------------------------------------------------------------
 
@@ -972,9 +1094,22 @@ begin
   select string_agg(f, ', ') into v_bad
   from unnest(array['private.guard_last_manager()', 'public.leave_team(text)',
                     'public.set_member_role(text,uuid,text)', 'public.remove_member(text,uuid)',
+                    'public.create_invite(text,text,integer)',
                     'public.delete_my_account()']) f
   where pg_get_functiondef(f::regprocedure) !~* 'from public\.teams t\s.*for update';
   perform pg_temp.check(v_bad is null, 'T30 team row locked in: ' || coalesce(v_bad, ''));
+
+  -- The role is checked again once the lock is held (audit H1): a call that waited behind the
+  -- caller's own demotion or removal must not run with the old role.
+  select string_agg(f, ', ') into v_bad
+  from unnest(array['public.set_member_role(text,uuid,text)', 'public.remove_member(text,uuid)',
+                    'public.create_invite(text,text,integer)']) f
+  where pg_get_functiondef(f::regprocedure) !~* 'for update;.*is_team_manager';
+  perform pg_temp.check(v_bad is null, 'T30 role checked again under the lock in: ' || coalesce(v_bad, ''));
+  perform pg_temp.check(exists (select 1 from pg_trigger
+                                where tgrelid = 'public.team_members'::regclass
+                                  and tgname = 'team_members_revoke_invites' and not tgisinternal),
+                        'T30 invite revocation trigger on team_members');
 
   raise notice 'ALL RLS TESTS PASSED';
 end $$;

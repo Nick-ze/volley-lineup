@@ -132,6 +132,43 @@ describe('members and invites', () => {
   });
 });
 
+describe('invite codes after a demotion or a removal (audit H1)', () => {
+  it('a manager made a player can’t become manager again with a spare manager code', async () => {
+    const { cloud, a, b } = await shared('manager');
+    // Ben, still a manager, creates a manager code for later.
+    const spare = await b.act((e) => createInvite(e, T1, 'manager', 7));
+    if (!spare.ok) throw new Error('no spare code');
+    await a.act((e) => setMemberRole(e, T1, benId(cloud), 'player'));
+    await b.cycle();
+    expect(await b.act((e) => joinTeam(e, spare.value.code))).toEqual({
+      ok: false,
+      error: 'inviteInvalid',
+    });
+    expect(cloud.role(T1, benId(cloud))).toBe('player');
+    // The manager's list no longer shows it as usable.
+    const listed = await a.act((e) => listInvites(e, T1));
+    expect(listed.ok && listed.value.every((i) => i.revokedAt !== null)).toBe(true);
+  });
+
+  it('a removed member’s second account can’t join with a code from before the removal', async () => {
+    const { cloud, a, b, invite } = await shared('player');
+    await a.act((e) => removeMember(e, T1, benId(cloud)));
+    const c = new TestDevice(cloud, 'dev-c');
+    await c.signIn('ben.again@example.test');
+    expect(await c.act((e) => joinTeam(e, invite.code))).toEqual({
+      ok: false,
+      error: 'inviteInvalid',
+    });
+    expect(cloud.role(T1, cloud.userId('ben.again@example.test'))).toBeNull();
+    // A code created after the removal is a deliberate invitation and works.
+    const fresh = await a.act((e) => createInvite(e, T1, 'player', 7));
+    if (!fresh.ok) throw new Error('no new code');
+    expect((await c.act((e) => joinTeam(e, fresh.value.code))).ok).toBe(true);
+    await b.cycle(); // the removed account's device: unlinked, as before
+    expect(b.data.sync.teams[T1]).toBeUndefined();
+  });
+});
+
 describe('role changes seen by a sync', () => {
   it('demotion: view-only, unsynced changes undone (the cloud copy), a notice', async () => {
     const { cloud, a, b } = await shared('manager');

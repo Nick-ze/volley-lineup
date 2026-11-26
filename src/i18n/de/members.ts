@@ -43,7 +43,7 @@ export const members: Strings['members'] = {
     remove: 'Entfernen',
     removeLabel: (name) => `Entfernen: ${name} aus dem Team`,
     removeConfirm: (name) =>
-      `${name} aus dem Team entfernen? Die Kopie auf dem Gerät bleibt, aber es kommen keine Änderungen mehr.`,
+      `${name} aus dem Team entfernen? Die Kopie auf dem Gerät bleibt, aber es kommen keine Änderungen mehr. Offene Einladungscodes funktionieren nicht mehr: Erstelle neue für alle, die noch nicht beigetreten sind.`,
   },
   invites: {
     heading: 'Einladungen',

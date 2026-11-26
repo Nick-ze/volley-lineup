@@ -336,8 +336,20 @@ export class FakeBackend implements SyncBackend {
       throw sqlError('VL001', 'lastManager');
     }
     team.members.delete(userId);
+    if (m?.role === 'manager') this.revokeInvites(teamId, 'manager');
     for (const [key, hold] of this.cloud.holds) {
       if (hold.teamId === teamId && hold.userId === userId) this.cloud.holds.delete(key);
+    }
+  }
+
+  /**
+   * Like the server (audit H1): the team's open codes stop working — the manager codes when
+   * someone stops being a manager, every code when a member is removed.
+   */
+  private revokeInvites(teamId: string, only?: TeamRole): void {
+    for (const invite of this.cloud.invites) {
+      if (invite.teamId !== teamId || invite.revokedAt !== null) continue;
+      if (only === undefined || invite.role === only) invite.revokedAt = this.now;
     }
   }
 
@@ -373,6 +385,7 @@ export class FakeBackend implements SyncBackend {
     if (m.role === 'manager' && managers === 1) throw sqlError('VL001', 'lastManager');
     m.role = role;
     if (role !== 'manager') {
+      this.revokeInvites(teamId, 'manager');
       for (const [key, hold] of this.cloud.holds) {
         if (hold.teamId === teamId && hold.userId === userId) this.cloud.holds.delete(key);
       }
@@ -388,6 +401,7 @@ export class FakeBackend implements SyncBackend {
     if (!team.members.has(userId)) return;
     this.dropMember(teamId, userId);
     team.removals.set(userId, this.now);
+    this.revokeInvites(teamId);
   }
 
   private toInvite(i: FakeInvite): Invite {
@@ -398,6 +412,7 @@ export class FakeBackend implements SyncBackend {
       expiresAt: iso(i.expiresAt),
       revokedAt: i.revokedAt === null ? null : iso(i.revokedAt),
       uses: i.uses,
+      maxUses: i.maxUses,
     };
   }
 
