@@ -678,6 +678,18 @@ rate limit is enough; 3 six digits stay; 4 yes; 5 yes. Questions 4 and 5 were th
    editor, and the next time you delete a user who belongs to a team in the dashboard
    (Authentication → Users), check that it works — the fix for that could only be tested on a
    local Postgres, not through the real dashboard.
+7. **Apply the medium / low migration** (added 2026-11-26, "Medium / low fix log"):
+   `supabase/migrations/20261126140000_v10_audit_medium_low.sql` is reviewed and merged but not
+   applied — the connector's confirmation prompt got no answer. Either answer that prompt in a
+   chat where you are watching (ask the agent to dry-run and apply it, then run `rls.sql`), or in
+   the SQL editor: paste the file and run it, then
+   `insert into supabase_migrations.schema_migrations (version, name) values ('20261126140000', 'v10_audit_medium_low');`
+   and run `supabase/tests/rls.sql` (its last result must be `ALL RLS TESTS PASSED`; it now
+   includes T34). Until then the database works as before (M9, L1, L2 stay open there).
+8. **L11, the rest** (optional): a single-use manager code whose join worked but whose answer was
+   lost on the network still reads "invalid code" when entered again (the person is a member
+   anyway; the team appears after the next sync). A fix is a server change: `join_team` would
+   answer "joined" for a member of the code's team even when the code is used up. Wanted?
 
 ## Owner dashboard steps
 
@@ -976,6 +988,9 @@ documentation and cleanup (marked "docs" / "cleanup").
 | L28                                        | fixed: `.env*` ignored; `app.config.js` refuses a secret key; `syncConfig()` ignores `sb_secret_`                                                                                                                                                                                                                                                       | PR 3 | `__tests__/appConfig.test.ts`, `config.test.ts`                                                                                                                                                             |
 | L32                                        | fixed: persist `merge` → `storedSyncData` (zod, loose)                                                                                                                                                                                                                                                                                                  | PR 3 | `appStore.test.ts` (3 malformed slices, 1 valid with newer fields), `syncSchema.test.ts`                                                                                                                    |
 | L33                                        | fixed: `require` inside `getClient()`; `authStorageKey` without `URL`. **Not run on a phone**                                                                                                                                                                                                                                                           | PR 3 | `clientLazy.test.ts`; web build: no request before Send code, then the client works                                                                                                                         |
+| M9                                         | **written, not applied yet** (see below): `20261126140000_v10_audit_medium_low.sql`: `delete_team` checks the role again under the team row lock                                                                                                                                                                                                        | PR 4 | `rls.sql` T30 (`delete_team` in the lock and re-check lists)                                                                                                                                                |
+| L1                                         | **written, not applied yet**: same migration: no default table privileges for `anon` / `authenticated` / `service_role` in `public`                                                                                                                                                                                                                     | PR 4 | `rls.sql` T34 (a probe table, `pg_default_acl`)                                                                                                                                                             |
+| L2                                         | **written, not applied yet**: same migration: `rls_auto_enable()` EXECUTE revoked from `public` / `anon` / `authenticated` (was an optional owner step)                                                                                                                                                                                                 | PR 4 | `rls.sql` T34 (not callable; its event trigger still enables RLS)                                                                                                                                           |
 | L6, L17, L18, L31                          | second chat                                                                                                                                                                                                                                                                                                                                             | —    | —                                                                                                                                                                                                           |
 
 **Review of PR 2** (an independent reviewer agent, its own copy, typecheck + 350 tests): no
@@ -987,3 +1002,26 @@ for as long as the session can't be read (offline or an outage, with an expired 
 offline hint; any HTTP 500 on a code request reads "The email couldn't be sent" (also a database
 outage of the auth server — the text is wrong then, nothing else); the join memo can answer
 "joined" for a team the user was removed from moments ago, until the next cycle unlinks it.
+
+**Database (PR 4): the migration is in the repository but NOT applied to the live project.**
+`20261126140000_v10_audit_medium_low.sql` was reviewed by an independent reviewer agent against
+the live catalogue (no blocking finding; nits: two managers deleting the same team at once — the
+second now reads "forbidden" instead of a silent success; tables `supabase_admin` creates in
+`public` keep Supabase's own defaults, out of scope; T30 reads function text only). Every attempt
+to run SQL that changes something — the dry run (the whole `rls.sql` with the migration spliced
+in), a small targeted dry run, and `apply_migration` itself — made the Supabase connector ask for a
+confirmation that nobody answered within 230 s, so nothing ran (checked after the first one:
+the live `delete_team` still has the old body, no probe table, 9 migrations recorded). As a
+consequence the whole `rls.sql` was not run either (the open check from before stays open). The
+app doesn't depend on the migration: it only tightens the database. Owner step: see "Open
+questions" 7.
+
+**Not fixed in this chat, and why**
+
+- Second chat (they change how the engine merges, pushes or pulls): M2, M3, M4, M5, M6, M7, M12,
+  M15, M18, M19, L6, L17, L18, L31.
+- Decided by the owner (DECISIONS #304): M8 (no CAPTCHA), L14 (6 digits), revoke-all-codes.
+- L29 (`.claude/settings.json`): left as it is, as asked.
+- The rest of L11 (a join whose answer was lost on the network) needs `join_team` to answer
+  members of the code's team: "Open questions" 8.
+- By design, documented only: L3, L7, L8, L9, L10, L12, M10.
