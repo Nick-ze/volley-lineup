@@ -18,6 +18,9 @@ export const account: Strings['account'] = {
       'Melde dich an, um deine Teams zwischen deinen Geräten zu synchronisieren und zu teilen. Wir schicken dir einen 6-stelligen Code per E-Mail; kein Passwort nötig.',
     emailInvalid: 'Gib eine gültige E-Mail-Adresse ein.',
     codeSent: (email) => `Wir haben einen Code an ${email} geschickt. Es kann eine Minute dauern.`,
+    haveCode: 'Ich habe schon einen Code',
+    codeFromBefore: (email) =>
+      `Gib den neuesten Code ein, den wir an ${email} geschickt haben. Ein Code gilt 10 Minuten.`,
     resend: 'Neuen Code senden',
     resendIn: (seconds) => `Neuer Code in ${seconds} s`,
     changeEmail: 'E-Mail ändern',

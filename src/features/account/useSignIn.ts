@@ -29,6 +29,8 @@ export function useSignIn() {
   const [error, setError] = useState<SignInError | null>(null);
   const [busy, setBusy] = useState(false);
   const [switchedFrom, setSwitchedFrom] = useState<SwitchedFrom | null>(null);
+  /** Whether the code step was reached by sending an email now (not by "I already have a code"). */
+  const [sent, setSent] = useState(false);
   const resend = useResendTimer();
 
   const send = async () => {
@@ -47,8 +49,25 @@ export function useSignIn() {
     }
     setError(null);
     setCodeText('');
+    setSent(true);
     setStep('code');
     resend.start();
+  };
+
+  /**
+   * "I already have a code": the code step for this email without sending another email (the
+   * code of the last email stays valid for a while). No resend wait: nothing was sent now.
+   */
+  const haveCode = () => {
+    if (busy) return;
+    if (!isPlausibleEmail(email)) {
+      setError('emailInvalid');
+      return;
+    }
+    setError(null);
+    setCodeText('');
+    setSent(false);
+    setStep('code');
   };
 
   const finish = () => {
@@ -98,7 +117,9 @@ export function useSignIn() {
     error,
     busy,
     resendIn: resend.left,
+    sent,
     send,
+    haveCode,
     verify,
     changeEmail,
     switchedFrom,

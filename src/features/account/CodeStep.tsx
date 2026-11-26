@@ -29,7 +29,7 @@ export function CodeStep({ form, error }: CodeStepProps) {
   return (
     <>
       <Text style={styles.text} accessibilityLiveRegion="polite">
-        {s.codeSent(form.email.trim())}
+        {form.sent ? s.codeSent(form.email.trim()) : s.codeFromBefore(form.email.trim())}
       </Text>
       <TextField
         label={s.code}

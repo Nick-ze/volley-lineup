@@ -20,6 +20,10 @@ export const account = {
       'Sign in to sync your teams between your devices and share them. We email you a 6-digit code; no password needed.',
     emailInvalid: 'Enter a valid email address.',
     codeSent: (email: string) => `We sent a code to ${email}. It can take a minute to arrive.`,
+    /** "I already have a code": no email is sent. 10 minutes = `otp_expiry` (supabase/config.toml). */
+    haveCode: 'I already have a code',
+    codeFromBefore: (email: string) =>
+      `Enter the newest code we emailed to ${email}. A code works for 10 minutes.`,
     resend: 'Send a new code',
     resendIn: (seconds: number) => `New code in ${seconds} s`,
     changeEmail: 'Change email',

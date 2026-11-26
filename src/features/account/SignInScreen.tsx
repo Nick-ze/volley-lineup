@@ -69,6 +69,13 @@ export function SignInScreen() {
             disabled={form.busy}
             testID="sign-in-send"
           />
+          <Button
+            label={s.haveCode}
+            variant="ghost"
+            onPress={form.haveCode}
+            disabled={form.busy}
+            testID="sign-in-have-code"
+          />
         </>
       ) : (
         <CodeStep form={form} error={syncError} />
