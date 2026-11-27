@@ -44,7 +44,6 @@ export function NumberAvatar({
       style={[
         styles.circle,
         { width: size, height: size, borderRadius: shape === 'circle' ? size / 2 : cornerRadius },
-        card && styles.card,
         inactive && styles.inactive,
       ]}
       accessibilityElementsHidden
@@ -66,18 +65,18 @@ export function NumberAvatar({
 }
 
 const useStyles = makeStyles((theme) => ({
+  // v11: a dark field with the number in orange (solid orange is for the court and actions).
   circle: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  card: { backgroundColor: theme.colors.surfaceRaised },
-  cardText: { color: theme.colors.primaryText, fontWeight: undefined },
+  cardText: { fontWeight: undefined },
   inactive: { backgroundColor: theme.colors.surfaceRaised },
   text: {
     ...typography.subheading,
     fontWeight: typography.jersey.fontWeight,
-    color: theme.colors.onPrimary,
+    color: theme.colors.primaryText,
   },
   textInactive: { color: theme.colors.textMuted },
 }));

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
+import { fontSize, makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import { NoTabSwipe } from './SwipeTabs';
 
@@ -26,16 +26,33 @@ export interface TextFieldProps extends Pick<
   onChangeText: (text: string) => void;
   /** Already-translated error message. */
   error?: string;
+  /**
+   * v11: `large` is a taller field (the sign-in email); `code` shows a short number large, with
+   * equal-width digits set apart (the sign-in code).
+   */
+  variant?: 'default' | 'large' | 'code';
   testID?: string;
 }
 
 /** Height of a text field (px). */
 const FIELD_HEIGHT = touchTarget + spacing.xs;
+/** Height of a `large` / `code` field (px). */
+const LARGE_FIELD_HEIGHT = touchTarget + spacing.sm;
+/** Room between the digits of a `code` field. */
+const CODE_LETTER_SPACING = 6;
 /** Width of the outline of a focused field. */
 const FOCUS_RING = 1.5;
 
 /** Labelled text input with an inline error message. */
-export function TextField({ label, value, onChangeText, error, testID, ...rest }: TextFieldProps) {
+export function TextField({
+  label,
+  value,
+  onChangeText,
+  error,
+  variant = 'default',
+  testID,
+  ...rest
+}: TextFieldProps) {
   const { colors } = useTheme();
   const styles = useStyles();
   const [focused, setFocused] = useState(false);
@@ -52,7 +69,13 @@ export function TextField({ label, value, onChangeText, error, testID, ...rest }
           placeholderTextColor={colors.textMuted}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={[styles.input, focused && styles.inputFocused, error ? styles.inputError : null]}
+          style={[
+            styles.input,
+            variant !== 'default' && styles.inputLarge,
+            variant === 'code' && styles.inputCode,
+            focused && styles.inputFocused,
+            error ? styles.inputError : null,
+          ]}
           testID={testID}
           {...rest}
         />
@@ -79,6 +102,14 @@ const useStyles = makeStyles((theme) => ({
     borderColor: theme.colors.transparent,
     backgroundColor: theme.colors.surfaceRaised,
     color: theme.colors.text,
+  },
+  inputLarge: { minHeight: LARGE_FIELD_HEIGHT },
+  inputCode: {
+    fontSize: fontSize.xxl,
+    fontWeight: '700',
+    letterSpacing: CODE_LETTER_SPACING,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
   },
   inputFocused: { borderColor: theme.colors.primaryText },
   inputError: { borderColor: theme.colors.error },

@@ -70,14 +70,12 @@ export function ProfileCard({ profile }: { profile: ManagerProfile }) {
 const useStyles = makeStyles((theme) => ({
   card: {
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.lg,
   },
   who: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   text: { flexShrink: 1, gap: spacing.xs },
-  name: { ...typography.heading, color: theme.colors.text },
+  name: { ...typography.displayL, color: theme.colors.text },
   caption: { ...typography.body, color: theme.colors.textMuted },
 }));

@@ -106,7 +106,7 @@ export function SeasonForm({ teamId, season, onSubmit, onCancel, onDelete }: Sea
         error={err('location')}
       />
       <View style={formStyles.actions}>
-        {onDelete ? <Button label={s.delete} variant="danger" onPress={onDelete} /> : null}
+        {onDelete ? <Button label={s.delete} variant="dangerQuiet" onPress={onDelete} /> : null}
         <Button label={t.common.cancel} variant="secondary" onPress={onCancel} />
         <Button label={season ? t.common.save : s.create} onPress={submit} />
       </View>

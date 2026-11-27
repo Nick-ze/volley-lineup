@@ -40,6 +40,7 @@ export function CodeStep({ form, error }: CodeStepProps) {
         textContentType="oneTimeCode"
         autoComplete="one-time-code"
         maxLength={CODE_INPUT_MAX}
+        variant="code"
         autoFocus
         onSubmitEditing={() => void form.verify()}
         testID="sign-in-code"

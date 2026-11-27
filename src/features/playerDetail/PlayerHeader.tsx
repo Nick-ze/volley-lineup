@@ -8,11 +8,12 @@ import { useIsCaptain } from '@/store';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
 /** Diameter of the header picture / number circle. */
-const HEADER_PHOTO_SIZE = 72;
+const HEADER_PHOTO_SIZE = 96;
 
 /**
- * Photo (or jersey number), name, number, positions (v9.1: and "Captain" for the team captain),
- * status and the Edit button (v10: none without `onEdit`, for view-only members).
+ * Photo (or jersey number), number, positions (v9.1: and "Captain" for the team captain),
+ * status and the Edit button (v10: none without `onEdit`, for view-only members). v11: the
+ * player's name is the screen's title (in the header), so it isn't repeated here.
  */
 export function PlayerHeader({ player, onEdit }: { player: Player; onEdit?: () => void }) {
   const styles = useStyles();
@@ -45,9 +46,6 @@ export function PlayerHeader({ player, onEdit }: { player: Player; onEdit?: () =
           }
         />
         <View style={styles.text}>
-          <Text style={styles.name} accessibilityRole="header">
-            {name}
-          </Text>
           <Text style={styles.meta}>
             {t.playerDetail.number(player.number)}
             {t.playerDetail.separator}
@@ -87,13 +85,13 @@ const useStyles = makeStyles((theme) => ({
     width: HEADER_PHOTO_SIZE,
     height: HEADER_PHOTO_SIZE,
     borderRadius: radius.round,
-    backgroundColor: theme.colors.primary,
+    // v11: like the roster cards — the number in orange on a dark field.
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  numberText: { ...typography.jersey, color: theme.colors.onPrimary },
+  numberText: { ...typography.displayXL, color: theme.colors.primaryText },
   text: { flex: 1, gap: spacing.xs },
-  name: { ...typography.subheading, color: theme.colors.text },
   meta: { ...typography.body, color: theme.colors.textMuted },
   active: { color: theme.colors.textMuted },
   injured: { color: theme.colors.error },

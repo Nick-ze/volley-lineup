@@ -39,8 +39,6 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
   hint: { ...typography.caption, color: theme.colors.textMuted },

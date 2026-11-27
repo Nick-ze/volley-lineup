@@ -105,7 +105,7 @@ export function PlayerForm({
         {player && onDelete && (
           <Button
             label={s.delete}
-            variant="danger"
+            variant="dangerQuiet"
             disabled={deleteBlocked}
             accessibilityHint={deleteBlocked ? (deleteBlockedText ?? s.deleteBlocked) : undefined}
             onPress={() => ask(t.roster.confirm.deletePlayer(fullName(player)), onDelete)}

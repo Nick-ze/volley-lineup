@@ -89,7 +89,7 @@ export function PhotoField({
               {hasPhoto ? (
                 <Button
                   label={s.remove}
-                  variant="danger"
+                  variant="dangerQuiet"
                   compact
                   disabled={picker.busy}
                   onPress={() => onChange({ kind: 'removed' })}
