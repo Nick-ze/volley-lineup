@@ -3,13 +3,22 @@
  * commands use it). Internal to `src/lib/sync`.
  */
 import type { BackendSession, SyncBackend } from './backend';
+import type { DeviceStamp, ServerTime } from './serverTime';
 
 /** The engine's time source (ms since the epoch); tests pass a controllable one. */
 export interface Clock {
   now(): number;
+  /**
+   * A clock that can't be set and never goes back (ms from any origin), to notice when `now`
+   * was changed (`serverTime.ts`). Without one, `now` itself counts as steady.
+   */
+  steady?(): number;
 }
 
-export const systemClock: Clock = { now: () => Date.now() };
+export const systemClock: Clock = {
+  now: () => Date.now(),
+  steady: () => (typeof performance === 'undefined' ? Date.now() : performance.now()),
+};
 
 export interface EngineCore {
   readonly backend: SyncBackend;
@@ -62,6 +71,18 @@ export interface EngineCore {
    * M5); it stays lowered for the app run.
    */
   readonly pushLimit: { count: number; bytes: number };
+  /**
+   * How far the device's clock is from the server's, measured by the last pull (v10 audit M2;
+   * null: not known, or no longer to be trusted). In memory only. See `serverTime.ts`.
+   */
+  serverTime: ServerTime | null;
+  /** Save times noted with the device's clock in this app run (the time → both clocks then). */
+  readonly deviceStamps: Map<string, DeviceStamp>;
+  /**
+   * Records (`teamId/key`) sent with a device-clock save time whose answer hasn't arrived: the
+   * server may have that time, so a later change of the record isn't converted (review of M2).
+   */
+  readonly sentUnconverted: Set<string>;
 }
 
 export interface AwaitedTeam {

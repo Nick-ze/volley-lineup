@@ -168,6 +168,32 @@ describe('detectChanges', () => {
   });
 });
 
+describe('detectChanges: a record changed again (review of audit M2)', () => {
+  const data = goldenTeamData();
+  const team = syncedWith(data, 't1');
+  const first = detectChanges(sliceOf(renameP2(data, 'First'), 't1'), team, T2);
+  const noted = { ...team, edits: first.edits };
+  const again = (now: string, edits = noted.edits) =>
+    detectChanges(sliceOf(renameP2(data, 'Second'), 't1'), { ...team, edits }, now).edits[
+      'player:p2'
+    ].at;
+
+  it('gets the time of the new change when that is later', () => {
+    expect(first.edits['player:p2'].at).toBe(T2);
+    expect(again('2026-11-26T10:10:00.000Z')).toBe('2026-11-26T10:10:00.000Z');
+  });
+
+  it('never gets a time at or before the change it replaces (the clock went back, or changed)', () => {
+    expect(again(T1)).toBe('2026-11-26T10:09:00.001Z');
+    expect(again(T2)).toBe('2026-11-26T10:09:00.001Z');
+  });
+
+  it('keeps the given time when one of the two can’t be read', () => {
+    expect(again('')).toBe('');
+    expect(again(T1, { 'player:p2': { at: 'not a time', h: 'x' } })).toBe(T1);
+  });
+});
+
 describe('pendingCount', () => {
   it('counts the changes of the editable shared teams of an account', () => {
     const data = renameP2(goldenTeamData(), 'Bea');

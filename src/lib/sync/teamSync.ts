@@ -46,8 +46,9 @@ import type { SyncedTeam } from '@/domain/types';
 import { useSyncRuntime, type AppState } from '@/store';
 
 import type { PushItem } from './backend';
-import { isoNow, type EngineCore } from './core';
+import type { EngineCore } from './core';
 import { isRefusedContent, isTimeout } from './errors';
+import { deviceStampsInServerTime, measureServerTime, saveTime } from './serverTime';
 import { yieldedNow } from './holdState';
 import {
   checkFolder,
@@ -190,7 +191,12 @@ interface Pulled {
 async function pullPages(core: EngineCore, teamId: string, after: number): Promise<Pulled> {
   const pulled: Pulled = { rows: [], invalid: 0, serverNow: null, teamRow: -1, marks: [] };
   for (;;) {
+    const sentAt = core.clock.now();
     const page = await core.backend.pullChanges(teamId, after, PULL_PAGE);
+    // Every pull says what time it is on the server (audit M2): changes are noted in that time.
+    if (pulled.serverNow === null) {
+      if (measureServerTime(core, page.serverNow, sentAt, core.clock.now())) adoptServerTime(core);
+    }
     // The cursor's 10 s overlap counts from the FIRST page's server time (audit H4): a write
     // still uncommitted when page 1 was read can sit below page 1's newest rows, and no later
     // page returns it. Every later page is read later, so the first time is safe for all rows.
@@ -209,6 +215,33 @@ async function pullPages(core: EngineCore, teamId: string, after: number): Promi
     if (page.rows.length < PULL_PAGE || top <= after) return pulled;
     after = top;
   }
+}
+
+/**
+ * v10 audit M2: the changes this app run noted with the device's clock, before the server's time
+ * was known, get their save time in server time (one store write, every shared team) — so that
+ * what was changed before the first pull, or offline since the app started, is compared fairly
+ * with other devices' saves, and doesn't sit "in the future" of this device's own later saves.
+ */
+function adoptServerTime(core: EngineCore): void {
+  const converted = deviceStampsInServerTime(core);
+  if (converted.size === 0) return;
+  transaction((s) => {
+    let teams: Record<string, SyncedTeam> | null = null;
+    for (const [teamId, meta] of Object.entries(s.sync.teams)) {
+      let edits: SyncedTeam['edits'] | null = null;
+      for (const [key, edit] of Object.entries(meta.edits)) {
+        const at = converted.get(edit.at);
+        if (at === undefined || core.sentUnconverted.has(`${teamId}/${key}`)) continue;
+        edits ??= { ...meta.edits };
+        edits[key] = { ...edit, at };
+      }
+      if (!edits) continue;
+      teams ??= { ...s.sync.teams };
+      teams[teamId] = { ...meta, edits };
+    }
+    return teams ? { sync: { ...s.sync, teams } } : s;
+  });
 }
 
 /**
@@ -303,7 +336,7 @@ export async function pullTeam(
   await downloadPhotos(core, teamId, rows, storedCloudPhotos(teamId));
 
   const report: PullReport = { ...NOTHING_PULLED, invalid };
-  const now = isoNow(core.clock);
+  const now = saveTime(core);
   // Matches another device took over from this one (audit M1): other devices' rows win here.
   const yielded = yieldedNow(core);
   const takenOver =
@@ -357,7 +390,7 @@ function notifyTakenOver(teamId: string, keys: readonly string[]): void {
  */
 export function noteAll(core: EngineCore): void {
   dropGoneTeams(core);
-  const now = isoNow(core.clock);
+  const now = saveTime(core);
   transaction((s) => {
     let teams: Record<string, SyncedTeam> | null = null;
     for (const [teamId, meta] of Object.entries(s.sync.teams)) {
@@ -381,7 +414,7 @@ const toItem = (c: LocalChange): PushItem =>
 /** Notes the team's local changes in the store; returns them (none for viewers). */
 function noteChanges(core: EngineCore, teamId: string): LocalChange[] {
   let changes: LocalChange[] = [];
-  const now = isoNow(core.clock);
+  const now = saveTime(core);
   transaction((s) => {
     const meta = s.sync.teams[teamId];
     if (!meta) return s;
@@ -480,6 +513,9 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
   const queue = pushBatches(ready, core.pushLimit, together);
   for (let batch = queue.shift(); batch !== undefined; batch = queue.shift()) {
     let results: PushOutcome[];
+    for (const c of batch) {
+      if (core.deviceStamps.has(c.at)) core.sentUnconverted.add(`${teamId}/${c.key}`);
+    }
     try {
       results = await core.backend.pushRecords(teamId, deviceId, batch.map(toItem));
     } catch (e) {
@@ -536,7 +572,8 @@ export async function pushTeam(core: EngineCore, teamId: string, deviceId: strin
       continue;
     }
     const pushed = batch;
-    const now = isoNow(core.clock);
+    for (const c of pushed) core.sentUnconverted.delete(`${teamId}/${c.key}`);
+    const now = saveTime(core);
     const added = photos;
     transaction((s) => {
       const current = s.sync.teams[teamId];
