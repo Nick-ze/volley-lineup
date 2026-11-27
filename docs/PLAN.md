@@ -757,17 +757,19 @@ Built in seven pull requests: (1) plan and theme values, (2) the header, (3) sha
 
 ## 47. v11.0 acceptance checklist
 
-- [ ] No screen has the grey header bar; every screen shows its title once; Back is a round button and works after a reload.
-- [ ] Solid orange appears only on the court, the "Point us" button and one main action per screen (profile and team avatars keep their own colours).
-- [ ] Titles, scores and roster numbers use Barlow Condensed; scores and stat numbers have equal-width digits; with the dyslexia font on, no text uses Barlow and no label is in capitals.
-- [ ] Panels, rows and cards have no outline in either theme; all new colour pairs pass AA (test).
-- [ ] The app tabs and the team tabs use the same pill bar; swipe and tap between tabs work as before.
-- [ ] Edit, Delete, Rename and Copy are icon buttons with their old accessible names; Delete still asks.
-- [ ] Lineup builder: Live is in the header; five link tiles; the notice is a banner without icon; players on the court have the ring and shadow; "Who serves first" is visible at 390 × 844.
-- [ ] Live: the Substitution button is not lower than in 10.0.1 at 390 × 844 (EN, DE, font off and on).
-- [ ] Empty lists show the court drawing and the existing sentence.
-- [ ] Every interactive element is at least 44 × 44; labels start with the visible text (guard test).
-- [ ] EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overflows or is cut without "…".
-- [ ] No feature, text, stored-data or sync change: store 13, export 10, golden byte-equal, no diff under `src/lib/sync`, `src/domain`, `supabase/`.
-- [ ] Lint, typecheck and tests pass in CI; the web export builds.
-- [ ] The owner tried the test build on the phone. Only then: release.
+- [x] No screen has the grey header bar; every screen shows its title once; Back is a round button and works after a reload. — _performance and match stats show only the back button; their page heading is the title (#346)._
+- [x] Solid orange appears only on the court, the "Point us" button and one main action per screen (profile and team avatars keep their own colours).
+- [x] Titles, scores and roster numbers use Barlow Condensed; scores and stat numbers have equal-width digits; with the dyslexia font on, no text uses Barlow and no label is in capitals.
+- [x] Panels, rows and cards have no outline in either theme; all new colour pairs pass AA (test). — _left by design: the court, focused fields, `danger` buttons, checkboxes, the colour picker's selection, the delete-all confirmation, the set-won and match-summary panels, the tour's drawings._
+- [x] The app tabs and the team tabs use the same pill bar; swipe and tap between tabs work as before. — _tests and a browser run; on a phone not yet._
+- [x] Edit, Delete, Rename and Copy are icon buttons with their old accessible names; Delete still asks.
+- [x] Lineup builder: Live is in the header; five link tiles; the notice is a banner without icon; players on the court have the ring and shadow; "Who serves first" is visible at 390 × 844. — _four link tiles; Print / PDF is an icon in the header beside Live, because five tiles don't fit across in German (#345). "Who serves first" ends at 745 px in EN (was 830), 761 px in DE (was 849); with the dyslexia font 819 / 850 px (was 893 / 927)._
+- [x] Live: the Substitution button is not lower than in 10.0.1 at 390 × 844 (EN, DE, font off and on). — _782 px (was 789); with the dyslexia font 773 px (was 786)._
+- [x] Empty lists show the court drawing and the existing sentence.
+- [x] Every interactive element is at least 44 × 44; labels start with the visible text (guard test). — _a script over all 33 screens (375 px, EN + DE) finds nothing under 44 px that 10.0.1 didn't have (only the switch graphic inside its 44 px row)._
+- [x] EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overflows or is cut without "…". — _looked at per pull request on contact sheets; known: in German with the dyslexia font the builder's serve choice ends 6 px below 844, and "11 von 11" takes two lines on the player screen._
+- [x] No feature, text, stored-data or sync change: store 13, export 10, golden byte-equal, no diff under `src/lib/sync`, `src/domain`, `supabase/`. — _two unused strings removed, none added._
+- [x] Lint, typecheck and tests pass in CI; the web export builds. — _201 suites / 2727 tests._
+- [ ] The owner tried the test build on the phone. Only then: release. — _open: the test build is ready, the release waits for the owner._
+
+_Checked 2026-11-27 on the web build (Playwright: all 528 screenshots per pull request, measurements at 390 × 844, a touch-target scan, a drag-and-drop and tab-bar run) and in Jest. Not checked on a phone._

@@ -1,4 +1,15 @@
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+
+import { SPRING, TICK_SCALE, TICK_UP_MS } from '@/components';
 
 import type { Score } from '@/domain/liveSet';
 import type { Side } from '@/domain/types';
@@ -17,6 +28,34 @@ export interface ScoreboardProps {
   /** "We serve · #8" / "Rivals serves". */
   serveText: string;
   rotation: number;
+}
+
+/**
+ * One side's score. v11: when it changes it gives a short tick (grows a little and springs back);
+ * not on the first draw and not with "reduce motion".
+ */
+function ScoreNumber({ value, testID }: { value: number; testID: string }) {
+  const styles = useStyles();
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const shown = useRef(value);
+  useEffect(() => {
+    if (shown.current === value) return;
+    shown.current = value;
+    if (reduceMotion) return;
+    scale.value = withSequence(
+      withTiming(TICK_SCALE, { duration: TICK_UP_MS }),
+      withSpring(1, SPRING),
+    );
+    // Only a new score starts a tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.Text style={[styles.score, animated]} testID={testID}>
+      {value}
+    </Animated.Text>
+  );
 }
 
 /** Big "us : them" score with the set number and sets won; the serving side gets a yellow dot and name. */
@@ -41,9 +80,7 @@ export function Scoreboard({
             {name}
           </Text>
         </View>
-        <Text style={styles.score} testID={`score-${who}`}>
-          {value}
-        </Text>
+        <ScoreNumber value={value} testID={`score-${who}`} />
       </View>
     );
   };

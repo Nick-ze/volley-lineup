@@ -4,6 +4,7 @@ import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { makeStyles, radius, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import type { IconName } from './Button';
+import { PRESS_SCALE } from './motion';
 
 export interface LinkTileProps {
   /** Visible text under the icon. */
@@ -85,7 +86,7 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: radius.md,
     backgroundColor: theme.colors.surface,
   },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.8, transform: [{ scale: PRESS_SCALE }] },
   disabled: { opacity: 0.4 },
   label: {
     ...typography.caption,

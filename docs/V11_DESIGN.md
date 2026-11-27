@@ -4,6 +4,17 @@ The build brief for Volley Lineup 11.0.0. It changes how the app looks and nothi
 
 The mock-ups (four screens, before and after, dark and light) are at https://claude.ai/artifact/VHo28JVUot3hFoocC1HwKo. Read the page once with the Artifact tool (`action: "read"`): the "after" drawings are HTML and CSS, and their values are the ones below. The drawings are approximate where this brief says so; the brief wins.
 
+## As built (2026-11-27)
+
+Built in seven pull requests (#112–#118), each merged on green CI. Where the result differs from this brief, the brief below is left as written and the difference is recorded in `docs/DECISIONS.md`:
+
+- Print / PDF is an icon in the match header and there are four link tiles, not five (#345).
+- A third header variant, `bare`, for performance and match stats; header parts are wrapped in `appHeaderOnly()` (#346).
+- The live score is 88 px so the scoreboard keeps its height (#348).
+- Forms keep their panel (#349).
+- All buttons are 44 px high; there is no smaller pill.
+- The review agent after PR 3 and the QA agent in PR 7 were left out; the checks that ran are listed in #354.
+
 ## The five rules
 
 1. **The title is part of the page.** No grey header bar. A screen opens with its title on the page background. Back is a round button.
