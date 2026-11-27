@@ -76,9 +76,8 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.sm,
     paddingLeft: spacing.md,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.highlightText,
-    backgroundColor: theme.colors.surface,
+    // v11: a notice is a soft yellow field (like `Banner`), not an outlined box.
+    backgroundColor: theme.colors.highlightSoft,
   },
   // Dismiss sits beside the text, or below it (right) when the line gets too narrow.
   text: {

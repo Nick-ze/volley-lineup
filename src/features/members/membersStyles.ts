@@ -20,8 +20,6 @@ export const useMembersStyles = makeStyles((theme) => ({
     padding: spacing.md,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   // Narrow phones: the buttons wrap below the name instead of squeezing it.
   rowMain: { flexGrow: 1, flexShrink: 1, flexBasis: rowMainMinWidth, gap: spacing.xxs },

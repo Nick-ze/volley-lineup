@@ -1,15 +1,18 @@
 import { useRouter } from 'expo-router';
-import { Text } from 'react-native';
+import { Image, Text } from 'react-native';
 
 import { Button, ConfirmDialog, Screen, TextField } from '@/components';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { makeStyles, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { CodeStep } from './CodeStep';
 import { ErrorText } from './ErrorText';
 import { useAccountLink } from './useAccountLink';
 import { useSignIn } from './useSignIn';
+
+/** v11: the app's mark above the form (the launcher icon). */
+const MARK = require('../../../assets/images/icon.png');
 
 /**
  * v10: `/account/sign-in` (modal): email → "Send code" → the 6-digit code → "Sign in". Only from
@@ -57,9 +60,16 @@ export function SignInScreen() {
     <Screen testID="sign-in-screen">
       {form.step === 'email' ? (
         <>
+          <Image
+            source={MARK}
+            style={styles.mark}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
           <Text style={styles.text}>{s.intro}</Text>
           <TextField
             label={s.email}
+            variant="large"
             value={form.email}
             onChangeText={form.setEmail}
             error={emailError}
@@ -108,4 +118,9 @@ export function SignInScreen() {
 
 const useStyles = makeStyles((theme) => ({
   text: { ...typography.body, color: theme.colors.text },
+  mark: {
+    width: touchTarget + spacing.md,
+    height: touchTarget + spacing.md,
+    borderRadius: radius.md,
+  },
 }));

@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { useListStyles } from '@/components';
 import { errorBreakdown, plusMinus, type PlayerSeason } from '@/domain/performance';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 interface TileData {
   id: string;
@@ -25,19 +25,22 @@ type CountKey =
   | 'blocks'
   | 'errors';
 
-function Tile({ id, label, value, a11y }: TileData) {
+function Tile({ id, label, value, a11y, large = false }: TileData & { large?: boolean }) {
   const styles = useStyles();
   return (
     <View style={styles.tile} accessible accessibilityLabel={a11y} testID={`season-${id}`}>
-      <Text style={styles.value} testID={`season-${id}-value`}>
+      <Text style={large ? styles.valueLarge : styles.value} testID={`season-${id}-value`}>
         {value}
       </Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={large ? styles.labelLarge : styles.label}>{label}</Text>
     </View>
   );
 }
 
-/** The season totals as rows of three compact tiles (fits 375 px), plus the errors by type. */
+/**
+ * The season totals as rows of three (fits 375 px), plus the errors by type. v11: one stat sheet;
+ * the first row (rallies, +/−, sets played) is large.
+ */
 export function SeasonStats({ season }: { season: PlayerSeason }) {
   const styles = useStyles();
   const listStyles = useListStyles();
@@ -73,26 +76,28 @@ export function SeasonStats({ season }: { season: PlayerSeason }) {
       <Text style={listStyles.title} accessibilityRole="header">
         {s.heading}
       </Text>
-      {rows.map((row) => (
-        <View key={row[0].id} style={styles.row}>
-          {row.map((tile) => (
-            <Tile key={tile.id} {...tile} />
-          ))}
-        </View>
-      ))}
-      <View style={styles.row}>
-        <Tile {...count('errors')} />
-        <View style={styles.breakdown} testID="season-error-breakdown">
-          <Text style={styles.breakdownHeading}>{s.breakdownHeading}</Text>
-          {breakdown.length === 0 ? (
-            <Text style={styles.breakdownText}>{t.stats.none}</Text>
-          ) : (
-            breakdown.map((b) => (
-              <Text key={b.category} style={styles.breakdownText}>
-                {s.breakdownItem(b.count, t.tags.errorTypeNames[b.category])}
-              </Text>
-            ))
-          )}
+      <View style={styles.sheet}>
+        {rows.map((row, index) => (
+          <View key={row[0].id} style={[styles.row, index > 0 && styles.divided]}>
+            {row.map((tile) => (
+              <Tile key={tile.id} {...tile} large={index === 0} />
+            ))}
+          </View>
+        ))}
+        <View style={[styles.row, styles.divided]}>
+          <Tile {...count('errors')} />
+          <View style={styles.breakdown} testID="season-error-breakdown">
+            <Text style={styles.breakdownHeading}>{s.breakdownHeading}</Text>
+            {breakdown.length === 0 ? (
+              <Text style={styles.breakdownText}>{t.stats.none}</Text>
+            ) : (
+              breakdown.map((b) => (
+                <Text key={b.category} style={styles.breakdownText}>
+                  {s.breakdownItem(b.count, t.tags.errorTypeNames[b.category])}
+                </Text>
+              ))
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -101,20 +106,31 @@ export function SeasonStats({ season }: { season: PlayerSeason }) {
 
 const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
-  row: { flexDirection: 'row', gap: spacing.sm },
+  // v11: one stat sheet on a flat panel — the first row large, thin lines between the rows.
+  sheet: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.sm,
+  },
+  row: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.sm },
+  divided: { borderTopWidth: borderWidth.thin, borderTopColor: theme.colors.border },
   tile: {
     flex: 1,
     minHeight: touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    gap: spacing.xxs,
   },
-  value: { ...typography.subheading, color: theme.colors.text },
+  value: { ...typography.heading, fontVariant: ['tabular-nums'], color: theme.colors.text },
+  // "11 of 11" must stay on one line in a third of 375 px; the wide dyslexia font keeps the
+  // size it had before v11.
+  valueLarge: {
+    ...(theme.dyslexiaFont ? typography.subheading : typography.displayM),
+    fontVariant: ['tabular-nums'],
+    color: theme.colors.text,
+  },
   label: { ...typography.caption, color: theme.colors.textMuted, textAlign: 'center' },
+  labelLarge: { ...typography.eyebrow, color: theme.colors.textMuted, textAlign: 'center' },
   // Two tiles wide, next to the Errors tile.
   breakdown: { flex: 2, justifyContent: 'center', padding: spacing.sm },
   breakdownHeading: { ...typography.caption, color: theme.colors.textMuted },

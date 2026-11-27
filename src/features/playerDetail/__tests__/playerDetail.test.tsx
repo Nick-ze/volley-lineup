@@ -107,7 +107,9 @@ describe('Player detail', () => {
     await fireEvent.press(screen.getByTestId('player-7'));
     expect(screen).toHavePathname('/team/t1/players/p7');
 
-    expect(within(screen.getByTestId('player-header')).getByText('First7 Last7')).toBeTruthy();
+    // v11: the player's name is the screen's title (in the header), not repeated beside the photo.
+    expect(screen.getByRole('header', { name: 'First7 Last7' })).toBeTruthy();
+    expect(within(screen.getByTestId('player-header')).queryByText('First7 Last7')).toBeNull();
     expect(screen.getByTestId('player-number-circle')).toBeTruthy();
     expect(
       screen.getByLabelText(t.playerDetail.headerLabel(7, 'First7 Last7', 'Libero', 'Active')),

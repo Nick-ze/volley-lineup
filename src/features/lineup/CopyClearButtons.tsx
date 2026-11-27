@@ -37,7 +37,7 @@ export function CopyClearButtons({ editor, previous }: CopyClearButtonsProps) {
       <Button
         label={t.lineup.clear}
         accessibilityLabel={t.lineup.clearLabel}
-        variant="danger"
+        variant="dangerQuiet"
         compact
         disabled={locked}
         onPress={() => update(clearLineup(set))}

@@ -78,7 +78,12 @@ export function ImportSection() {
           </View>
         </View>
       ) : (
-        <Button label={t.transfer.import.pick} onPress={pick} testID="import-pick" />
+        <Button
+          label={t.transfer.import.pick}
+          variant="secondary"
+          onPress={pick}
+          testID="import-pick"
+        />
       )}
       <StatusMessage status={statusOf(t, state)} testID="import-status" />
     </Section>

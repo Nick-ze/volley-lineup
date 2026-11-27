@@ -70,9 +70,8 @@ const useStyles = makeStyles((theme) => ({
     minHeight: touchTarget * 3,
     padding: spacing.md,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    // v11: a filled field like `TextField`.
+    backgroundColor: theme.colors.surfaceRaised,
     color: theme.colors.text,
   },
   footer: {
