@@ -6,13 +6,13 @@ import { seasonOverview } from '@/domain/stats';
 import type { Match, Season } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useTeam } from '@/store';
-import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { KindBadge } from './KindBadge';
 import { seasonSummary, seasonWhenWhere } from './seasonText';
 
-/** v8: diameter of the team picture on a season box. */
-const SEASON_TEAM_AVATAR = 32;
+/** v8: size of the team picture on a season box. */
+const SEASON_TEAM_AVATAR = touchTarget;
 
 export interface SeasonCardProps {
   season: Season;
@@ -21,7 +21,7 @@ export interface SeasonCardProps {
   onPress: () => void;
 }
 
-/** A season "box": name, kind, dates / place and "5 matches · 3–1". */
+/** A season "box" (v11: a flat panel): kind, name, dates / place and "5 matches · 3–1". */
 export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
   const styles = useStyles();
   const t = useT();
@@ -30,25 +30,24 @@ export function SeasonCard({ season, matches, onPress }: SeasonCardProps) {
   const whenWhere = seasonWhenWhere(t, season);
   const summary = seasonSummary(t, matches.length, overview);
   const kind = t.seasons.kind[season.kind];
-  const spoken = [season.name, kind, whenWhere, summary].filter((x) => x !== '').join(', ');
+  // In the order shown (v11: the kind stands above the name), so the label starts with the text.
+  const spoken = [kind, season.name, whenWhere, summary].filter((x) => x !== '').join(', ');
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t.seasons.list.open(spoken)}
       onPress={onPress}
       testID={`season-${season.id}`}
-      style={({ pressed }) => [
-        styles.card,
-        season.kind === 'tournament' && styles.tournament,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.top}>
         {team ? <TeamAvatar team={team} size={SEASON_TEAM_AVATAR} /> : null}
-        <Text style={styles.name} numberOfLines={2}>
-          {season.name}
-        </Text>
-        <KindBadge kind={season.kind} />
+        <View style={styles.title}>
+          <KindBadge kind={season.kind} />
+          <Text style={styles.name} numberOfLines={2}>
+            {season.name}
+          </Text>
+        </View>
       </View>
       {whenWhere !== '' ? <Text style={styles.meta}>{whenWhere}</Text> : null}
       <Text style={styles.summary} testID="season-summary">
@@ -63,17 +62,13 @@ const useStyles = makeStyles((theme) => ({
     minHeight: touchTarget * 2,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: borderWidth.thin,
-    borderColor: theme.colors.border,
-    borderLeftWidth: borderWidth.thick,
-    borderLeftColor: theme.colors.primary,
     padding: spacing.lg,
     gap: spacing.xs,
   },
-  tournament: { borderLeftColor: theme.colors.secondary },
   pressed: { opacity: 0.8 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  name: { ...typography.subheading, color: theme.colors.text, flex: 1 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  title: { flex: 1, gap: spacing.xxs },
+  name: { ...typography.subheading, color: theme.colors.text },
   meta: { ...typography.label, color: theme.colors.textMuted },
   summary: { ...typography.body, color: theme.colors.text },
 }));

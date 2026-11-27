@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { MAX_NAME_LENGTH } from '@/domain/syncSchema';
-import { Button, ListRow, TextField, useFormStyles, useListStyles } from '@/components';
+import { Button, IconButton, ListRow, TextField, useFormStyles, useListStyles } from '@/components';
 import {
   validateOpponentName,
   type OpponentNameError,
@@ -85,11 +85,9 @@ export function OpponentRow({ record, editable, deletable, onOpen, onDelete }: O
       actions={
         editable ? (
           <View style={listStyles.actions}>
-            <Button
-              label={s.rename}
+            <IconButton
+              icon="pencil"
               accessibilityLabel={s.renameLabel(opponent.name)}
-              variant="secondary"
-              compact
               onPress={() => {
                 setName(opponent.name);
                 setError(undefined);
@@ -97,11 +95,9 @@ export function OpponentRow({ record, editable, deletable, onOpen, onDelete }: O
               }}
             />
             {deletable ? (
-              <Button
-                label={s.delete}
+              <IconButton
+                icon="trash-outline"
                 accessibilityLabel={s.deleteLabel(opponent.name)}
-                variant="danger"
-                compact
                 onPress={onDelete}
               />
             ) : null}

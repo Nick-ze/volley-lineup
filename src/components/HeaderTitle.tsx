@@ -20,10 +20,13 @@ export function HeaderTitle({
   children,
   leading,
   subtitle,
+  testID,
 }: {
   children: string;
   leading?: ReactNode;
   subtitle?: string;
+  /** For the title text. */
+  testID?: string;
 }) {
   const styles = useStyles();
   const large = useContext(HeaderVariantContext) === 'large';
@@ -34,6 +37,7 @@ export function HeaderTitle({
       adjustsFontSizeToFit={large}
       minimumFontScale={large ? LARGE_TITLE_MIN_SCALE : undefined}
       style={large ? styles.large : styles.compact}
+      testID={testID}
     >
       {children}
     </Text>

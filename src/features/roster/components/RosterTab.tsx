@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
-import { Button, ReadOnlyNote, useListStyles } from '@/components';
+import {
+  Banner,
+  Button,
+  EmptyState,
+  ReadOnlyNote,
+  useFormStyles,
+  useListStyles,
+} from '@/components';
 import { duplicateNumbers } from '@/domain/roster';
 import { rosterCardWidth, rosterColumns } from '@/domain/rosterGrid';
 import { ScorerListButton } from '@/features/print/ScorerListButton';
 import { useT } from '@/i18n';
 import { useAppStore, usePlayersForTeam, useTeamAccess } from '@/store';
-import { makeStyles, maxContentWidth, radius, spacing, typography } from '@/theme';
+import { makeStyles, maxContentWidth, spacing } from '@/theme';
 
 import { PlayerCard } from './PlayerCard';
 
@@ -29,6 +36,7 @@ const GAP = spacing.sm;
  */
 export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps) {
   const styles = useListStyles();
+  const form = useFormStyles();
   const grid = useGridStyles();
   const t = useT();
   const players = usePlayersForTeam(teamId);
@@ -49,7 +57,7 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
   return (
     <>
       <View style={[styles.headerRow, styles.tabHeader]}>
-        <Text style={styles.subtitle}>{t.roster.team.playerCount(players.length)}</Text>
+        <Text style={form.eyebrow}>{t.roster.team.playerCount(players.length)}</Text>
         {/* v9.2: wraps below the count when both buttons don't fit (375 px, German, dyslexia font). */}
         <View style={grid.actions}>
           {players.length > 0 ? <ScorerListButton teamId={teamId} /> : null}
@@ -64,13 +72,13 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
         </View>
       ) : null}
       {duplicates.length > 0 ? (
-        <View style={[grid.warning, styles.tabHeader]} testID="roster-duplicate-numbers">
-          <Text style={grid.warningText} accessibilityRole="alert" accessibilityLiveRegion="polite">
+        <View style={styles.tabHeader}>
+          <Banner alert testID="roster-duplicate-numbers">
             {t.roster.roster.duplicateNumbers(duplicates)}
-          </Text>
+          </Banner>
         </View>
       ) : null}
-      {players.length === 0 && <Text style={styles.empty}>{t.roster.roster.empty}</Text>}
+      {players.length === 0 && <EmptyState>{t.roster.roster.empty}</EmptyState>}
       <View style={grid.grid} onLayout={onLayout} testID="roster-grid">
         {players.map((p) => (
           <PlayerCard
@@ -88,18 +96,8 @@ export function RosterTab({ teamId, onAddPlayer, onOpenPlayer }: RosterTabProps)
   );
 }
 
-const useGridStyles = makeStyles((theme) => ({
+const useGridStyles = makeStyles(() => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
-  // Same look as the sync notices: the yellow border marks a warning.
-  warning: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.highlightText,
-    backgroundColor: theme.colors.surface,
-  },
-  warningText: { ...typography.body, color: theme.colors.text },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',

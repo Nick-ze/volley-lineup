@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button, ReadOnlyNote, useListStyles } from '@/components';
+import { Button, EmptyState, ReadOnlyNote, useListStyles } from '@/components';
 import { fullName } from '@/domain/playerNames';
 import { emptySetLineup } from '@/domain/lineup';
 import { applyPresetToSet, filledCount, isPresetComplete } from '@/domain/presets';
@@ -59,7 +59,7 @@ export function StartersTab({ teamId, onEdit }: StartersTabProps) {
     return (
       <View style={styles.wrap}>
         {note}
-        <Text style={listStyles.empty}>{s.empty}</Text>
+        <EmptyState>{s.empty}</EmptyState>
         {canEdit ? (
           <Button
             label={s.set}
@@ -125,8 +125,6 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
   libero: { ...typography.body, color: theme.colors.text, textAlign: 'center' },

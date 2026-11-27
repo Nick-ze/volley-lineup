@@ -210,7 +210,8 @@ describe('seasons list (team → Matches tab)', () => {
     expect(screen.getByText('01.09.25 – 30.04.26 · Munich')).toBeTruthy();
     expect(screen.getByText('from 01.06.26')).toBeTruthy();
 
-    await press('2025/26, Season, 01.09.25 – 30.04.26 · Munich, 4 matches · 1–1. Open');
+    // v11: the kind stands above the name on the box, so it comes first in the label too.
+    await press('Season, 2025/26, 01.09.25 – 30.04.26 · Munich, 4 matches · 1–1. Open');
     expect(screen).toHavePathname(`/team/${team.id}/season/${a.id}`);
     expect(screen.getByTestId('season-name')).toHaveTextContent('2025/26');
   });

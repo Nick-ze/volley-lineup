@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { useListStyles } from '@/components';
+import { EmptyState } from '@/components';
 import { seasonOverview, seasonStats } from '@/domain/stats';
 import { defaultStatsSeasonId } from '@/domain/statsSeason';
 import { useT } from '@/i18n';
@@ -19,7 +19,6 @@ import { SeasonOverview } from './SeasonOverview';
  * season with a played match).
  */
 export function StatsTab({ teamId }: { teamId: string }) {
-  const listStyles = useListStyles();
   const styles = useStyles();
   const t = useT();
   const all = useMatchesForTeam(teamId);
@@ -37,11 +36,7 @@ export function StatsTab({ teamId }: { teamId: string }) {
   const anyPlayed = useMemo(() => seasonOverview(all).played > 0, [all]);
 
   if (!anyPlayed) {
-    return (
-      <Text style={listStyles.empty} testID="stats-empty">
-        {t.stats.empty}
-      </Text>
-    );
+    return <EmptyState testID="stats-empty">{t.stats.empty}</EmptyState>;
   }
   return (
     <View style={styles.wrap} testID="stats-tab">
@@ -49,9 +44,7 @@ export function StatsTab({ teamId }: { teamId: string }) {
         <SeasonFilter seasons={seasons} value={seasonId} onChange={setChosen} />
       ) : null}
       {overview.played === 0 ? (
-        <Text style={listStyles.empty} testID="stats-season-empty">
-          {t.stats.seasonFilter.empty}
-        </Text>
+        <EmptyState testID="stats-season-empty">{t.stats.seasonFilter.empty}</EmptyState>
       ) : (
         <>
           <SeasonOverview

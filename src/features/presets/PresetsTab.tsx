@@ -4,9 +4,12 @@ import { Text, View } from 'react-native';
 import {
   Button,
   ConfirmDialog,
+  EmptyState,
+  IconButton,
   ListRow,
   ReadOnlyNote,
   useConfirm,
+  useFormStyles,
   useListStyles,
 } from '@/components';
 import {
@@ -35,6 +38,7 @@ type Dialog = { mode: 'new' } | { mode: 'rename'; preset: LineupPreset } | null;
  */
 export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
   const styles = useListStyles();
+  const form = useFormStyles();
   const t = useT();
   const s = t.presets.list;
   const presets = usePresetsForTeam(teamId);
@@ -57,7 +61,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
     <>
       <ReadOnlyNote block={block} />
       <View style={[styles.headerRow, styles.tabHeader]}>
-        <Text style={styles.subtitle}>{s.count(presets.length)}</Text>
+        <Text style={form.eyebrow}>{s.count(presets.length)}</Text>
         {canEdit ? (
           <Button
             label={s.add}
@@ -68,7 +72,7 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
           />
         ) : null}
       </View>
-      {presets.length === 0 && <Text style={styles.empty}>{s.empty}</Text>}
+      {presets.length === 0 && <EmptyState>{s.empty}</EmptyState>}
       <View style={styles.list}>
         {presets.map((p) => {
           const filled = filledCount(p);
@@ -84,25 +88,19 @@ export function PresetsTab({ teamId, onOpenPreset }: PresetsTabProps) {
               actions={
                 canEdit ? (
                   <>
-                    <Button
-                      label={t.common.rename}
+                    <IconButton
+                      icon="pencil"
                       accessibilityLabel={s.renameLabel(p.name)}
-                      variant="secondary"
-                      compact
                       onPress={() => setDialog({ mode: 'rename', preset: p })}
                     />
-                    <Button
-                      label={s.duplicate}
+                    <IconButton
+                      icon="copy-outline"
                       accessibilityLabel={s.duplicateLabel(p.name)}
-                      variant="secondary"
-                      compact
                       onPress={() => duplicate(p)}
                     />
-                    <Button
-                      label={t.common.delete}
+                    <IconButton
+                      icon="trash-outline"
                       accessibilityLabel={s.deleteLabel(p.name)}
-                      variant="danger"
-                      compact
                       onPress={() =>
                         ask(s.confirmDelete(p.name), () => {
                           // The role may have changed while the question was open (L18).

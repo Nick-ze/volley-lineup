@@ -6,10 +6,12 @@ import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
 import { useT } from '@/i18n';
 import { useIsCaptain } from '@/store';
-import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
-/** v8.2: the jersey number on a card without a picture, as a share of the picture's side. */
-const CARD_NUMBER_SCALE = 0.36;
+/** v11: the jersey number on a card without a picture, as a share of the picture's side. */
+const CARD_NUMBER_SCALE = 0.72;
+/** v11: height of the Active / Injured pill (px). */
+const PILL_HEIGHT = 28;
 /** v9.1: the captain badge's diameter on a card (px). */
 const CARD_CAPTAIN_SIZE = 28;
 
@@ -36,14 +38,10 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
   const captain = useIsCaptain(player);
   const positions = player.positions.map((p) => t.positions[p]).join(', ');
   const toggleText = player.active ? s.active : s.inactive;
-  // The picture spans the card inside its border; its top corners follow the card's.
-  const side = Math.max(0, width - 2 * borderWidth.thin);
-  const corner = Math.max(0, radius.lg - borderWidth.thin);
+  // The picture spans the card; the card clips its corners.
+  const side = Math.max(0, width);
   return (
-    <View
-      style={[styles.card, !player.active && styles.cardInactive, { width }]}
-      testID={`player-${player.number}-card`}
-    >
+    <View style={[styles.card, { width }]} testID={`player-${player.number}-card`}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={s.cardLabel(name, player.number, positions, player.active, captain)}
@@ -51,9 +49,7 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
         testID={`player-${player.number}`}
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
       >
-        <View
-          style={[styles.picture, { borderTopLeftRadius: corner, borderTopRightRadius: corner }]}
-        >
+        <View style={styles.picture}>
           <Photo
             photoId={player.photoId}
             size={side}
@@ -67,6 +63,7 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
                 inactive={!player.active}
                 large
                 largeScale={CARD_NUMBER_SCALE}
+                card
               />
             }
           />
@@ -82,10 +79,10 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
           <Text style={styles.name} numberOfLines={2} testID={`player-${player.number}-name`}>
             {name}
           </Text>
-          <Text style={styles.number} testID={`player-${player.number}-number`}>
-            {t.player.numberTag(player.number)}
-          </Text>
           <View style={styles.badges}>
+            <Text style={styles.number} testID={`player-${player.number}-number`}>
+              {t.player.numberTag(player.number)}
+            </Text>
             {player.positions.map((p) => (
               <PositionBadge key={p} position={p} />
             ))}
@@ -100,70 +97,71 @@ export function PlayerCard({ player, width, onPress, onToggleActive }: PlayerCar
           aria-checked={player.active}
           onPress={onToggleActive}
           testID={`player-${player.number}-active`}
-          style={({ pressed }) => [
-            styles.toggle,
-            !player.active && styles.toggleInjured,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}
         >
-          <Text style={[styles.toggleText, !player.active && styles.toggleTextInjured]}>
-            {toggleText}
-          </Text>
+          <StatePill active={player.active} text={toggleText} />
         </Pressable>
       ) : (
-        <View
-          style={[styles.toggle, !player.active && styles.toggleInjured, styles.status]}
-          testID={`player-${player.number}-status`}
-        >
-          <Text style={[styles.toggleText, !player.active && styles.toggleTextInjured]}>
-            {toggleText}
-          </Text>
+        <View style={styles.toggle} testID={`player-${player.number}-status`}>
+          <StatePill active={player.active} text={toggleText} />
         </View>
       )}
     </View>
   );
 }
 
+/** v11: Active / Injured as a small pill with a dot (green / red); the row around it is the target. */
+function StatePill({ active, text }: { active: boolean; text: string }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.pill}>
+      <View style={[styles.dot, !active && styles.dotInjured]} />
+      <Text style={[styles.toggleText, !active && styles.toggleTextInjured]}>{text}</Text>
+    </View>
+  );
+}
+
 const useStyles = makeStyles((theme) => ({
+  // v11: a flat panel; an injured player is told by the faded picture and the red dot.
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: borderWidth.thin,
-    borderColor: theme.colors.border,
     overflow: 'hidden',
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
   },
-  cardInactive: { borderColor: theme.colors.error },
   // Grows so the toggles of a row line up at the bottom of equally tall cards.
   main: { flexGrow: 1 },
   picture: { overflow: 'hidden' },
   captain: { position: 'absolute', top: spacing.sm, right: spacing.sm },
-  info: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.sm,
-  },
+  info: { gap: spacing.xs, paddingTop: spacing.sm, paddingHorizontal: spacing.md },
   pressed: { opacity: 0.8 },
-  name: { ...typography.subheading, color: theme.colors.text, textAlign: 'center' },
+  name: { ...typography.body, fontWeight: '700', color: theme.colors.text },
   number: { ...typography.label, color: theme.colors.textMuted },
-  badges: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xs },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs },
+  // The whole row is the 44 px target; the pill inside is the visible part.
   toggle: {
-    marginHorizontal: spacing.sm,
     minHeight: touchTarget,
     minWidth: touchTarget,
-    alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceRaised,
-    paddingHorizontal: spacing.sm,
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xs,
   },
-  toggleInjured: { borderColor: theme.colors.error, backgroundColor: theme.colors.transparent },
-  // v10: the same place as the toggle, but plain text (no switch for view-only members).
-  status: { borderColor: theme.colors.transparent, backgroundColor: theme.colors.transparent },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: PILL_HEIGHT,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.round,
+    backgroundColor: theme.colors.surfaceRaised,
+  },
+  dot: {
+    width: spacing.sm,
+    height: spacing.sm,
+    borderRadius: radius.round,
+    backgroundColor: theme.colors.positive,
+  },
+  dotInjured: { backgroundColor: theme.colors.error },
   toggleText: { ...typography.label, color: theme.colors.text },
   toggleTextInjured: { color: theme.colors.error },
 }));

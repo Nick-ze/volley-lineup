@@ -1,7 +1,14 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 
-import { NotFound, ReadOnlyNote, Screen, ScreenTitle, SwipeTabs } from '@/components';
+import {
+  appHeaderOnly,
+  HeaderTitle,
+  NotFound,
+  ReadOnlyNote,
+  Screen,
+  SwipeTabs,
+} from '@/components';
 import { seasonTabPage } from '@/domain/tour';
 import { SeasonHeader } from '@/features/seasons/SeasonHeader';
 import { SeasonMatches } from '@/features/seasons/SeasonMatches';
@@ -77,7 +84,7 @@ export default function SeasonScreen() {
   };
   return (
     <Screen>
-      <ScreenTitle title={team.name} />
+      <SeasonTitle name={season.name} />
       <SeasonHeader
         season={season}
         tab={tab}
@@ -95,4 +102,16 @@ export default function SeasonScreen() {
       />
     </Screen>
   );
+}
+
+/** v11: the season's name is the screen's title (kept while the name is the same). */
+function SeasonTitle({ name }: { name: string }) {
+  const options = useMemo(
+    () => ({
+      title: name,
+      headerTitle: appHeaderOnly(() => <HeaderTitle testID="season-name">{name}</HeaderTitle>),
+    }),
+    [name],
+  );
+  return <Stack.Screen options={options} />;
 }

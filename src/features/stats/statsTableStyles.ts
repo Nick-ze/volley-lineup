@@ -16,10 +16,9 @@ export const useStatsTableStyles = makeStyles((theme) => ({
     flexDirection: 'row',
     alignSelf: 'flex-start',
     maxWidth: '100%',
+    // v11: a flat panel without an outline.
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   scroller: { flexGrow: 0, flexShrink: 1 },
@@ -29,11 +28,13 @@ export const useStatsTableStyles = makeStyles((theme) => ({
     color: theme.colors.text,
     height: ROW_HEIGHT,
     lineHeight: ROW_HEIGHT,
+    // The typeface's digits line up in their columns.
+    fontVariant: ['tabular-nums'],
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border,
   },
-  headCell: { paddingHorizontal: spacing.sm, backgroundColor: theme.colors.surfaceRaised },
-  header: { ...typography.label, color: theme.colors.textMuted, lineHeight: ROW_HEIGHT },
+  headCell: { paddingHorizontal: spacing.sm },
+  header: { ...typography.eyebrow, color: theme.colors.textMuted, lineHeight: ROW_HEIGHT },
   // v8: the wide dyslexia font needs wider columns ("100%").
   num: { width: theme.dyslexiaFont ? CELL_WIDTH * 1.3 : CELL_WIDTH, textAlign: 'center' },
   legend: { ...typography.caption, color: theme.colors.textMuted },

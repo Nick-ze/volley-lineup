@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button, ConfirmDialog, ListRow, useConfirm, useListStyles } from '@/components';
+import {
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  IconButton,
+  ListRow,
+  useConfirm,
+  useListStyles,
+} from '@/components';
 import type { ManagerProfile } from '@/domain/types';
 import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { useT } from '@/i18n';
@@ -46,7 +54,7 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
         />
       )}
 
-      {profiles.length === 0 && editing === null && <Text style={styles.empty}>{s.empty}</Text>}
+      {profiles.length === 0 && editing === null && <EmptyState>{s.empty}</EmptyState>}
       {profiles.length > 0 && editing === null && <Text style={styles.empty}>{s.hint}</Text>}
 
       <View style={styles.list}>
@@ -73,18 +81,14 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
               accessibilityLabel={s.select(p.name)}
               actions={
                 <>
-                  <Button
-                    label={t.common.edit}
+                  <IconButton
+                    icon="pencil"
                     accessibilityLabel={s.rename(p.name)}
-                    variant="ghost"
-                    compact
                     onPress={() => setEditing({ mode: 'edit', profile: p })}
                   />
-                  <Button
-                    label={t.common.delete}
+                  <IconButton
+                    icon="trash-outline"
                     accessibilityLabel={s.delete(p.name)}
-                    variant="danger"
-                    compact
                     onPress={() =>
                       ask(t.roster.confirm.deleteProfile(p.name), () => deleteProfile(p.id))
                     }

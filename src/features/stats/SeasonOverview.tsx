@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { useListStyles } from '@/components';
 import type { SeasonOverview as Overview } from '@/domain/stats';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** One number with its caption, e.g. "Sets 3 : 3". */
 function Tile({
@@ -11,15 +11,23 @@ function Tile({
   value,
   a11y,
   testID,
+  first = false,
 }: {
   label: string;
   value: string;
   a11y: string;
   testID: string;
+  /** The first tile has no dividing line at its left. */
+  first?: boolean;
 }) {
   const styles = useStyles();
   return (
-    <View style={styles.tile} accessible accessibilityLabel={a11y} testID={testID}>
+    <View
+      style={[styles.tile, !first && styles.divided]}
+      accessible
+      accessibilityLabel={a11y}
+      testID={testID}
+    >
       <Text style={styles.value}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </View>
@@ -44,6 +52,7 @@ export function SeasonOverview({ overview, heading }: { overview: Overview; head
           value={s.recordValue(won, lost)}
           a11y={s.recordLabel(won, lost)}
           testID="season-record"
+          first
         />
         <Tile
           label={s.sets}
@@ -65,18 +74,23 @@ export function SeasonOverview({ overview, heading }: { overview: Overview; head
 
 const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
-  tiles: { flexDirection: 'row', gap: spacing.sm },
+  // v11: one band of large numbers on a flat panel, divided by thin lines.
+  tiles: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+  },
   tile: {
     flex: 1,
     minHeight: touchTarget,
     alignItems: 'center',
-    padding: spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    justifyContent: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.sm,
   },
-  value: { ...typography.subheading, color: theme.colors.text },
-  label: { ...typography.caption, color: theme.colors.textMuted },
+  divided: { borderLeftWidth: borderWidth.thin, borderLeftColor: theme.colors.border },
+  value: { ...typography.displayM, fontVariant: ['tabular-nums'], color: theme.colors.text },
+  label: { ...typography.eyebrow, color: theme.colors.textMuted },
   note: { ...typography.caption, color: theme.colors.textMuted },
 }));

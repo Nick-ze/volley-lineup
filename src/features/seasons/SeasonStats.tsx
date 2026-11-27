@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { useListStyles } from '@/components';
+import { EmptyState } from '@/components';
 import { seasonOverview, seasonStats } from '@/domain/stats';
 import { PlayerTable } from '@/features/stats/PlayerTable';
 import { RotationTable } from '@/features/stats/RotationTable';
@@ -12,7 +12,6 @@ import { makeStyles, spacing } from '@/theme';
 
 /** The season's record, sets and points, then rotation and player tables (only its matches). */
 export function SeasonStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
-  const listStyles = useListStyles();
   const styles = useStyles();
   const t = useT();
   const matches = useMatchesForSeason(seasonId);
@@ -22,11 +21,7 @@ export function SeasonStats({ teamId, seasonId }: { teamId: string; seasonId: st
   const stats = useMemo(() => seasonStats(matches, players), [matches, players]);
 
   if (overview.played === 0) {
-    return (
-      <Text style={listStyles.empty} testID="season-stats-empty">
-        {t.seasons.stats.empty}
-      </Text>
-    );
+    return <EmptyState testID="season-stats-empty">{t.seasons.stats.empty}</EmptyState>;
   }
   return (
     <View style={styles.wrap} testID="season-stats">

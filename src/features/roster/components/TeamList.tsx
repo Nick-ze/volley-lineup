@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Button, ConfirmDialog, useConfirm, useListStyles } from '@/components';
+import { Button, ConfirmDialog, EmptyState, useConfirm, useListStyles } from '@/components';
 import type { Team } from '@/domain/types';
 import { applyPhotoDraft } from '@/features/photos/photoDraft';
 import { SharedTeamDeleteDialog } from '@/features/sync/SharedTeamDeleteDialog';
@@ -67,7 +67,7 @@ export function TeamList({
         </View>
       )}
 
-      {teams.length === 0 && <Text style={styles.empty}>{s.empty}</Text>}
+      {teams.length === 0 && <EmptyState>{s.empty}</EmptyState>}
 
       <View style={styles.list}>
         {teams.map((team) =>
