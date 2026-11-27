@@ -18,8 +18,8 @@ export interface SeasonHeaderProps {
 }
 
 /**
- * The season's name, kind, dates / place, Edit (v10: not for view-only members), and the
- * Matches · Opponents · Stats tabs.
+ * The season's kind, dates / place, Edit (v10: not for view-only members), and the Matches ·
+ * Opponents · Stats tabs. v11: the season's name is the screen's title (in the header).
  */
 export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) {
   const styles = useStyles();
@@ -31,9 +31,6 @@ export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) 
     <View style={styles.wrap}>
       <View style={styles.top}>
         <View style={styles.titleBox}>
-          <Text style={styles.name} accessibilityRole="header" testID="season-name">
-            {season.name}
-          </Text>
           <View style={styles.metaRow}>
             <KindBadge kind={season.kind} />
             {whenWhere !== '' ? <Text style={styles.meta}>{whenWhere}</Text> : null}
@@ -68,9 +65,8 @@ export function SeasonHeader({ season, tab, onTab, onEdit }: SeasonHeaderProps) 
 
 const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.md },
-  top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   titleBox: { flex: 1, gap: spacing.xs },
-  name: { ...typography.heading, color: theme.colors.text },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
   meta: { ...typography.label, color: theme.colors.textMuted },
   tabs: { flexDirection: 'row', gap: spacing.sm },

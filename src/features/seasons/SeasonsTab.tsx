@@ -1,7 +1,7 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button, ReadOnlyNote, useListStyles } from '@/components';
+import { Button, EmptyState, ReadOnlyNote, useListStyles } from '@/components';
 import type { Match, Season } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useMatchesForTeam, useSeasonsForTeam, useTeamAccess } from '@/store';
@@ -42,11 +42,7 @@ export function SeasonsTab({ teamId, onNewSeason, onOpenSeason }: SeasonsTabProp
           <ReadOnlyNote block={access.block} />
         </View>
       )}
-      {seasons.length === 0 ? (
-        <Text style={listStyles.empty} testID="seasons-empty">
-          {s.empty}
-        </Text>
-      ) : null}
+      {seasons.length === 0 ? <EmptyState testID="seasons-empty">{s.empty}</EmptyState> : null}
       <View style={[styles.grid, wide && styles.gridWide]} testID="season-list">
         {seasons.map((season) => (
           <View key={season.id} style={wide ? styles.cellWide : null}>

@@ -1,7 +1,14 @@
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
-/** Below this width for the name area, a row's action buttons wrap onto a second line. */
-const listRowMainMinWidth = 140;
+/**
+ * Below this width for the name area, a row's action buttons wrap onto a second line. The wide
+ * dyslexia font needs more room for the name, so there the actions wrap sooner.
+ */
+const LIST_ROW_MAIN_MIN_WIDTH = 140;
+const LIST_ROW_MAIN_MIN_WIDTH_WIDE_FONT = 230;
+
+const mainMinWidth = (wideFont: boolean) =>
+  wideFont ? LIST_ROW_MAIN_MIN_WIDTH_WIDE_FONT : LIST_ROW_MAIN_MIN_WIDTH;
 
 /** Styles shared by the roster feature's forms and list rows. */
 export const useFormStyles = makeStyles((theme) => ({
@@ -36,7 +43,7 @@ export const useListStyles = makeStyles((theme) => ({
   main: {
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: listRowMainMinWidth,
+    flexBasis: mainMinWidth(theme.dyslexiaFont),
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -46,7 +53,7 @@ export const useListStyles = makeStyles((theme) => ({
   },
   // v8 QA: a row with a picture (team list) keeps the same room for the name, so at phone widths
   // the actions wrap below instead of cutting the name short ("Volley …").
-  mainWithLeading: { flexBasis: listRowMainMinWidth + touchTarget + spacing.md },
+  mainWithLeading: { flexBasis: mainMinWidth(theme.dyslexiaFont) + touchTarget + spacing.md },
   text: { flex: 1, gap: spacing.xxs },
   title: { ...typography.subheading, color: theme.colors.text },
   subtitle: { ...typography.label, color: theme.colors.textMuted },

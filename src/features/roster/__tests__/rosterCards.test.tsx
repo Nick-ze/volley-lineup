@@ -87,9 +87,9 @@ describe('roster player cards (v8)', () => {
     const photo = StyleSheet.flatten(
       card.getByTestId('photo', { includeHiddenElements: true }).props.style,
     );
-    // 167 px card minus its 1 px border on each side; square, not a circle.
-    expect(photo.width).toBe(165);
-    expect(photo.height).toBe(165);
+    // The whole 167 px card (v11: the card has no border any more); square, not a circle.
+    expect(photo.width).toBe(167);
+    expect(photo.height).toBe(167);
     expect(photo.borderRadius).toBe(0);
   });
 

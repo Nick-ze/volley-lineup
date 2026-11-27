@@ -1,6 +1,6 @@
 import { Text } from 'react-native';
 
-import { Button, ListRow, useListStyles } from '@/components';
+import { IconButton, ListRow, useListStyles } from '@/components';
 import { formatDate } from '@/domain/dates';
 import type { Match } from '@/domain/types';
 import { matchResultLabel } from '@/features/live/matchResult';
@@ -28,11 +28,9 @@ export function MatchRow({ match: m, onOpen, onDelete }: MatchRowProps) {
       accessibilityLabel={result ? `${open}. ${t.match.resultLabel(result)}` : open}
       actions={
         onDelete ? (
-          <Button
-            label={t.common.delete}
+          <IconButton
+            icon="trash-outline"
             accessibilityLabel={s.delete(m.opponent)}
-            variant="danger"
-            compact
             onPress={onDelete}
           />
         ) : undefined

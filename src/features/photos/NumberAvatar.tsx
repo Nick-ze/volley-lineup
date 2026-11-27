@@ -17,6 +17,7 @@ export function NumberAvatar({
   shape = 'circle',
   cornerRadius = 0,
   largeScale = LARGE_SCALE,
+  card = false,
 }: {
   /** The number as shown (may be empty in a new player's form). */
   number: number | string;
@@ -30,6 +31,11 @@ export function NumberAvatar({
   cornerRadius?: number;
   /** With `large`: the number's size as a share of `size` (default 0.4). */
   largeScale?: number;
+  /**
+   * v11, roster cards: a dark tile with the number in the display typeface and in orange (solid
+   * orange is kept for the court and the main action). Use with `large`.
+   */
+  card?: boolean;
 }) {
   const styles = useStyles();
   const { fonts } = useTheme();
@@ -38,6 +44,7 @@ export function NumberAvatar({
       style={[
         styles.circle,
         { width: size, height: size, borderRadius: shape === 'circle' ? size / 2 : cornerRadius },
+        card && styles.card,
         inactive && styles.inactive,
       ]}
       accessibilityElementsHidden
@@ -46,7 +53,9 @@ export function NumberAvatar({
       <Text
         style={[
           styles.text,
-          large && inlineFontSize(Math.round(size * largeScale), fonts),
+          large && inlineFontSize(Math.round(size * largeScale), fonts, card),
+          card && { fontFamily: fonts.displayHeavy },
+          card && styles.cardText,
           inactive && styles.textInactive,
         ]}
       >
@@ -62,6 +71,8 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  card: { backgroundColor: theme.colors.surfaceRaised },
+  cardText: { color: theme.colors.primaryText, fontWeight: undefined },
   inactive: { backgroundColor: theme.colors.surfaceRaised },
   text: {
     ...typography.subheading,

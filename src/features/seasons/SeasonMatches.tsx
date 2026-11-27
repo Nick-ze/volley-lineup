@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Button, ConfirmDialog, TextField, useConfirm, useListStyles } from '@/components';
+import {
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  TextField,
+  useConfirm,
+  useListStyles,
+} from '@/components';
 import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
 import { useT } from '@/i18n';
@@ -69,9 +76,9 @@ export function SeasonMatches({
         {canEdit ? <Button label={s.newMatch} onPress={onNewMatch} compact /> : null}
       </View>
       {matches.length === 0 && (
-        <Text style={styles.empty}>
+        <EmptyState>
           {opponent ? t.seasons.matches.emptyFor(opponent.name) : t.seasons.matches.empty}
-        </Text>
+        </EmptyState>
       )}
       {matches.length > 0 && (
         <TextField

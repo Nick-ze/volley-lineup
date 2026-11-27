@@ -8,6 +8,8 @@ export interface BannerProps {
   children: string;
   /** Beside the text (e.g. a button that resolves it). */
   action?: ReactNode;
+  /** Announce it to screen readers when it appears (a warning). */
+  alert?: boolean;
   testID?: string;
 }
 
@@ -15,11 +17,17 @@ export interface BannerProps {
  * v11: a notice on a soft yellow field (PLAN §46.2: yellow marks what is current and what needs
  * a look), e.g. "This set has been played …". Text only — no icon or emoji (DECISIONS #343).
  */
-export function Banner({ children, action, testID }: BannerProps) {
+export function Banner({ children, action, alert = false, testID }: BannerProps) {
   const styles = useStyles();
   return (
     <View style={styles.box} testID={testID}>
-      <Text style={styles.text}>{children}</Text>
+      <Text
+        style={styles.text}
+        accessibilityRole={alert ? 'alert' : undefined}
+        accessibilityLiveRegion={alert ? 'polite' : undefined}
+      >
+        {children}
+      </Text>
       {action}
     </View>
   );

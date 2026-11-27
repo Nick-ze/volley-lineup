@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import {
   Button,
   ConfirmDialog,
+  EmptyState,
   TextField,
   useConfirm,
   useFormStyles,
@@ -88,7 +89,7 @@ export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsPro
           </View>
         </View>
       ) : null}
-      {records.length === 0 ? <Text style={listStyles.empty}>{s.empty}</Text> : null}
+      {records.length === 0 ? <EmptyState>{s.empty}</EmptyState> : null}
       <View style={listStyles.list} testID="opponent-list">
         {records.map((r) => (
           <OpponentRow
