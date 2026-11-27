@@ -1429,3 +1429,8 @@ Each part of the rule and each of these fixes was undone once to see a test fail
   and switched on there.
 - Not checked on a phone: the share sheet opening from inside the dialog, and the dialog's
   height on a small screen with the long German texts.
+
+## Released
+
+Everything above that was merged is in **v10.0.1** (2026-11-27, DECISIONS #335). Sentences in this
+file that say "not released" describe the time they were written.

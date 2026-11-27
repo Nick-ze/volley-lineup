@@ -26,9 +26,11 @@ Available in English and German.
   invite your players (view only) and other coaches (can edit) with a code.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 10.0**: accounts and cloud sync. Sign in (optional) to see your teams on all your devices; share a team
-with an invite code — managers edit, players view. Everything still works offline and without an account. 9.2 added a
-player list for the scorer, 9.1 the team captain.
+**What's new in 10.0.1**: a safer cloud sync. A full review of 10.0 found ways a shared team could lose data (for
+example after "delete profile → restore backup → sign in"); they are fixed, so please update. Also new: "I already
+have a code" on the sign-in screen, a second device that takes over live scoring can no longer be overwritten by the
+first one, and the app asks before a team's cloud version replaces an older copy on your device. 10.0 added accounts
+and cloud sync (optional): your teams on all your devices, shared with an invite code — managers edit, players view.
 [All versions →](docs/README_LEGACY.md#version-history)
 
 ## Install on Android (APK)
