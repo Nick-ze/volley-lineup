@@ -45,7 +45,6 @@ import {
   whenHydrated,
 } from './storeOps';
 import { forgetPhotos } from './photoSync';
-import type { DeviceStamp, ServerTime } from './serverTime';
 import { dropGoneTeams, forgetHeld, needsReset, noteAll, pullTeam, pushTeam } from './teamSync';
 
 export interface EngineTiming {
@@ -98,9 +97,6 @@ export class SyncEngine implements EngineCore {
   readonly refused = new Map<string, Set<string>>();
   readonly unsent = new Map<string, string>();
   readonly pushLimit = { ...PUSH_LIMITS };
-  serverTime: ServerTime | null = null;
-  readonly deviceStamps = new Map<string, DeviceStamp>();
-  readonly sentUnconverted = new Set<string>();
   private current: BackendSession | null = null;
   private started = false;
   private needsRestore = false;

@@ -44,18 +44,6 @@ export interface DetectResult {
 
 const kindOrder = (kind: RecordKind) => RECORD_KINDS.indexOf(kind);
 
-/**
- * `now` — but a record changed again never gets an earlier (or the same) save time than the
- * change it replaces: that one may already be on the server (a push whose answer was lost), and
- * the two times may come from different clocks (the device's and the server's, audit M2).
- */
-function after(now: string, earlier: string): string {
-  const floor = Date.parse(earlier);
-  const t = Date.parse(now);
-  if (Number.isNaN(t) || Number.isNaN(floor) || t > floor) return now;
-  return new Date(floor + 1).toISOString();
-}
-
 function change(key: string, payload: RecordPayload | null, hash: string, at: string): LocalChange {
   const { kind, id } = parseRecordKey(key) as { kind: RecordKind; id: string };
   return { key, kind, id, payload, hash, at };
@@ -77,7 +65,7 @@ export function detectChanges(
   const changes: LocalChange[] = [];
   const stamp = (key: string, hash: string): SyncEdit => {
     const old = team.edits[key];
-    const edit = old?.h === hash ? old : { at: old ? after(now, old.at) : now, h: hash };
+    const edit = old?.h === hash ? old : { at: now, h: hash };
     edits[key] = edit;
     return edit;
   };

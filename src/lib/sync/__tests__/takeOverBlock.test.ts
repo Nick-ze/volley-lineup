@@ -20,7 +20,6 @@ import { BackendError } from '../errors';
 import { holdMatch, releaseMatch } from '../holdCommands';
 import { createInvite } from '../memberCommands';
 import { joinTeam, uploadTeams } from '../teamCommands';
-import { noteAll } from '../teamSync';
 
 const T1 = 't1';
 const M = 'm2';
@@ -198,14 +197,6 @@ describe('the previous scorer after a take-over (audit M1)', () => {
     // new scorer makes in the next 30 s.
     const { cloud, a, b } = await takenOver(30_000);
     await score(a, 'us');
-    // Since the v10 audit's M2 a device notes its changes in the server's time once a pull has
-    // told it, and converts what it noted earlier in the same app run. Here the rally was noted
-    // with A's own clock (nothing measured yet in that run) and the app was then closed: a
-    // time from an earlier app run stays as it is — the case this test is about.
-    a.engine.serverTime = null;
-    await a.act((e) => noteAll(e));
-    a.engine.deviceStamps.clear();
-    cloud.clock.tick(1000); // the app is opened again a moment later
     await a.cycle(); // A notices the take-over; its rally waits
     // A leaves the live screen: the match stays yielded while the other hold lasts.
     await a.act((e) => releaseMatch(e, T1, M));
