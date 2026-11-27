@@ -46,6 +46,20 @@ export function isUnchangedRecord(
   return known !== undefined && !known.del && known.h === hash;
 }
 
+/**
+ * True when the team is on this device as a copy that isn't linked to the cloud (v10 audit M7):
+ * an older copy of a team the account left, was removed from, or shared from another device.
+ * Linking the cloud team of the same id replaces it (view-only) or lets the cloud's records win
+ * (manager), so the app asks first.
+ */
+export function isUnlinkedCopy(
+  sync: Pick<SyncData, 'teams'>,
+  teams: readonly { id: string }[],
+  teamId: string,
+): boolean {
+  return sync.teams[teamId] === undefined && teams.some((team) => team.id === teamId);
+}
+
 export type HoldStatus = 'none' | 'mine' | 'other';
 
 /** Whether a hold is missing / expired, this device's, or another device's (`now` in ms). */

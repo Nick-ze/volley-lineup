@@ -189,6 +189,26 @@ describe('members: local team', () => {
   });
 });
 
+describe('members: sharing an older copy of a team that is already in the cloud (audit M7)', () => {
+  it('changes nothing, says so and leads to Cloud teams', async () => {
+    signIn();
+    jest.mocked(sync.uploadTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'team1', result: 'inCloud' }],
+    });
+    await renderApp(URL);
+    await fireEvent.press(screen.getByTestId('members-share-team'));
+    expect(await screen.findByTestId('members-share-in-cloud')).toHaveTextContent(
+      t.sync.localCopy.inCloud,
+    );
+    // Still a local team: the share button is there, nothing was linked.
+    expect(screen.getByTestId('members-share-team')).toBeTruthy();
+    expect(useAppStore.getState().sync.teams).toEqual({});
+    await fireEvent.press(screen.getByTestId('members-open-cloud-teams'));
+    expect(screen).toHavePathname('/account/teams');
+  });
+});
+
 describe('members: manager', () => {
   it('lists managers first with "(you)", and only the active invites', async () => {
     await renderManager();

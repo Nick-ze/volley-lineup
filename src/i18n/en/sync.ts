@@ -128,6 +128,52 @@ export const sync = {
     cancel: 'Cancel',
     cancelLabel: 'Cancel: keep the team',
   },
+  /**
+   * v10 audit M7: asked before a team's cloud version takes the place of an older copy of the
+   * team on this device (joining again, downloading, sharing the copy).
+   */
+  localCopy: {
+    title: 'Older copy on this device',
+    /**
+     * `viewOnly` / `managed`: the names of the teams this account may only view / may edit —
+     * what happens to a copy differs.
+     */
+    body: (viewOnly: string[], managed: string[]) => {
+      const all = [...viewOnly, ...managed];
+      const found =
+        all.length === 1
+          ? `This device has an older copy of ${all[0]}.`
+          : `This device has older copies of ${all.join(', ')}.`;
+      const replaced =
+        'The team’s cloud version takes its place, so changes made to the copy on this device are lost.';
+      const merged =
+        'The team’s cloud version wins wherever both have something, so changes made to the copy on this device are lost. What only the copy has is added to the team.';
+      const effect =
+        managed.length === 0
+          ? replaced
+          : viewOnly.length === 0
+            ? merged
+            : `Changes made to the copies on this device are lost: the cloud version takes the place of ${viewOnly.join(', ')}, and wins wherever both have something for ${managed.join(', ')} (what only that copy has is added to the team).`;
+      return `${found} ${effect} Export a backup first?`;
+    },
+    /** What the backup is (the Settings export), under the question. */
+    exportHint:
+      'The backup is the same file as Settings → Export: everything on this device, with photos. Player descriptions are only in it if “Include descriptions” is switched on there.',
+    export: 'Export a backup',
+    exportLabel: 'Export a backup: the same file as Settings → Export',
+    replace: 'Use the cloud version',
+    replaceLabel: 'Use the cloud version: changes made to the copy on this device are lost',
+    cancel: 'Not now',
+    cancelLabel: 'Not now: keep the copy on this device',
+    /** After "Not now" when joining: the account is a member, the copy is untouched. */
+    later: (team: string) =>
+      `You are a member of ${team} now. The copy on this device is unchanged. For the team’s cloud version, open Cloud sync → Cloud teams and download it.`,
+    /** A team that was shared ("Share this team" / Upload) but is already in the cloud. */
+    inCloud:
+      'This team is already shared in the cloud and you are a member of it. This is an older copy: open Cloud sync → Cloud teams and download the team to link it.',
+    openCloudTeams: 'Cloud teams',
+    openCloudTeamsLabel: 'Cloud teams: download the team’s cloud version',
+  },
   import: {
     shared: (names: string[]) => `Shared teams: ${names.join(', ')} (changes sync to all members).`,
     skipped: (names: string[]) => `View-only teams skipped: ${names.join(', ')}.`,

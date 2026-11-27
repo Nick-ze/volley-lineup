@@ -23,7 +23,13 @@ interface Outcome {
  * v10: Cloud teams → Upload: this profile's unshared teams, all **unchecked** (nothing is uploaded
  * unless the user ticks it and taps "Upload selected"), then one result line per team.
  */
-export function UploadPanel({ teams }: { teams: Team[] }) {
+export interface UploadPanelProps {
+  teams: Team[];
+  /** Loads the cloud team list again (an uploaded or already shared team changes both lists). */
+  reload?: () => Promise<void>;
+}
+
+export function UploadPanel({ teams, reload }: UploadPanelProps) {
   const styles = useStyles();
   const t = useT();
   const s = t.account.cloudTeams.upload;
@@ -62,6 +68,9 @@ export function UploadPanel({ teams }: { teams: Team[] }) {
         error: r.result === 'failed' ? r.error : undefined,
       })),
     );
+    // A team that turned out to be in the cloud already (v10 audit M7) is offered for download
+    // from now on, as its result line says.
+    if (result.value.some((r) => r.result === 'inCloud')) await reload?.();
   };
 
   return (

@@ -74,8 +74,10 @@ export const listCloudTeams = (): Promise<SyncResult<CloudTeam[]>> =>
   teams.listCloudTeams(engine());
 export const uploadTeams = (teamIds: string[]): Promise<SyncResult<UploadItem[]>> =>
   teams.uploadTeams(engine(), teamIds);
-export const downloadTeams = (teamIds: string[]): Promise<SyncResult> =>
-  teams.downloadTeams(engine(), teamIds);
+export const downloadTeams = (
+  teamIds: string[],
+  replaceCopies: readonly string[] = [],
+): Promise<SyncResult<string[]>> => teams.downloadTeams(engine(), teamIds, replaceCopies);
 
 // Teams and members
 export const deleteTeamEverywhere = (teamId: string): Promise<SyncResult> =>

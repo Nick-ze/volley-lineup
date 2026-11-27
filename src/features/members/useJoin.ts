@@ -2,13 +2,20 @@ import { useCallback, useRef, useState } from 'react';
 
 import { normalizeInviteCode } from '@/domain/invites';
 import type { SyncErrorCode, TeamRole } from '@/domain/types';
-import { joinTeam, listCloudTeams } from '@/lib/sync';
+import { downloadTeams, joinTeam, listCloudTeams } from '@/lib/sync';
+import { useAppStore } from '@/store';
 
 export interface Joined {
   teamId: string;
   role: TeamRole;
   /** The team's name (from the join result, else the cloud list), when known. */
   name: string | null;
+  /**
+   * v10 audit M7: this device has an older copy of the team that isn't linked. `asking`: the
+   * account is a member, nothing was downloaded, the user is asked; `kept`: they said "not now";
+   * `ended`: the membership ended before the answer (removed, or the team was deleted).
+   */
+  copy: 'asking' | 'kept' | 'ended' | null;
 }
 
 export type JoinError = SyncErrorCode | 'format';
@@ -46,9 +53,35 @@ export function useJoin() {
         ? (teams.value.find((team) => team.teamId === result.value.teamId)?.name ?? null)
         : null;
     }
-    setJoined({ ...result.value, name });
+    const { localCopy, ...team } = result.value;
+    setJoined({ ...team, name, copy: localCopy ? 'asking' : null });
     setBusy(false);
     running.current = false;
+  }, []);
+
+  /** The answer to the question about the older copy: use the cloud's version (download it). */
+  const replaceCopy = useCallback(async () => {
+    if (running.current || joined?.copy !== 'asking') return;
+    running.current = true;
+    setBusy(true);
+    setError(null);
+    const result = await downloadTeams([joined.teamId], [joined.teamId]);
+    // The team is linked before its first pull: once it is, the copy gives way with the next
+    // sync whatever happened to this request, so there is nothing left to ask ("Not now" would
+    // promise a copy that stays). Not linked after a download that worked: the account is no
+    // longer a member (nothing to download). Not linked after one that failed: the question
+    // stays, with the reason.
+    const linked = useAppStore.getState().sync.teams[joined.teamId] !== undefined;
+    if (linked) setJoined({ ...joined, copy: null });
+    else if (result.ok) setJoined({ ...joined, copy: 'ended' });
+    else setError(result.error);
+    setBusy(false);
+    running.current = false;
+  }, [joined]);
+
+  /** "Not now": the account stays a member, the copy on this device stays as it is. */
+  const keepCopy = useCallback(() => {
+    setJoined((now) => (now?.copy === 'asking' ? { ...now, copy: 'kept' } : now));
   }, []);
 
   const clearError = useCallback(() => setError(null), []);
@@ -57,5 +90,5 @@ export function useJoin() {
     setError(null);
     setJoined(null);
   }, []);
-  return { busy, error, joined, join, clearError, reset };
+  return { busy, error, joined, join, replaceCopy, keepCopy, clearError, reset };
 }

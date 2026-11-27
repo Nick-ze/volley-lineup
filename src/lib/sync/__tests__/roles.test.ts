@@ -58,14 +58,20 @@ const benId = (cloud: FakeCloud) => cloud.userId('ben@example.test');
 describe('joining with a code', () => {
   it('returns the team, the role and the name, and downloads the team', async () => {
     const { a, b, joined } = await shared('player');
-    expect(joined).toEqual({ ok: true, value: { teamId: T1, role: 'player', name: NAME } });
+    expect(joined).toEqual({
+      ok: true,
+      value: { teamId: T1, role: 'player', name: NAME, localCopy: false },
+    });
     expect(b.data.sync.teams[T1]).toMatchObject({ role: 'player', userId: expect.any(String) });
     expect(records(b)).toEqual(records(a));
   });
 
   it('a single-use manager code entered twice answers "joined" again (audit L11)', async () => {
     const { cloud, b, joined, invite } = await shared('manager');
-    expect(joined).toEqual({ ok: true, value: { teamId: T1, role: 'manager', name: NAME } });
+    expect(joined).toEqual({
+      ok: true,
+      value: { teamId: T1, role: 'manager', name: NAME, localCopy: false },
+    });
     const calls = cloud.calls.filter((c) => c === 'joinTeam').length;
     expect(await b.act((e) => joinTeam(e, invite.code))).toEqual(joined);
     expect(cloud.calls.filter((c) => c === 'joinTeam')).toHaveLength(calls);

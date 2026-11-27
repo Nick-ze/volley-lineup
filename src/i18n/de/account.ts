@@ -100,6 +100,8 @@ export const account: Strings['account'] = {
         created: 'hochgeladen',
         rekeyed: 'hochgeladen',
         linked: 'mit der Cloud-Kopie verbunden',
+        inCloud:
+          'bereits in der Cloud, und das hier ist eine ältere Kopie davon – es wurde nichts geändert. Lade das Team unten herunter, um es zu verbinden',
         failed: 'konnte nicht hochgeladen werden',
       },
       result: (team, result) => `${team}: ${result}`,

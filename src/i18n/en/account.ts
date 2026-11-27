@@ -99,6 +99,9 @@ export const account = {
         created: 'uploaded',
         rekeyed: 'uploaded',
         linked: 'linked with the cloud copy',
+        /** v10 audit M7: an older copy of a team the account already belongs to. */
+        inCloud:
+          'already in the cloud, and this is an older copy of it — nothing was changed. Download the team below to link it',
         failed: 'couldn’t upload',
       },
       result: (team: string, result: string) => `${team}: ${result}`,

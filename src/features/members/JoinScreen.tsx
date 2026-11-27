@@ -1,4 +1,4 @@
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -12,12 +12,12 @@ import {
   useSession,
   useSessionRestoring,
   useSyncAccount,
-  useTeam,
 } from '@/store';
 
+import { CopyQuestion, JoinedNote } from './JoinedNote';
 import { needsSignIn, SignInFirst } from './MembersNotes';
 import { useMembersStyles } from './membersStyles';
-import { useJoin, type Joined } from './useJoin';
+import { useJoin } from './useJoin';
 
 /** The code from `?code=` (shown as "ABCDE-FGHJK" when valid, else as given). */
 function initialCode(param: string | string[] | undefined): string {
@@ -41,7 +41,7 @@ export function JoinScreen() {
   const account = useSyncAccount();
   const [code, setCode] = useState(() => initialCode(params.code));
   const [codeParam, setCodeParam] = useState(params.code);
-  const { busy, error, joined, join, clearError, reset } = useJoin();
+  const { busy, error, joined, join, replaceCopy, keepCopy, clearError, reset } = useJoin();
   // A new invite link while the screen is open (e.g. tapped in another app): start over with it.
   if (params.code !== codeParam) {
     setCodeParam(params.code);
@@ -60,7 +60,20 @@ export function JoinScreen() {
   return (
     <Screen>
       {joined ? (
-        <JoinedNote joined={joined} />
+        <>
+          <JoinedNote joined={joined} />
+          {/* v10 audit M7: an older copy of the team on this device is only replaced when the
+              user says so. */}
+          {joined.copy === 'asking' ? (
+            <CopyQuestion
+              joined={joined}
+              busy={busy}
+              error={error && error !== 'format' ? t.sync.errors[error] : null}
+              onReplace={() => void replaceCopy()}
+              onCancel={keepCopy}
+            />
+          ) : null}
+        </>
       ) : (
         <View style={styles.section}>
           <Text style={styles.text}>{s.intro}</Text>
@@ -100,33 +113,5 @@ export function JoinScreen() {
         </View>
       )}
     </Screen>
-  );
-}
-
-/** "You joined <team> as <role>" and "Open team" (the team list while it is still downloading). */
-function JoinedNote({ joined }: { joined: Joined }) {
-  const t = useT();
-  const styles = useMembersStyles();
-  const router = useRouter();
-  const team = useTeam(joined.teamId);
-  const s = t.members.join;
-  const name = team?.name ?? joined.name;
-  const role = t.members.roleInText[joined.role];
-  return (
-    <View style={styles.section}>
-      <Text style={styles.text} accessibilityRole="alert" testID="join-success">
-        {name ? s.joined(name, role) : s.joinedUnnamed(role)}
-      </Text>
-      <Button
-        label={s.open}
-        accessibilityLabel={name ? s.openLabel(name) : s.open}
-        onPress={() =>
-          team
-            ? router.replace({ pathname: '/team/[teamId]', params: { teamId: team.id } })
-            : router.replace('/teams')
-        }
-        testID="join-open"
-      />
-    </View>
   );
 }

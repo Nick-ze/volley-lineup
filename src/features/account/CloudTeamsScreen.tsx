@@ -43,7 +43,7 @@ function CloudTeamsPickers() {
   return (
     <Screen testID="cloud-teams-screen">
       <Text style={styles.intro}>{t.account.cloudTeams.intro}</Text>
-      <UploadPanel teams={cloud.upload} />
+      <UploadPanel teams={cloud.upload} reload={cloud.reload} />
       <DownloadPanel
         teams={cloud.download}
         loading={cloud.loading}
