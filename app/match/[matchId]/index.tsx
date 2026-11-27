@@ -4,15 +4,16 @@ import { Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SlideTransition } from '@/components';
+import { appHeaderOnly, HeaderTitle, SlideTransition } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { LineupBuilder } from '@/features/lineup/LineupBuilder';
+import { MatchHeaderButtons } from '@/features/lineup/MatchHeaderButtons';
+import { MatchHeaderLines } from '@/features/lineup/MatchHeaderLines';
 import { MatchLinks } from '@/features/lineup/MatchLinks';
 import { MatchReadOnlyNote } from '@/features/live/MatchReadOnlyNote';
-import { MatchResultLine } from '@/features/live/MatchResultLine';
-import { MatchSeasonLine } from '@/features/matchForm/MatchSeasonLine';
 import { PresetApply } from '@/features/lineup/PresetApply';
 import { SetTabs } from '@/features/lineup/SetTabs';
+import { usePrintMenu } from '@/features/print/usePrintMenu';
 import { useTourPage } from '@/features/tour';
 import { useLineupEditor } from '@/features/lineup/useLineupEditor';
 import { useCorrectSetParam } from '@/features/rotation/useCorrectSetParam';
@@ -38,11 +39,29 @@ export default function MatchScreen() {
   );
 
   const title = match ? t.lineup.title(match.opponent) : undefined;
-  const options = useMemo(() => ({ title }), [title]);
   // v10: a granted Take over is for scoring: open live, which keeps the hold (useMatchHold).
   const openLive = useCallback(
     () => router.push({ pathname: '/match/[matchId]/live', params: { matchId } }),
     [router, matchId],
+  );
+  // v11: the header carries the season and result lines under the title, and Live + Print / PDF
+  // at the right (kept while nothing they show changes).
+  const print = usePrintMenu(matchId);
+  const { open: openPrint, disabled: printDisabled } = print;
+  const hasMatch = match !== undefined;
+  const options = useMemo(
+    () => ({
+      title,
+      headerTitle: appHeaderOnly(() => (
+        <HeaderTitle subtitle={<MatchHeaderLines matchId={matchId} />}>{title ?? ''}</HeaderTitle>
+      )),
+      headerRight: appHeaderOnly(() =>
+        hasMatch ? (
+          <MatchHeaderButtons onLive={openLive} onPrint={openPrint} printDisabled={printDisabled} />
+        ) : null,
+      ),
+    }),
+    [title, matchId, hasMatch, openLive, openPrint, printDisabled],
   );
 
   if (!match) {
@@ -63,9 +82,13 @@ export default function MatchScreen() {
             existing={match.sets.map((s) => s.setNumber)}
             onSelect={(n) => router.setParams({ set: String(n) })}
           />
-          <MatchResultLine match={match} />
-          <MatchSeasonLine match={match} />
           <MatchLinks match={match} setNumber={setNumber} />
+          {print.dialog}
+          {print.failed ? (
+            <Text accessibilityRole="alert" style={styles.printError} testID="print-error">
+              {t.print.failed}
+            </Text>
+          ) : null}
           {/* v10: why a view-only member / another device's live scoring has no controls here. */}
           <MatchReadOnlyNote matchId={matchId} onTakenOver={openLive} />
           {/* v8: another set's lineup slides in from the side of its tab (no swipe here: the
@@ -96,4 +119,5 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.md,
   },
   notFound: { ...typography.body, color: theme.colors.textMuted, padding: spacing.lg },
+  printError: { ...typography.body, color: theme.colors.error },
 }));

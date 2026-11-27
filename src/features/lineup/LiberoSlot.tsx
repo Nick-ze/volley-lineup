@@ -74,7 +74,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 3,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.transparent,
   },
   // Phone layout: title beside the chip, so the row stays low.
   compactBox: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },

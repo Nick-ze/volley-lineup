@@ -112,8 +112,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.md,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   header: {
     flexDirection: 'row',

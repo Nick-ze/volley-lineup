@@ -114,8 +114,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.sm,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   row: { flexDirection: 'row', gap: spacing.sm },
   grow: { flex: 1 },

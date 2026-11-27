@@ -83,7 +83,7 @@ export function NextSetSetup({
       />
       <SetupRotateRow setterAt={formationRotation(draft.formation)} onRotate={setup.rotate} />
       <Text style={styles.label}>{t.live.serveChoice}</Text>
-      <ServeToggle weServeFirst={draft.weServeFirst} onChange={setup.setServe} />
+      <ServeToggle weServeFirst={draft.weServeFirst} onChange={setup.setServe} onPanel />
       <Button
         label={t.live.startSet(setNumber)}
         accessibilityHint={setup.complete ? undefined : s.startHint}
@@ -125,8 +125,6 @@ const useStyles = makeStyles((theme) => ({
   box: {
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     padding: spacing.md,
     gap: spacing.sm,
   },

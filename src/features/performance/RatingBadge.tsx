@@ -6,10 +6,10 @@ import { makeStyles, radius, spacing, typography, useTheme, type ThemeColors } f
 
 const tone = (colors: ThemeColors) =>
   ({
-    positive: colors.secondaryText,
-    even: colors.textMuted,
-    negative: colors.error,
-    none: colors.textMuted,
+    positive: { text: colors.secondaryText, fill: colors.secondarySoft },
+    even: { text: colors.textMuted, fill: colors.surfaceRaised },
+    negative: { text: colors.error, fill: colors.surfaceRaised },
+    none: { text: colors.textMuted, fill: colors.surfaceRaised },
   }) as const;
 
 /** The one-glance rating: a symbol and a word (never colour alone, DECISIONS #152). */
@@ -18,10 +18,10 @@ export function RatingBadge({ rating, testID }: { rating: Rating | null; testID?
   const { colors } = useTheme();
   const t = useT();
   const key = rating ?? 'none';
-  const color = tone(colors)[key];
+  const { text, fill } = tone(colors)[key];
   return (
-    <View style={[styles.badge, { borderColor: color }]}>
-      <Text style={[styles.text, { color }]} numberOfLines={1} testID={testID}>
+    <View style={[styles.badge, { backgroundColor: fill }]}>
+      <Text style={[styles.text, { color: text }]} numberOfLines={1} testID={testID}>
         {`${t.performance.ratingSymbol[key]} ${t.performance.rating[key]}`}
       </Text>
     </View>
@@ -29,8 +29,8 @@ export function RatingBadge({ rating, testID }: { rating: Rating | null; testID?
 }
 
 const useStyles = makeStyles(() => ({
+  // v11: a soft chip (tone, no outline).
   badge: {
-    borderWidth: 1,
     borderRadius: radius.round,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,

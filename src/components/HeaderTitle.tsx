@@ -24,7 +24,8 @@ export function HeaderTitle({
 }: {
   children: string;
   leading?: ReactNode;
-  subtitle?: string;
+  /** A quiet second line: a text, or small elements in a row. */
+  subtitle?: ReactNode;
   /** For the title text. */
   testID?: string;
 }) {
@@ -43,14 +44,20 @@ export function HeaderTitle({
     </Text>
   );
   const text =
-    subtitle === undefined ? (
+    subtitle === undefined || subtitle === null ? (
       title
     ) : (
       <View style={styles.text}>
         {title}
-        <Text style={styles.subtitle} numberOfLines={1} testID="header-subtitle">
-          {subtitle}
-        </Text>
+        {typeof subtitle === 'string' ? (
+          <Text style={styles.subtitle} numberOfLines={1} testID="header-subtitle">
+            {subtitle}
+          </Text>
+        ) : (
+          <View style={styles.subtitleRow} testID="header-subtitle">
+            {subtitle}
+          </View>
+        )}
       </View>
     );
   if (!leading) return text;
@@ -67,5 +74,6 @@ const useStyles = makeStyles((theme) => ({
   large: { ...typography.displayL, color: theme.colors.text, flexShrink: 1 },
   text: { flexShrink: 1 },
   subtitle: { ...typography.caption, color: theme.colors.textMuted },
+  subtitleRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 }));

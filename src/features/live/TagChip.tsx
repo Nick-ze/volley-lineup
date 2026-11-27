@@ -52,15 +52,17 @@ const useStyles = makeStyles((theme) => ({
     minWidth: touchTarget,
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    // The room of the suggestion outline, so a chip doesn't change size when it lights up.
+    borderWidth: borderWidth.thick,
+    borderColor: theme.colors.transparent,
     backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  highlighted: { borderColor: theme.colors.highlightText, borderWidth: borderWidth.thick },
-  selected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  highlighted: { borderColor: theme.colors.highlightText },
+  // v11: a chosen tag is soft orange (solid orange is "Point us").
+  selected: { backgroundColor: theme.colors.primarySoft },
   pressed: { opacity: 0.8 },
   label: { ...typography.body, fontWeight: '600', color: theme.colors.text },
-  selectedLabel: { color: theme.colors.onPrimary },
+  selectedLabel: { color: theme.colors.primaryText },
 }));

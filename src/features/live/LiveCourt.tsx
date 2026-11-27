@@ -103,6 +103,7 @@ export function LiveCourt({
                 <PlayerChip
                   player={player}
                   size={LIVE_CHIP_SIZE}
+                  onCourt
                   highlighted={isServer}
                   selected={selectedId === realId}
                   onPress={readOnly ? undefined : () => onPressPlayer(realId)}

@@ -26,7 +26,8 @@ export function appHeaderOnly<P extends object>(render: (props: P) => ReactNode)
  * the page background without a line. It draws what the screens already set: `headerLeft` (the
  * round back button), the title (`headerTitle` or `title`) and `headerRight` — each wrapped in
  * `appHeaderOnly` where it is set. Compact screens
- * show all three in one row; large ones (`headerVariant`) put the title on a row of its own.
+ * show all three in one row; large ones (`headerVariant`) put the title on a row of its own;
+ * bare ones show no title (the page has its own heading).
  */
 export function AppHeader({ options, route, back }: NativeStackHeaderProps) {
   const styles = useStyles();
@@ -61,7 +62,11 @@ export function AppHeader({ options, route, back }: NativeStackHeaderProps) {
           ) : (
             <View style={styles.row}>
               {left}
-              <View style={styles.title}>{title}</View>
+              {variant === 'bare' ? (
+                <View style={styles.grow} />
+              ) : (
+                <View style={styles.title}>{title}</View>
+              )}
               {right}
             </View>
           )}

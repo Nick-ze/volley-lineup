@@ -2,13 +2,9 @@ import { Pressable, Text, View } from 'react-native';
 
 import type { Side } from '@/domain/types';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing } from '@/theme';
+import { makeStyles, radius, spacing, typography } from '@/theme';
 
-import {
-  POINT_BUTTON_COMPACT_MIN_HEIGHT,
-  POINT_BUTTON_FONT_SIZE,
-  POINT_BUTTON_MIN_HEIGHT,
-} from './layout';
+import { POINT_BUTTON_COMPACT_MIN_HEIGHT, POINT_BUTTON_MIN_HEIGHT } from './layout';
 
 export interface PointButtonsProps {
   opponent: string;
@@ -64,7 +60,7 @@ const useStyles = makeStyles((theme) => ({
   // White on volleyball blue #0057B8 ≈ 6.9:1 (AA).
   them: { backgroundColor: theme.colors.secondary },
   pressed: { opacity: 0.8 },
-  label: { fontSize: POINT_BUTTON_FONT_SIZE, fontWeight: '800', textAlign: 'center' },
+  label: { ...typography.displayL, textAlign: 'center' },
   usLabel: { color: theme.colors.onPrimary },
   themLabel: { color: theme.colors.onSecondary },
 }));

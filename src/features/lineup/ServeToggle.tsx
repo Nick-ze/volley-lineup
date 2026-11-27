@@ -1,19 +1,22 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { useTrackStyles } from '@/components';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** Two-option switch: we serve first / opponent serves first. */
 export function ServeToggle({
   weServeFirst,
   onChange,
   disabled = false,
+  onPanel = false,
 }: {
   weServeFirst: boolean;
   onChange(value: boolean): void;
   disabled?: boolean;
+  /** v11: inside a panel (the next-set setup): the track is a darker well. */
+  onPanel?: boolean;
 }) {
-  const styles = useStyles();
+  const styles = useTrackStyles();
   const t = useT();
   const option = (value: boolean, label: string, testID: string) => {
     const active = weServeFirst === value;
@@ -27,16 +30,18 @@ export function ServeToggle({
         aria-disabled={disabled}
         disabled={disabled}
         onPress={() => onChange(value)}
-        style={[styles.option, active && styles.active]}
+        style={[styles.segment, active && (disabled ? styles.locked : styles.choice)]}
         testID={testID}
       >
-        <Text style={[styles.label, active && styles.activeLabel]}>{label}</Text>
+        <Text style={[styles.text, disabled ? styles.textMuted : active && styles.choiceText]}>
+          {label}
+        </Text>
       </Pressable>
     );
   };
   return (
     <View
-      style={styles.row}
+      style={[styles.track, onPanel && styles.trackOnPanel]}
       accessibilityRole="radiogroup"
       accessibilityLabel={t.lineup.serveLabel}
     >
@@ -45,24 +50,3 @@ export function ServeToggle({
     </View>
   );
 }
-
-const useStyles = makeStyles((theme) => ({
-  row: {
-    flexDirection: 'row',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-  },
-  option: {
-    flex: 1,
-    minHeight: touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    backgroundColor: theme.colors.surface,
-  },
-  active: { backgroundColor: theme.colors.primary },
-  label: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
-  activeLabel: { color: theme.colors.onPrimary },
-}));

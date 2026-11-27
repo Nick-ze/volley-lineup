@@ -29,8 +29,6 @@ const useStyles = makeStyles((theme) => ({
   circle: {
     borderRadius: radius.round,
     backgroundColor: theme.colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },

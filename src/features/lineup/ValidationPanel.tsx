@@ -48,8 +48,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.md,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   title: { ...typography.label, color: theme.colors.text },
   ok: { ...typography.body, color: theme.colors.textMuted },

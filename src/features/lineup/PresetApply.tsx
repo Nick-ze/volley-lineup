@@ -130,8 +130,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.sm,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   hint: { ...typography.caption, color: theme.colors.textMuted },
   message: { ...typography.body, color: theme.colors.text },

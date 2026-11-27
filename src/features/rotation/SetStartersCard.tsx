@@ -91,11 +91,9 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
-  pressed: { borderColor: theme.colors.highlightText },
+  pressed: { opacity: 0.8 },
   title: { ...typography.subheading, color: theme.colors.highlightText },
   rotation: { ...typography.label, color: theme.colors.textMuted },
 }));

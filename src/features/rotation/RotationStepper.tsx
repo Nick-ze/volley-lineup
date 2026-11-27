@@ -1,6 +1,6 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { Button } from '@/components';
+import { IconButton, useTrackStyles } from '@/components';
 import type { RotationNumber } from '@/domain/rotation';
 import { stepsByLabel } from '@/domain/formationSteps';
 import { useT } from '@/i18n';
@@ -18,7 +18,10 @@ export interface RotationStepperProps {
   onSelect: (step: RotationNumber) => void;
 }
 
-/** Prev / "Rotation n" / Next, plus a 1–6 row to jump straight to a rotation by its number. */
+/**
+ * Prev / "Rotation n" / Next, plus a 1–6 row to jump straight to a rotation by its number. v11:
+ * round arrow buttons, the numbers as one track.
+ */
 export function RotationStepper({
   step,
   labels,
@@ -27,6 +30,7 @@ export function RotationStepper({
   onSelect,
 }: RotationStepperProps) {
   const styles = useStyles();
+  const track = useTrackStyles();
   const t = useT();
   const label = labels[step - 1];
   /** For a number that comes up twice (6-2): ", second time" etc.; '' otherwise. */
@@ -38,44 +42,52 @@ export function RotationStepper({
   return (
     <View style={styles.wrap}>
       <View style={styles.nav}>
-        <Button
-          label={t.rotation.previous}
+        <IconButton
+          icon="chevron-back"
+          shape="round"
           accessibilityLabel={t.rotation.previousLabel}
-          variant="secondary"
-          compact
           onPress={onPrevious}
           testID="rotation-prev"
         />
         <Text
           style={styles.title}
+          numberOfLines={2}
           accessibilityRole="header"
           accessibilityLiveRegion="polite"
           testID="rotation-title"
         >
           {`${t.rotation.setterRotation(label)}${repeat(step)}`}
         </Text>
-        <Button
-          label={t.rotation.next}
+        <IconButton
+          icon="chevron-forward"
+          shape="round"
           accessibilityLabel={t.rotation.nextLabel}
-          variant="secondary"
-          compact
           onPress={onNext}
           testID="rotation-next"
         />
       </View>
-      <View style={styles.steps} accessibilityLabel={t.rotation.stepperLabel}>
-        {stepsByLabel(labels).map((s) => (
-          <Button
-            key={s}
-            label={String(labels[s - 1])}
-            accessibilityLabel={`${t.rotation.goToRotation(labels[s - 1])}${repeat(s)}`}
-            variant={s === step ? 'primary' : 'secondary'}
-            compact
-            onPress={() => onSelect(s)}
-            testID={`rotation-step-${s}`}
-            style={styles.step}
-          />
-        ))}
+      <View style={track.track} accessibilityLabel={t.rotation.stepperLabel}>
+        {stepsByLabel(labels).map((s) => {
+          const active = s === step;
+          return (
+            <Pressable
+              key={s}
+              accessibilityRole="button"
+              accessibilityLabel={`${t.rotation.goToRotation(labels[s - 1])}${repeat(s)}`}
+              accessibilityState={{ selected: active }}
+              aria-current={active ? 'step' : undefined}
+              onPress={() => onSelect(s)}
+              testID={`rotation-step-${s}`}
+              style={({ pressed }) => [
+                track.segment,
+                active && track.choice,
+                pressed && track.pressed,
+              ]}
+            >
+              <Text style={[track.text, active && track.choiceText]}>{labels[s - 1]}</Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -83,8 +95,6 @@ export function RotationStepper({
 
 const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm, width: '100%', maxWidth: COURT_MAX_WIDTH, alignSelf: 'center' },
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...typography.subheading, color: theme.colors.text, flexShrink: 1, textAlign: 'center' },
-  steps: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'space-between' },
-  step: { flex: 1, paddingHorizontal: 0 },
+  nav: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  title: { ...typography.displayM, color: theme.colors.text, flex: 1, textAlign: 'center' },
 }));

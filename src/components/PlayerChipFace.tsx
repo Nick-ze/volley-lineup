@@ -35,6 +35,8 @@ export interface PlayerChipFaceProps {
   ringColor: string;
   thickRing: boolean;
   lifted: boolean;
+  /** v11: on a court: a soft shadow under the chip. */
+  raised?: boolean;
   /** v9.1: the team captain gets the yellow "C" badge at the top right. */
   captain?: boolean;
   /** For the name text (`<testID>-name`). */
@@ -55,6 +57,7 @@ export function PlayerChipFace({
   ringColor,
   thickRing,
   lifted,
+  raised = false,
   captain = false,
   testID,
 }: PlayerChipFaceProps) {
@@ -67,6 +70,7 @@ export function PlayerChipFace({
         styles.circle,
         { width: d, height: d, borderRadius: d / 2, borderColor: ringColor },
         thickRing && styles.ringThick,
+        raised && styles.raised,
         lifted && styles.lifted,
       ]}
     >
@@ -127,6 +131,8 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.xxs,
   },
   ringThick: { borderWidth: borderWidth.thick },
+  // v11: a soft shadow under a chip on a court (the lifted style wins while dragging).
+  raised: { boxShadow: `0px 3px 8px ${theme.colors.chipShadow}` },
   backdrop: {
     position: 'absolute',
     top: 0,

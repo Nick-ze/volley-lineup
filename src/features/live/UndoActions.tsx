@@ -44,6 +44,7 @@ export function UndoActions({
         label={t.live.undo}
         accessibilityLabel={undoLabel}
         variant="secondary"
+        icon="arrow-undo"
         disabled={!last && acrossSet === null}
         onPress={onUndo}
         style={styles.undo}

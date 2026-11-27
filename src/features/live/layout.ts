@@ -1,8 +1,12 @@
 /** Layout constants for live match mode (sizes in px). */
 import { touchTarget } from '@/theme';
 
-/** Font size of the big score digits. */
-export const SCORE_FONT_SIZE = 64;
+/**
+ * Font size and line height of the big score digits (v11: the display typeface, `typography.score`,
+ * a little smaller so the scoreboard keeps its height and Substitution stays on the screen).
+ */
+export const SCORE_FONT_SIZE = 88;
+export const SCORE_LINE_HEIGHT = 84;
 /** Min height of the two big "Point us" / "Point them" buttons (well above the 44 px target). */
 export const POINT_BUTTON_MIN_HEIGHT = 88;
 /**
@@ -10,8 +14,6 @@ export const POINT_BUTTON_MIN_HEIGHT = 88;
  * rally), so the court and Substitution still fit at 390×844 (DECISIONS #126).
  */
 export const POINT_BUTTON_COMPACT_MIN_HEIGHT = 64;
-/** Font size of the point button labels. */
-export const POINT_BUTTON_FONT_SIZE = 22;
 /** Player chip diameter on the live court. */
 export const LIVE_CHIP_SIZE = 56;
 /** Player chip diameter on the substitution bench. */

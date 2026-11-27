@@ -2,8 +2,9 @@ import { Pressable, Text, View } from 'react-native';
 
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from '@/domain/roles';
 import type { Formation, FormationOrder } from '@/domain/types';
+import { useTrackStyles } from '@/components';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, spacing, typography } from '@/theme';
 
 export interface SetupFormationRowProps {
   formation: Formation;
@@ -21,10 +22,15 @@ interface Option {
 /** One radio group of the formation (system or order), as a two-part switch. */
 function Choice({ label, options }: { label: string; options: Option[] }) {
   const styles = useStyles();
+  const track = useTrackStyles();
   return (
     <View style={styles.group}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      <View
+        style={[track.track, track.trackOnPanel]}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={label}
+      >
         {options.map((o) => (
           <Pressable
             key={o.key}
@@ -34,10 +40,10 @@ function Choice({ label, options }: { label: string; options: Option[] }) {
             // react-native-web ignores accessibilityState: expose the state with aria-* too.
             aria-checked={o.active}
             onPress={o.onPress}
-            style={[styles.option, o.active && styles.active]}
+            style={[track.segment, o.active && track.choice]}
             testID={`setup-formation-${o.key}`}
           >
-            <Text style={[styles.text, o.active && styles.activeText]}>{o.label}</Text>
+            <Text style={[track.text, o.active && track.choiceText]}>{o.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -83,22 +89,4 @@ const useStyles = makeStyles((theme) => ({
   wrap: { gap: spacing.sm },
   group: { gap: spacing.xxs },
   label: { ...typography.label, color: theme.colors.textMuted },
-  row: {
-    flexDirection: 'row',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-  },
-  option: {
-    flex: 1,
-    minHeight: touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    backgroundColor: theme.colors.surface,
-  },
-  active: { backgroundColor: theme.colors.primary },
-  text: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
-  activeText: { color: theme.colors.onPrimary },
 }));
