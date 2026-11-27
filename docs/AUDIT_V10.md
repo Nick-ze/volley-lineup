@@ -719,6 +719,16 @@ rate limit is enough; 3 six digits stay; 4 yes; 5 yes. Questions 4 and 5 were th
     loses data in (b), which works today, so it wasn't made (DECISIONS #331). Getting both
     right needs the server to say when a hold began (a small database change: a start time
     returned with the holds). Wanted?
+12. **M2 (clock skew) is built and reviewed, but not merged.** Conflicts are still decided by
+    each device's own clock: a device whose clock runs ahead wins (for up to a minute — the
+    server cuts later times off), one that runs behind loses. The attempt to note changes in
+    the server's time instead got the two-device cases right, but the independent review showed
+    that it lets a device's own earlier save beat its own later change after a lost answer, an
+    app restart or the phone sleeping — the cases you named. Details and the three ways forward
+    (decide conflicts on the server by version instead of by time — a database change; keep the
+    app-side design and add a merge rule, with another review; or leave it and tell users to
+    keep automatic time on) are in the engine fix log, "PR 4". The code is parked in an open
+    draft pull request for whoever picks it up. Which way?
 
 ## Owner dashboard steps
 
@@ -996,7 +1006,7 @@ documentation and cleanup (marked "docs" / "cleanup").
 | M7                   | not built: needs the owner’s choice ("Open questions" 10, DECISIONS #330)                                                                                                                                                                                                                                                                               | —    | —                                                                                                                                                                                                           |
 | M15                  | fixed: no delete of a match another device scores live, its season, its players, its team; no import that would change it (DECISIONS #325)                                                                                                                                                                                                              | PR 3 | `heldDelete.test.tsx`, `holdsAndCopies.test.ts`, `importLive.test.tsx`                                                                                                                                      |
 | M18                  | fixed: a "not found" photo stays listed; the prune keeps the `photoId` of an unchanged record; the cloud folder is checked before a picture's record is pushed (DECISIONS #328)                                                                                                                                                                         | PR 3 | `lostPhoto.test.ts`, `photos.test.ts`                                                                                                                                                                       |
-| M2                   | second chat: see "Engine fix log" below                                                                                                                                                                                                                                                                                                                 | —    | —                                                                                                                                                                                                           |
+| M2                   | **not merged**: built and reviewed, not safe enough ("Open questions" 12, DECISIONS #332)                                                                                                                                                                                                                                                               | —    | —                                                                                                                                                                                                           |
 | M8                   | accepted by the owner (no CAPTCHA, DECISIONS #304)                                                                                                                                                                                                                                                                                                      | —    | —                                                                                                                                                                                                           |
 | M10                  | known limit, documented (`docs/SUPABASE.md` "Known limits")                                                                                                                                                                                                                                                                                             | PR 1 | docs                                                                                                                                                                                                        |
 | L3, L7, L9, L10, L12 | by design / known limit, documented (`docs/SUPABASE.md` "Known limits")                                                                                                                                                                                                                                                                                 | PR 1 | docs                                                                                                                                                                                                        |
@@ -1063,8 +1073,9 @@ function text only.
 
 **Not fixed in this chat, and why**
 
-- Second chat (they change how the engine merges, pushes or pulls): M2, M3, M4, M5, M6, M7, M12,
-  M15, M18, M19, L6, L17, L18, L31.
+- Second chat (they change how the engine merges, pushes or pulls): M3, M4, M5, M6, M12, M15,
+  M18, M19, L6, L17, L18 and L31 were fixed there ("Engine fix log" below). **M7** was not
+  built ("Open questions" 10) and **M2** was built but not merged ("Open questions" 12).
 - Decided by the owner (DECISIONS #304): M8 (no CAPTCHA), L14 (6 digits), revoke-all-codes.
 - L29 (`.claude/settings.json`): left as it is, as asked.
 - The rest of L11 (a join whose answer was lost on the network) needs `join_team` to answer
@@ -1079,6 +1090,13 @@ scenario test that fails without it (checked by putting the old code back), and 
 with `main` — no sequence that keeps data there may lose it afterwards. Before each merge an
 independent reviewer agent (its own copy of the repository, no part in writing the code) looked
 for event sequences that lose or corrupt data, get stuck or contradict the stated behaviour.
+
+Outcome: PR 1 (#105), PR 2 (#106) and PR 3 (#107) are merged — twelve findings fixed. **M7**
+was not built and **M2** was built but not merged; both, and two questions the reviews raised,
+are under "Open questions" 9–12. Every review found something in the first version of a fix
+(eleven sequences that lost data or got stuck, six of them new with the fix), and the second
+round on PR 2 found one in the fix of a fix: the reviews are part of the method here, not a
+formality.
 
 ### PR 1 — store writes and pull (M19, M6, L6), [#105](https://github.com/Nick-ze/volley-lineup/pull/105)
 
@@ -1257,3 +1275,72 @@ id on a list for a record changed on this device, a local team or an unlinked on
   the first start after the update still loses its `photoId`: it can't be told apart from a
   picture this device set itself and failed to save.
 - M7 is not built ("Open questions" 10); the take-over question is open ("Open questions" 11).
+
+### PR 4 — M2, clock skew: built, reviewed, **not merged**
+
+**The problem (M2).** "The most recent save wins" is decided by the time each device notes for
+its change — its own clock. A device whose clock runs ahead wins every conflict it has an
+unsynced change for (up to a minute: the server cuts later times off), one that runs behind
+loses every one.
+
+**The design that was built.** Every pull answers with the server's time. The engine measured
+the difference to the device's clock (the middle of the request; nothing when the answer took
+over 10 s), kept it in memory only, and noted changes in server time while that measurement
+could be trusted — it was dropped as soon as the device's clock and a clock that can't be set
+(`performance.now()`) had moved apart by more than 5 s (the clock was set, or the phone slept).
+Without a trusted measurement — after an app start, offline before the first pull — it used the
+device's clock exactly as today, and changes noted that way in the same app run were converted
+once a pull had measured. No stored shape changed; no database change.
+
+**What the independent review found.**
+
+- The two-device outcomes in the three cases the owner named were right: offline with a
+  measurement, and "never pulled in this app run", 6 of 6 correct (today: 4 of 6); a restart
+  between the edit and the sync, identical to today.
+- **But one device then notes times with two clocks, and its own earlier save can beat its own
+  later change** — no second device involved. When a push's answer is lost (a timeout, the app
+  suspended while it saves on going to the background), the saved row comes back with the next
+  pull as "a newer save" whenever its time is later than the time noted for the later change.
+  Today that needs the user to set the clock back; with the change it happened at every switch
+  between "measured" and "not measured" on a device whose clock is off: after a restart, after
+  the phone slept, after a slow first pull. Seven sequences, all of which keep the later change
+  today and lost it with the change. For live scoring: the rallies entered after a lost save,
+  rolled back on every device without a word.
+- The reviewer's fix (a record changed again never gets a time at or before the change it
+  replaces; changes sent with a device time aren't converted until their answer arrives) passes
+  all seven and every existing test, but leaves two narrower windows it could only reason about
+  (undo, then change again across a clock switch; a fast clock, a lost answer, a restart and a
+  new edit within the server's one-minute cut-off). Closing those needs a new merge rule ("a
+  row this device saved never beats a change of this app run"), which in its plain form breaks
+  "the cloud wins when a team is linked again".
+- A device with a **right** clock gets up to ±5 s wrong when a pull's answer is slow (the
+  measurement takes the middle of the request): two saves a few seconds apart can be decided
+  the wrong way round. Today a right clock is right.
+- After a clock switch a change can be refused once and go out a cycle later (a delay, no loss).
+
+**Why it isn't merged.** The owner's rule for M2: not unless it is safe for devices that are
+offline, have never pulled, or restart between edits. The loss the review demonstrated is in
+exactly those cases; the known fix narrows it but doesn't close it, and it makes right clocks
+slightly wrong. What exists today is bounded and understood: a fast clock wins for at most a
+minute, a slow clock loses.
+
+**Ways forward** ("Open questions" 12):
+
+1. _Decide on the server, by version instead of by time._ A change says which version of the
+   record it was made on; the server accepts it only if that is still the newest ("made on
+   version 41, the row is at 43: a conflict"). No clock is involved any more. A database and
+   protocol change, and the robust design.
+2. _Keep the app-side design and add the merge rule_ — the parked code, the reviewer's fix, "a
+   row this device saved never beats a change noted in this app run" with the exceptions it
+   needs, a tighter limit for the measurement (about 2 s), and a second independent review. No
+   database change; more rules in the most delicate part of the merge.
+3. _Leave it_, and tell users to keep "automatic date and time" on (a line in the README, or a
+   notice when the measured difference is large — measuring alone changes nothing).
+
+One part of the reviewer's fix would help today as well, on its own: a record changed again
+never gets a save time at or before the change it replaces (today a device whose clock is set
+back between two changes of the same record, after a lost answer, has the same problem).
+
+**Where the code is.** Parked in a draft pull request that is not to be merged as it is: the
+change, its tests, the reviewer's fix and its sequences; the two cases still open are marked as
+known failures.
