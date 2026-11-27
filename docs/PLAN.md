@@ -753,7 +753,7 @@ Five rules:
 4. **Tone, not outlines.** A panel is `surface` on `background` without a border. Borders stay on focused text fields, the `danger` button and the court.
 5. **Shapes mean something.** Buttons are pills, teams are rounded squares, players are circles.
 
-Built in seven pull requests: (1) plan and theme values, (2) the header, (3) shared parts (buttons, rows, panels, tracks, fields, dialogs, banner, empty state, pill tab bar), (4) Teams, profile picker and the team tabs, (5) the match screens (lineup builder with Live in the header and five link tiles, players on the court with ring and shadow, rotation, live, performance, stats), (6) player, forms, Settings, Profile, account, (7) motion, full check, docs, version 11.0.0 and a test build for the owner. No release before the owner tried the test build on a phone.
+Built in seven pull requests: (1) plan and theme values, (2) the header, (3) shared parts (buttons, rows, panels, tracks, fields, dialogs, banner, empty state, pill tab bar), (4) Teams, profile picker and the team tabs, (5) the match screens (lineup builder with Live and Print / PDF in the header and four link tiles, players on the court with a shadow, rotation, live, performance, stats), (6) player, forms, Settings, Profile, account, (7) motion, full check, docs, version 11.0.0 and a test build for the owner. No release before the owner tried the test build on a phone.
 
 ## 47. v11.0 acceptance checklist
 
@@ -763,7 +763,7 @@ Built in seven pull requests: (1) plan and theme values, (2) the header, (3) sha
 - [x] Panels, rows and cards have no outline in either theme; all new colour pairs pass AA (test). — _left by design: the court, focused fields, `danger` buttons, checkboxes, the colour picker's selection, the delete-all confirmation, the set-won and match-summary panels, the tour's drawings._
 - [x] The app tabs and the team tabs use the same pill bar; swipe and tap between tabs work as before. — _tests and a browser run; on a phone not yet._
 - [x] Edit, Delete, Rename and Copy are icon buttons with their old accessible names; Delete still asks.
-- [x] Lineup builder: Live is in the header; five link tiles; the notice is a banner without icon; players on the court have the ring and shadow; "Who serves first" is visible at 390 × 844. — _four link tiles; Print / PDF is an icon in the header beside Live, because five tiles don't fit across in German (#345). "Who serves first" ends at 745 px in EN (was 830), 761 px in DE (was 849); with the dyslexia font 819 / 850 px (was 893 / 927)._
+- [x] Lineup builder: Live is in the header; five link tiles; the notice is a banner without icon; players on the court have a shadow (the ring was taken out again, #355); "Who serves first" is visible at 390 × 844. — _four link tiles; Print / PDF is an icon in the header beside Live, because five tiles don't fit across in German (#345). "Who serves first" ends at 745 px in EN (was 830), 761 px in DE (was 849); with the dyslexia font 819 / 850 px (was 893 / 927)._
 - [x] Live: the Substitution button is not lower than in 10.0.1 at 390 × 844 (EN, DE, font off and on). — _782 px (was 789); with the dyslexia font 773 px (was 786)._
 - [x] Empty lists show the court drawing and the existing sentence.
 - [x] Every interactive element is at least 44 × 44; labels start with the visible text (guard test). — _a script over all 33 screens (375 px, EN + DE) finds nothing under 44 px that 10.0.1 didn't have (only the switch graphic inside its 44 px row)._

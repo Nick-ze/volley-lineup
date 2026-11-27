@@ -40,8 +40,6 @@ export const darkColors = {
   secondarySoft: '#0A1E36',
   /** The "active" dot (a mark beside its text, never text itself). */
   positive: '#2ECC71',
-  /** Ring of a player chip that stands on a court. */
-  chipRing: '#FFFFFF',
   /** Shadow under a player chip that stands on a court. */
   chipShadow: 'rgba(0,0,0,0.4)',
 } as const;
@@ -81,7 +79,6 @@ export const lightColors: ThemeColors = {
   highlightSoft: '#FFF4D1',
   secondarySoft: '#E0ECFA',
   positive: '#2ECC71',
-  chipRing: '#0D0D0D',
   chipShadow: 'rgba(0,0,0,0.4)',
 };
 

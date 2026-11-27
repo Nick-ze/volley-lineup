@@ -26,8 +26,9 @@ export interface PlayerChipProps {
   onPress?: () => void;
   /** Shown and announced as disabled (presses ignored). */
   /**
-   * v11: the chip stands on a court (builder, presets, starters, rotation, live): a clear ring
-   * and a shadow lift it off the orange (DECISIONS #343). Bench chips stay flat.
+   * v11: the chip stands on a court (builder, presets, starters, rotation, live): a soft shadow
+   * lifts it off the orange; its ring is the same as everywhere (DECISIONS #343, #355). Bench
+   * chips stay flat.
    */
   onCourt?: boolean;
   disabled?: boolean;
@@ -76,14 +77,11 @@ export function PlayerChip({
   // v8.4: chips that show the number / name (the court) show the picture faded behind it.
   const backdropUri = photoUri === null ? storedPhoto : null;
   // Text-strength tokens: same as primary / highlight in dark mode, ≥ 3:1 outlines in light mode.
-  // v11: a chip that stands on a court has a clear ring (and a shadow, `PlayerChipFace`).
   const ringColor = selected
     ? colors.primaryText
     : highlighted
       ? colors.highlightText
-      : onCourt
-        ? colors.chipRing
-        : colors.border;
+      : colors.border;
 
   const content = (
     <View style={styles.wrapper}>

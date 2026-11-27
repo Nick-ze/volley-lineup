@@ -13,7 +13,8 @@ Built in seven pull requests (#112–#118), each merged on green CI. Where the r
 - The live score is 88 px so the scoreboard keeps its height (#348).
 - Forms keep their panel (#349).
 - All buttons are 44 px high; there is no smaller pill.
-- The review agent after PR 3 and the QA agent in PR 7 were left out; the checks that ran are listed in #354.
+- Players on a court have only the shadow; the ring and its `chipRing` token were taken out again after the owner saw the built app (#355).
+- The review agent after PR 3 was left out; one independent QA pass ran on the finished build (#354, #356).
 
 ## The five rules
 

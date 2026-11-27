@@ -39,7 +39,7 @@ describe('LinkTile', () => {
   });
 });
 
-describe('PlayerChip on a court (v11: ring and shadow)', () => {
+describe('PlayerChip on a court (v11: a shadow, the ring as everywhere)', () => {
   const player = makePlayer(7, 'Anna', ['S']);
   const findFace = (testID: string) => {
     const node = screen.getByTestId(testID);
@@ -55,7 +55,7 @@ describe('PlayerChip on a court (v11: ring and shadow)', () => {
     throw new Error('no chip face');
   };
 
-  it('has the clear ring and a shadow on a court, the quiet outline elsewhere', async () => {
+  it('has a shadow on a court and none elsewhere; the ring is the same', async () => {
     await render(
       <>
         <PlayerChip player={player} onCourt testID="court" />
@@ -63,14 +63,14 @@ describe('PlayerChip on a court (v11: ring and shadow)', () => {
       </>,
     );
     const onCourt = findFace('court');
-    expect(onCourt.borderColor).toBe(darkColors.chipRing);
+    expect(onCourt.borderColor).toBe(darkColors.border);
     expect(String(onCourt.boxShadow)).toContain(darkColors.chipShadow);
     const bench = findFace('bench');
     expect(bench.borderColor).toBe(darkColors.border);
     expect(bench.boxShadow).toBeUndefined();
   });
 
-  it('uses the dark ring in the light theme, and the server / selection rings win', async () => {
+  it('keeps the server and selection rings in the light theme', async () => {
     await render(
       <ThemeProvider mode="light" dyslexiaFont={false}>
         <PlayerChip player={player} onCourt testID="plain" />
@@ -78,7 +78,8 @@ describe('PlayerChip on a court (v11: ring and shadow)', () => {
         <PlayerChip player={player} onCourt selected testID="selected" />
       </ThemeProvider>,
     );
-    expect(findFace('plain').borderColor).toBe(lightColors.chipRing);
+    expect(findFace('plain').borderColor).toBe(lightColors.border);
+    expect(String(findFace('plain').boxShadow)).toContain(lightColors.chipShadow);
     expect(findFace('server').borderColor).toBe(lightColors.highlightText);
     expect(findFace('selected').borderColor).toBe(lightColors.primaryText);
   });

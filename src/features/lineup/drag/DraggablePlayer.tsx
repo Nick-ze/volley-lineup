@@ -53,7 +53,7 @@ export function DraggablePlayer({
           player={player}
           size={size}
           showPhoto={showPhoto}
-          // v11: a chip in a court spot stands on the court (ring and shadow).
+          // v11: a chip in a court spot stands on the court (a shadow under it).
           onCourt={from.kind === 'slot'}
           selected={selected}
           disabled={drag.disabled}

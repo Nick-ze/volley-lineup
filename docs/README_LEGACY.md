@@ -245,7 +245,7 @@ was touched. The palette is the same; `src/theme/colors.ts` gained soft shades o
   small Active / Injured pill; season boxes without edge and badge; the season's and the player's name as screen
   titles; one band of large numbers for a season's record; tables without an outer box.
 - **Lineup builder**: Live and Print / PDF in the header, four link tiles, the "set has been played" notice as a
-  banner; the serve choice ends 85 px higher at 390 × 844. Players on every court have a clear ring and a shadow.
+  banner; the serve choice ends 85 px higher at 390 × 844. Players on every court have a soft shadow under them.
 - **Live**: the score in the display typeface with fixed-width digits and a short tick when it changes; quiet Undo,
   Reset as red text. Substitution is not lower than in 10.0.1.
 - **Motion**: press feedback, the tab marker's slide, the score's tick; none with "reduce motion".
