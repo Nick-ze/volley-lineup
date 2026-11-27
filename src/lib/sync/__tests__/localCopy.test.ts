@@ -20,7 +20,7 @@ import { goldenTeamData } from '@/test-utils/syncFixtures';
 import { PROFILE, TestDevice } from '@/test-utils/syncDevice';
 
 import { createEngine } from '../engine';
-import { createInvite, removeMember } from '../memberCommands';
+import { createInvite, removeMember, setMemberRole } from '../memberCommands';
 import { downloadTeams, joinTeam, leaveTeam, listCloudTeams, uploadTeams } from '../teamCommands';
 
 const T1 = 't1';
@@ -260,6 +260,100 @@ describe('found by the independent review of the M7 change', () => {
     expect(cloud.record(T1, 'team', T1)?.deleted).toBe(false);
     expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
     expect(a.runtime.status.pending).toBe(0);
+    // Pushed as an adopted copy ("saved at the epoch"): should another device have saved
+    // something meanwhile, that wins.
+    expect(cloud.record(T1, 'player', 'p1')?.at).toBe(0);
+  });
+
+  it('…unless the cloud team got a record meanwhile: then it is asked about like any copy', async () => {
+    const cloud = new FakeCloud();
+    const a = new TestDevice(cloud, 'dev-a', oldCopy());
+    await a.signIn('anna@example.test');
+    const create = a.backend.createTeam.bind(a.backend);
+    a.backend.createTeam = async (teamId: string, displayName: string) => {
+      await create(teamId, displayName);
+      throw new TypeError('Network request failed');
+    };
+    await a.act((e) => uploadTeams(e, [T1]));
+    a.backend.createTeam = create;
+    // The account's other device pushed the team's record in the meantime.
+    const other = cloud.device();
+    other.signInAs('anna@example.test');
+    const team = t1().teams[0];
+    await other.pushRecords(T1, 'dev-x', [
+      {
+        kind: 'team',
+        id: T1,
+        at: new Date(cloud.clock.ms).toISOString(),
+        payload: { name: team.name, createdAt: team.createdAt },
+      },
+    ]);
+    expect(await a.act((e) => uploadTeams(e, [T1]))).toEqual({
+      ok: true,
+      value: [{ teamId: T1, result: 'inCloud' }],
+    });
+    expect(a.data.sync.teams).toEqual({});
+    expect(firstName(a, 'p1')).toBe('Changed here');
+  });
+
+  it('an empty cloud team this app run didn’t create is not "its own upload": the copy is asked about', async () => {
+    // The account's other device created the team and its first push hasn't got through.
+    const cloud = new FakeCloud();
+    const a = new TestDevice(cloud, 'dev-a', t1());
+    const b = new TestDevice(cloud, 'dev-b', oldCopy());
+    await a.signIn('anna@example.test');
+    await b.signIn('anna@example.test');
+    const push = a.backend.pushRecords.bind(a.backend);
+    a.backend.pushRecords = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await a.act((e) => uploadTeams(e, [T1]));
+    expect(cloud.record(T1, 'team', T1)).toBeUndefined();
+
+    expect(await b.act((e) => uploadTeams(e, [T1]))).toEqual({
+      ok: true,
+      value: [{ teamId: T1, result: 'inCloud' }],
+    });
+    await b.cycle();
+    a.backend.pushRecords = push;
+    cloud.clock.tick(60_000);
+    await a.cycle();
+    await b.cycle();
+    // B's copy is untouched: nothing was linked, nothing of it was pushed or replaced.
+    expect(b.data.sync.teams).toEqual({});
+    expect(firstName(b, 'p1')).toBe('Changed here');
+    expect(cloud.record(T1, 'player', 'p-old')).toBeUndefined();
+  });
+
+  it('"Not now" on a join as a manager, then "Share this team" on the copy: still not linked', async () => {
+    const cloud = new FakeCloud();
+    const anna = cloud.device();
+    anna.signInAs('anna@example.test');
+    await anna.createTeam(T1, 'Anna'); // created, nothing pushed yet
+    const invite = await anna.createInvite(T1, 'manager', 7);
+    const b = new TestDevice(cloud, 'dev-b', oldCopy());
+    await b.signIn('ben@example.test');
+    expect(await b.act((e) => joinTeam(e, invite.code))).toMatchObject({
+      ok: true,
+      value: { role: 'manager', localCopy: true },
+    });
+    expect(await b.act((e) => uploadTeams(e, [T1]))).toEqual({
+      ok: true,
+      value: [{ teamId: T1, result: 'inCloud' }],
+    });
+    expect(b.data.sync.teams).toEqual({});
+  });
+
+  it('the role changed while the question was open: the same code again answers the new role', async () => {
+    const { cloud, a, b, code } = await benHasACopy('player');
+    await b.act((e) => joinTeam(e, code));
+    await a.act((e) => setMemberRole(e, T1, cloud.userId('ben@example.test'), 'manager'));
+    expect(await b.act((e) => joinTeam(e, code))).toMatchObject({
+      ok: true,
+      value: { teamId: T1, role: 'manager', localCopy: true },
+    });
+    await b.act((e) => downloadTeams(e, [T1], [T1]));
+    expect(b.data.sync.teams[T1]).toMatchObject({ role: 'manager' });
   });
 
   it('an empty cloud team the account may only view: sharing a copy of it still changes nothing', async () => {

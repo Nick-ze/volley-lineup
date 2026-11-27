@@ -3,6 +3,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { parseImport } from '@/domain/exportSchema';
 import { teamsWithDuplicateNumbers } from '@/domain/roster';
 import type { SyncedTeam } from '@/domain/types';
+import { useDescriptionLock } from '@/features/descriptions/descriptionLock';
 import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
 import { saveTextFile } from '@/lib/fileTransfer';
@@ -261,6 +262,27 @@ describe('downloading a team this device has an older copy of (audit M7)', () =>
     await fireEvent.press(screen.getByTestId('local-copy-export'));
     const [, text] = jest.mocked(saveTextFile).mock.calls[0];
     expect(parseImport(text)).toEqual({ ok: false, error: 'INCONSISTENT_REFERENCES' });
+  });
+
+  it('the backup holds player descriptions only while they are unlocked and switched on in Settings', async () => {
+    withCopyOf('c1', 'U18 (old)');
+    useAppStore.setState({
+      players: [makePlayer(7, 'Sina', ['S'], { description: 'Confidential note' })],
+    });
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('download-selected'));
+    const exported = async (): Promise<string | undefined> => {
+      await fireEvent.press(screen.getByTestId('local-copy-export'));
+      const call = jest.mocked(saveTextFile).mock.calls.at(-1);
+      return JSON.parse(call?.[1] ?? '{}').players[0].description;
+    };
+    expect(await exported()).toBeUndefined(); // locked, as after every app start
+    await act(async () => useDescriptionLock.setState({ unlocked: true, includeInExport: false }));
+    expect(await exported()).toBeUndefined();
+    await act(async () => useDescriptionLock.setState({ unlocked: true, includeInExport: true }));
+    expect(await exported()).toBe('Confidential note');
+    await act(async () => useDescriptionLock.setState({ unlocked: false, includeInExport: true }));
+    expect(await exported()).toBeUndefined();
   });
 
   it('says what the backup is, and has no warning when the file is fine', async () => {

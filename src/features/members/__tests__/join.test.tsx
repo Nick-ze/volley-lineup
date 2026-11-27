@@ -270,11 +270,15 @@ describe('joining a team this device has an older copy of (audit M7)', () => {
     await joinedOverACopy();
     jest.mocked(sync.downloadTeams).mockResolvedValueOnce({ ok: true, value: [] });
     await fireEvent.press(screen.getByTestId('local-copy-replace'));
-    expect(await screen.findByTestId('local-copy-error')).toHaveTextContent(
-      t.sync.errors.forbidden,
+    expect(await screen.findByTestId('join-not-member')).toHaveTextContent(
+      t.sync.notices.removed('Herren 1'),
     );
+    // Neither "joined", nor "you are a member now", nor a question that can't be answered.
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
     expect(screen.queryByTestId('join-success')).toBeNull();
+    expect(screen.queryByTestId('join-copy-kept')).toBeNull();
     expect(screen.queryByTestId('join-open')).toBeNull();
+    expect(screen.queryByTestId('join-cloud-teams')).toBeNull();
   });
 
   it('a second tap while the download runs sends nothing more', async () => {

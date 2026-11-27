@@ -52,6 +52,17 @@ export function JoinedNote({ joined }: { joined: Joined }) {
   const s = t.members.join;
   const name = team?.name ?? joined.name;
   const role = t.members.roleInText[joined.role];
+  if (joined.copy === 'ended') {
+    // No longer a member (removed, or the team was deleted, before the question was answered):
+    // the copy stays what it is, a local team.
+    return (
+      <View style={styles.section}>
+        <Text style={styles.text} accessibilityRole="alert" testID="join-not-member">
+          {t.sync.notices.removed(name ?? t.account.cloudTeams.download.unnamed)}
+        </Text>
+      </View>
+    );
+  }
   if (joined.copy) {
     const copy = t.sync.localCopy;
     return (

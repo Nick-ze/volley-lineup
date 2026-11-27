@@ -12,9 +12,10 @@ export interface Joined {
   name: string | null;
   /**
    * v10 audit M7: this device has an older copy of the team that isn't linked. `asking`: the
-   * account is a member, nothing was downloaded, the user is asked; `kept`: they said "not now".
+   * account is a member, nothing was downloaded, the user is asked; `kept`: they said "not now";
+   * `ended`: the membership ended before the answer (removed, or the team was deleted).
    */
-  copy: 'asking' | 'kept' | null;
+  copy: 'asking' | 'kept' | 'ended' | null;
 }
 
 export type JoinError = SyncErrorCode | 'format';
@@ -67,11 +68,13 @@ export function useJoin() {
     const result = await downloadTeams([joined.teamId], [joined.teamId]);
     // The team is linked before its first pull: once it is, the copy gives way with the next
     // sync whatever happened to this request, so there is nothing left to ask ("Not now" would
-    // promise a copy that stays). Not linked: the download failed before that, or the
-    // membership has ended meanwhile — the question stays, with the reason.
+    // promise a copy that stays). Not linked after a download that worked: the account is no
+    // longer a member (nothing to download). Not linked after one that failed: the question
+    // stays, with the reason.
     const linked = useAppStore.getState().sync.teams[joined.teamId] !== undefined;
     if (linked) setJoined({ ...joined, copy: null });
-    else setError(result.ok ? 'forbidden' : result.error);
+    else if (result.ok) setJoined({ ...joined, copy: 'ended' });
+    else setError(result.error);
     setBusy(false);
     running.current = false;
   }, [joined]);
