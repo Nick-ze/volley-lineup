@@ -14,13 +14,14 @@
  */
 import { sliceToRecords, teamSlice, type TeamData } from '@/domain/syncRecords';
 import type { TeamRole } from '@/domain/types';
+import { useAppStore } from '@/store';
 import { FakeCloud } from '@/test-utils/fakeBackend';
 import { goldenTeamData } from '@/test-utils/syncFixtures';
 import { PROFILE, TestDevice } from '@/test-utils/syncDevice';
 
 import { createEngine } from '../engine';
-import { createInvite } from '../memberCommands';
-import { downloadTeams, joinTeam, uploadTeams } from '../teamCommands';
+import { createInvite, removeMember } from '../memberCommands';
+import { downloadTeams, joinTeam, leaveTeam, listCloudTeams, uploadTeams } from '../teamCommands';
 
 const T1 = 't1';
 
@@ -232,5 +233,130 @@ describe('sharing an older copy of a team the account already belongs to (audit 
       ok: true,
       value: [{ teamId: T1, result: 'linked' }],
     });
+  });
+});
+
+describe('found by the independent review of the M7 change', () => {
+  it('an upload whose answer was lost: the next try links the team and pushes it', async () => {
+    // The team was created in the cloud, the answer never arrived. The second try finds the
+    // account a member of an EMPTY cloud team: that is this upload, not an older copy.
+    const cloud = new FakeCloud();
+    const a = new TestDevice(cloud, 'dev-a', t1());
+    await a.signIn('anna@example.test');
+    const create = a.backend.createTeam.bind(a.backend);
+    a.backend.createTeam = async (teamId: string, displayName: string) => {
+      await create(teamId, displayName);
+      throw new TypeError('Network request failed');
+    };
+    expect(await a.act((e) => uploadTeams(e, [T1]))).toEqual({ ok: false, error: 'offline' });
+    expect(a.data.sync.teams).toEqual({});
+    a.backend.createTeam = create;
+    expect(await a.act((e) => uploadTeams(e, [T1]))).toEqual({
+      ok: true,
+      value: [{ teamId: T1, result: 'linked' }],
+    });
+    await a.cycle();
+    expect(a.data.sync.teams[T1]).toMatchObject({ role: 'manager' });
+    expect(cloud.record(T1, 'team', T1)?.deleted).toBe(false);
+    expect(cloud.record(T1, 'player', 'p1')?.deleted).toBe(false);
+    expect(a.runtime.status.pending).toBe(0);
+  });
+
+  it('an empty cloud team the account may only view: sharing a copy of it still changes nothing', async () => {
+    const cloud = new FakeCloud();
+    const anna = cloud.device();
+    anna.signInAs('anna@example.test');
+    await anna.createTeam(T1, 'Anna'); // created, nothing pushed yet
+    const invite = await anna.createInvite(T1, 'player', 7);
+    const b = new TestDevice(cloud, 'dev-b', oldCopy());
+    await b.signIn('ben@example.test');
+    await b.act((e) => joinTeam(e, invite.code));
+    expect(await b.act((e) => uploadTeams(e, [T1]))).toEqual({
+      ok: true,
+      value: [{ teamId: T1, result: 'inCloud' }],
+    });
+    expect(b.data.sync.teams).toEqual({});
+  });
+
+  it('removed from the team since the join: the same code again is asked of the server', async () => {
+    // B joined (no copy then) and was linked; a manager removed the account; B's next sync
+    // unlinks the team, which stays as a local copy. The code remembered from the join must
+    // not answer "you are a member" from memory.
+    const cloud = new FakeCloud();
+    const a = new TestDevice(cloud, 'dev-a', t1());
+    const b = new TestDevice(cloud, 'dev-b');
+    await a.signIn('anna@example.test');
+    await b.signIn('ben@example.test');
+    await a.act((e) => uploadTeams(e, [T1]));
+    await a.cycle();
+    const invite = await a.act((e) => createInvite(e, T1, 'player', 7));
+    if (!invite.ok) throw new Error('no invite');
+    await b.act((e) => joinTeam(e, invite.value.code));
+    await b.cycle();
+    expect(b.data.sync.teams[T1]).toBeDefined();
+    await a.act((e) => removeMember(e, T1, cloud.userId('ben@example.test')));
+    cloud.clock.tick(60_000);
+    await b.cycle();
+    expect(b.data.sync.teams).toEqual({});
+    expect(b.data.teams.map((x) => x.id)).toEqual([T1]);
+
+    const asked = calls(cloud, 'joinTeam');
+    // Removing a member revokes the team's open codes (audit H1).
+    expect(await b.act((e) => joinTeam(e, invite.value.code))).toEqual({
+      ok: false,
+      error: 'inviteInvalid',
+    });
+    expect(calls(cloud, 'joinTeam')).toBe(asked + 1);
+    expect(cloud.role(T1, cloud.userId('ben@example.test'))).toBeNull();
+  });
+
+  it('left on another device since the join: the same code joins again, and the copy is asked about', async () => {
+    const cloud = new FakeCloud();
+    const a = new TestDevice(cloud, 'dev-a', t1());
+    const b = new TestDevice(cloud, 'dev-b');
+    const c = new TestDevice(cloud, 'dev-c');
+    await a.signIn('anna@example.test');
+    await b.signIn('ben@example.test');
+    await c.signIn('ben@example.test');
+    await a.act((e) => uploadTeams(e, [T1]));
+    await a.cycle();
+    const invite = await a.act((e) => createInvite(e, T1, 'player', 7));
+    if (!invite.ok) throw new Error('no invite');
+    const { code } = invite.value;
+    await b.act((e) => joinTeam(e, code));
+    await b.cycle();
+    await c.act((e) => downloadTeams(e, [T1]));
+    await c.act((e) => leaveTeam(e, T1));
+    cloud.clock.tick(60_000);
+    await b.cycle(); // no longer a member: unlinked, the team stays as a copy
+    expect(b.data.sync.teams).toEqual({});
+
+    const again = await b.act((e) => joinTeam(e, code));
+    expect(again).toMatchObject({ ok: true, value: { teamId: T1, localCopy: true } });
+    expect(cloud.role(T1, cloud.userId('ben@example.test'))).toBe('player');
+    // A third time, still unanswered: a member now, so no further join is sent.
+    const asked = calls(cloud, 'joinTeam');
+    expect(await b.act((e) => joinTeam(e, code))).toEqual(again);
+    expect(calls(cloud, 'joinTeam')).toBe(asked);
+    await b.act((e) => downloadTeams(e, [T1], [T1]));
+    await b.cycle();
+    expect(b.data.sync.teams[T1]).toMatchObject({ role: 'player' });
+    expect(records(b)).toEqual(records(a));
+  });
+
+  it('"Not now", then the copy is deleted: the code goes to the server again; Cloud teams offers the team', async () => {
+    const { cloud, b, code } = await benHasACopy('manager');
+    await b.act((e) => joinTeam(e, code));
+    await b.act(() => useAppStore.getState().deleteTeam(T1));
+    expect(b.data.teams).toEqual([]);
+    const asked = calls(cloud, 'joinTeam');
+    // A manager code works once: the server says so (as it did before this change).
+    expect(await b.act((e) => joinTeam(e, code))).toEqual({ ok: false, error: 'inviteInvalid' });
+    expect(calls(cloud, 'joinTeam')).toBe(asked + 1);
+    // The membership is there, and with no copy left the team downloads without a question.
+    const list = await b.act((e) => listCloudTeams(e));
+    expect(list).toMatchObject({ ok: true, value: [{ teamId: T1, onDevice: false }] });
+    expect(await b.act((e) => downloadTeams(e, [T1]))).toEqual({ ok: true, value: [] });
+    expect(b.data.sync.teams[T1]).toMatchObject({ role: 'manager' });
   });
 });

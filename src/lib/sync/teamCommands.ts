@@ -120,10 +120,19 @@ async function uploadOne(
     }
     const moved = id === teamId ? {} : { newTeamId: id };
     if (outcome === 'taken') return { teamId, result: 'failed', error: 'unknown', ...moved };
-    // The account already belongs to a cloud team with this id: this team is an older copy of
-    // it. Linking would replace it with the cloud's version — only after a question (M7), and
-    // that is asked where the team is downloaded.
-    if (outcome === 'member') return { teamId, result: 'inCloud', ...moved };
+    if (outcome === 'member') {
+      // The account already belongs to a cloud team with this id. If that team has no records
+      // yet and the account manages it, this is the team's own upload whose answer was lost the
+      // first time (or that was interrupted): nothing in the cloud can win over this copy, so
+      // it is linked and pushed as before. Else this team is an older copy of the cloud's:
+      // linking would let the cloud's version take its place — only after a question (M7),
+      // which is asked where the team is downloaded.
+      const empty = (await engine.backend.pullChanges(id, 0, 1)).rows.length === 0;
+      const role = (await engine.backend.memberships()).find((m) => m.teamId === id)?.role;
+      if (!empty || role !== 'manager') return { teamId, result: 'inCloud', ...moved };
+      linkCloudTeam(engine, session.userId, id, 'manager');
+      return { teamId, result: id !== teamId ? 'rekeyed' : 'linked', ...moved };
+    }
     setTeamMeta(id, newMeta(session.userId, 'manager'));
     return { teamId, result: id !== teamId ? 'rekeyed' : 'created', ...moved };
   } catch (e) {
@@ -136,8 +145,9 @@ async function uploadOne(
 /**
  * Shares local teams: each is created in the cloud (`created`), moved to a new id first because
  * its id was taken or isn't allowed on the server (`rekeyed`, with `newTeamId`), or left as it
- * is because the account already belongs to a cloud team with its id (`inCloud`: an older copy).
- * A team that is already shared on this device answers `linked`.
+ * is because the account already belongs to a cloud team with its id that has records
+ * (`inCloud`: this is an older copy of it). `linked`: already shared on this device, or the
+ * account's own cloud team of that id is still empty (an upload that didn't finish).
  */
 export const uploadTeams = (
   engine: SyncEngine,
@@ -259,8 +269,14 @@ export const joinTeam = (engine: SyncEngine, code: string): Promise<SyncResult<J
         const meta = appState().sync.teams[known.teamId];
         const { userId: _user, ...again } = known;
         if (meta?.userId === session.userId) return { ...again, role: meta.role, localCopy: false };
-        // Still waiting for the user's answer about the older copy: the join itself is done.
-        if (!meta && isLocalCopy(known.teamId)) return { ...again, localCopy: true };
+        // Still waiting for the user's answer about the older copy: the join itself is done —
+        // if the account is still a member (it may have been removed since, and the unlinked
+        // team is a copy then too: the code is asked for again below).
+        if (!meta && isLocalCopy(known.teamId)) {
+          const roles = await engine.backend.memberships();
+          const role = roles.find((m) => m.teamId === known.teamId)?.role;
+          if (role) return { ...again, role, localCopy: true };
+        }
       }
       const joined = await engine.backend.joinTeam(code, displayName());
       // The name is a nicety: a failure here doesn't undo the join.

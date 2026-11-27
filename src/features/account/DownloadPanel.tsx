@@ -72,6 +72,13 @@ export function DownloadPanel({ teams, loading, loadError, reload }: DownloadPan
     else void download();
   };
 
+  /** "Not now": the copies stay as they are; the other ticked teams are still downloaded. */
+  const keepCopies = () => {
+    const others = ids.length - (asking?.length ?? 0);
+    setAsking(null);
+    if (others > 0) void download();
+  };
+
   const body = () => {
     if (loading && teams.length === 0) {
       return (
@@ -121,11 +128,13 @@ export function DownloadPanel({ teams, loading, loadError, reload }: DownloadPan
       <StatusMessage status={done ? { tone: 'success', text: s.download.done(done) } : null} />
       {asking ? (
         <LocalCopyDialog
-          teamNames={asking.map((c) => c.name || s.download.unnamed)}
-          manager={asking.every((c) => c.role === 'manager')}
+          copies={asking.map((c) => ({
+            name: c.name || s.download.unnamed,
+            manager: c.role === 'manager',
+          }))}
           busy={busy}
           onReplace={() => void download(asking.map((c) => c.teamId))}
-          onCancel={() => setAsking(null)}
+          onCancel={keepCopies}
         />
       ) : null}
     </Section>

@@ -110,21 +110,31 @@ export const sync: Strings['sync'] = {
   },
   localCopy: {
     title: 'Ältere Kopie auf diesem Gerät',
-    body: (teamNames: string[], manager: boolean) => {
-      const one = teamNames.length === 1;
-      const names = teamNames.join(', ');
-      const found = one
-        ? `Auf diesem Gerät gibt es eine ältere Kopie von ${names}.`
-        : `Auf diesem Gerät gibt es ältere Kopien von ${names}.`;
-      const effect = manager
-        ? 'Überall, wo beide etwas haben, gilt die Cloud-Version des Teams – Änderungen an der Kopie auf diesem Gerät gehen verloren. Was nur die Kopie hat, kommt zum Team dazu.'
-        : 'Die Cloud-Version des Teams tritt an ihre Stelle – Änderungen an der Kopie auf diesem Gerät gehen verloren.';
+    body: (viewOnly: string[], managed: string[]) => {
+      const all = [...viewOnly, ...managed];
+      const found =
+        all.length === 1
+          ? `Auf diesem Gerät gibt es eine ältere Kopie von ${all[0]}.`
+          : `Auf diesem Gerät gibt es ältere Kopien von ${all.join(', ')}.`;
+      const replaced =
+        'Die Cloud-Version des Teams tritt an ihre Stelle – Änderungen an der Kopie auf diesem Gerät gehen verloren.';
+      const merged =
+        'Überall, wo beide etwas haben, gilt die Cloud-Version des Teams – Änderungen an der Kopie auf diesem Gerät gehen verloren. Was nur die Kopie hat, kommt zum Team dazu.';
+      const effect =
+        managed.length === 0
+          ? replaced
+          : viewOnly.length === 0
+            ? merged
+            : `Änderungen an den Kopien auf diesem Gerät gehen verloren: Bei ${viewOnly.join(', ')} tritt die Cloud-Version an die Stelle der Kopie; bei ${managed.join(', ')} gilt sie überall, wo beide etwas haben (was nur die Kopie hat, kommt zum Team dazu).`;
       return `${found} ${effect} Zuerst eine Sicherung exportieren?`;
     },
+    exportHint:
+      'Die Sicherung ist dieselbe Datei wie unter Einstellungen → Export: alles auf diesem Gerät, mit Fotos. Spielerbeschreibungen sind nur enthalten, wenn dort „Beschreibungen mitexportieren“ eingeschaltet ist.',
     export: 'Sicherung exportieren',
-    exportLabel: 'Sicherung exportieren: alles auf diesem Gerät als Datei speichern',
+    exportLabel: 'Sicherung exportieren: dieselbe Datei wie unter Einstellungen → Export',
     replace: 'Cloud-Version verwenden',
-    replaceLabel: 'Cloud-Version verwenden: die Kopie auf diesem Gerät wird ersetzt',
+    replaceLabel:
+      'Cloud-Version verwenden: Änderungen an der Kopie auf diesem Gerät gehen verloren',
     cancel: 'Jetzt nicht',
     cancelLabel: 'Jetzt nicht: die Kopie auf diesem Gerät behalten',
     later: (team: string) =>

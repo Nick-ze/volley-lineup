@@ -1375,14 +1375,45 @@ the copy since was gone.
   lost. Export a backup first?" — with "Export a backup" (the Settings export: everything, with
   photos; the question stays open), "Use the cloud version" and "Not now". For a manager it
   says that the cloud wins wherever both have something and that what only the copy has is
-  added to the team. It appears on the join screen, in Cloud teams → Download, and "Share this
+  added to the team. It appears on the join screen and in Cloud teams → Download; "Share this
   team" on such a copy points there.
 - "Not now" keeps the copy as it is. The account stays a member; the team is offered under
-  Cloud teams → Download (and not for upload), where the question is asked again.
+  Cloud teams → Download (and not for upload), where the question is asked again. Other teams
+  ticked in the same download are still downloaded.
 
-Tests: `localCopy.test.ts` (10 two-device scenarios: join as a view-only member and as a
+Tests: `localCopy.test.ts` (14 two-device scenarios: join as a view-only member and as a
 manager, the same code twice, an app restart between the question and the answer, download,
-share), `cloudTeams.test.tsx` (8 cases), `join.test.tsx` (4), `members.test.tsx` (1),
-`syncAccess.test.ts`. Five existing tests relied on linking over a copy unasked; they now take
-the agreed step and assert what they asserted before. Each part of the rule was undone once to
-see a test fail (12 mutations, all noticed).
+share, and the review's sequences), `cloudTeams.test.tsx` (13 cases), `join.test.tsx` (9),
+`members.test.tsx` (1), `syncAccess.test.ts`. Five existing tests relied on linking over a copy
+unasked; they now take the agreed step and assert what they asserted before (the reviewer
+checked that none was weakened).
+
+**Independent review.** The reviewer found no path that still links a cloud team over a copy
+without the user's yes, and no sequence in which the new rule itself loses data `main` kept.
+What it found around it, and what was done:
+
+| Review finding                                                                                                                                                                                                                                                                                                                                                  | Done                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **The backup the question offers could be a file the import refuses**, with "Exported" all the same: the dialog left out the warning Settings → Export shows when two players of a team share a jersey number (audit H6). The user exports, agrees, and can't get the copy back                                                                                 | fixed: the dialog shows the same warning, says what the backup is (the Settings export; player descriptions only when switched on there) and passes the same descriptions setting                                                                                                                      |
+| **Worse than `main`: an upload whose answer was lost.** The team was created in the cloud, the answer never arrived; the second try found the account a member and now answered "already in the cloud, an older copy" — for the only copy there is, with nothing in the cloud and nothing offered for download. `main` linked and pushed                        | fixed: when the account's cloud team of that id has no records yet and the account manages it, the copy is linked and pushed as before (nothing in the cloud can win over it); the upload panel also loads the lists again after an "already in the cloud" answer, so the team really is offered below |
+| **The join's memory answered "you are a member" without asking**: a code joined with earlier in the app run, whose team is an unlinked copy now because the account was removed from it (or left on another device) since. The screen then said "joined" with nothing linked; with a multi-use code the device could not join again until the app was restarted | fixed: the remembered answer is only given while the server still lists the membership; otherwise the code is sent again. The join screen also confirms only once the team is linked                                                                                                                   |
+| "Not now" after a download that failed half-way said "the copy is unchanged" although the team was already linked (it is linked before its first pull) and the next sync replaces the copy                                                                                                                                                                      | fixed: once the team is linked there is nothing left to ask, and the join is confirmed                                                                                                                                                                                                                 |
+| The reason for a failed download on the join screen was shown behind the dialog                                                                                                                                                                                                                                                                                 | fixed: it is shown inside the question                                                                                                                                                                                                                                                                 |
+| Eight mutations no test noticed (mixed roles, the dialog while the download runs, the second tap, which name the question uses, the deleted copy)                                                                                                                                                                                                               | tests added; the one line that turned out to do nothing was removed                                                                                                                                                                                                                                    |
+| Nits: with copies of a view-only team and of a managed team at once the question used the view-only wording; "Not now" in the download list downloaded nothing at all                                                                                                                                                                                           | fixed: the question says what happens to each; "Not now" keeps the copies and downloads the rest                                                                                                                                                                                                       |
+
+Each part of the rule and each of these fixes was undone once to see a test fail (26 mutations).
+
+**Limits that remain (M7)**
+
+- The question is asked by the app; a team that an older app version (10.0.0) joins or
+  downloads over a copy is still replaced without it.
+- After "Not now" on the join screen the account is a member although the team isn't on the
+  device as a shared team; a single-use manager code entered again after an app restart answers
+  "invalid code" (the membership is there: Cloud teams → Download offers the team).
+- A share whose answer was lost is only recognised as "the same upload" while the cloud team
+  has no records and the account manages it; in every other case the copy is asked about.
+- The backup is the Settings export: it holds player descriptions only when they are unlocked
+  and switched on there.
+- Not checked on a phone: the share sheet opening from inside the dialog, and the dialog's
+  height on a small screen with the long German texts.

@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { normalizeInviteCode } from '@/domain/invites';
 import type { SyncErrorCode, TeamRole } from '@/domain/types';
 import { downloadTeams, joinTeam, listCloudTeams } from '@/lib/sync';
+import { useAppStore } from '@/store';
 
 export interface Joined {
   teamId: string;
@@ -64,15 +65,19 @@ export function useJoin() {
     setBusy(true);
     setError(null);
     const result = await downloadTeams([joined.teamId], [joined.teamId]);
-    if (result.ok) setJoined({ ...joined, copy: null });
-    else setError(result.error);
+    // The team is linked before its first pull: once it is, the copy gives way with the next
+    // sync whatever happened to this request, so there is nothing left to ask ("Not now" would
+    // promise a copy that stays). Not linked: the download failed before that, or the
+    // membership has ended meanwhile — the question stays, with the reason.
+    const linked = useAppStore.getState().sync.teams[joined.teamId] !== undefined;
+    if (linked) setJoined({ ...joined, copy: null });
+    else setError(result.ok ? 'forbidden' : result.error);
     setBusy(false);
     running.current = false;
   }, [joined]);
 
   /** "Not now": the account stays a member, the copy on this device stays as it is. */
   const keepCopy = useCallback(() => {
-    setError(null);
     setJoined((now) => (now?.copy === 'asking' ? { ...now, copy: 'kept' } : now));
   }, []);
 

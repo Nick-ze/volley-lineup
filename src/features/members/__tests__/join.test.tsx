@@ -178,15 +178,32 @@ describe('joining a team this device has an older copy of (audit M7)', () => {
 
   it('asks before anything is downloaded, and doesn’t offer to open the old copy', async () => {
     await joinedOverACopy();
-    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['Herren 1'], false));
+    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['Herren 1'], []));
     expect(sync.downloadTeams).not.toHaveBeenCalled();
     expect(screen.queryByTestId('join-open')).toBeNull();
     expect(screen.queryByTestId('join-success')).toBeNull();
   });
 
+  /** What the real download does first: the team is linked on this device. */
+  const linkTeam1 = () =>
+    useAppStore.setState((st) => ({
+      sync: {
+        ...st.sync,
+        teams: {
+          team1: { userId: 'me', role: 'player', cursor: 0, base: {}, edits: {}, photos: [] },
+        },
+      },
+    }));
+  const downloadLinks = () =>
+    jest.mocked(sync.downloadTeams).mockImplementationOnce(async () => {
+      linkTeam1();
+      return { ok: true as const, value: [] };
+    });
+
   it('"Use the cloud version" downloads the team and then confirms the join', async () => {
     await joinedOverACopy('manager');
-    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['Herren 1'], true));
+    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body([], ['Herren 1']));
+    downloadLinks();
     await fireEvent.press(screen.getByTestId('local-copy-replace'));
     expect(sync.downloadTeams).toHaveBeenCalledWith(['team1'], ['team1']);
     expect(await screen.findByTestId('join-success')).toHaveTextContent(
@@ -208,15 +225,82 @@ describe('joining a team this device has an older copy of (audit M7)', () => {
     expect(screen).toHavePathname('/account/teams');
   });
 
-  it('a download that fails says why and the question stays', async () => {
+  it('a download that fails says why inside the question, which stays', async () => {
     await joinedOverACopy();
     jest.mocked(sync.downloadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await fireEvent.press(screen.getByTestId('local-copy-replace'));
-    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
+    expect(await screen.findByTestId('local-copy-error')).toHaveTextContent(t.sync.errors.offline);
     expect(screen.getByTestId('local-copy-dialog')).toBeTruthy();
     expect(screen.queryByTestId('join-success')).toBeNull();
-    // A second try works.
+    // "Not now" after that: the copy is kept, and the old reason is gone.
+    await fireEvent.press(screen.getByTestId('local-copy-cancel'));
+    expect(screen.getByTestId('join-copy-kept')).toBeTruthy();
+    expect(screen.queryByText(t.sync.errors.offline)).toBeNull();
+  });
+
+  it('a second try after a failed download works', async () => {
+    await joinedOverACopy();
+    jest.mocked(sync.downloadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(await screen.findByTestId('local-copy-error')).toBeTruthy();
+    downloadLinks();
     await fireEvent.press(screen.getByTestId('local-copy-replace'));
     expect(await screen.findByTestId('join-success')).toBeTruthy();
+    expect(screen.queryByTestId('local-copy-error')).toBeNull();
+  });
+
+  // Found by the review: the download links the team before its first pull. When that pull
+  // fails the team is linked all the same, and the copy gives way with the next sync — "Not
+  // now" must not promise that it stays.
+  it('a download that failed after the team was linked: no more question, the join is confirmed', async () => {
+    await joinedOverACopy();
+    jest.mocked(sync.downloadTeams).mockImplementationOnce(async () => {
+      linkTeam1();
+      return { ok: false as const, error: 'offline' as const };
+    });
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(await screen.findByTestId('join-success')).toBeTruthy();
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
+    expect(screen.queryByTestId('join-copy-kept')).toBeNull();
+  });
+
+  // Found by the review: a membership that ended meanwhile makes the download answer "nothing
+  // to do"; the screen must not say "joined" then.
+  it('a download that linked nothing (no longer a member) says so and doesn’t confirm', async () => {
+    await joinedOverACopy();
+    jest.mocked(sync.downloadTeams).mockResolvedValueOnce({ ok: true, value: [] });
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(await screen.findByTestId('local-copy-error')).toHaveTextContent(
+      t.sync.errors.forbidden,
+    );
+    expect(screen.queryByTestId('join-success')).toBeNull();
+    expect(screen.queryByTestId('join-open')).toBeNull();
+  });
+
+  it('a second tap while the download runs sends nothing more', async () => {
+    await joinedOverACopy();
+    let finish: (value: { ok: true; value: string[] }) => void = () => undefined;
+    jest
+      .mocked(sync.downloadTeams)
+      .mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(sync.downloadTeams).toHaveBeenCalledTimes(1);
+    linkTeam1();
+    await act(async () => finish({ ok: true, value: [] }));
+    expect(await screen.findByTestId('join-success')).toBeTruthy();
+  });
+
+  it('names the copy as this device knows it, not as the cloud calls the team', async () => {
+    signIn();
+    jest.mocked(sync.joinTeam).mockResolvedValueOnce({
+      ok: true,
+      value: { teamId: 'team1', role: 'player', name: 'Herren 1 (cloud name)', localCopy: true },
+    });
+    await renderApp('/join?code=abcdefghjk');
+    await fireEvent.press(screen.getByTestId('join-submit'));
+    expect(await screen.findByTestId('local-copy-body')).toHaveTextContent(
+      copy.body(['Herren 1'], []),
+    );
   });
 });

@@ -134,22 +134,35 @@ export const sync = {
    */
   localCopy: {
     title: 'Older copy on this device',
-    /** `manager`: this account may edit every one of the teams. */
-    body: (teamNames: string[], manager: boolean) => {
-      const one = teamNames.length === 1;
-      const names = teamNames.join(', ');
-      const found = one
-        ? `This device has an older copy of ${names}.`
-        : `This device has older copies of ${names}.`;
-      const effect = manager
-        ? 'The team’s cloud version wins wherever both have something, so changes made to the copy on this device are lost. What only the copy has is added to the team.'
-        : 'The team’s cloud version takes its place, so changes made to the copy on this device are lost.';
+    /**
+     * `viewOnly` / `managed`: the names of the teams this account may only view / may edit —
+     * what happens to a copy differs.
+     */
+    body: (viewOnly: string[], managed: string[]) => {
+      const all = [...viewOnly, ...managed];
+      const found =
+        all.length === 1
+          ? `This device has an older copy of ${all[0]}.`
+          : `This device has older copies of ${all.join(', ')}.`;
+      const replaced =
+        'The team’s cloud version takes its place, so changes made to the copy on this device are lost.';
+      const merged =
+        'The team’s cloud version wins wherever both have something, so changes made to the copy on this device are lost. What only the copy has is added to the team.';
+      const effect =
+        managed.length === 0
+          ? replaced
+          : viewOnly.length === 0
+            ? merged
+            : `Changes made to the copies on this device are lost: the cloud version takes the place of ${viewOnly.join(', ')}, and wins wherever both have something for ${managed.join(', ')} (what only that copy has is added to the team).`;
       return `${found} ${effect} Export a backup first?`;
     },
+    /** What the backup is (the Settings export), under the question. */
+    exportHint:
+      'The backup is the same file as Settings → Export: everything on this device, with photos. Player descriptions are only in it if “Include descriptions” is switched on there.',
     export: 'Export a backup',
-    exportLabel: 'Export a backup: save everything on this device as a file',
+    exportLabel: 'Export a backup: the same file as Settings → Export',
     replace: 'Use the cloud version',
-    replaceLabel: 'Use the cloud version: the copy on this device is replaced',
+    replaceLabel: 'Use the cloud version: changes made to the copy on this device are lost',
     cancel: 'Not now',
     cancelLabel: 'Not now: keep the copy on this device',
     /** After "Not now" when joining: the account is a member, the copy is untouched. */
