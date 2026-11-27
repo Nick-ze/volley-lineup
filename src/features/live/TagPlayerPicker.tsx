@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { NoTabSwipe } from '@/components';
 import { plausiblePlayerIds, type LastRally } from '@/domain/lastRally';
@@ -30,8 +30,10 @@ export interface TagPlayerPickerProps {
  * serve error; tapping the chosen player again removes them. For "our error" the optional error
  * types come first (`ErrorTypeChips`) and narrow the players.
  *
- * v6 QA: one line that scrolls sideways (✕ stays visible on the right), so the row is never
- * taller than the kinds row and the live court + Substitution still fit at 390×844 (#75, #126).
+ * v11 (owner, after trying it on a phone): every chip is shown — the chips wrap onto as many
+ * lines as they need, like the kinds row, and ✕ comes last. The one line that scrolled sideways
+ * (v6, #164) could not be scrolled on the phone, so players at its end could not be chosen. While
+ * a point is being tagged the court sits lower by the extra lines (DECISIONS #357).
  */
 export function TagPlayerPicker({
   kind,
@@ -62,44 +64,37 @@ export function TagPlayerPicker({
     />
   );
   return (
-    // v8: a drag anywhere on the row (chips, kind chip, ✕) scrolls the chips, never the
-    // Live ↔ Performance swipe, so the open tag row is never lost (v8 QA).
+    // v8: a drag that starts on the row never switches Live ↔ Performance, so the open tag row is
+    // never lost (v8 QA).
     <NoTabSwipe testID="point-tag-row-no-swipe">
       <View
         style={styles.row}
         accessibilityLabel={t.tags.playersLabel(name)}
         testID="point-tag-row"
       >
-        <ScrollView
-          horizontal
-          style={styles.scroll}
-          contentContainerStyle={styles.chips}
-          keyboardShouldPersistTaps="handled"
-        >
-          {kindTakesErrorType(kind) ? (
-            <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
-          ) : (
-            kindChip
-          )}
-          {onCourt.map((p) => {
-            const selected = p.id === chosen;
-            const desc = playerDescription(t, p);
-            const ref = playerRef(t, playersById, p.id);
-            return (
-              <TagChip
-                key={p.id}
-                label={ref}
-                accessibilityLabel={
-                  selected ? t.tags.clearPlayer(ref, desc) : t.tags.choosePlayer(ref, desc, name)
-                }
-                selected={selected}
-                highlighted={served && p.id === rally.serverId}
-                onPress={() => onTag(kind, selected ? null : p.id)}
-                testID={`tag-player-${p.id}`}
-              />
-            );
-          })}
-        </ScrollView>
+        {kindTakesErrorType(kind) ? (
+          <ErrorTypeChips rally={rally} kindChip={kindChip} onErrorType={onErrorType} />
+        ) : (
+          kindChip
+        )}
+        {onCourt.map((p) => {
+          const selected = p.id === chosen;
+          const desc = playerDescription(t, p);
+          const ref = playerRef(t, playersById, p.id);
+          return (
+            <TagChip
+              key={p.id}
+              label={ref}
+              accessibilityLabel={
+                selected ? t.tags.clearPlayer(ref, desc) : t.tags.choosePlayer(ref, desc, name)
+              }
+              selected={selected}
+              highlighted={served && p.id === rally.serverId}
+              onPress={() => onTag(kind, selected ? null : p.id)}
+              testID={`tag-player-${p.id}`}
+            />
+          );
+        })}
         {close}
       </View>
     </NoTabSwipe>
@@ -107,7 +102,5 @@ export function TagPlayerPicker({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  scroll: { flex: 1 },
-  chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
 });

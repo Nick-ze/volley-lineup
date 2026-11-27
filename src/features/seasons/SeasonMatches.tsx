@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
   Button,
@@ -12,6 +12,7 @@ import {
 import { searchMatches } from '@/domain/matchSearch';
 import type { Opponent } from '@/domain/types';
 import { useT } from '@/i18n';
+import { spacing } from '@/theme';
 import {
   canEditMatchNow,
   useAppStore,
@@ -59,7 +60,7 @@ export function SeasonMatches({
   const searching = query.trim() !== '';
 
   return (
-    <>
+    <View style={tabStyles.wrap}>
       <View style={styles.headerRow}>
         {opponent ? (
           <Button
@@ -116,6 +117,9 @@ export function SeasonMatches({
         ))}
       </View>
       <ConfirmDialog {...dialogProps} />
-    </>
+    </View>
   );
 }
+
+// v11: the tab's parts (form or search, list, hint) keep a clear distance from each other.
+const tabStyles = StyleSheet.create({ wrap: { gap: spacing.md } });
