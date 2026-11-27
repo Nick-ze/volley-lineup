@@ -39,7 +39,9 @@ async function withViewer(bData: Partial<TeamData> = {}) {
   await a.cycle();
   const invite = await a.act((e) => createInvite(e, T1, 'player', 7));
   if (!invite.ok) throw new Error('no invite');
-  await b.act((e) => joinTeam(e, invite.value.code));
+  const joined = await b.act((e) => joinTeam(e, invite.value.code));
+  // An older copy on B is only replaced once the user has agreed (v10 audit M7).
+  if (joined.ok && joined.value.localCopy) await b.act((e) => downloadTeams(e, [T1], [T1]));
   await b.cycle();
   return { cloud, a, b };
 }

@@ -128,6 +128,39 @@ export const sync = {
     cancel: 'Cancel',
     cancelLabel: 'Cancel: keep the team',
   },
+  /**
+   * v10 audit M7: asked before a team's cloud version takes the place of an older copy of the
+   * team on this device (joining again, downloading, sharing the copy).
+   */
+  localCopy: {
+    title: 'Older copy on this device',
+    /** `manager`: this account may edit every one of the teams. */
+    body: (teamNames: string[], manager: boolean) => {
+      const one = teamNames.length === 1;
+      const names = teamNames.join(', ');
+      const found = one
+        ? `This device has an older copy of ${names}.`
+        : `This device has older copies of ${names}.`;
+      const effect = manager
+        ? 'The team’s cloud version wins wherever both have something, so changes made to the copy on this device are lost. What only the copy has is added to the team.'
+        : 'The team’s cloud version takes its place, so changes made to the copy on this device are lost.';
+      return `${found} ${effect} Export a backup first?`;
+    },
+    export: 'Export a backup',
+    exportLabel: 'Export a backup: save everything on this device as a file',
+    replace: 'Use the cloud version',
+    replaceLabel: 'Use the cloud version: the copy on this device is replaced',
+    cancel: 'Not now',
+    cancelLabel: 'Not now: keep the copy on this device',
+    /** After "Not now" when joining: the account is a member, the copy is untouched. */
+    later: (team: string) =>
+      `You are a member of ${team} now. The copy on this device is unchanged. For the team’s cloud version, open Cloud sync → Cloud teams and download it.`,
+    /** A team that was shared ("Share this team" / Upload) but is already in the cloud. */
+    inCloud:
+      'This team is already shared in the cloud and you are a member of it. This is an older copy: open Cloud sync → Cloud teams and download the team to link it.',
+    openCloudTeams: 'Cloud teams',
+    openCloudTeamsLabel: 'Cloud teams: download the team’s cloud version',
+  },
   import: {
     shared: (names: string[]) => `Shared teams: ${names.join(', ')} (changes sync to all members).`,
     skipped: (names: string[]) => `View-only teams skipped: ${names.join(', ')}.`,

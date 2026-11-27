@@ -1,10 +1,17 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import type { SyncedTeam } from '@/domain/types';
+import { de } from '@/i18n/de';
 import { t } from '@/i18n/en';
+import { saveTextFile } from '@/lib/fileTransfer';
 import * as sync from '@/lib/sync';
 import { useAppStore, useSyncRuntime } from '@/store';
 import { PROFILE_ID, renderApp, seedApp } from '@/test-utils';
+
+jest.mock('@/lib/fileTransfer', () => ({
+  saveTextFile: jest.fn(() => Promise.resolve()),
+  pickTextFile: jest.fn(),
+}));
 
 const s = t.account.cloudTeams;
 const linked: SyncedTeam = {
@@ -123,7 +130,7 @@ describe('cloud teams setup', () => {
     await fireEvent.press(await screen.findByTestId('download-c2'));
     expect(box('download-c2')).not.toBeChecked();
     await fireEvent.press(screen.getByTestId('download-selected'));
-    expect(sync.downloadTeams).toHaveBeenCalledWith(['c1']);
+    expect(sync.downloadTeams).toHaveBeenCalledWith(['c1'], []);
     expect(await screen.findByText(s.download.done(1))).toBeTruthy();
     expect(sync.listCloudTeams).toHaveBeenCalledTimes(2);
   });
@@ -147,5 +154,107 @@ describe('cloud teams setup', () => {
     expect(sync.listCloudTeams).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByTestId('cloud-teams-sign-in'));
     expect(screen).toHavePathname('/account/sign-in');
+  });
+});
+
+describe('downloading a team this device has an older copy of (audit M7)', () => {
+  const copy = t.sync.localCopy;
+  /** The device still has an old, unlinked copy of the cloud team `id`. */
+  const withCopyOf = (id: string, name: string) =>
+    useAppStore.setState((st) => ({
+      teams: [...st.teams, { id, profileId: PROFILE_ID, name, createdAt: '' }],
+    }));
+
+  it('asks first, and "Not now" downloads nothing', async () => {
+    withCopyOf('c1', 'U18 (old)');
+    await renderApp('/account/teams');
+    // The copy is offered for download only, never for upload.
+    expect(await screen.findByTestId('download-c1')).toBeTruthy();
+    expect(screen.queryByTestId('upload-c1')).toBeNull();
+    await fireEvent.press(screen.getByTestId('download-selected'));
+    expect(screen.getByTestId('local-copy-dialog')).toBeTruthy();
+    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['U18'], false));
+    expect(sync.downloadTeams).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('local-copy-cancel'));
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
+    expect(sync.downloadTeams).not.toHaveBeenCalled();
+    expect(useAppStore.getState().teams.find((x) => x.id === 'c1')?.name).toBe('U18 (old)');
+  });
+
+  it('"Use the cloud version" downloads everything ticked and names the copy', async () => {
+    withCopyOf('c1', 'U18 (old)');
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('download-selected'));
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(sync.downloadTeams).toHaveBeenCalledWith(['c1', 'c2'], ['c1']);
+    expect(await screen.findByText(s.download.done(2))).toBeTruthy();
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
+  });
+
+  it('offers a backup first: the export runs and the question stays open', async () => {
+    withCopyOf('c1', 'U18 (old)');
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('download-selected'));
+    await fireEvent.press(screen.getByTestId('local-copy-export'));
+    expect(saveTextFile).toHaveBeenCalledTimes(1);
+    const [fileName, text] = jest.mocked(saveTextFile).mock.calls[0];
+    expect(fileName).toMatch(/\.json$/);
+    expect(JSON.parse(text).teams.map((x: { id: string }) => x.id)).toContain('c1');
+    expect(await screen.findByTestId('local-copy-export-status')).toHaveTextContent(
+      t.transfer.export.done(fileName),
+    );
+    expect(screen.getByTestId('local-copy-dialog')).toBeTruthy();
+    expect(sync.downloadTeams).not.toHaveBeenCalled();
+  });
+
+  it('a manager’s copy: the question says what happens to it', async () => {
+    withCopyOf('c2', 'Mixed (old)');
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('download-c1')); // untick the other team
+    await fireEvent.press(screen.getByTestId('download-selected'));
+    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['Mixed'], true));
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(sync.downloadTeams).toHaveBeenCalledWith(['c2'], ['c2']);
+  });
+
+  it('a copy that isn’t ticked isn’t asked about', async () => {
+    withCopyOf('c1', 'U18 (old)');
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('download-c1'));
+    await fireEvent.press(screen.getByTestId('download-selected'));
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
+    expect(sync.downloadTeams).toHaveBeenCalledWith(['c2'], []);
+  });
+
+  it('counts only what was downloaded when the command left a copy alone', async () => {
+    jest.mocked(sync.downloadTeams).mockResolvedValueOnce({ ok: true, value: ['c1'] });
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('download-selected'));
+    expect(await screen.findByText(s.download.done(1))).toBeTruthy();
+  });
+
+  it('sharing such a copy from the upload list says it is already in the cloud', async () => {
+    jest.mocked(sync.uploadTeams).mockResolvedValueOnce({
+      ok: true,
+      value: [{ teamId: 'team1', result: 'inCloud' }],
+    });
+    await renderApp('/account/teams');
+    await fireEvent.press(await screen.findByTestId('upload-team1'));
+    await fireEvent.press(screen.getByTestId('upload-selected'));
+    expect(
+      await screen.findByText(s.upload.result('Herren 1', s.upload.results.inCloud)),
+    ).toBeTruthy();
+  });
+
+  it('words the question for one and several teams, in German too', () => {
+    expect(copy.body(['U18'], false)).toBe(
+      'This device has an older copy of U18. The team’s cloud version takes its place, so changes made to the copy on this device are lost. Export a backup first?',
+    );
+    expect(copy.body(['U18', 'Mixed'], true)).toMatch(
+      /^This device has older copies of U18, Mixed\. .*What only the copy has is added to the team\. Export a backup first\?$/,
+    );
+    expect(de.sync.localCopy.body(['U18'], false)).toMatch(/ältere Kopie von U18.*Sicherung/);
+    expect(de.sync.localCopy.body(['U18', 'Mixed'], true)).toMatch(/ältere Kopien von U18, Mixed/);
+    expect(de.account.cloudTeams.upload.results.inCloud).toMatch(/ältere Kopie/);
   });
 });

@@ -119,7 +119,9 @@ describe('first upload', () => {
     expect(d.data.sync.teams.t1.photos.sort()).toEqual(['ph2', 'ph3']);
   });
 
-  it("'linked': the account already has the team — the cloud wins, local-only records go up", async () => {
+  // Since the v10 audit's M7 an older copy isn't linked unasked: sharing it answers 'inCloud'
+  // and changes nothing; the download the user agreed to links it as before.
+  it("'inCloud': the account already has the team — linked only when asked for; then the cloud wins, local-only records go up", async () => {
     const cloud = new FakeCloud();
     const a = device(cloud, 'dev-a');
     await a.signIn('anna@example.test');
@@ -134,7 +136,12 @@ describe('first upload', () => {
     });
     await b.signIn('anna@example.test');
     const result = await b.act((e) => uploadTeams(e, ['t1']));
-    expect(result).toEqual({ ok: true, value: [{ teamId: 't1', result: 'linked' }] });
+    expect(result).toEqual({ ok: true, value: [{ teamId: 't1', result: 'inCloud' }] });
+    await b.cycle();
+    expect(b.data.sync.teams).toEqual({});
+    expect(b.data.teams[0].name).toBe('Old name');
+    expect(cloud.record('t1', 'player', 'p-new')).toBeUndefined();
+    expect(await b.act((e) => downloadTeams(e, ['t1'], ['t1']))).toEqual({ ok: true, value: [] });
     await b.cycle();
     expect(b.data.teams[0].name).toBe('Herren 1 – Süd');
     expect(cloud.record('t1', 'player', 'p-new')).toBeDefined();
@@ -265,7 +272,11 @@ describe('cloud teams', () => {
     b.backend.pullChanges = async () => {
       throw new TypeError('Network request failed');
     };
-    await b.act((e) => joinTeam(e, invite.ok ? invite.value.code : ''));
+    // Joining alone doesn't touch the copy (v10 audit M7); the download the user agreed to does.
+    const joined = await b.act((e) => joinTeam(e, invite.ok ? invite.value.code : ''));
+    expect(joined).toMatchObject({ ok: true, value: { teamId: 't1', localCopy: true } });
+    expect(b.data.sync.teams).toEqual({});
+    await b.act((e) => downloadTeams(e, ['t1'], ['t1']));
     expect(b.data.sync.teams.t1).toMatchObject({ role: 'player', cursor: 0 });
     b.backend.pullChanges = pull;
     // A restart: a new engine, nothing in memory.

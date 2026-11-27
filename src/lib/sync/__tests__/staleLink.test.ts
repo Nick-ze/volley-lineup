@@ -88,8 +88,11 @@ describe.each(['replace', 'merge'] as const)(
       expect(cloud.record('t1', 'player', 'p-new')?.deleted).toBe(false);
       expect(cloud.record('t1', 'season', 'se-new')?.deleted).toBe(false);
 
-      // Downloading the cloud team again links the restored copy; the cloud wins.
-      await a.act((e) => downloadTeams(e, ['t1']));
+      // Downloading the cloud team again leaves the restored copy alone until the user has
+      // agreed (v10 audit M7); then it links the copy, and the cloud wins.
+      expect(await a.act((e) => downloadTeams(e, ['t1']))).toEqual({ ok: true, value: ['t1'] });
+      expect(a.data.sync.teams).toEqual({});
+      await a.act((e) => downloadTeams(e, ['t1'], ['t1']));
       await a.cycle();
       expect(a.data.players.some((p) => p.id === 'p-new')).toBe(true);
       expect(cloud.record('t1', 'player', 'p-new')?.deleted).toBe(false);

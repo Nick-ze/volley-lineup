@@ -35,7 +35,7 @@ async function twoDevices(cloud = new FakeCloud()) {
   expect(up).toEqual({ ok: true, value: [{ teamId: T1, result: 'created' }] });
   await a.cycle();
   const down = await b.act((engine) => downloadTeams(engine, [T1]));
-  expect(down).toEqual({ ok: true, value: undefined });
+  expect(down).toEqual({ ok: true, value: [] });
   return { cloud, a, b };
 }
 

@@ -37,7 +37,11 @@ export interface Invite {
   maxUses: number | null;
 }
 
-export type UploadResult = 'created' | 'linked' | 'rekeyed' | 'failed';
+/**
+ * `inCloud`: the account already belongs to a cloud team with this id, so the local team is an
+ * older copy of it. Nothing was changed: it is downloaded (after a question) instead.
+ */
+export type UploadResult = 'created' | 'linked' | 'rekeyed' | 'inCloud' | 'failed';
 
 /** One team of `uploadTeams`. */
 export interface UploadItem {
@@ -55,4 +59,10 @@ export interface Joined {
   teamId: string;
   role: TeamRole;
   name: string | null;
+  /**
+   * The account is a member now, but this device has an older copy of the team that isn't
+   * linked (v10 audit M7): nothing was downloaded. `downloadTeams` with the team in
+   * `replaceCopies` puts the cloud's version in its place, once the user has agreed.
+   */
+  localCopy: boolean;
 }

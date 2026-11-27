@@ -4,6 +4,7 @@ import {
   holdStatus,
   isGoneLink,
   isUnchangedRecord,
+  isUnlinkedCopy,
   matchAccess,
   teamAccess,
   withoutTeamLinks,
@@ -231,5 +232,21 @@ describe('isUnchangedRecord (audit M18)', () => {
     expect(isUnchangedRecord(sync, 't1', 'player:p9', 'abc')).toBe(false);
     expect(isUnchangedRecord(sync, 't1', 'player:p2', '')).toBe(false);
     expect(isUnchangedRecord(sync, 'local', 'player:p1', 'abc')).toBe(false);
+  });
+});
+
+describe('isUnlinkedCopy (audit M7)', () => {
+  const teams = [{ id: 'mgr' }, { id: 'local' }];
+
+  it('is true for a team on the device that isn’t linked to the cloud', () => {
+    expect(isUnlinkedCopy(sync, teams, 'local')).toBe(true);
+  });
+
+  it('is false for a linked team, and for a team that isn’t on the device', () => {
+    expect(isUnlinkedCopy(sync, teams, 'mgr')).toBe(false);
+    expect(isUnlinkedCopy(sync, teams, 'cloud-only')).toBe(false);
+    // A link without the team (not on the device): nothing to replace either.
+    expect(isUnlinkedCopy(sync, teams, 'view')).toBe(false);
+    expect(isUnlinkedCopy(sync, [], 'local')).toBe(false);
   });
 });

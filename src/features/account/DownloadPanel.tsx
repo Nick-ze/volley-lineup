@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { ActivityIndicator, Text } from 'react-native';
 
 import { Button } from '@/components';
+import { isUnlinkedCopy } from '@/domain/syncAccess';
 import type { SyncErrorCode } from '@/domain/types';
 import { Section } from '@/features/settings/Section';
 import { StatusMessage } from '@/features/settings/StatusMessage';
+import { LocalCopyDialog } from '@/features/sync/LocalCopyDialog';
 import { useT } from '@/i18n';
 import { downloadTeams, type CloudTeam } from '@/lib/sync';
+import { useAppStore } from '@/store';
 import { makeStyles, typography, useTheme } from '@/theme';
 
 import { CheckRow } from './CheckRow';
@@ -40,17 +43,33 @@ export function DownloadPanel({ teams, loading, loadError, reload }: DownloadPan
       return next;
     });
 
-  const download = async () => {
+  // v10 audit M7: teams this device has an older, unlinked copy of are only replaced by their
+  // cloud version after a question. Read when the button is pressed, and again by the command.
+  const [asking, setAsking] = useState<CloudTeam[] | null>(null);
+  const copiesNow = () => {
+    const { sync, teams: local } = useAppStore.getState();
+    return teams.filter((c) => ids.includes(c.teamId) && isUnlinkedCopy(sync, local, c.teamId));
+  };
+
+  const download = async (replaceCopies: string[] = []) => {
     setBusy(true);
-    const result = await downloadTeams(ids);
+    const result = await downloadTeams(ids, replaceCopies);
     setBusy(false);
+    setAsking(null);
     if (!result.ok) {
       setError(result.error);
       return;
     }
     setError(null);
-    setDone(ids.length);
+    // A copy that appeared after the question (or wasn't asked about) is left as it is.
+    setDone(ids.length - result.value.length);
     await reload();
+  };
+
+  const start = () => {
+    const copies = copiesNow();
+    if (copies.length > 0) setAsking(copies);
+    else void download();
   };
 
   const body = () => {
@@ -87,7 +106,7 @@ export function DownloadPanel({ teams, loading, loadError, reload }: DownloadPan
         ))}
         <Button
           label={s.download.button}
-          onPress={() => void download()}
+          onPress={start}
           disabled={busy || ids.length === 0}
           testID="download-selected"
         />
@@ -100,6 +119,15 @@ export function DownloadPanel({ teams, loading, loadError, reload }: DownloadPan
       {body()}
       <ErrorText error={error} testID="download-error" />
       <StatusMessage status={done ? { tone: 'success', text: s.download.done(done) } : null} />
+      {asking ? (
+        <LocalCopyDialog
+          teamNames={asking.map((c) => c.name || s.download.unnamed)}
+          manager={asking.every((c) => c.role === 'manager')}
+          busy={busy}
+          onReplace={() => void download(asking.map((c) => c.teamId))}
+          onCancel={() => setAsking(null)}
+        />
+      ) : null}
     </Section>
   );
 }

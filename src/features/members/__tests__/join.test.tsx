@@ -19,9 +19,18 @@ beforeEach(() => {
 describe('join a team', () => {
   it('fills in the code from the link and joins a team that is on the device', async () => {
     signIn();
+    // The team is already shared on this device (an unshared copy is asked about: see below).
+    useAppStore.setState((st) => ({
+      sync: {
+        ...st.sync,
+        teams: {
+          team1: { userId: 'me', role: 'player', cursor: 0, base: {}, edits: {}, photos: [] },
+        },
+      },
+    }));
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'team1', role: 'player', name: null },
+      value: { teamId: 'team1', role: 'player', name: null, localCopy: false },
     });
     await renderApp('/join?code=abcdefghjk');
     expect(codeField().props.value).toBe('ABCDE-FGHJK');
@@ -36,7 +45,7 @@ describe('join a team', () => {
     signIn();
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'cloud9', role: 'manager', name: null },
+      value: { teamId: 'cloud9', role: 'manager', name: null, localCopy: false },
     });
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({
       ok: true,
@@ -55,7 +64,7 @@ describe('join a team', () => {
     signIn();
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'cloud9', role: 'player', name: 'Mixed 3' },
+      value: { teamId: 'cloud9', role: 'player', name: 'Mixed 3', localCopy: false },
     });
     await renderApp('/join?code=YZ23456789');
     await fireEvent.press(screen.getByTestId('join-submit'));
@@ -67,7 +76,7 @@ describe('join a team', () => {
     signIn();
     jest.mocked(sync.joinTeam).mockResolvedValueOnce({
       ok: true,
-      value: { teamId: 'cloud9', role: 'player', name: null },
+      value: { teamId: 'cloud9', role: 'player', name: null, localCopy: false },
     });
     jest.mocked(sync.listCloudTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
     await renderApp('/join?code=YZ23456789');
@@ -150,5 +159,64 @@ describe('join a team', () => {
     useAppStore.setState({ currentProfileId: null });
     await renderApp('/join?code=ABCDEFGHJK');
     expect(screen).toHavePathname('/');
+  });
+});
+
+describe('joining a team this device has an older copy of (audit M7)', () => {
+  const copy = t.sync.localCopy;
+  /** The join worked; `team1` (Herren 1) is on the device as an older, unlinked copy. */
+  async function joinedOverACopy(role: 'player' | 'manager' = 'player') {
+    signIn();
+    jest.mocked(sync.joinTeam).mockResolvedValueOnce({
+      ok: true,
+      value: { teamId: 'team1', role, name: 'Herren 1', localCopy: true },
+    });
+    await renderApp('/join?code=abcdefghjk');
+    await fireEvent.press(screen.getByTestId('join-submit'));
+    expect(await screen.findByTestId('local-copy-dialog')).toBeTruthy();
+  }
+
+  it('asks before anything is downloaded, and doesn’t offer to open the old copy', async () => {
+    await joinedOverACopy();
+    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['Herren 1'], false));
+    expect(sync.downloadTeams).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('join-open')).toBeNull();
+    expect(screen.queryByTestId('join-success')).toBeNull();
+  });
+
+  it('"Use the cloud version" downloads the team and then confirms the join', async () => {
+    await joinedOverACopy('manager');
+    expect(screen.getByTestId('local-copy-body')).toHaveTextContent(copy.body(['Herren 1'], true));
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(sync.downloadTeams).toHaveBeenCalledWith(['team1'], ['team1']);
+    expect(await screen.findByTestId('join-success')).toHaveTextContent(
+      t.members.join.joined('Herren 1', 'manager'),
+    );
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
+    await fireEvent.press(screen.getByTestId('join-open'));
+    expect(screen).toHavePathname('/team/team1');
+  });
+
+  it('"Not now" keeps the copy, says so, and leads to Cloud teams', async () => {
+    await joinedOverACopy();
+    await fireEvent.press(screen.getByTestId('local-copy-cancel'));
+    expect(screen.queryByTestId('local-copy-dialog')).toBeNull();
+    expect(sync.downloadTeams).not.toHaveBeenCalled();
+    expect(screen.getByTestId('join-copy-kept')).toHaveTextContent(copy.later('Herren 1'));
+    expect(screen.queryByTestId('join-open')).toBeNull();
+    await fireEvent.press(screen.getByTestId('join-cloud-teams'));
+    expect(screen).toHavePathname('/account/teams');
+  });
+
+  it('a download that fails says why and the question stays', async () => {
+    await joinedOverACopy();
+    jest.mocked(sync.downloadTeams).mockResolvedValueOnce({ ok: false, error: 'offline' });
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(await screen.findByText(t.sync.errors.offline)).toBeTruthy();
+    expect(screen.getByTestId('local-copy-dialog')).toBeTruthy();
+    expect(screen.queryByTestId('join-success')).toBeNull();
+    // A second try works.
+    await fireEvent.press(screen.getByTestId('local-copy-replace'));
+    expect(await screen.findByTestId('join-success')).toBeTruthy();
   });
 });

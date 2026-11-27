@@ -32,6 +32,10 @@ export function ShareTeam({ team }: { team: Team }) {
   const [busy, setBusy] = useState(false);
   const params = useLocalSearchParams<{ shareError?: string }>();
   const [error, setError] = useState<SyncErrorCode | null>(() => errorParam(t, params.shareError));
+  // v10 audit M7: the account already belongs to a cloud team with this id — this is an older
+  // copy of it. Nothing was changed; the cloud's version is downloaded (after a question) under
+  // Cloud teams.
+  const [inCloud, setInCloud] = useState(false);
 
   const share = async () => {
     setBusy(true);
@@ -55,6 +59,7 @@ export function ShareTeam({ team }: { team: Team }) {
       });
     } else if (outcome === 'failed') setError(item?.error ?? 'unknown');
     else if (outcome === 'rekeyed') router.dismissTo('/teams');
+    else if (outcome === 'inCloud') setInCloud(true);
   };
 
   return (
@@ -74,6 +79,20 @@ export function ShareTeam({ team }: { team: Team }) {
         <SignInFirst message={t.members.local.signInNeeded} />
       )}
       <SyncErrorNote error={error} />
+      {inCloud ? (
+        <>
+          <Text style={styles.text} accessibilityRole="alert" testID="members-share-in-cloud">
+            {t.sync.localCopy.inCloud}
+          </Text>
+          <Button
+            label={t.sync.localCopy.openCloudTeams}
+            accessibilityLabel={t.sync.localCopy.openCloudTeamsLabel}
+            variant="secondary"
+            onPress={() => router.push('/account/teams')}
+            testID="members-open-cloud-teams"
+          />
+        </>
+      ) : null}
     </View>
   );
 }

@@ -23,7 +23,7 @@ export const accountDeletionCheck = ok({
 export const deleteAccount = ok(undefined);
 export const listCloudTeams = ok([]);
 export const uploadTeams = ok([]);
-export const downloadTeams = ok(undefined);
+export const downloadTeams = ok<string[]>([]);
 export const deleteTeamEverywhere = ok(undefined);
 export const leaveTeam = ok(undefined);
 export const unlinkTeam = jest.fn();
@@ -46,7 +46,12 @@ export const createInvite = jest.fn(async () => ({
 export const revokeInvite = ok(undefined);
 export const joinTeam = jest.fn(async () => ({
   ok: true as const,
-  value: { teamId: 'team-1', role: 'player' as const, name: null as string | null },
+  value: {
+    teamId: 'team-1',
+    role: 'player' as const,
+    name: null as string | null,
+    localCopy: false as boolean,
+  },
 }));
 export const holdMatch = jest.fn(async () => ({ ok: true as const, value: { granted: true } }));
 export const releaseMatch = jest.fn(async () => undefined);

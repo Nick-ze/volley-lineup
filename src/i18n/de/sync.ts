@@ -108,6 +108,32 @@ export const sync: Strings['sync'] = {
     cancel: 'Abbrechen',
     cancelLabel: 'Abbrechen: Team behalten',
   },
+  localCopy: {
+    title: 'Ältere Kopie auf diesem Gerät',
+    body: (teamNames: string[], manager: boolean) => {
+      const one = teamNames.length === 1;
+      const names = teamNames.join(', ');
+      const found = one
+        ? `Auf diesem Gerät gibt es eine ältere Kopie von ${names}.`
+        : `Auf diesem Gerät gibt es ältere Kopien von ${names}.`;
+      const effect = manager
+        ? 'Überall, wo beide etwas haben, gilt die Cloud-Version des Teams – Änderungen an der Kopie auf diesem Gerät gehen verloren. Was nur die Kopie hat, kommt zum Team dazu.'
+        : 'Die Cloud-Version des Teams tritt an ihre Stelle – Änderungen an der Kopie auf diesem Gerät gehen verloren.';
+      return `${found} ${effect} Zuerst eine Sicherung exportieren?`;
+    },
+    export: 'Sicherung exportieren',
+    exportLabel: 'Sicherung exportieren: alles auf diesem Gerät als Datei speichern',
+    replace: 'Cloud-Version verwenden',
+    replaceLabel: 'Cloud-Version verwenden: die Kopie auf diesem Gerät wird ersetzt',
+    cancel: 'Jetzt nicht',
+    cancelLabel: 'Jetzt nicht: die Kopie auf diesem Gerät behalten',
+    later: (team: string) =>
+      `Du bist jetzt Mitglied von ${team}. Die Kopie auf diesem Gerät ist unverändert. Für die Cloud-Version des Teams: Cloud-Sync → Cloud-Teams öffnen und das Team herunterladen.`,
+    inCloud:
+      'Dieses Team ist bereits in der Cloud geteilt, und du bist Mitglied. Das hier ist eine ältere Kopie: Cloud-Sync → Cloud-Teams öffnen und das Team herunterladen, um es zu verbinden.',
+    openCloudTeams: 'Cloud-Teams',
+    openCloudTeamsLabel: 'Cloud-Teams: die Cloud-Version des Teams herunterladen',
+  },
   import: {
     shared: (names: string[]) =>
       `Geteilte Teams: ${names.join(', ')} (Änderungen werden mit allen Mitgliedern synchronisiert).`,

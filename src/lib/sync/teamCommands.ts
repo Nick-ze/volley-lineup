@@ -4,6 +4,7 @@
  */
 import { adoptExisting, EPOCH } from '@/domain/syncMerge';
 import { payloadHash, sliceToRecords, type TeamSlice } from '@/domain/syncRecords';
+import { isUnlinkedCopy } from '@/domain/syncAccess';
 import { isServerSafeTeamId, rekeyTeam } from '@/domain/syncUpload';
 import type { SyncedTeam, TeamRole } from '@/domain/types';
 import { createId } from '@/lib/id';
@@ -38,10 +39,17 @@ const newMeta = (userId: string, role: TeamRole, edits: SyncedTeam['edits'] = {}
   photos: [],
 });
 
+/** The team is on this device as a copy that isn't linked (see `isUnlinkedCopy`). */
+const isLocalCopy = (teamId: string): boolean =>
+  isUnlinkedCopy(appState().sync, appState().teams, teamId);
+
 /**
  * Links a cloud team on this device. A team already here (an old local copy with the same id)
  * gives way to the cloud: managers adopt it with "saved at the epoch" edits (the cloud wins
  * where both have a record; local-only records are pushed), viewers get the cloud's copy.
+ * Since the v10 audit's M7 no command does that to a copy unasked: `downloadTeams` only for the
+ * teams in `replaceCopies`, `joinTeam` and `uploadTeams` not at all (they say so in their
+ * results).
  */
 function linkCloudTeam(engine: SyncEngine, userId: string, teamId: string, role: TeamRole): void {
   const meta = appState().sync.teams[teamId];
@@ -112,15 +120,12 @@ async function uploadOne(
     }
     const moved = id === teamId ? {} : { newTeamId: id };
     if (outcome === 'taken') return { teamId, result: 'failed', error: 'unknown', ...moved };
-    if (outcome === 'created') {
-      setTeamMeta(id, newMeta(session.userId, 'manager'));
-    } else {
-      const roles = await engine.backend.memberships();
-      const role = roles.find((m) => m.teamId === id)?.role ?? 'player';
-      linkCloudTeam(engine, session.userId, id, role);
-    }
-    const result = id !== teamId ? 'rekeyed' : outcome === 'created' ? 'created' : 'linked';
-    return { teamId, result, ...moved };
+    // The account already belongs to a cloud team with this id: this team is an older copy of
+    // it. Linking would replace it with the cloud's version — only after a question (M7), and
+    // that is asked where the team is downloaded.
+    if (outcome === 'member') return { teamId, result: 'inCloud', ...moved };
+    setTeamMeta(id, newMeta(session.userId, 'manager'));
+    return { teamId, result: id !== teamId ? 'rekeyed' : 'created', ...moved };
   } catch (e) {
     // The team already has its new id on this device: the caller must learn it, whatever failed.
     if (id === teamId) throw e;
@@ -129,9 +134,10 @@ async function uploadOne(
 }
 
 /**
- * Shares local teams: each is created in the cloud (`created`), linked to the cloud team with
- * its id that the account already belongs to (`linked`), or moved to a new id first because
- * its id was taken or isn't allowed on the server (`rekeyed`, with `newTeamId`).
+ * Shares local teams: each is created in the cloud (`created`), moved to a new id first because
+ * its id was taken or isn't allowed on the server (`rekeyed`, with `newTeamId`), or left as it
+ * is because the account already belongs to a cloud team with its id (`inCloud`: an older copy).
+ * A team that is already shared on this device answers `linked`.
  */
 export const uploadTeams = (
   engine: SyncEngine,
@@ -160,13 +166,23 @@ export const uploadTeams = (
     }),
   );
 
-/** Downloads cloud teams of the account to this device (under the linked profile). */
-export const downloadTeams = (engine: SyncEngine, teamIds: string[]): Promise<SyncResult> =>
+/**
+ * Downloads cloud teams of the account to this device (under the linked profile). A team this
+ * device has an older, unlinked copy of is only downloaded when it is in `replaceCopies` — the
+ * user was asked and agreed (v10 audit M7); the others are left as they are and returned.
+ */
+export const downloadTeams = (
+  engine: SyncEngine,
+  teamIds: string[],
+  replaceCopies: readonly string[] = [],
+): Promise<SyncResult<string[]>> =>
   attempt(() =>
     engine.exclusive(async () => {
       const session = requireSession(engine);
       const roles = new Map((await engine.backend.memberships()).map((m) => [m.teamId, m.role]));
-      const wanted = teamIds.filter((id) => roles.has(id));
+      const members = teamIds.filter((id) => roles.has(id));
+      const kept = members.filter((id) => isLocalCopy(id) && !replaceCopies.includes(id));
+      const wanted = members.filter((id) => !kept.includes(id));
       for (const teamId of wanted) {
         linkCloudTeam(engine, session.userId, teamId, roles.get(teamId) as TeamRole);
       }
@@ -180,6 +196,7 @@ export const downloadTeams = (engine: SyncEngine, teamIds: string[]): Promise<Sy
       } finally {
         engine.kick();
       }
+      return kept;
     }),
   );
 
@@ -240,20 +257,25 @@ export const joinTeam = (engine: SyncEngine, code: string): Promise<SyncResult<J
       const known = joinedCodes.get(engine)?.get(code);
       if (known && known.userId === session.userId) {
         const meta = appState().sync.teams[known.teamId];
-        if (meta?.userId === session.userId) {
-          const { userId: _user, ...again } = known;
-          return { ...again, role: meta.role };
-        }
+        const { userId: _user, ...again } = known;
+        if (meta?.userId === session.userId) return { ...again, role: meta.role, localCopy: false };
+        // Still waiting for the user's answer about the older copy: the join itself is done.
+        if (!meta && isLocalCopy(known.teamId)) return { ...again, localCopy: true };
       }
       const joined = await engine.backend.joinTeam(code, displayName());
       // The name is a nicety: a failure here doesn't undo the join.
       const names = await engine.backend
         .teamNames([joined.teamId])
         .catch((): Record<string, string> => ({}));
-      linkCloudTeam(engine, session.userId, joined.teamId, joined.role);
-      engine.rewire();
-      engine.kick();
-      const result = { ...joined, name: names[joined.teamId] ?? null };
+      // An older copy of the team on this device isn't replaced unasked (M7): the account is a
+      // member now, and the team is downloaded once the user has agreed (`downloadTeams`).
+      const localCopy = isLocalCopy(joined.teamId);
+      if (!localCopy) {
+        linkCloudTeam(engine, session.userId, joined.teamId, joined.role);
+        engine.rewire();
+        engine.kick();
+      }
+      const result = { ...joined, name: names[joined.teamId] ?? null, localCopy };
       const codes = joinedCodes.get(engine) ?? new Map<string, Joined & { userId: string }>();
       codes.set(code, { ...result, userId: session.userId });
       joinedCodes.set(engine, codes);
