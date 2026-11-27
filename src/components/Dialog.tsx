@@ -62,12 +62,12 @@ export const useDialogStyles = makeStyles((theme) => ({
   card: {
     width: '100%',
     maxWidth: dialogMaxWidth,
-    backgroundColor: theme.colors.surfaceRaised,
-    borderRadius: radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderRadius: radius.xl,
     padding: spacing.xl,
     gap: spacing.md,
   },
-  title: { ...typography.subheading, color: theme.colors.text },
+  title: { ...typography.displayM, color: theme.colors.text },
   message: { ...typography.body, color: theme.colors.text },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', flexWrap: 'wrap', gap: spacing.sm },
 }));

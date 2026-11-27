@@ -51,14 +51,13 @@ const useStyles = makeStyles((theme) => ({
     minWidth: touchTarget,
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    // v11: quiet by tone; the selected chip is soft orange (solid orange is for actions).
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  selected: { backgroundColor: theme.colors.primarySoft },
   pressed: { opacity: 0.8 },
   label: { ...typography.label, color: theme.colors.text },
-  labelSelected: { color: theme.colors.onPrimary },
+  labelSelected: { color: theme.colors.primaryText },
 }));

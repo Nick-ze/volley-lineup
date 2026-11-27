@@ -1,28 +1,23 @@
 import { useRouter } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { useEffect } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTabPager, VisibleScenes } from '@/components';
 import { APP_TABS, AppTabPagerContext, useShownTab } from '@/features/appTabs/appTabs';
-import { TabIcon } from '@/features/appTabs/TabIcon';
+import { AppTabBar } from '@/features/appTabs/AppTabBar';
 import { TabScene } from '@/features/appTabs/TabScene';
 import { markStartupHandled } from '@/features/roster/hooks/useStartupRedirect';
 import { useT } from '@/i18n';
-import { fontSize, makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
-
-/** Bar height above the bottom safe area: a 44 px target plus room for the label. */
-const TAB_BAR_HEIGHT = touchTarget + spacing.md;
+import { useTheme } from '@/theme';
 
 /**
- * Bottom tab bar for the three top-level screens (Teams, Profile, Settings). Detail screens
- * (team, match, …) live in the root Stack and are pushed over the tabs, without a tab bar.
+ * Bottom tab bar for the three top-level screens (Teams, Profile, Settings; v11: the pill bar
+ * `AppTabBar`). Detail screens (team, match, …) live in the root Stack and are pushed over the
+ * tabs, without a tab bar.
  */
 export default function TabsLayout() {
   const { colors } = useTheme();
-  const styles = useStyles();
   const t = useT();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const shown = useShownTab();
   // v8.1.1: one pager for the three scenes; a drag that went on navigates to the new tab.
@@ -37,6 +32,7 @@ export default function TabsLayout() {
       {/* Phones: the navigator's screens would hide inactive scenes (display: none). */}
       <VisibleScenes>
         <Tabs
+          tabBar={(props) => <AppTabBar {...props} />}
           screenLayout={({ route, children }) => <TabScene name={route.name}>{children}</TabScene>}
           // v8.1.1: every scene stays mounted and visible (stacked, the focused one on top); the
           // pager places their content, so the navigator neither animates nor detaches them, and
@@ -52,16 +48,6 @@ export default function TabsLayout() {
             // The scenes are see-through (the neighbour shows while dragging); `PagerScene`
             // carries the background.
             sceneStyle: { backgroundColor: colors.transparent },
-            tabBarStyle: {
-              backgroundColor: colors.surface,
-              borderTopColor: colors.border,
-              // A custom height replaces the default, so the bottom safe area is added here.
-              height: TAB_BAR_HEIGHT + insets.bottom,
-            },
-            tabBarActiveTintColor: colors.primaryText,
-            tabBarInactiveTintColor: colors.textMuted,
-            tabBarItemStyle: { minHeight: touchTarget },
-            tabBarLabelStyle: styles.tabLabel,
           }}
         >
           <Tabs.Screen
@@ -71,7 +57,6 @@ export default function TabsLayout() {
               tabBarLabel: t.profile.tabs.teams,
               tabBarAccessibilityLabel: t.profile.tabs.teamsLabel,
               tabBarButtonTestID: 'tab-teams',
-              tabBarIcon: (p) => <TabIcon {...p} active="people" inactive="people-outline" />,
             }}
           />
           <Tabs.Screen
@@ -81,9 +66,6 @@ export default function TabsLayout() {
               tabBarLabel: t.profile.tabs.profile,
               tabBarAccessibilityLabel: t.profile.tabs.profileLabel,
               tabBarButtonTestID: 'tab-profile',
-              tabBarIcon: (p) => (
-                <TabIcon {...p} active="person-circle" inactive="person-circle-outline" />
-              ),
             }}
           />
           <Tabs.Screen
@@ -93,7 +75,6 @@ export default function TabsLayout() {
               tabBarLabel: t.profile.tabs.settings,
               tabBarAccessibilityLabel: t.profile.tabs.settingsLabel,
               tabBarButtonTestID: 'tab-settings',
-              tabBarIcon: (p) => <TabIcon {...p} active="settings" inactive="settings-outline" />,
             }}
           />
         </Tabs>
@@ -101,8 +82,3 @@ export default function TabsLayout() {
     </AppTabPagerContext.Provider>
   );
 }
-
-// A style hook, so the dyslexia font reaches the tab labels.
-const useStyles = makeStyles(() => ({
-  tabLabel: { ...typography.label, fontSize: fontSize.xs },
-}));
