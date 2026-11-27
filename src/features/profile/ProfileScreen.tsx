@@ -56,7 +56,7 @@ export function ProfileScreen() {
     });
 
   return (
-    <Screen testID="profile-screen">
+    <Screen testID="profile-screen" title={{ title: t.profile.tabs.profile }}>
       <ProfileCard profile={profile} />
       <AppearanceSection />
       <TourSection />

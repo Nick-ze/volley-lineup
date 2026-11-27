@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 
@@ -41,7 +41,10 @@ describe('bottom tab bar', () => {
   it('shows Teams, Profile and Settings and switches between them', async () => {
     seed();
     await renderRouter('./app', { initialUrl: '/teams' });
-    expect(await screen.findByText(t.roster.teams.heading('Coach'))).toBeTruthy();
+    // v11: the Teams title, with the profile's name above it.
+    const teams = await screen.findByTestId('teams-screen');
+    expect(within(teams).getByRole('header')).toHaveTextContent(t.nav.teams);
+    expect(within(teams).getByText('Coach')).toBeTruthy();
     for (const label of [p.tabs.teamsLabel, p.tabs.profileLabel, p.tabs.settingsLabel]) {
       expect(screen.getByLabelText(label)).toBeTruthy();
     }

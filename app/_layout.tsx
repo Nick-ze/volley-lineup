@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppHeader, appHeaderOnly } from '@/components/AppHeader';
 import { HeaderBack } from '@/components/HeaderBack';
 import { HeaderTitle } from '@/components/HeaderTitle';
 import { SyncHost } from '@/features/sync/SyncHost';
@@ -60,15 +61,17 @@ function ThemedRoot() {
           <>
             <Stack
               screenOptions={({ route }) => ({
-                headerStyle: { backgroundColor: colors.surface },
-                headerTintColor: colors.text,
-                headerTitle: ({ children }) => <HeaderTitle>{children}</HeaderTitle>,
+                // v11: the app's own header — no bar, the title on the page background.
+                header: (props) => <AppHeader {...props} />,
+                headerTitle: appHeaderOnly(({ children }: { children: string }) => (
+                  <HeaderTitle>{children}</HeaderTitle>
+                )),
                 contentStyle: { backgroundColor: colors.background },
                 // The picker and the tabs (headerShown: false) never get a back button.
                 headerLeft:
                   route.name === 'index' || route.name === '(tabs)'
                     ? undefined
-                    : () => (
+                    : appHeaderOnly(() => (
                         <HeaderBack
                           fallback={parentRoute(
                             route.name,
@@ -77,11 +80,12 @@ function ThemedRoot() {
                             seasonIdOfMatch,
                           )}
                         />
-                      ),
+                      )),
               })}
             >
-              <Stack.Screen name="index" options={{ title: t.nav.profiles }} />
-              {/* Teams / Profile / Settings: bottom tabs with their own headers. */}
+              {/* v11: the picker and the tabs show their title on the page (`Screen title`). */}
+              <Stack.Screen name="index" options={{ headerShown: false, title: t.nav.profiles }} />
+              {/* Teams / Profile / Settings: bottom tabs. */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false, title: t.nav.teams }} />
               <Stack.Screen name="team/[teamId]/index" options={{ title: t.nav.team }} />
               <Stack.Screen

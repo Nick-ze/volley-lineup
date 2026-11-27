@@ -23,7 +23,7 @@ export function SettingsScreen() {
   // Bumped by "Delete all data": remounts export / import so their old messages disappear.
   const [generation, setGeneration] = useState(0);
   return (
-    <Screen testID="settings-screen">
+    <Screen testID="settings-screen" title={{ title: t.nav.settings }}>
       <LanguageSection />
       <DisplaySection />
       <ExportSection key={`export-${generation}`} />

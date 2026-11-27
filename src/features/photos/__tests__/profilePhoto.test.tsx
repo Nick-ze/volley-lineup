@@ -56,7 +56,7 @@ describe('profile photos', () => {
     expect(photos()).toEqual({ [profile.photoId as string]: URI_A });
     // The teams header (and the profile list underneath it in the stack) show the photo, as does
     // the Profile tab: v8.1.1 mounts all three app tabs up front (hidden until shown).
-    expect(screen.getByText(t.roster.teams.heading('Coach'))).toBeTruthy();
+    expect(screen.getByTestId('teams-screen')).toBeTruthy();
     expect(photoCount()).toBe(3);
   });
 

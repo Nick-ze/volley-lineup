@@ -27,9 +27,6 @@ export function ProfilePicker({ onSelect }: { onSelect: (profileId: string) => v
   return (
     <>
       <View style={styles.headerRow}>
-        <Text style={styles.heading} accessibilityRole="header">
-          {s.heading}
-        </Text>
         {editing === null && (
           <Button label={s.new} onPress={() => setEditing({ mode: 'create' })} compact />
         )}
