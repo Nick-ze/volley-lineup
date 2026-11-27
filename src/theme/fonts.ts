@@ -5,6 +5,18 @@
  */
 export const DYSLEXIA_FONT_REGULAR = 'OpenDyslexic-Regular';
 export const DYSLEXIA_FONT_BOLD = 'OpenDyslexic-Bold';
+/**
+ * v11: the display typeface for titles, scores and roster numbers (Barlow Condensed, SIL OFL 1.1,
+ * `assets/fonts/BarlowCondensed-OFL.txt`). Its digits are not equal-width by default: numbers
+ * need `fontVariant: ['tabular-nums']`.
+ */
+export const DISPLAY_FONT_BOLD = 'BarlowCondensed-Bold';
+export const DISPLAY_FONT_HEAVY = 'BarlowCondensed-ExtraBold';
+const DISPLAY_FAMILIES: readonly string[] = [DISPLAY_FONT_BOLD, DISPLAY_FONT_HEAVY];
+
+/** True for a `fontFamily` of the display typeface. */
+export const isDisplayFamily = (family: string | undefined): boolean =>
+  family !== undefined && DISPLAY_FAMILIES.includes(family);
 
 export interface ThemeFonts {
   /** Family for normal text, or undefined for the platform font. */
@@ -23,6 +35,15 @@ export interface ThemeFonts {
    * chips and the live screen much taller.
    */
   lineHeight: number | undefined;
+  /** v11: family for display text (titles). With the dyslexia font on, that font's bold family. */
+  display: string;
+  /** v11: family for the heaviest display text (scores, roster numbers). */
+  displayHeavy: string;
+  /**
+   * v11: extra factor for display sizes. The condensed typeface is set large; a normal-width
+   * font at the same size would be far too wide, so the dyslexia font draws display text smaller.
+   */
+  displayScale: number;
 }
 
 export const systemFonts: ThemeFonts = {
@@ -30,10 +51,16 @@ export const systemFonts: ThemeFonts = {
   bold: undefined,
   scale: 1,
   lineHeight: undefined,
+  display: DISPLAY_FONT_BOLD,
+  displayHeavy: DISPLAY_FONT_HEAVY,
+  displayScale: 1,
 };
 export const dyslexiaFonts: ThemeFonts = {
   regular: DYSLEXIA_FONT_REGULAR,
   bold: DYSLEXIA_FONT_BOLD,
   scale: 0.85,
   lineHeight: 1.4,
+  display: DYSLEXIA_FONT_BOLD,
+  displayHeavy: DYSLEXIA_FONT_BOLD,
+  displayScale: 0.75,
 };

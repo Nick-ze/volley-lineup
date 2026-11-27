@@ -8,10 +8,15 @@ export const spacing = {
   xxl: 32,
 } as const;
 
+/**
+ * v11: corners by role. `sm` badges, name pills, segments · `md` fields, tracks, tiles, banners ·
+ * `lg` panels, rows, cards, point buttons · `xl` dialogs, sheets, the scoreboard · `round` pills.
+ */
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 16,
+  sm: 8,
+  md: 12,
+  lg: 20,
+  xl: 28,
   round: 999,
 } as const;
 

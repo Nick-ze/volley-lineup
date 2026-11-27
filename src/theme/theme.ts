@@ -12,7 +12,7 @@ import {
   lightPositionColors,
   type ThemeColors,
 } from './colors';
-import { dyslexiaFonts, systemFonts, type ThemeFonts } from './fonts';
+import { dyslexiaFonts, isDisplayFamily, systemFonts, type ThemeFonts } from './fonts';
 
 export type ColorScheme = 'dark' | 'light';
 
@@ -78,15 +78,39 @@ function scaled(text: TextStyle, fonts: ThemeFonts): Pick<TextStyle, 'fontSize' 
 }
 
 /**
+ * v11: a display style (the condensed typeface) with another font: drawn smaller
+ * (`fonts.scale` × `fonts.displayScale`), with that font's own line height.
+ */
+function scaledDisplay(
+  size: number,
+  fonts: ThemeFonts,
+): Pick<TextStyle, 'fontSize' | 'lineHeight'> {
+  const fontSize = Math.round(size * fonts.scale * fonts.displayScale);
+  return fonts.lineHeight === undefined
+    ? { fontSize }
+    : { fontSize, lineHeight: Math.round(fontSize * fonts.lineHeight) };
+}
+
+/**
  * A font size computed at render time (e.g. from a chip's diameter), sized like `makeStyles`
  * sizes its styles: with the dyslexia font scaled and with a matching line height, so the
  * inline size and the line height never disagree. With the platform font: `{ fontSize }`.
+ * v11: `display` for text in the display typeface (`fonts.display` / `fonts.displayHeavy`).
  */
 export function inlineFontSize(
   size: number,
   fonts: ThemeFonts,
+  display = false,
 ): Pick<TextStyle, 'fontSize' | 'lineHeight'> {
-  return fonts.regular === undefined ? { fontSize: size } : scaled({ fontSize: size }, fonts);
+  if (fonts.regular === undefined) return { fontSize: size };
+  return display ? scaledDisplay(size, fonts) : scaled({ fontSize: size }, fonts);
+}
+
+/** A capital-letter label without its capitals and wide letter spacing (v11). */
+function plainCase(text: TextStyle): TextStyle {
+  if (text.textTransform !== 'uppercase') return text;
+  const { textTransform: _transform, letterSpacing, ...rest } = text;
+  return letterSpacing !== undefined && letterSpacing < 0 ? { ...rest, letterSpacing } : rest;
 }
 
 /**
@@ -98,12 +122,20 @@ export function inlineFontSize(
  * `fonts.lineHeight` times its new size, and a style's own line height is kept unscaled. Sizes
  * computed at render time use `inlineFontSize`. With the platform font (`fonts.regular`
  * undefined) the styles are returned unchanged.
+ * v11: a style in the display typeface gets the theme's bold family, drawn smaller
+ * (`scaledDisplay`); a capital-letter label (`textTransform: 'uppercase'`) becomes normal case
+ * without its wide letter spacing, because capitals are harder to read in the dyslexia font.
  */
 export function withFontFamily<T extends Record<string, object>>(styles: T, fonts: ThemeFonts): T {
   if (fonts.regular === undefined) return styles;
   const out: Record<string, object> = {};
   for (const [name, style] of Object.entries(styles)) {
     const text = style as TextStyle;
+    if (isDisplayFamily(text.fontFamily)) {
+      const size = typeof text.fontSize === 'number' ? scaledDisplay(text.fontSize, fonts) : {};
+      out[name] = { ...text, ...size, fontFamily: fonts.bold };
+      continue;
+    }
     if (text.fontFamily !== undefined || !TEXT_KEYS.some((key) => key in text)) {
       out[name] = style;
       continue;
@@ -111,7 +143,7 @@ export function withFontFamily<T extends Record<string, object>>(styles: T, font
     const bold = isBold(text.fontWeight);
     const { fontWeight: _weight, ...rest } = text;
     out[name] = {
-      ...rest,
+      ...plainCase(rest),
       ...scaled(text, fonts),
       fontFamily: bold ? fonts.bold : fonts.regular,
     };
