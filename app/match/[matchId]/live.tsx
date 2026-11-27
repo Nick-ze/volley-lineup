@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Screen, SwipeTabs } from '@/components';
+import { appHeaderOnly, Screen, SwipeTabs } from '@/components';
 import { parseSetNumber } from '@/domain/lineupEditing';
 import { liveSetNumber } from '@/domain/matchFlow';
 import { liveViewPage } from '@/domain/tour';
@@ -52,7 +52,9 @@ export default function LiveScreen() {
   }, []);
   // v8.3: kept while the view is the same (expo-router calls `setOptions` for a new object).
   const headerOptions = useMemo(
-    () => ({ headerRight: () => <LiveViewToggle value={view} onChange={changeView} /> }),
+    () => ({
+      headerRight: appHeaderOnly(() => <LiveViewToggle value={view} onChange={changeView} />),
+    }),
     [view, changeView],
   );
   const renderView = (shown: LiveView) =>

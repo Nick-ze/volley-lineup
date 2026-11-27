@@ -1,15 +1,22 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { useT } from '@/i18n';
-import { makeStyles, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, useTheme } from '@/theme';
+
+/** Diameter of the round mark inside the 44 px touch target. */
+const CIRCLE = touchTarget - spacing.xs;
+const ICON_SIZE = 22;
 
 /**
- * Header back button (≥ 44×44). Goes back when there is history; after a reload or deep link
- * (no history) it navigates to the screen's logical parent instead.
+ * Header back button (v11: a round button; the touch target is 44×44). Goes back when there is
+ * history; after a reload or deep link (no history) it navigates to the screen's logical parent
+ * instead.
  */
 export function HeaderBack({ fallback }: { fallback: Href }) {
   const styles = useStyles();
+  const { colors } = useTheme();
   const t = useT();
   const router = useRouter();
   const onPress = () => {
@@ -25,19 +32,27 @@ export function HeaderBack({ fallback }: { fallback: Href }) {
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       testID="header-back"
     >
-      <Text style={styles.label}>{t.common.backWithChevron}</Text>
+      <View style={styles.circle}>
+        <Ionicons name="chevron-back" size={ICON_SIZE} color={colors.text} />
+      </View>
     </Pressable>
   );
 }
 
 const useStyles = makeStyles((theme) => ({
   button: {
-    minWidth: touchTarget,
-    minHeight: touchTarget,
+    width: touchTarget,
+    height: touchTarget,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    marginRight: spacing.sm,
+  },
+  circle: {
+    width: CIRCLE,
+    height: CIRCLE,
+    borderRadius: radius.round,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pressed: { opacity: 0.7 },
-  label: { ...typography.body, color: theme.colors.text },
 }));

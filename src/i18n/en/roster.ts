@@ -33,7 +33,6 @@ export const roster = {
     create: 'Create profile',
   },
   teams: {
-    heading: (profile: string) => `${profile}'s teams`,
     empty: 'No teams yet.',
     new: 'New team',
     name: 'Team name',

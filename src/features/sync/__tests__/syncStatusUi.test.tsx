@@ -32,7 +32,7 @@ beforeEach(() => seedApp());
 describe('sync badge (Teams tab)', () => {
   it('is hidden while sync is off and no account is linked (local-only app)', async () => {
     await renderApp('/teams');
-    expect(screen.getByText(t.roster.teams.heading('Coach'))).toBeTruthy();
+    expect(screen.getByTestId('teams-screen')).toBeTruthy();
     expect(screen.queryByTestId('sync-badge')).toBeNull();
   });
 

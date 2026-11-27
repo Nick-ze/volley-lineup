@@ -47,9 +47,8 @@ export default function TabsLayout() {
             // All three tabs mount up front (phones too: the screens are light), so a drag always
             // shows the real neighbouring screen.
             lazy: false,
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.text,
-            headerTitleStyle: { color: colors.text },
+            // v11: no header — each tab screen opens with its title on the page.
+            headerShown: false,
             // The scenes are see-through (the neighbour shows while dragging); `PagerScene`
             // carries the background.
             sceneStyle: { backgroundColor: colors.transparent },

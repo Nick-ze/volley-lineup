@@ -23,7 +23,8 @@ afterAll(() => store().setLanguage('en'));
 describe('language setting', () => {
   it('switches the whole app to German and back, including screens below in the stack', async () => {
     await renderRouter('./app', { initialUrl: '/teams' });
-    expect(await screen.findByText(en.roster.teams.heading('Coach'))).toBeTruthy();
+    // v11: the Teams title is the same word in both languages; its "New team" button isn't.
+    expect(await screen.findByText(en.roster.teams.new)).toBeTruthy();
 
     await fireEvent.press(screen.getByLabelText(en.profile.tabs.settingsLabel));
     expect(await screen.findByTestId('settings-screen')).toBeTruthy();
@@ -47,8 +48,8 @@ describe('language setting', () => {
 
     // The teams tab stayed mounted; it must not show stale English.
     await fireEvent.press(screen.getByLabelText(de.profile.tabs.teamsLabel));
-    expect(await screen.findByText(de.roster.teams.heading('Coach'))).toBeTruthy();
-    expect(screen.queryByText(en.roster.teams.heading('Coach'))).toBeNull();
+    expect(await screen.findByText(de.roster.teams.new)).toBeTruthy();
+    expect(screen.queryByText(en.roster.teams.new)).toBeNull();
 
     await fireEvent.press(screen.getByLabelText(de.profile.tabs.settingsLabel));
     await fireEvent.press(await screen.findByTestId('language-en'));

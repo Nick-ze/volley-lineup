@@ -8,18 +8,9 @@ import { fontSize, makeStyles, radius, spacing, touchTarget, typography } from '
 
 /**
  * v10: the team header's button (top right) to the members screen: "Members" for a shared team,
- * "Share" for a local one. Hidden when the app has no backend configured.
+ * "Share" for a local one (v11: a quiet pill). Hidden when the app has no backend configured.
  */
-export function MembersHeaderButton({
-  teamId,
-  teamName,
-  onWidth,
-}: {
-  teamId: string;
-  teamName: string;
-  /** The room the button takes (with its margins), so the header title can leave it free. */
-  onWidth?: (width: number) => void;
-}) {
+export function MembersHeaderButton({ teamId, teamName }: { teamId: string; teamName: string }) {
   const t = useT();
   const styles = useStyles();
   const router = useRouter();
@@ -32,7 +23,6 @@ export function MembersHeaderButton({
       accessibilityLabel={shared ? s.membersLabel(teamName) : s.shareLabel(teamName)}
       onPress={() => router.push({ pathname: '/team/[teamId]/members', params: { teamId } })}
       hitSlop={spacing.xs}
-      onLayout={(e) => onWidth?.(Math.ceil(e.nativeEvent.layout.width) + BUTTON_MARGIN * 2)}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       testID="team-members-button"
     >
@@ -43,18 +33,15 @@ export function MembersHeaderButton({
   );
 }
 
-const BUTTON_MARGIN = spacing.sm;
-
 const useStyles = makeStyles((theme) => ({
   button: {
     minWidth: touchTarget,
     minHeight: touchTarget,
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    marginHorizontal: BUTTON_MARGIN,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.round,
+    backgroundColor: theme.colors.surfaceRaised,
   },
   pressed: { opacity: 0.7 },
   // Like the live screen's header button: the wide dyslexia font gets a smaller label at 375 px.

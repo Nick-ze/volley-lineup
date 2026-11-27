@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { HeaderTitle, NotFound, Screen, SwipeTabs, TeamAvatar } from '@/components';
+import { appHeaderOnly, HeaderTitle, NotFound, Screen, SwipeTabs, TeamAvatar } from '@/components';
 import { teamTabPage } from '@/domain/tour';
 import type { Team } from '@/domain/types';
 import { PresetsTab } from '@/features/presets/PresetsTab';
@@ -17,8 +17,8 @@ import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { useTeam } from '@/store';
 
-/** Diameter of the team picture in the header. */
-const TEAM_HEADER_AVATAR = 32;
+/** Size of the team picture in the header. */
+const TEAM_HEADER_AVATAR = 44;
 
 /**
  * `/team/[teamId]?tab=roster|matches|presets|starters|stats` — the team with a bottom nav bar
@@ -88,26 +88,21 @@ export default function TeamScreen() {
 
 /** The header options, kept while the team is unchanged (v8.3: no `setOptions` per render). */
 function TeamHeader({ team }: { team: Team }) {
-  // v10: the width of the "Members" / "Share" button, kept free beside the title.
-  const [buttonWidth, setButtonWidth] = useState(0);
   const options = useMemo(
     () => ({
       title: team.name,
       // v8: the team picture (or initial) before the name.
-      headerTitle: () => (
-        <HeaderTitle
-          leading={<TeamAvatar team={team} size={TEAM_HEADER_AVATAR} />}
-          trailingRoom={buttonWidth}
-        >
+      headerTitle: appHeaderOnly(() => (
+        <HeaderTitle leading={<TeamAvatar team={team} size={TEAM_HEADER_AVATAR} />}>
           {team.name}
         </HeaderTitle>
-      ),
+      )),
       // v10: "Members" / "Share" (only when the app has a backend configured).
-      headerRight: () => (
-        <MembersHeaderButton teamId={team.id} teamName={team.name} onWidth={setButtonWidth} />
-      ),
+      headerRight: appHeaderOnly(() => (
+        <MembersHeaderButton teamId={team.id} teamName={team.name} />
+      )),
     }),
-    [team, buttonWidth],
+    [team],
   );
   return <Stack.Screen options={options} />;
 }

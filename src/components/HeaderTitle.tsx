@@ -1,50 +1,67 @@
-import type { ReactNode } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { createContext, useContext, type ReactNode } from 'react';
+import { Text, View } from 'react-native';
 
-import { makeStyles, spacing, touchTarget, typography } from '@/theme';
+import type { HeaderVariant } from '@/lib/headerVariant';
+import { makeStyles, spacing, typography } from '@/theme';
 
-/** Room the header keeps for the back button and its margins beside the title. */
-export const HEADER_SIDE_ROOM = touchTarget * 3;
+/** v11: the header's variant, set by `AppHeader` for the title it renders. */
+export const HeaderVariantContext = createContext<HeaderVariant>('compact');
+
+/** Below this factor a large title stops shrinking and ends in "…" instead. */
+const LARGE_TITLE_MIN_SCALE = 0.75;
 
 /**
- * Header title on one line: long titles (e.g. "vs <long opponent>") end in "…" instead of
- * running past the screen edge. The header's title container doesn't shrink on the web, so the
- * title limits its own width to the window minus the room for the back button (and, v10, the
- * measured width of a header-right button: `trailingRoom`).
+ * The title of the app's header (v11: `AppHeader`), on one line: long titles (e.g. "vs <long
+ * opponent>") end in "…". Compact headers show it beside the back button; large headers on a row
+ * of its own, where it first shrinks a little. `leading` is e.g. the team picture before the
+ * name; `subtitle` a quiet second line (the match screen's season and status).
  */
 export function HeaderTitle({
   children,
   leading,
-  trailingRoom = 0,
+  subtitle,
 }: {
   children: string;
   leading?: ReactNode;
-  trailingRoom?: number;
+  subtitle?: string;
 }) {
   const styles = useStyles();
-  const { width } = useWindowDimensions();
-  const maxWidth = Math.max(touchTarget, width - HEADER_SIDE_ROOM - trailingRoom);
+  const large = useContext(HeaderVariantContext) === 'large';
   const title = (
     <Text
       accessibilityRole="header"
       numberOfLines={1}
-      style={[styles.title, leading ? styles.shrink : { maxWidth }]}
+      adjustsFontSizeToFit={large}
+      minimumFontScale={large ? LARGE_TITLE_MIN_SCALE : undefined}
+      style={large ? styles.large : styles.compact}
     >
       {children}
     </Text>
   );
-  if (!leading) return title;
-  // v8: e.g. the team picture before the team name; the name shrinks, the picture doesn't.
+  const text =
+    subtitle === undefined ? (
+      title
+    ) : (
+      <View style={styles.text}>
+        {title}
+        <Text style={styles.subtitle} numberOfLines={1} testID="header-subtitle">
+          {subtitle}
+        </Text>
+      </View>
+    );
+  if (!leading) return text;
   return (
-    <View style={[styles.row, { maxWidth }]}>
+    <View style={styles.row}>
       {leading}
-      {title}
+      {text}
     </View>
   );
 }
 
 const useStyles = makeStyles((theme) => ({
-  title: { ...typography.subheading, color: theme.colors.text },
-  shrink: { flexShrink: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  compact: { ...typography.displayM, color: theme.colors.text, flexShrink: 1 },
+  large: { ...typography.displayL, color: theme.colors.text, flexShrink: 1 },
+  text: { flexShrink: 1 },
+  subtitle: { ...typography.caption, color: theme.colors.textMuted },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 }));

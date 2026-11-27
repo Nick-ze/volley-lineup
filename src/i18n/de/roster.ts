@@ -35,7 +35,6 @@ export const roster: Strings['roster'] = {
     create: 'Profil anlegen',
   },
   teams: {
-    heading: (profile: string) => `Teams von ${profile}`,
     empty: 'Noch keine Teams.',
     new: 'Neues Team',
     name: 'Teamname',

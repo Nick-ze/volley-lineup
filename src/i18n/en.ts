@@ -40,7 +40,6 @@ export const en = {
     edit: 'Edit',
     add: 'Add',
     back: 'Back',
-    backWithChevron: '‹ Back',
     confirm: 'Confirm',
     rename: 'Rename',
     empty: 'Nothing here yet',

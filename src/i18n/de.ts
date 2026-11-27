@@ -39,7 +39,6 @@ export const de: Strings = {
     edit: 'Bearbeiten',
     add: 'Hinzufügen',
     back: 'Zurück',
-    backWithChevron: '‹ Zurück',
     confirm: 'Bestätigen',
     rename: 'Umbenennen',
     empty: 'Hier ist noch nichts',
