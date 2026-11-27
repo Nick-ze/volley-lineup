@@ -59,6 +59,7 @@ export function TemplateFill({ editor }: { editor: LineupDraft }) {
                 key={system}
                 label={system}
                 accessibilityLabel={s.systemLabel(system)}
+                variant="secondary"
                 compact
                 onPress={() => apply(system)}
                 testID={`template-${system}`}

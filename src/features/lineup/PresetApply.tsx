@@ -94,6 +94,8 @@ export function PresetApply({ editor, teamId }: PresetApplyProps) {
               key={p.id}
               label={p.name}
               accessibilityLabel={s.presetLabel(p.name)}
+              // v11: a choice in a list, not the screen's main action (that is Live).
+              variant="secondary"
               compact
               onPress={() => apply(p)}
               testID={`apply-preset-${p.name}`}

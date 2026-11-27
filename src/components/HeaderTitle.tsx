@@ -74,6 +74,8 @@ const useStyles = makeStyles((theme) => ({
   large: { ...typography.displayL, color: theme.colors.text, flexShrink: 1 },
   text: { flexShrink: 1 },
   subtitle: { ...typography.caption, color: theme.colors.textMuted },
+  // Its parts share a line when they fit and otherwise take one line each; a part that is still
+  // too long ends in "…" (the parts are one-line texts that may shrink).
   subtitleRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 }));

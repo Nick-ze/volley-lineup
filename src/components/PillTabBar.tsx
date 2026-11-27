@@ -37,6 +37,8 @@ export interface PillTabBarProps<K extends string> {
 
 /** Icon size (px). */
 const ICON_SIZE = 22;
+/** Widest the bar gets (wide screens). */
+const BAR_MAX_WIDTH = 560;
 /** Room between the bar's edge and its items. */
 const BAR_PADDING = spacing.xs;
 
@@ -135,9 +137,13 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.background,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
+    alignItems: 'center',
   },
   bar: {
     flexDirection: 'row',
+    // On a wide screen the bar stays a bar, centred, instead of stretching across.
+    width: '100%',
+    maxWidth: BAR_MAX_WIDTH,
     padding: BAR_PADDING,
     borderRadius: radius.round,
     backgroundColor: theme.colors.surface,

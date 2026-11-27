@@ -30,6 +30,7 @@ export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
             accessibilityRole="tab"
             accessibilityLabel={t.rotation.setTabLabel(n)}
             accessibilityState={{ selected: active }}
+            aria-selected={active}
             onPress={() => onSelect(n)}
             testID={`set-tab-${n}`}
             style={({ pressed }) => [

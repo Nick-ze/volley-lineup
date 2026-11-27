@@ -37,7 +37,8 @@ export function PageTitle({ title, eyebrow, right, mark, size = 'xl' }: PageTitl
       ) : null}
       <Text
         accessibilityRole="header"
-        numberOfLines={1}
+        // A long question (the profile picker, German) may take two lines; a one-word title never does.
+        numberOfLines={size === 'l' ? 2 : 1}
         adjustsFontSizeToFit
         minimumFontScale={TITLE_MIN_SCALE}
         style={size === 'xl' ? styles.xl : styles.l}

@@ -62,7 +62,7 @@ export function ProfileScreen() {
       <TourSection />
       <AccountSection />
       <Section title={t.profile.account} hint={t.profile.logoutHint}>
-        <Button label={t.profile.logout} onPress={logout} testID="logout" />
+        <Button label={t.profile.logout} variant="secondary" onPress={logout} testID="logout" />
         <Text style={styles.note}>{t.profile.logoutNote}</Text>
       </Section>
       <Section title={t.profile.dangerTitle} hint={t.profile.dangerHint} tone="danger">

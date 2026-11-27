@@ -33,7 +33,12 @@ export function ServeToggle({
         style={[styles.segment, active && (disabled ? styles.locked : styles.choice)]}
         testID={testID}
       >
-        <Text style={[styles.text, disabled ? styles.textMuted : active && styles.choiceText]}>
+        <Text
+          style={[
+            styles.text,
+            disabled ? !active && styles.textMuted : active && styles.choiceText,
+          ]}
+        >
           {label}
         </Text>
       </Pressable>

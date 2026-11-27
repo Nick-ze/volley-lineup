@@ -59,7 +59,11 @@ export function Segmented<V extends string>({
             testID={o.testID}
           >
             <Text
-              style={[styles.text, disabled ? styles.textMuted : active && styles.choiceText]}
+              style={[
+                styles.text,
+                // Locked: the chosen option keeps its full text colour, the other is grey.
+                disabled ? !active && styles.textMuted : active && styles.choiceText,
+              ]}
               numberOfLines={1}
             >
               {o.text}
