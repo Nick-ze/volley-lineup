@@ -65,6 +65,6 @@ export function ErrorTypeChips({ rally, kindChip, onErrorType }: ErrorTypeChipsP
 }
 
 const styles = StyleSheet.create({
-  // Inline in the picker's sideways-scrolling line (the players follow).
-  group: { flexDirection: 'row', gap: spacing.sm },
+  // Inline in the picker's wrapping row (the players follow); the group wraps with it.
+  group: { flexDirection: 'row', flexWrap: 'wrap', flexShrink: 1, gap: spacing.sm },
 });

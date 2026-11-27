@@ -1,5 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
+import { StyleSheet } from 'react-native';
 
 import type { Player, Position, SetEvent, SetLineup } from '@/domain/types';
 import { useAppStore } from '@/store';
@@ -105,6 +106,33 @@ describe('point tagging in live mode', () => {
     expect(lastTag()).toMatchObject({ kind: 'kill', playerId: 'p2' });
     await press('tag-player-p2');
     expect(lastTag()).toEqual({ type: 'point', winner: 'us', kind: 'kill' });
+  });
+
+  it('v11: shows every player of the picker — the chips wrap, nothing scrolls sideways', async () => {
+    await open();
+    await press('point-us');
+    await press('tag-kill');
+    const picker = row()!;
+    // The owner couldn't scroll the single line on a phone, so players at its end couldn't be
+    // chosen (DECISIONS #357): the row wraps, with the kind first and ✕ last.
+    expect(StyleSheet.flatten(picker.props.style)).toMatchObject({
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    });
+    // The chips are the row's own children: there is no scroller around them.
+    const ids = picker.children.map((child) =>
+      typeof child === 'string' ? child : child.props.testID,
+    );
+    expect(ids).toEqual([
+      'tag-kill',
+      'tag-player-p1',
+      'tag-player-p2',
+      'tag-player-p3',
+      'tag-player-p4',
+      'tag-player-p5',
+      'tag-player-p6',
+      'tag-close',
+    ]);
   });
 
   it('skips with one tap and leaves the point untagged', async () => {

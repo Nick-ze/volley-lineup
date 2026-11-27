@@ -52,6 +52,8 @@ const useStyles = makeStyles((theme) => ({
     minWidth: touchTarget,
     paddingHorizontal: spacing.md,
     borderRadius: radius.round,
+    // A long name never makes a chip wider than its row (it ends in "…").
+    maxWidth: '100%',
     // The room of the suggestion outline, so a chip doesn't change size when it lights up.
     borderWidth: borderWidth.thick,
     borderColor: theme.colors.transparent,

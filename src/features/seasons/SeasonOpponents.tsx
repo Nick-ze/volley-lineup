@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
   Button,
@@ -18,6 +18,7 @@ import {
   type OpponentNameError,
 } from '@/domain/seasons';
 import { useT } from '@/i18n';
+import { spacing } from '@/theme';
 import {
   canEditTeamNow,
   useAppStore,
@@ -68,7 +69,7 @@ export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsPro
   };
 
   return (
-    <>
+    <View style={tabStyles.wrap}>
       {canEdit ? (
         <View style={formStyles.card}>
           <TextField
@@ -109,6 +110,9 @@ export function SeasonOpponents({ seasonId, onOpenOpponent }: SeasonOpponentsPro
       </View>
       {canEdit && anyBlocked ? <Text style={formStyles.hint}>{s.deleteBlocked}</Text> : null}
       <ConfirmDialog {...dialogProps} />
-    </>
+    </View>
   );
 }
+
+// v11: the tab's parts (form or search, list, hint) keep a clear distance from each other.
+const tabStyles = StyleSheet.create({ wrap: { gap: spacing.md } });
