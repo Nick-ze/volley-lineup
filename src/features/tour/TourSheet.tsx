@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { borderWidth, dialogMaxWidth, makeStyles, radius, spacing, touchTarget } from '@/theme';
+import { dialogMaxWidth, makeStyles, radius, spacing, touchTarget } from '@/theme';
 
 /** Room kept free at the bottom: the app tab bar / team nav bar stay visible under the dim. */
 const BAR_ROOM = touchTarget + spacing.md;
@@ -58,10 +58,8 @@ const useStyles = makeStyles((theme) => ({
     width: '100%',
     maxWidth: dialogMaxWidth,
     maxHeight: '100%',
-    backgroundColor: theme.colors.surfaceRaised,
-    borderColor: theme.colors.border,
-    borderWidth: borderWidth.thin,
-    borderRadius: radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   content: { padding: spacing.lg, gap: spacing.md },

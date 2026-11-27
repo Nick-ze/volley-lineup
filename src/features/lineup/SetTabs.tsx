@@ -1,22 +1,22 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { SET_NUMBERS, type SetNumber } from '@/domain/types';
+import { useTrackStyles } from '@/components';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 export interface SetTabsProps {
   selected: SetNumber;
-  /** Sets that already have a saved lineup (shown with a solid border). */
+  /** Sets that already have a saved lineup (the others are shown in grey). */
   existing: SetNumber[];
   onSelect(n: SetNumber): void;
 }
 
-/** Tabs for sets 1–5. The selected set is yellow. */
+/** Tabs for sets 1–5 (v11: one track). The selected set is yellow. */
 export function SetTabs({ selected, existing, onSelect }: SetTabsProps) {
-  const styles = useStyles();
+  const styles = useTrackStyles();
   const t = useT();
   return (
-    <View style={styles.row} accessibilityRole="tablist" accessibilityLabel={t.lineup.setTabs}>
+    <View style={styles.track} accessibilityRole="tablist" accessibilityLabel={t.lineup.setTabs}>
       {SET_NUMBERS.map((n) => {
         const active = n === selected;
         return (
@@ -27,32 +27,21 @@ export function SetTabs({ selected, existing, onSelect }: SetTabsProps) {
             accessibilityHint={t.lineup.setTabHint}
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(n)}
-            style={[styles.tab, existing.includes(n) && styles.existing, active && styles.active]}
+            style={[styles.segment, active && styles.set]}
             testID={`set-tab-${n}`}
           >
-            <Text style={[styles.label, active && styles.activeLabel]}>{t.lineup.setTab(n)}</Text>
+            <Text
+              style={[
+                styles.text,
+                !existing.includes(n) && styles.textMuted,
+                active && styles.setText,
+              ]}
+            >
+              {t.lineup.setTab(n)}
+            </Text>
           </Pressable>
         );
       })}
     </View>
   );
 }
-
-const useStyles = makeStyles((theme) => ({
-  row: { flexDirection: 'row', gap: spacing.xs },
-  tab: {
-    flex: 1,
-    minHeight: touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  existing: { borderStyle: 'solid', borderColor: theme.colors.textMuted },
-  active: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
-  label: { ...typography.label, color: theme.colors.text },
-  activeLabel: { color: theme.colors.onHighlight },
-}));

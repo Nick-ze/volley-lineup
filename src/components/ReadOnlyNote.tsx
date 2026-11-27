@@ -55,8 +55,6 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
   text: { ...typography.body, color: theme.colors.text, flexShrink: 1 },

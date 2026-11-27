@@ -10,30 +10,35 @@ export interface SectionProps {
   tone?: 'default' | 'danger';
 }
 
-/** A titled card on the settings screen. */
+/** A titled group on the settings screen (v11: a label above a flat panel). */
 export function Section({ title, hint, children, tone = 'default' }: SectionProps) {
   const styles = useStyles();
   return (
-    <View style={[styles.card, tone === 'danger' && styles.danger]}>
-      <Text style={styles.title} accessibilityRole="header">
+    <View style={styles.section}>
+      <Text
+        style={[styles.title, tone === 'danger' && styles.dangerTitle]}
+        accessibilityRole="header"
+      >
         {title}
       </Text>
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-      {children}
+      <View style={styles.card}>
+        {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+        {children}
+      </View>
     </View>
   );
 }
 
 const useStyles = makeStyles((theme) => ({
+  section: { gap: spacing.sm },
   card: {
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.md,
   },
-  danger: { borderColor: theme.colors.error },
-  title: { ...typography.subheading, color: theme.colors.text },
+  // v11: the heading is a small label above its panel.
+  title: { ...typography.eyebrow, color: theme.colors.textMuted, paddingHorizontal: spacing.xs },
+  dangerTitle: { color: theme.colors.error },
   hint: { ...typography.body, color: theme.colors.textMuted },
 }));

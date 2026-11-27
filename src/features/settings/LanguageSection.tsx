@@ -1,9 +1,9 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { useTrackStyles } from '@/components';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 import type { Language } from '@/store/types';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { Section } from './Section';
 
@@ -11,7 +11,7 @@ const LANGUAGES: readonly Language[] = ['en', 'de'];
 
 /** English / Deutsch switch. The choice is persisted by the store and kept on "Delete all". */
 export function LanguageSection() {
-  const styles = useStyles();
+  const track = useTrackStyles();
   const t = useT();
   const language = useAppStore((s) => s.language);
   const setLanguage = useAppStore((s) => s.setLanguage);
@@ -19,7 +19,11 @@ export function LanguageSection() {
 
   return (
     <Section title={t.language.title} hint={t.language.hint}>
-      <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t.language.title}>
+      <View
+        style={[track.track, track.trackOnPanel]}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={t.language.title}
+      >
         {LANGUAGES.map((lang) => {
           const active = lang === language;
           return (
@@ -30,10 +34,10 @@ export function LanguageSection() {
               accessibilityState={{ checked: active }}
               aria-checked={active}
               onPress={() => setLanguage(lang)}
-              style={[styles.option, active && styles.active]}
+              style={[track.segment, active && track.choice]}
               testID={`language-${lang}`}
             >
-              <Text style={[styles.label, active && styles.activeLabel]}>{names[lang]}</Text>
+              <Text style={[track.text, active && track.choiceText]}>{names[lang]}</Text>
             </Pressable>
           );
         })}
@@ -41,24 +45,3 @@ export function LanguageSection() {
     </Section>
   );
 }
-
-const useStyles = makeStyles((theme) => ({
-  row: {
-    flexDirection: 'row',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-  },
-  option: {
-    flex: 1,
-    minHeight: touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    backgroundColor: theme.colors.surface,
-  },
-  active: { backgroundColor: theme.colors.primary },
-  label: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
-  activeLabel: { color: theme.colors.onPrimary },
-}));

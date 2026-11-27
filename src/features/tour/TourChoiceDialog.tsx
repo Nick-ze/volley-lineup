@@ -3,7 +3,7 @@ import { Pressable, Text } from 'react-native';
 import { Button, Dialog, useDialogStyles } from '@/components';
 import type { TourMode } from '@/domain/types';
 import { useT, type Strings } from '@/i18n';
-import { borderWidth, makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 import { cancelTourChoice, chooseTour } from './tourSession';
 
@@ -88,11 +88,10 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  active: { borderColor: theme.colors.primaryText, borderWidth: borderWidth.thick },
+  // v11: the current choice is soft orange, like every selected option.
+  active: { backgroundColor: theme.colors.primarySoft },
   pressed: { opacity: 0.8 },
   name: { ...typography.subheading, color: theme.colors.text },
   hint: { ...typography.body, color: theme.colors.textMuted },

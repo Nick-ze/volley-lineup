@@ -1,17 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { PillTabBar, type IconName, type PillTabItem } from '@/components';
 import { useT, type Strings } from '@/i18n';
-import { fontSize, makeStyles, spacing, touchTarget, typography, useTheme } from '@/theme';
 
 import { TEAM_TABS, type TeamTab } from './tabs';
-
-type IconName = ComponentProps<typeof Ionicons>['name'];
-
-/** Icon size, matching the app's main tab bar. */
-const ICON_SIZE = 22;
 
 const ICONS: Record<TeamTab, { active: IconName; inactive: IconName }> = {
   roster: { active: 'people', inactive: 'people-outline' },
@@ -43,74 +33,29 @@ export interface TeamNavBarProps {
 }
 
 /**
- * Bottom nav bar inside the team screen: Roster · Matches · Presets · Starters · Stats. Styled
- * like the app's main tab bar (which is not shown on the team screen, so there is only one bar).
+ * Bottom nav bar inside the team screen: Roster · Matches · Presets · Starters · Stats. v11: the
+ * same pill bar as the app's main tab bar (which is not shown on the team screen, so there is
+ * only one bar).
  */
 export function TeamNavBar({ value, onChange }: TeamNavBarProps) {
-  const { colors } = useTheme();
-  const styles = useStyles();
   const t = useT();
-  const insets = useSafeAreaInsets();
+  const items: PillTabItem<TeamTab>[] = TEAM_TABS.map((tab) => {
+    const { label, a11y } = labels(t, tab);
+    return {
+      key: tab,
+      label,
+      accessibilityHint: a11y,
+      icon: ICONS[tab],
+      testID: `team-tab-${tab}`,
+    };
+  });
   return (
-    <View
-      style={[styles.bar, { paddingBottom: insets.bottom }]}
-      accessibilityRole="tablist"
+    <PillTabBar
+      items={items}
+      value={value}
+      onChange={onChange}
       accessibilityLabel={t.presets.nav.label}
       testID="team-nav"
-    >
-      {TEAM_TABS.map((tab) => {
-        const selected = tab === value;
-        const tint = selected ? colors.primaryText : colors.textMuted;
-        const { label, a11y } = labels(t, tab);
-        return (
-          <Pressable
-            key={tab}
-            accessibilityRole="tab"
-            accessibilityLabel={label}
-            accessibilityHint={a11y}
-            accessibilityState={{ selected }}
-            aria-selected={selected}
-            onPress={() => onChange(tab)}
-            style={({ pressed }) => [styles.item, pressed && styles.pressed]}
-            testID={`team-tab-${tab}`}
-          >
-            <Ionicons
-              name={selected ? ICONS[tab].active : ICONS[tab].inactive}
-              size={ICON_SIZE}
-              color={tint}
-            />
-            <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    />
   );
 }
-
-const useStyles = makeStyles((theme) => ({
-  bar: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
-  },
-  item: {
-    flex: 1,
-    minHeight: touchTarget + spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xxs,
-    paddingVertical: spacing.xs,
-  },
-  pressed: { opacity: 0.8 },
-  // Five items share 375 px: the label may shrink a little rather than be cut off.
-  // v8: the wide dyslexia font is set a little tighter so "Startsechs" fits too.
-  label: {
-    ...typography.label,
-    fontSize: fontSize.xs,
-    paddingHorizontal: theme.dyslexiaFont ? 0 : spacing.xxs,
-    ...(theme.dyslexiaFont ? { letterSpacing: -0.7 } : {}),
-  },
-}));

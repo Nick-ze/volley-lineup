@@ -1,20 +1,21 @@
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
 /** Below this width for the name area, a row's action buttons wrap onto a second line. */
-const listRowMainMinWidth = 190;
+const listRowMainMinWidth = 140;
 
 /** Styles shared by the roster feature's forms and list rows. */
 export const useFormStyles = makeStyles((theme) => ({
   card: {
+    // v11: a panel is told apart by tone, not by an outline.
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     padding: spacing.lg,
     gap: spacing.md,
   },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, flexWrap: 'wrap' },
   sectionLabel: { ...typography.label, color: theme.colors.textMuted },
+  /** v11: a small capital label above a group or a list. */
+  eyebrow: { ...typography.eyebrow, color: theme.colors.textMuted },
   hint: { ...typography.caption, color: theme.colors.textMuted },
   grow: { flex: 1 },
 }));
@@ -30,8 +31,6 @@ export const useListStyles = makeStyles((theme) => ({
     gap: spacing.sm,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     paddingRight: spacing.sm,
   },
   main: {
@@ -41,7 +40,7 @@ export const useListStyles = makeStyles((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: touchTarget + spacing.md,
+    minHeight: touchTarget + spacing.lg + spacing.xs,
     paddingVertical: spacing.sm,
     paddingLeft: spacing.md,
   },

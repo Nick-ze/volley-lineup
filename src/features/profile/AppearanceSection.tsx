@@ -1,11 +1,11 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { ToggleRow } from '@/components';
+import { ToggleRow, useTrackStyles } from '@/components';
 import { Section } from '@/features/settings/Section';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
 import type { ThemeMode } from '@/store/types';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, typography } from '@/theme';
 
 const MODES: readonly ThemeMode[] = ['dark', 'light', 'system'];
 
@@ -15,6 +15,7 @@ const MODES: readonly ThemeMode[] = ['dark', 'light', 'system'];
  */
 export function AppearanceSection() {
   const styles = useStyles();
+  const track = useTrackStyles();
   const t = useT();
   const a = t.appearance;
   const themeMode = useAppStore((s) => s.themeMode);
@@ -30,7 +31,11 @@ export function AppearanceSection() {
   return (
     <Section title={a.title}>
       <Text style={styles.label}>{a.theme}</Text>
-      <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={a.theme}>
+      <View
+        style={[track.track, track.trackOnPanel]}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={a.theme}
+      >
         {MODES.map((mode) => {
           const active = mode === themeMode;
           return (
@@ -41,10 +46,10 @@ export function AppearanceSection() {
               accessibilityState={{ checked: active }}
               aria-checked={active}
               onPress={() => setThemeMode(mode)}
-              style={[styles.option, active && styles.active]}
+              style={[track.segment, active && track.choice]}
               testID={`theme-${mode}`}
             >
-              <Text style={[styles.optionLabel, active && styles.activeLabel]} numberOfLines={1}>
+              <Text style={[track.text, active && track.choiceText]} numberOfLines={1}>
                 {names[mode]}
               </Text>
             </Pressable>
@@ -64,23 +69,5 @@ export function AppearanceSection() {
 
 const useStyles = makeStyles((theme) => ({
   label: { ...typography.label, color: theme.colors.text },
-  row: {
-    flexDirection: 'row',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-  },
-  option: {
-    flex: 1,
-    minHeight: touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    backgroundColor: theme.colors.surface,
-  },
-  active: { backgroundColor: theme.colors.primary },
-  optionLabel: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
-  activeLabel: { color: theme.colors.onPrimary },
   hint: { ...typography.caption, color: theme.colors.textMuted },
 }));
