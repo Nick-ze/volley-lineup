@@ -100,7 +100,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.textMuted,
   },
   dotActive: { backgroundColor: theme.colors.primaryText },
-  title: { ...typography.subheading, color: theme.colors.text },
+  title: { ...typography.displayM, color: theme.colors.text },
   text: { ...typography.body, color: theme.colors.text },
   note: { ...typography.body, color: theme.colors.highlightText, fontWeight: '600' },
   nav: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },

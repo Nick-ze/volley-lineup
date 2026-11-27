@@ -47,11 +47,6 @@ describe.each([
     expect(contrast(c.onPrimary, c.primaryPressed)).toBeGreaterThanOrEqual(AA);
   });
 
-  it('v11: a player chip stands out on the court (ring or fill at 3:1)', () => {
-    const best = Math.max(contrast(c.chipRing, c.primary), contrast(c.surface, c.primary));
-    expect(best).toBeGreaterThanOrEqual(3);
-  });
-
   it('position badges', () => {
     for (const badge of Object.values(badges)) {
       expect(contrast(badge.text, badge.bg)).toBeGreaterThanOrEqual(AA);

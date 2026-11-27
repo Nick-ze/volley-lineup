@@ -26,10 +26,12 @@ Available in English and German.
   invite your players (view only) and other coaches (can edit) with a code.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 10.0.1**: a safer cloud sync. A full review of 10.0 found ways a shared team could lose data (for
-example after "delete profile → restore backup → sign in"); they are fixed, so please update. Also new: "I already
-have a code" on the sign-in screen, a second device that takes over live scoring can no longer be overwritten by the
-first one, and the app asks before a team's cloud version replaces an older copy on your device. 10.0 added accounts
+**What's new in 11.0**: a new look, and nothing else changes. The grey bar at the top is gone: every screen opens
+with its own big title. Orange now means two things only, the court and the one main button of a screen; yellow marks
+what is current (this set, the server). Scores and jersey numbers are large, in a sports typeface. The bottom bar is
+one rounded bar, the same in Teams and inside a team. In the lineup builder "Live" is at the top right, the court
+starts higher and the players stand out on it. Your data, backups and cloud sync are untouched. 10.0.1 made cloud
+sync safer; 10.0 added accounts
 and cloud sync (optional): your teams on all your devices, shared with an invite code — managers edit, players view.
 [All versions →](docs/README_LEGACY.md#version-history)
 

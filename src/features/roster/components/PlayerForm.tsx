@@ -106,13 +106,19 @@ export function PlayerForm({
           <Button
             label={s.delete}
             variant="dangerQuiet"
+            compact
             disabled={deleteBlocked}
             accessibilityHint={deleteBlocked ? (deleteBlockedText ?? s.deleteBlocked) : undefined}
             onPress={() => ask(t.roster.confirm.deletePlayer(fullName(player)), onDelete)}
           />
         )}
-        <Button label={t.common.cancel} variant="secondary" onPress={onDone} />
-        <Button label={t.common.save} disabled={photoBusy} onPress={() => save() && onDone()} />
+        <Button label={t.common.cancel} variant="secondary" compact onPress={onDone} />
+        <Button
+          label={t.common.save}
+          compact
+          disabled={photoBusy}
+          onPress={() => save() && onDone()}
+        />
       </View>
       {player && onDelete && deleteBlocked ? (
         <Text style={formStyles.hint}>{deleteBlockedText ?? s.deleteBlocked}</Text>

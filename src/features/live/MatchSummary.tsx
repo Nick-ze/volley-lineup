@@ -103,7 +103,12 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.md,
   },
   title: { ...typography.label, color: theme.colors.textMuted, textAlign: 'center' },
-  result: { ...typography.title, color: theme.colors.highlightText, textAlign: 'center' },
+  result: {
+    ...typography.displayL,
+    fontVariant: ['tabular-nums'],
+    color: theme.colors.highlightText,
+    textAlign: 'center',
+  },
   sets: { gap: spacing.xs },
   setRow: {
     flexDirection: 'row',

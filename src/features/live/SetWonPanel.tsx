@@ -83,5 +83,10 @@ const useStyles = makeStyles((theme) => ({
     gap: spacing.sm,
   },
   title: { ...typography.subheading, color: theme.colors.highlightText, textAlign: 'center' },
-  score: { ...typography.heading, color: theme.colors.text, textAlign: 'center' },
+  score: {
+    ...typography.displayL,
+    fontVariant: ['tabular-nums'],
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
 }));

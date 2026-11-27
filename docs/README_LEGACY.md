@@ -221,6 +221,37 @@ and export schema 10 are unchanged, so 10.0.0 → 10.0.1 is a plain update. Thre
 
 ---
 
+### v11.0: the look (no stored-data change)
+
+A design release (`docs/V11_DESIGN.md`, PLAN §46–47, DECISIONS #336–#354): the app looks different and does exactly
+what it did. Store 13 and export schema 10 are unchanged; nothing under `src/lib/sync`, `src/domain` or `supabase/`
+was touched. The palette is the same; `src/theme/colors.ts` gained soft shades of its own colours.
+
+- **No header bar**: `AppHeader` (the root Stack's `header`) sits on the page background. Compact screens show back,
+  title and the right button in one row; browse screens show a large title on its own row; performance and match
+  stats show only the back button above their own page heading. The tab screens and the profile picker have no header
+  and open with a `PageTitle`. Back is a round button.
+- **One job per colour**: solid orange is the court and the one main action of a screen; soft orange is what is
+  selected; yellow is what is current (this set, the server) and notices; blue is the opponent and the front row.
+- **A display typeface**: Barlow Condensed (bundled, SIL OFL) for titles, scores and the jersey numbers on roster
+  cards; `fontVariant: ['tabular-nums']` for numbers. The dyslexia font replaces it too, and turns the small capital
+  labels into normal case.
+- **Tone instead of outlines**: panels, rows, cards, dialogs and sheets are flat `surface` fields; corners by role
+  (8 / 12 / 20 / 28). Buttons are pills; `secondary` is quiet, `dangerQuiet` is red text.
+- **Shared parts**: `PillTabBar` (app tabs and team tabs, with a sliding marker), `IconButton`, `LinkTile`,
+  `Banner`, `EmptyState`, `useTrackStyles` (one look for segmented choices and set tabs), filled `TextField` with a
+  focus ring.
+- **Screens**: team rows with the player count and icon buttons; roster cards with the number in orange on dark and a
+  small Active / Injured pill; season boxes without edge and badge; the season's and the player's name as screen
+  titles; one band of large numbers for a season's record; tables without an outer box.
+- **Lineup builder**: Live and Print / PDF in the header, four link tiles, the "set has been played" notice as a
+  banner; the serve choice ends 85 px higher at 390 × 844. Players on every court have a soft shadow under them.
+- **Live**: the score in the display typeface with fixed-width digits and a short tick when it changes; quiet Undo,
+  Reset as red text. Substitution is not lower than in 10.0.1.
+- **Motion**: press feedback, the tab marker's slide, the score's tick; none with "reduce motion".
+- Checked in a browser only (528 screenshots per pull request, measurements, a touch-target scan, a drag-and-drop
+  run); not on a phone before the release build.
+
 ## Backend
 
 Since v10 the app can sync shared teams through **Supabase** (hosted project "Volleylineup manager",
@@ -307,7 +338,7 @@ tests (with coverage), and the web export. The brief for worker agents is [`WORK
 - `src/domain/__golden__/exportGolden.test.ts` (runs with `npm test`): a fixed data set must export byte for byte as
   before, and v1–v9 files must import to the same data. Rewrite the golden files only with a new export version
   (`UPDATE_GOLDEN=1 npx jest src/domain/__golden__`).
-- `scripts/screenshots.js` (needs Playwright and ImageMagick, not in CI): shoots 31 screens at 375 / 1280 px, EN / DE,
+- `scripts/screenshots.js` (needs Playwright and ImageMagick, not in CI): shoots 33 screens at 375 / 1280 px, EN / DE,
   dark / light, dyslexia font off / on from a web build, and compares two runs pixel by pixel:
 
   ```

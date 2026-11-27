@@ -1,5 +1,7 @@
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
+import { PRESS_SCALE } from './motion';
+
 /**
  * Below this width for the name area, a row's action buttons wrap onto a second line. The wide
  * dyslexia font needs more room for the name, so there the actions wrap sooner.
@@ -70,7 +72,7 @@ export const useListStyles = makeStyles((theme) => ({
   },
   /** v8.4: room between a team tab's header row (count + add button) and the list below it. */
   tabHeader: { marginBottom: spacing.md },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.8, transform: [{ scale: PRESS_SCALE }] },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',

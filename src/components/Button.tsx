@@ -12,6 +12,8 @@ import {
   type ThemeColors,
 } from '@/theme';
 
+import { PRESS_SCALE } from './motion';
+
 /**
  * v11 (PLAN §46): `primary` is the one main action of a screen (solid orange); `secondary` is
  * quiet (tone, no outline); `danger` keeps its outline; `dangerQuiet` is plain red text for a
@@ -128,7 +130,7 @@ const useStyles = makeStyles(() => ({
     justifyContent: 'center',
   },
   compact: { paddingHorizontal: spacing.lg },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.8, transform: [{ scale: PRESS_SCALE }] },
   disabled: { opacity: 0.4 },
   // Centred also when a narrow button wraps its label onto two lines.
   label: {

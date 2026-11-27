@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { CaptainBadge, Photo, PositionBadge } from '@/components';
+import { CaptainBadge, Photo, PositionBadge, PRESS_SCALE } from '@/components';
 import { fullName } from '@/domain/playerNames';
 import type { Player } from '@/domain/types';
 import { NumberAvatar } from '@/features/photos/NumberAvatar';
@@ -133,7 +133,7 @@ const useStyles = makeStyles((theme) => ({
   picture: { overflow: 'hidden' },
   captain: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   info: { gap: spacing.xs, paddingTop: spacing.sm, paddingHorizontal: spacing.md },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.8, transform: [{ scale: PRESS_SCALE }] },
   name: { ...typography.body, fontWeight: '700', color: theme.colors.text },
   number: { ...typography.label, color: theme.colors.textMuted },
   badges: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs },

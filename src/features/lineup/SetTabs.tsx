@@ -26,6 +26,7 @@ export function SetTabs({ selected, existing, onSelect }: SetTabsProps) {
             accessibilityLabel={t.lineup.setTab(n)}
             accessibilityHint={t.lineup.setTabHint}
             accessibilityState={{ selected: active }}
+            aria-selected={active}
             onPress={() => onSelect(n)}
             style={[styles.segment, active && styles.set]}
             testID={`set-tab-${n}`}

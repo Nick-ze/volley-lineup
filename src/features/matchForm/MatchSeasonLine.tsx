@@ -12,12 +12,13 @@ export function MatchSeasonLine({ match }: { match: Pick<Match, 'seasonId'> }) {
   const season = useSeason(match.seasonId);
   if (!season) return null;
   return (
-    <Text style={styles.line} testID="match-season">
+    <Text style={styles.line} numberOfLines={1} testID="match-season">
       {t.roster.seasonLine(season.name, t.roster.seasonKind[season.kind])}
     </Text>
   );
 }
 
 const useStyles = makeStyles((theme) => ({
-  line: { ...typography.label, color: theme.colors.textMuted },
+  // Shrinks first when it shares a line (the match header's subtitle).
+  line: { ...typography.label, color: theme.colors.textMuted, flexShrink: 1, maxWidth: '100%' },
 }));
