@@ -193,13 +193,14 @@ opened by an older app.
 have a code", the take-over block, and the medium / low fixes (DECISIONS #309–#316) — among them own texts for a code
 email the mail server couldn't send, "Checking your sign-in…" while the stored session is read at start, one shared set
 of error texts, and hardening (sandboxed print frame, safe photo paths, a checked `sync` slice at load, supabase-js
-loaded only when needed). Also the audit's sync-engine fixes (DECISIONS #317–#332, PRs #105–#107): an idle sync no
+loaded only when needed). Also the audit's sync-engine fixes (DECISIONS #317–#334, PRs #105–#107, #110): an idle sync no
 longer rewrites the stored data; a record the cloud can't take (a name over 200 characters, a refused id or
 character) waits with a notice instead of blocking the team's whole sync; slow connections get more time and smaller
 batches, and a stalled answer ends the request; a match another device is scoring live can't be deleted or
 overwritten by an import; a picture the cloud lost is kept and uploaded again; an import no longer fails while a
-shared team's picture is still to be downloaded. Not included: the clock-skew change (M2, parked) and keeping an old
-local copy on re-joining (M7). The next build should be 10.0.1 or 10.1.0 (owner's choice).
+shared team's picture is still to be downloaded. The app also asks, and offers a backup, before a team's cloud
+version replaces an older copy of the team on the device (DECISIONS #334). Not included: the clock-skew change (M2;
+the owner decided to leave it). The next build should be 10.0.1 or 10.1.0 (owner's choice).
 
 ---
 
