@@ -189,18 +189,35 @@ opened by an older app.
   confidential descriptions and profile photos never leave the device; delete account removes the server data.
 - Store v13 adds the device-only `sync` state. The export file is unchanged (schema 10).
 
-**On `main` after 10.0.0, not released yet** (`docs/AUDIT_V10.md`): the audit's critical and high fixes, "I already
-have a code", the take-over block, and the medium / low fixes (DECISIONS #309–#316) — among them own texts for a code
-email the mail server couldn't send, "Checking your sign-in…" while the stored session is read at start, one shared set
-of error texts, and hardening (sandboxed print frame, safe photo paths, a checked `sync` slice at load, supabase-js
-loaded only when needed). Also the audit's sync-engine fixes (DECISIONS #317–#334, PRs #105–#107, #110): an idle sync no
-longer rewrites the stored data; a record the cloud can't take (a name over 200 characters, a refused id or
-character) waits with a notice instead of blocking the team's whole sync; slow connections get more time and smaller
-batches, and a stalled answer ends the request; a match another device is scoring live can't be deleted or
-overwritten by an import; a picture the cloud lost is kept and uploaded again; an import no longer fails while a
-shared team's picture is still to be downloaded. The app also asks, and offers a backup, before a team's cloud
-version replaces an older copy of the team on the device (DECISIONS #334). Not included: the clock-skew change (M2;
-the owner decided to leave it). The next build should be 10.0.1 or 10.1.0 (owner's choice).
+### v10.0.1: the v10 audit (no stored-data change)
+
+A full audit of 10.0.0 (`docs/AUDIT_V10.md`: 1 critical, 10 high, 19 medium, 33 low findings) and its fixes. Store 13
+and export schema 10 are unchanged, so 10.0.0 → 10.0.1 is a plain update. Three database migrations
+(`20261126120000`, `20261126130000`, `20261126140000`) were applied to the hosted project before the release.
+
+- **Data-loss fixes (update from 10.0.0)**: a shared team that leaves the device is unlinked in the same step (10.0.0
+  could delete a shared team's cloud data after "delete profile → restore backup → sign in"); a cloud photo keeps its
+  place while it can't be downloaded; a pull of several pages can't skip a record; a promoted viewer first takes the
+  cloud's copy; an import can't empty a shared team or undo a sync that runs meanwhile; an outage of the sign-in
+  server no longer signs devices out.
+- **Invites**: codes end with the access of the people who know them (a removal revokes every open code of the team;
+  a manager who stops being one revokes the open manager codes). Used-up manager codes aren't listed as active.
+- **Sign-in**: "I already have a code" (no second email); own texts when the code email can't be sent or the address
+  is refused; "Checking your sign-in…" while the stored session is read at start; one shared set of error texts.
+- **Live scoring**: once another device has taken over, the previous scorer's device stops saving that match (its
+  unsynced rallies wait, or give way to what the new scorer saves, with a notice); a match another device is scoring
+  can't be deleted or overwritten by an import.
+- **Sync engine**: an idle sync no longer rewrites the stored data; a record the cloud can't take (a name over 200
+  characters, a refused id or character) waits with a notice instead of blocking the team's whole sync; slow
+  connections get more time and smaller batches, and a stalled answer ends the request; a picture the cloud lost is
+  kept and uploaded again.
+- **Re-joining a team**: the app asks, and offers a backup, before a team's cloud version replaces an older copy on
+  the device.
+- **Roster / export**: duplicate jersey numbers (two devices adding a player at once) are shown on the Roster tab and
+  in Settings → Export, because such a backup can't be imported.
+- **Hardening**: sandboxed print frame, safe photo paths, a checked `sync` slice at load, supabase-js loaded only when
+  needed, no secret key accepted by the build.
+- Not included: the clock-skew change (audit M2; the owner decided to leave it — keep automatic time on).
 
 ---
 

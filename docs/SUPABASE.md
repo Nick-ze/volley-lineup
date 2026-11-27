@@ -283,12 +283,16 @@ members of the Supabase organization.
 1. **Custom SMTP** (Authentication → Emails → SMTP Settings): set up a provider (prefer one with
    EU hosting). The built-in sender only delivers to members of the organization, at about
    2 emails per hour, and is meant for testing.
+   With Gmail: host `smtp.gmail.com`, port 465, username = the full address, password = a
+   Google **app password** (16 letters, needs 2-Step Verification; changing the Google password
+   revokes it).
 2. **Email templates** (Authentication → Emails → Templates): replace the body of **Magic Link**
    _and_ **Confirm signup** with `supabase/templates/magic_link.html` and
    `supabase/templates/confirmation.html`. Both contain `{{ .Token }}` and no link: the app
    asks for the code. Subject: `Your Volley Lineup code: {{ .Token }}`.
 3. **Email provider** (Authentication → Sign In / Providers → Email): enabled, **Email OTP
    length 6**, **Email OTP expiration 600** seconds. Keep "Confirm email" on.
+   New projects default to **8** digits; the app only accepts 6.
 4. **Rate limits** (Authentication → Rate Limits): after SMTP works, raise "emails sent per
    hour" to what the provider allows (e.g. 30–100). **Keep the sign-up, OTP and verify limits**:
    together with the per-user limits above they stop one person from creating many accounts to
@@ -298,6 +302,16 @@ members of the Supabase organization.
    filling 500 MB hard, not impossible.
 6. **Anonymous sign-ins off** (Authentication → Sign In / Providers).
 7. Check the region is **eu-central-2 (Zurich)** (Project Settings → General).
+
+**When sign-in doesn't work** (all three happened on the first real sign-in, 2026-11-27; the
+auth log under Logs → Auth names the cause):
+
+| What the user sees                                           | Cause                                                                                         | Fix    |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------ |
+| "The email with the code couldn't be sent. Try again later." | the mail server refused the login (`535 … BadCredentials`) or the provider's quota is used up | step 1 |
+| an email with a "Confirm email address" link, no code        | the **Confirm signup** (first sign-in) or **Magic Link** template is still Supabase's own     | step 2 |
+| a code with 8 digits                                         | Email OTP length isn't 6                                                                      | step 3 |
+
 8. If GitHub disabled the keep-alive workflow, enable it again (see [Keep-alive](#keep-alive)).
 
 Nothing to do for `public.rls_auto_enable()` any more: migration `20261126140000` (applied
