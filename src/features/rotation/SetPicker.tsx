@@ -1,8 +1,9 @@
 import { Pressable, Text, View } from 'react-native';
 
 import type { SetNumber } from '@/domain/types';
+import { useTrackStyles } from '@/components';
 import { useT } from '@/i18n';
-import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
+import { makeStyles, spacing } from '@/theme';
 
 export interface SetPickerProps {
   sets: readonly SetNumber[];
@@ -13,10 +14,11 @@ export interface SetPickerProps {
 /** Tabs for the sets that exist in the match. The selected set is yellow. */
 export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
   const styles = useStyles();
+  const track = useTrackStyles();
   const t = useT();
   return (
     <View
-      style={styles.row}
+      style={[track.track, styles.row]}
       accessibilityRole="tablist"
       accessibilityLabel={t.rotation.setPickerLabel}
     >
@@ -31,12 +33,15 @@ export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
             onPress={() => onSelect(n)}
             testID={`set-tab-${n}`}
             style={({ pressed }) => [
+              track.segment,
               styles.tab,
-              active && styles.active,
-              pressed && styles.pressed,
+              active && track.set,
+              pressed && track.pressed,
             ]}
           >
-            <Text style={[styles.label, active && styles.activeLabel]}>{t.rotation.setTab(n)}</Text>
+            <Text style={[track.text, styles.label, active && track.setText]}>
+              {t.rotation.setTab(n)}
+            </Text>
           </Pressable>
         );
       })}
@@ -44,30 +49,14 @@ export function SetPicker({ sets, selected, onSelect }: SetPickerProps) {
   );
 }
 
+// v11: one track like the builder's set tabs, as wide as its sets (the current one is yellow).
 // v8: the wide dyslexia font gets tighter tabs so five sets still fit one line at 375 px.
 const useStyles = makeStyles((theme) => ({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.dyslexiaFont ? spacing.xs : spacing.sm,
-  },
+  row: { alignSelf: 'flex-start', flexWrap: 'wrap', maxWidth: '100%' },
   tab: {
-    minHeight: touchTarget,
-    minWidth: touchTarget,
+    flexGrow: 0,
+    flexBasis: 'auto',
     paddingHorizontal: theme.dyslexiaFont ? spacing.xs : spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  active: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
-  pressed: { opacity: 0.8 },
-  label: {
-    ...typography.label,
-    color: theme.colors.text,
-    ...(theme.dyslexiaFont ? { letterSpacing: -0.7 } : {}),
-  },
-  activeLabel: { color: theme.colors.onHighlight },
+  label: theme.dyslexiaFont ? { letterSpacing: -0.7 } : {},
 }));

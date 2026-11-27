@@ -54,8 +54,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.md,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     alignItems: 'center',
   },
   compact: {
@@ -74,10 +72,9 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  serveUs: { backgroundColor: theme.colors.highlight, borderColor: theme.colors.highlight },
+  serveUs: { backgroundColor: theme.colors.highlight },
   serveText: { ...typography.label, color: theme.colors.text, textAlign: 'center' },
   serveTextUs: { color: theme.colors.onHighlight },
 }));

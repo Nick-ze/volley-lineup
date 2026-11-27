@@ -1,6 +1,7 @@
 import { useCallback, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
+import { Banner } from '@/components';
 import { fullName } from '@/domain/playerNames';
 import { setServeFirst } from '@/domain/lineupEditing';
 import type { SetLineup } from '@/domain/types';
@@ -59,9 +60,9 @@ export function LineupBuilder({
 
   const lockedNotice =
     locked && !viewOnly ? (
-      <Text style={styles.locked} accessibilityRole="alert" testID="lineup-locked">
+      <Banner alert testID="lineup-locked">
         {t.live.lineupLocked}
-      </Text>
+      </Banner>
     ) : null;
   const hint = viewOnly ? null : (
     <Text style={styles.hint} accessibilityLiveRegion="polite">
@@ -146,5 +147,4 @@ const useStyles = makeStyles((theme) => ({
   underCourt: { flexDirection: 'row', gap: spacing.md, alignItems: 'stretch' },
   controls: { flex: 1, gap: spacing.sm, justifyContent: 'center' },
   hint: { ...typography.body, color: theme.colors.textMuted },
-  locked: { ...typography.body, color: theme.colors.highlightText },
 }));

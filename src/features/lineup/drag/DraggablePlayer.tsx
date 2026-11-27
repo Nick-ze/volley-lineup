@@ -53,6 +53,8 @@ export function DraggablePlayer({
           player={player}
           size={size}
           showPhoto={showPhoto}
+          // v11: a chip in a court spot stands on the court (ring and shadow).
+          onCourt={from.kind === 'slot'}
           selected={selected}
           disabled={drag.disabled}
           onPress={() => {

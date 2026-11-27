@@ -19,7 +19,7 @@ export function ResetLiveData({ disabled, onReset, style }: ResetLiveDataProps) 
       <Button
         label={t.live.reset}
         accessibilityHint={t.live.resetHint}
-        variant="danger"
+        variant="dangerQuiet"
         compact
         disabled={disabled}
         onPress={() => setOpen(true)}

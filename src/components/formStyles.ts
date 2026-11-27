@@ -59,6 +59,8 @@ export const useListStyles = makeStyles((theme) => ({
   subtitle: { ...typography.label, color: theme.colors.textMuted },
   empty: { ...typography.body, color: theme.colors.textMuted },
   heading: { ...typography.heading, color: theme.colors.text },
+  /** v11: the heading of a page whose header shows no title (it may wrap). */
+  pageHeading: { ...typography.displayL, color: theme.colors.text },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

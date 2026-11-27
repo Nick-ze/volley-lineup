@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { SetChipFilter, SwipeTabs, useListStyles } from '@/components';
+import { EmptyState, SetChipFilter, SwipeTabs, useListStyles } from '@/components';
 import { matchStats, playedSetNumbers } from '@/domain/stats';
 import type { Match, Player, SetNumber } from '@/domain/types';
 import { useT } from '@/i18n';
@@ -24,7 +24,7 @@ export function MatchStats({ match }: { match: Match }) {
 
   // The opponent goes here, not in the header, so long names wrap instead of overflowing.
   const heading = (
-    <Text style={listStyles.heading} accessibilityRole="header" testID="match-stats-heading">
+    <Text style={listStyles.pageHeading} accessibilityRole="header" testID="match-stats-heading">
       {t.stats.matchTitle(match.opponent)}
     </Text>
   );
@@ -32,9 +32,7 @@ export function MatchStats({ match }: { match: Match }) {
     return (
       <View style={styles.wrap}>
         {heading}
-        <Text style={listStyles.empty} testID="match-stats-empty">
-          {t.stats.matchEmpty}
-        </Text>
+        <EmptyState testID="match-stats-empty">{t.stats.matchEmpty}</EmptyState>
       </View>
     );
   }

@@ -76,6 +76,7 @@ export function CourtSpot({
         <PlayerChip
           player={player}
           size={size}
+          onCourt
           highlighted={isServer}
           accessibilityLabel={t.rotation.spotLabel(position, row, desc, isServer)}
           testID={testID}

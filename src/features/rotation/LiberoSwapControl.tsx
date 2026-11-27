@@ -45,8 +45,6 @@ const useStyles = makeStyles((theme) => ({
     paddingVertical: spacing.xs,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   hint: { ...typography.caption, color: theme.colors.textMuted, paddingVertical: spacing.sm },
 }));

@@ -83,7 +83,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.surface,
     borderRadius: radius.md,
     borderWidth: 3,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.transparent,
   },
   fill: { flex: 1, minHeight: BENCH_MIN_HEIGHT },
   compactBox: { padding: spacing.sm, gap: spacing.xs },

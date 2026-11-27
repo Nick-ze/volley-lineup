@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { SetChipFilter, SwipeTabs, useListStyles } from '@/components';
+import { EmptyState, SetChipFilter, SwipeTabs, useListStyles } from '@/components';
 import { matchPerformance, performanceRows } from '@/domain/performance';
 import { playedSetNumbers } from '@/domain/stats';
 import type { Match, SetNumber } from '@/domain/types';
@@ -49,7 +49,7 @@ export function MatchPerformance({
   const openPlayer = rows.find((r) => r.player.id === playerParam)?.player.id;
 
   const heading = (
-    <Text style={listStyles.heading} accessibilityRole="header" testID="perf-heading">
+    <Text style={listStyles.pageHeading} accessibilityRole="header" testID="perf-heading">
       {t.performance.heading(match.opponent)}
     </Text>
   );
@@ -57,9 +57,7 @@ export function MatchPerformance({
     return (
       <View style={styles.wrap}>
         {heading}
-        <Text style={listStyles.empty} testID="perf-empty">
-          {t.performance.empty}
-        </Text>
+        <EmptyState testID="perf-empty">{t.performance.empty}</EmptyState>
       </View>
     );
   }

@@ -5,7 +5,7 @@ import type { Side } from '@/domain/types';
 import { useT } from '@/i18n';
 import { makeStyles, radius, spacing, typography } from '@/theme';
 
-import { SCORE_FONT_SIZE, SERVE_DOT_SIZE } from './layout';
+import { SCORE_FONT_SIZE, SCORE_LINE_HEIGHT, SERVE_DOT_SIZE } from './layout';
 
 export interface ScoreboardProps {
   setNumber: number;
@@ -79,18 +79,22 @@ export function Scoreboard({
   );
 }
 
+const SCORE = {
+  ...typography.score,
+  fontSize: SCORE_FONT_SIZE,
+  lineHeight: SCORE_LINE_HEIGHT,
+} as const;
+
 const useStyles = makeStyles((theme) => ({
   box: {
     backgroundColor: theme.colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.xs,
   },
   topRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md },
-  set: { ...typography.label, color: theme.colors.textMuted },
-  sets: { ...typography.label, color: theme.colors.text },
+  set: { ...typography.eyebrow, color: theme.colors.textMuted },
+  sets: { ...typography.eyebrow, color: theme.colors.text },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   side: { flex: 1, alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, maxWidth: '100%' },
@@ -100,10 +104,12 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: SERVE_DOT_SIZE / 2,
     backgroundColor: theme.colors.highlight,
   },
-  name: { ...typography.subheading, color: theme.colors.text, flexShrink: 1 },
+  name: { ...typography.eyebrow, color: theme.colors.text, flexShrink: 1 },
   serving: { color: theme.colors.highlightText },
-  score: { fontSize: SCORE_FONT_SIZE, fontWeight: '800', color: theme.colors.text },
-  colon: { fontSize: SCORE_FONT_SIZE, fontWeight: '800', color: theme.colors.textMuted },
+  // v11: the score is the biggest thing on the screen; its digits have a fixed width, so the
+  // layout doesn't jump from 9 to 10.
+  score: { ...SCORE, color: theme.colors.text },
+  colon: { ...SCORE, color: theme.colors.textMuted },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

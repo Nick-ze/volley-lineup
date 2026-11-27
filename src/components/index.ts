@@ -2,6 +2,7 @@ export * from './Banner';
 export * from './Button';
 export * from './EmptyState';
 export * from './IconButton';
+export * from './LinkTile';
 export * from './PillTabBar';
 export * from './trackStyles';
 export * from './Dialog';

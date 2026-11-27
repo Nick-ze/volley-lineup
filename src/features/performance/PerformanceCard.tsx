@@ -67,8 +67,6 @@ const useStyles = makeStyles((theme) => ({
     padding: spacing.md,
     backgroundColor: theme.colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   pressed: { opacity: 0.8 },
   main: { flex: 1, minWidth: 0, gap: spacing.xxs },
