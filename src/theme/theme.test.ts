@@ -1,6 +1,7 @@
 import { darkColors, darkPositionColors, lightColors, lightPositionColors } from './colors';
 import { dyslexiaFonts, systemFonts } from './fonts';
 import { defaultTheme, getTheme, inlineFontSize, resolveScheme, withFontFamily } from './theme';
+import { typography } from './typography';
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
 function luminance(hex: string): number {
@@ -36,6 +37,19 @@ describe.each([
     expect(contrast(c.onHighlight, c.highlight)).toBeGreaterThanOrEqual(AA);
     expect(contrast(c.onSecondary, c.secondary)).toBeGreaterThanOrEqual(AA);
     expect(contrast(c.onCourt, c.primary)).toBeGreaterThanOrEqual(AA);
+  });
+
+  it('v11: text on the soft shades and on a pressed primary button', () => {
+    expect(contrast(c.primaryText, c.primarySoft)).toBeGreaterThanOrEqual(AA);
+    expect(contrast(c.text, c.primarySoft)).toBeGreaterThanOrEqual(AA);
+    expect(contrast(c.highlightText, c.highlightSoft)).toBeGreaterThanOrEqual(AA);
+    expect(contrast(c.secondaryText, c.secondarySoft)).toBeGreaterThanOrEqual(AA);
+    expect(contrast(c.onPrimary, c.primaryPressed)).toBeGreaterThanOrEqual(AA);
+  });
+
+  it('v11: a player chip stands out on the court (ring or fill at 3:1)', () => {
+    const best = Math.max(contrast(c.chipRing, c.primary), contrast(c.surface, c.primary));
+    expect(best).toBeGreaterThanOrEqual(3);
   });
 
   it('position badges', () => {
@@ -123,6 +137,44 @@ describe('withFontFamily', () => {
     expect(out.own).toEqual({ fontSize: 12, fontFamily: 'monospace' });
   });
 
+  it('v11: display styles get the dyslexia bold family, smaller, with its line height', () => {
+    const out = withFontFamily(
+      { title: { ...typography.displayXL, color: 'red' }, score: typography.score },
+      dyslexiaFonts,
+    );
+    // 48 × 0.85 × 0.75 = 30.6 → 31; line height 1.4 × 31.
+    expect(out.title).toEqual({
+      fontFamily: 'OpenDyslexic-Bold',
+      fontSize: 31,
+      lineHeight: 43,
+      color: 'red',
+    });
+    expect(out.score).toEqual({
+      fontFamily: 'OpenDyslexic-Bold',
+      fontSize: 66,
+      lineHeight: 92,
+      fontVariant: ['tabular-nums'],
+    });
+  });
+
+  it('v11: display styles keep the display typeface with the platform font', () => {
+    const styles = { title: typography.displayL };
+    expect(withFontFamily(styles, systemFonts)).toBe(styles);
+    expect(typography.displayL.fontFamily).toBe(systemFonts.display);
+    expect(typography.score.fontFamily).toBe(systemFonts.displayHeavy);
+  });
+
+  it('v11: capital-letter labels become normal case with the dyslexia font', () => {
+    const out = withFontFamily(
+      { eyebrow: typography.eyebrow, tight: { textTransform: 'uppercase', letterSpacing: -1 } },
+      dyslexiaFonts,
+    );
+    expect(out.eyebrow).toEqual({ fontSize: 10, lineHeight: 14, fontFamily: 'OpenDyslexic-Bold' });
+    expect(out.tight).toEqual({ letterSpacing: -1, fontFamily: 'OpenDyslexic-Regular' });
+    // With the platform font the label stays in capitals.
+    expect(typography.eyebrow.textTransform).toBe('uppercase');
+  });
+
   it('keeps a style’s own line height and scales only its font size', () => {
     const out = withFontFamily({ cell: { fontSize: 20, lineHeight: 32 } }, dyslexiaFonts);
     expect(out.cell).toEqual({ fontSize: 17, lineHeight: 32, fontFamily: 'OpenDyslexic-Regular' });
@@ -136,5 +188,10 @@ describe('inlineFontSize', () => {
 
   it('scales it like makeStyles with the dyslexia font, with a matching line height', () => {
     expect(inlineFontSize(20, dyslexiaFonts)).toEqual({ fontSize: 17, lineHeight: 24 });
+  });
+
+  it('v11: a display size stays with the display typeface and shrinks with the dyslexia font', () => {
+    expect(inlineFontSize(100, systemFonts, true)).toEqual({ fontSize: 100 });
+    expect(inlineFontSize(100, dyslexiaFonts, true)).toEqual({ fontSize: 64, lineHeight: 90 });
   });
 });

@@ -57,6 +57,9 @@ const SCREENS = [
   ['performance-player', '/match/m1/performance?set=1&player=p1'],
   ['match-stats', '/match/m1/stats'],
   ['not-found', '/nowhere'],
+  // v11: the account screens (signed out).
+  ['account', '/account'],
+  ['sign-in', '/account/sign-in'],
 ];
 
 const WIDTHS = [

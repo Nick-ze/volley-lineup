@@ -45,10 +45,10 @@ function ThemedRoot() {
   const styles = useStyles();
   const t = useT();
   const hydrated = useAppStore((s) => s.hydrated);
-  // v8: the bundled dyslexia font loads in the background; only with the font on does the
-  // spinner wait for it (until loaded, failed or timed out — never forever).
-  const fontsReady = useAppFonts();
-  const ready = hydrated && (!theme.dyslexiaFont || fontsReady);
+  // v11: the spinner waits for the display typeface, and for the dyslexia font only when it is on
+  // (until loaded, failed or timed out — never forever).
+  const fontsReady = useAppFonts(theme.dyslexiaFont);
+  const ready = hydrated && fontsReady;
   // v8 QA: the browser bar (web `<meta name="theme-color">`) follows light / dark.
   useEffect(() => setThemeColor(colors.background), [colors.background]);
 

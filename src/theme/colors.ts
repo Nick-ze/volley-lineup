@@ -29,6 +29,21 @@ export const darkColors = {
   courtLine: '#FFFFFF',
   overlay: 'rgba(0,0,0,0.6)',
   transparent: 'transparent',
+  // v11 (docs/V11_DESIGN.md): shades of the palette's own colours.
+  /** Soft orange: a selected segment or chip, the active tab's marker. */
+  primarySoft: '#2B1707',
+  /** A pressed primary button. */
+  primaryPressed: '#E05E00',
+  /** Soft yellow: notices (banners). */
+  highlightSoft: '#2E2508',
+  /** Soft blue: chips about the opponent / a positive rating. */
+  secondarySoft: '#0A1E36',
+  /** The "active" dot (a mark beside its text, never text itself). */
+  positive: '#2ECC71',
+  /** Ring of a player chip that stands on a court. */
+  chipRing: '#FFFFFF',
+  /** Shadow under a player chip that stands on a court. */
+  chipShadow: 'rgba(0,0,0,0.4)',
 } as const;
 
 export type ColorToken = keyof typeof darkColors;
@@ -61,6 +76,13 @@ export const lightColors: ThemeColors = {
   courtLine: '#FFFFFF',
   overlay: 'rgba(0,0,0,0.45)',
   transparent: 'transparent',
+  primarySoft: '#FFE9D9',
+  primaryPressed: '#E05E00',
+  highlightSoft: '#FFF4D1',
+  secondarySoft: '#E0ECFA',
+  positive: '#2ECC71',
+  chipRing: '#0D0D0D',
+  chipShadow: 'rgba(0,0,0,0.4)',
 };
 
 type BadgeColors = Record<'S' | 'OH' | 'MB' | 'OPP' | 'L' | 'DS', { bg: string; text: string }>;

@@ -740,3 +740,34 @@ the team's members**.
 - [x] `@supabase/*` imported only in `src/lib/sync` (lint); lint, format, typecheck and tests pass; `src/domain` at 100 %; a component test per feature; new screens have tour pages; 375 / 1280 px, EN + DE, dark + light, dyslexia font.
 
 _Checked 2026-11-26 by the QA agent on the web build against the live project (two to four browser sessions as devices, password test users removed afterwards), then re-checked after the QA fixes (PR #93). Not checked on a real phone: see HANDOFF._
+
+## 46. v11.0 — "Less app, more gym" (the look)
+
+A design release: how the app looks changes, what it does doesn't. No feature, text, stored-data or sync change (store 13, export 10). The full brief with every value is `docs/V11_DESIGN.md`; the mock-ups (four screens before / after) are at https://claude.ai/artifact/VHo28JVUot3hFoocC1HwKo. The palette of §8 stays; `src/theme/colors.ts` gains soft shades of its own colours.
+
+Five rules:
+
+1. **The title is part of the page.** No grey header bar: a screen opens with its title on the page background; Back is a round button.
+2. **Every colour has one job.** Solid orange: the court and the one main action of a screen. Soft orange: what is selected. Yellow: what is current (this set, the server) and notices. Blue: the opponent, the front row, links.
+3. **Numbers are the picture.** Titles, scores and the jersey numbers on roster cards use Barlow Condensed (bundled, SIL OFL); everything else stays in the platform font. The dyslexia font replaces it too.
+4. **Tone, not outlines.** A panel is `surface` on `background` without a border. Borders stay on focused text fields, the `danger` button and the court.
+5. **Shapes mean something.** Buttons are pills, teams are rounded squares, players are circles.
+
+Built in seven pull requests: (1) plan and theme values, (2) the header, (3) shared parts (buttons, rows, panels, tracks, fields, dialogs, banner, empty state, pill tab bar), (4) Teams, profile picker and the team tabs, (5) the match screens (lineup builder with Live in the header and five link tiles, players on the court with ring and shadow, rotation, live, performance, stats), (6) player, forms, Settings, Profile, account, (7) motion, full check, docs, version 11.0.0 and a test build for the owner. No release before the owner tried the test build on a phone.
+
+## 47. v11.0 acceptance checklist
+
+- [ ] No screen has the grey header bar; every screen shows its title once; Back is a round button and works after a reload.
+- [ ] Solid orange appears only on the court, the "Point us" button and one main action per screen (profile and team avatars keep their own colours).
+- [ ] Titles, scores and roster numbers use Barlow Condensed; scores and stat numbers have equal-width digits; with the dyslexia font on, no text uses Barlow and no label is in capitals.
+- [ ] Panels, rows and cards have no outline in either theme; all new colour pairs pass AA (test).
+- [ ] The app tabs and the team tabs use the same pill bar; swipe and tap between tabs work as before.
+- [ ] Edit, Delete, Rename and Copy are icon buttons with their old accessible names; Delete still asks.
+- [ ] Lineup builder: Live is in the header; five link tiles; the notice is a banner without icon; players on the court have the ring and shadow; "Who serves first" is visible at 390 × 844.
+- [ ] Live: the Substitution button is not lower than in 10.0.1 at 390 × 844 (EN, DE, font off and on).
+- [ ] Empty lists show the court drawing and the existing sentence.
+- [ ] Every interactive element is at least 44 × 44; labels start with the visible text (guard test).
+- [ ] EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overflows or is cut without "…".
+- [ ] No feature, text, stored-data or sync change: store 13, export 10, golden byte-equal, no diff under `src/lib/sync`, `src/domain`, `supabase/`.
+- [ ] Lint, typecheck and tests pass in CI; the web export builds.
+- [ ] The owner tried the test build on the phone. Only then: release.
