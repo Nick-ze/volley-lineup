@@ -14,6 +14,7 @@ import { ResultForm } from '@/features/hostedTournament/ResultForm';
 import { formatText } from '@/features/hostedTournament/tournamentText';
 import { useTournamentPlan } from '@/features/hostedTournament/useTournamentPlan';
 import type { HostedTournament } from '@/domain/types';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore, useHostedTournament } from '@/store';
 
@@ -59,6 +60,8 @@ function MatchResult({
   const match = plan.rounds
     .flatMap((r) => r.matches)
     .find((m) => (m.teamA.id === a && m.teamB.id === b) || (m.teamA.id === b && m.teamB.id === a));
+
+  useTourPage(match ? 'tournamentResult' : null);
 
   if (!match)
     return (

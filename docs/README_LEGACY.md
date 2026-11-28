@@ -255,6 +255,41 @@ was touched. The palette is the same; `src/theme/colors.ts` gained soft shades o
 - Checked in a browser (528 screenshots per pull request, measurements, a touch-target scan, a scan for touching
   panels, a drag-and-drop run, one independent QA pass) and by the owner on an Android phone with two test builds.
 
+### v12.0: host a tournament (store 14, export schema 11)
+
+A coach who runs a tournament enters the teams and types in the results; the app keeps the plan and the table
+(`docs/V12_TOURNAMENT_DESIGN.md`, PLAN §48–49, DECISIONS #360–#385). It is a neutral scoreboard for all teams — names
+and results, no rosters, lineups or live scoring — and separate from a team's own seasons and matches, which behave
+as in 11.0.0 (their best-of-5 is unchanged).
+
+- **A fourth app tab, Tournaments**, between Teams and Profile: the profile's hosted tournaments with "6 teams · 8 of
+  15 played" and the date; create, edit, delete (with confirmation).
+- **Format**: one group, everyone plays everyone once. The plan (rounds by the circle method; with an odd number one
+  team rests per round) is derived from the teams in the order they were added. 2 to 16 teams.
+- **Sets per match 1 to 5** (default 3) and how a match ends, per tournament: **best of N** (1, 3, 5) or **all N sets
+  are played** (the only choice for 2 and 4; a draw is possible). The table counts matches for best-of (2 per win) and
+  sets for all-sets (1 per set won); the form and the table say which.
+- **Tournament screen** (`/tournament/[tournamentId]?tab=table|matches|teams`): the table as a list of rows (rank,
+  name, "3 played · 2–1 · sets 5:2 · balls +41", table points), the matches in rounds as scoreboard lines, the teams
+  (add, rename, remove). Ranking: table points, set difference, ball difference, balls scored; equal teams share a
+  rank. Only finished matches count.
+- **Result** (`/tournament/[tournamentId]/match?a=&b=`): typed in set by set, two numbers 0–99 that differ; the next
+  set's row appears when it can be played; a result can be saved unfinished, changed and deleted.
+- **A team's matches** (`/tournament/[tournamentId]/team/[teamId]`): rank and numbers as a band, then its matches.
+- **Settings can change later** while every stored result stays valid; otherwise the change is refused and names the
+  match. Removing a team deletes its results (the question says how many).
+- **Data**: `HostedTournament`, `HostedTeam`, `HostedResult`; only results are stored. Store 14 adds three lists
+  (migration 13 → 14); export schema 11 has them too, files v1–v10 upgrade to empty lists. "Export everything"
+  includes the tournaments, a single team's file doesn't. Replace takes the file's; Merge matches by id. **Not in
+  cloud sync**: nothing under `src/lib/sync`, `src/domain/sync*` or `supabase/` changed.
+- **Code**: logic in `src/domain/hostedTournament.ts` (barrel over `hostedPlan`, `hostedResult`, `hostedStandings`,
+  `hostedForms`, `hostedData`), UI in `src/features/hostedTournament/`, strings in `src/i18n/{en,de}/tournament.ts`,
+  seven tour pages. No sideways scrolling on the new screens.
+- Built in five pull requests (#125–#129), each merged on green CI. Checked in a browser (screenshots of every new
+  screen in EN / DE, dark / light, with the dyslexia font, at 375 and 1280 px; scans for controls under 44 px,
+  touching panels and sideways scrolling; one independent QA pass over the acceptance list) and in Jest. Not checked
+  on a phone before the release (owner: release when built, fixes follow as 12.0.x).
+
 ## Backend
 
 Since v10 the app can sync shared teams through **Supabase** (hosted project "Volleylineup manager",
@@ -289,9 +324,9 @@ RPCs, error codes, limits, applying migrations, tests, keep-alive and the owner'
 Open the **Settings** tab.
 
 - **Export everything** writes all profiles, teams, players, matches (with their live data and point details), saved
-  lineups, seasons, opponents and photos to `volley-lineup-YYYY-MM-DD.json`. Player descriptions are included only
+  lineups, seasons, opponents, photos and (v12) hosted tournaments to `volley-lineup-YYYY-MM-DD.json`. Player descriptions are included only
   when **Include descriptions** is ticked (possible only while descriptions are unlocked). **Export <team>** writes
-  just that team, its profile, players and matches. On the web the file is downloaded; on a phone the share sheet
+  just that team, its profile, players and matches (no hosted tournaments: they belong to the profile). On the web the file is downloaded; on a phone the share sheet
   opens.
 - **Import from file** validates the file and shows a preview ("1 profile, 2 teams, 24 players, 5 matches"), then:
   - **Replace**: your current data is replaced by the file.

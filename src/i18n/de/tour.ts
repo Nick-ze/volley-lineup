@@ -52,6 +52,8 @@ export const tour: Strings['tour'] = {
     player: 'Anna',
     email: 'anna@example.com',
     inviteCode: 'ABCDE-FGHJK',
+    tournament: 'Winter-Cup',
+    setScore: '25 : 22',
   },
   pages: {
     profiles: 'Profile',
@@ -83,6 +85,13 @@ export const tour: Strings['tour'] = {
     cloudTeams: 'Cloud-Teams',
     members: 'Mitglieder',
     join: 'Team beitreten',
+    tournaments: 'Turniere',
+    tournamentForm: 'Neues Turnier',
+    tournamentTable: 'Turniertabelle',
+    tournamentMatches: 'Turnierspiele',
+    tournamentTeams: 'Turnierteams',
+    tournamentTeam: 'Spiele eines Teams',
+    tournamentResult: 'Ergebnis',
   },
   steps: {
     profiles: {
@@ -305,6 +314,56 @@ export const tour: Strings['tour'] = {
       code: {
         title: 'Mit Code beitreten',
         text: 'Gib den Einladungscode ein, den du von einem Trainer bekommen hast, und tippe auf „Beitreten“. Das Team erscheint dann in deiner Teamliste.',
+      },
+    },
+    tournaments: {
+      create: {
+        title: 'Ein Turnier ausrichten',
+        text: 'Du richtest ein Turnier aus? Tippe auf „Neues Turnier“, trag die Teams ein und tipp die Ergebnisse ein. Die App führt Spielplan und Tabelle.',
+      },
+      open: {
+        title: 'Deine Turniere',
+        text: 'Tippe auf ein Turnier, um es zu öffnen. Ein Turnier, bei dem dein eigenes Team mitspielt, mit Aufstellungen und Live-Modus, gehört in den Tab „Spiele“ des Teams.',
+      },
+    },
+    tournamentForm: {
+      format: {
+        title: 'Sätze und Spielende',
+        text: 'Wähle 1 bis 5 Sätze pro Spiel. Bei „Best of“ endet ein Spiel, sobald ein Team mehr als die Hälfte der Sätze gewonnen hat, und die Tabelle zählt Spiele. Bei „Alle Sätze werden gespielt“ zählt die Tabelle Sätze.',
+      },
+    },
+    tournamentTable: {
+      table: {
+        title: 'Die Tabelle',
+        text: 'Die Teams stehen nach Tabellenpunkten, dann nach Satzdifferenz, Balldifferenz und erzielten Bällen. Tippe auf ein Team, um alle seine Spiele zu sehen.',
+      },
+    },
+    tournamentMatches: {
+      result: {
+        title: 'Der Spielplan',
+        text: 'Jeder spielt einmal gegen jeden, Runde für Runde. Tippe auf ein Spiel, um das Ergebnis einzutragen oder zu ändern.',
+      },
+      tabs: {
+        title: 'Tabelle, Spiele, Teams',
+        text: 'Wische seitwärts oder tippe auf die Chips, um zwischen Tabelle, Spielen und Teams zu wechseln.',
+      },
+    },
+    tournamentTeams: {
+      add: {
+        title: 'Die Teams eintragen',
+        text: 'Gib einen Namen ein und tippe auf „Hinzufügen“, für 2 bis 16 Teams. Der Spielplan folgt den Teams; Ergebnisse bleiben, wenn du eines hinzufügst oder entfernst.',
+      },
+    },
+    tournamentTeam: {
+      matches: {
+        title: 'Die Spiele eines Teams',
+        text: 'Rang und Zahlen des Teams, danach, wie es gegen jedes andere gespielt hat. Tippe auf ein Spiel, um sein Ergebnis zu öffnen.',
+      },
+    },
+    tournamentResult: {
+      sets: {
+        title: 'Die Sätze eintippen',
+        text: 'Gib die beiden Zahlen jedes Satzes ein. Der nächste Satz erscheint, sobald er gespielt werden kann. „Speichern“ sichert das Ergebnis, die Tabelle folgt.',
       },
     },
   },

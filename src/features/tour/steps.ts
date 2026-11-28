@@ -151,6 +151,46 @@ const STEPS: Record<TourPage, (t: Strings) => TourStep[]> = {
     step(t.tour.steps.cloudTeams.choose, { kind: 'toggle', label: t.tour.sample.team }),
   ],
   members: (t) => [step(t.tour.steps.members.invite, { kind: 'tap', label: t.members.newInvite })],
+  // v12: hosted tournaments.
+  tournaments: (t) => [
+    step(t.tour.steps.tournaments.create, { kind: 'tap', label: t.tournament.list.new }),
+    step(t.tour.steps.tournaments.open, { kind: 'row', label: t.tour.sample.tournament }),
+  ],
+  tournamentForm: (t) => [
+    step(t.tour.steps.tournamentForm.format, {
+      kind: 'form',
+      field: t.tournament.form.name,
+      value: t.tour.sample.tournament,
+      button: t.tournament.form.create,
+    }),
+  ],
+  tournamentTable: (t) => [step(t.tour.steps.tournamentTable.table, { kind: 'stats' })],
+  tournamentMatches: (t) => [
+    step(t.tour.steps.tournamentMatches.result, { kind: 'row', label: t.tour.sample.opponent }),
+    step(t.tour.steps.tournamentMatches.tabs, {
+      kind: 'swipe',
+      tabs: [t.tournament.screen.table, t.tournament.screen.matches, t.tournament.screen.teams],
+    }),
+  ],
+  tournamentTeams: (t) => [
+    step(t.tour.steps.tournamentTeams.add, {
+      kind: 'form',
+      field: t.tournament.teams.name,
+      value: t.tour.sample.opponent,
+      button: t.tournament.teams.add,
+    }),
+  ],
+  tournamentTeam: (t) => [
+    step(t.tour.steps.tournamentTeam.matches, { kind: 'row', label: t.tour.sample.opponent }),
+  ],
+  tournamentResult: (t) => [
+    step(t.tour.steps.tournamentResult.sets, {
+      kind: 'form',
+      field: t.tournament.result.set(1),
+      value: t.tour.sample.setScore,
+      button: t.common.save,
+    }),
+  ],
   join: (t) => [
     step(t.tour.steps.join.code, {
       kind: 'form',

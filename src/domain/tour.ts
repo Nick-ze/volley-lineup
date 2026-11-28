@@ -47,6 +47,14 @@ export const OTHER_PAGES = [
   'cloudTeams',
   'members',
   'join',
+  // v12: hosted tournaments (not in the quick tour, so it stays short).
+  'tournaments',
+  'tournamentForm',
+  'tournamentTable',
+  'tournamentMatches',
+  'tournamentTeams',
+  'tournamentTeam',
+  'tournamentResult',
 ] as const satisfies readonly TourPage[];
 
 /** Every page with tips (quick pages first). */
@@ -82,6 +90,8 @@ export type TeamTabName = 'roster' | 'matches' | 'presets' | 'starters' | 'stats
 export type SeasonTabName = 'matches' | 'opponents' | 'stats';
 /** The live screen's views. */
 export type LiveViewName = 'live' | 'performance';
+/** v12: a hosted tournament's tabs. */
+export type TournamentTabName = 'table' | 'matches' | 'teams';
 
 const TEAM_TAB_PAGES: Record<TeamTabName, TourPage> = {
   roster: 'roster',
@@ -102,9 +112,17 @@ const LIVE_VIEW_PAGES: Record<LiveViewName, TourPage> = {
   performance: 'performance',
 };
 
+const TOURNAMENT_TAB_PAGES: Record<TournamentTabName, TourPage> = {
+  table: 'tournamentTable',
+  matches: 'tournamentMatches',
+  teams: 'tournamentTeams',
+};
+
 /** The page of the team screen's shown tab. */
 export const teamTabPage = (tab: TeamTabName): TourPage => TEAM_TAB_PAGES[tab];
 /** The page of the season screen's shown tab. */
 export const seasonTabPage = (tab: SeasonTabName): TourPage => SEASON_TAB_PAGES[tab];
 /** The page of the live screen's shown view (Live / Performance). */
 export const liveViewPage = (view: LiveViewName): TourPage => LIVE_VIEW_PAGES[view];
+/** v12: the page of a hosted tournament's shown tab. */
+export const tournamentTabPage = (tab: TournamentTabName): TourPage => TOURNAMENT_TAB_PAGES[tab];

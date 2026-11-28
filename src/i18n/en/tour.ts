@@ -54,6 +54,8 @@ export const tour = {
     player: 'Anna',
     email: 'anna@example.com',
     inviteCode: 'ABCDE-FGHJK',
+    tournament: 'Winter Cup',
+    setScore: '25 : 22',
   },
   /** Screen names in the "Quick tip for …?" offer. */
   pages: {
@@ -86,6 +88,13 @@ export const tour = {
     cloudTeams: 'Cloud teams',
     members: 'Members',
     join: 'Join a team',
+    tournaments: 'Tournaments',
+    tournamentForm: 'New tournament',
+    tournamentTable: 'Tournament table',
+    tournamentMatches: 'Tournament matches',
+    tournamentTeams: 'Tournament teams',
+    tournamentTeam: 'A team’s matches',
+    tournamentResult: 'Result',
   } satisfies Record<TourPage, string>,
   steps: {
     profiles: {
@@ -308,6 +317,56 @@ export const tour = {
       code: {
         title: 'Join with a code',
         text: 'Type the invite code you got from a manager and tap “Join”. The team then appears in your team list.',
+      },
+    },
+    tournaments: {
+      create: {
+        title: 'Host a tournament',
+        text: 'Running a tournament? Tap “New tournament”, enter its teams and type in the results. The app keeps the plan and the table.',
+      },
+      open: {
+        title: 'Your tournaments',
+        text: 'Tap a tournament to open it. A tournament your own team plays in, with lineups and live scoring, belongs in the team’s Matches tab.',
+      },
+    },
+    tournamentForm: {
+      format: {
+        title: 'Sets and how a match ends',
+        text: 'Choose 1 to 5 sets per match. “Best of” ends a match when a team has won more than half of the sets, and the table counts matches. With “All sets are played” the table counts sets.',
+      },
+    },
+    tournamentTable: {
+      table: {
+        title: 'The table',
+        text: 'Teams are ranked by table points, then set difference, ball difference and balls scored. Tap a team to see all its matches.',
+      },
+    },
+    tournamentMatches: {
+      result: {
+        title: 'The plan',
+        text: 'Everyone plays everyone once, round by round. Tap a match to enter or change its result.',
+      },
+      tabs: {
+        title: 'Table, matches, teams',
+        text: 'Swipe sideways or tap the chips to switch between the table, the matches and the teams.',
+      },
+    },
+    tournamentTeams: {
+      add: {
+        title: 'Enter the teams',
+        text: 'Type a name and tap “Add”, for 2 to 16 teams. The plan follows the teams; results stay when you add or remove one.',
+      },
+    },
+    tournamentTeam: {
+      matches: {
+        title: 'One team’s matches',
+        text: 'The team’s rank and numbers, then how it played against each of the others. Tap a match to open its result.',
+      },
+    },
+    tournamentResult: {
+      sets: {
+        title: 'Type in the sets',
+        text: 'Enter the two scores of each set. The next set appears when it can be played. “Save” stores the result, and the table follows.',
       },
     },
   },
