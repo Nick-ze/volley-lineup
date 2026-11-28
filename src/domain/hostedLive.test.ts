@@ -27,6 +27,7 @@ import {
   tagLastPoint,
   tagSide,
   teamLiveStats,
+  tournamentPlan,
   undoLast,
   validateHostedPlayer,
   withoutHostedPlayer,
@@ -520,5 +521,64 @@ describe('players and live rallies in stored data', () => {
       { id: 'p2', teamId: 't2', name: 'Mia' },
       { id: 'p3', teamId: 't2', number: 3 },
     ]);
+  });
+});
+
+describe('the plan knows a set that is being scored live', () => {
+  const cup = { id: 'h1', plan: 'roundRobin', setsPerMatch: 3, matchEnd: 'bestOf' } as const;
+  const teams = [
+    { id: 't1', tournamentId: 'h1', name: 'A', order: 0 },
+    { id: 't2', tournamentId: 'h1', name: 'B', order: 1 },
+  ];
+  const result = (extra: Partial<HostedResult>): HostedResult => ({
+    id: 'r1',
+    tournamentId: 'h1',
+    teamAId: 't1',
+    teamBId: 't2',
+    sets: [],
+    ...extra,
+  });
+  const only = (
+    results: HostedResult[],
+    source: typeof cup | { id: string; plan: 'manual'; setsPerMatch: 3; matchEnd: 'bestOf' } = cup,
+  ) => tournamentPlan(source, teams, results).rounds[0].matches[0];
+
+  it('a first set scored live makes the match running, with its score', () => {
+    const match = only([result({ live: [[a(), a(), b()]] })]);
+    expect(match.running).toEqual({ a: 2, b: 1 });
+    expect(match.sets).toEqual([]);
+    expect(match.outcome.state).toBe('running');
+    expect(tournamentPlan(cup, teams, [result({ live: [[a()]] })]).played).toBe(0);
+  });
+
+  it('shows the running score from the side of the plan’s first team', () => {
+    // stored the other way round (a file can be)
+    const flipped = result({
+      teamAId: 't2',
+      teamBId: 't1',
+      sets: [{ a: 1, b: 2 }],
+      live: [
+        [a(), b(), b()],
+        [a(), a(), a()],
+      ],
+    });
+    const match = only([flipped]);
+    expect(match.sets).toEqual([{ a: 2, b: 1 }]);
+    expect(match.running).toEqual({ a: 0, b: 3 });
+  });
+
+  it('has no running score between sets, for a typed result, or without one', () => {
+    expect(only([result({ sets: [{ a: 2, b: 1 }], live: [[a(), a(), b()]] })]).running).toBeNull();
+    expect(only([result({ sets: [{ a: 25, b: 20 }] })]).running).toBeNull();
+    expect(only([]).running).toBeNull();
+    expect(only([]).outcome.state).toBe('open');
+  });
+
+  it('an added match scored live is running too', () => {
+    const manual = { ...cup, plan: 'manual' } as const;
+    const match = only([result({ live: [[b()]] })], manual);
+    expect(match.running).toEqual({ a: 0, b: 1 });
+    expect(match.outcome.state).toBe('running');
+    expect(only([result({})], manual).outcome.state).toBe('open');
   });
 });

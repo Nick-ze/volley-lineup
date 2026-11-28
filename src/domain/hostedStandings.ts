@@ -6,6 +6,7 @@
  * Part of the `hostedTournament.ts` barrel: import sibling modules directly, never the barrel.
  */
 import { pairKey, resultsByPair, roundRobin, teamsOfTournament } from './hostedPlan';
+import { runningScore } from './hostedLive';
 import { matchOutcome, setsSeenFrom, type HostedSettings, type MatchOutcome } from './hostedResult';
 import { foldName } from './seasonNames';
 import type {
@@ -34,6 +35,9 @@ export interface PlanMatch {
   result: HostedResult | undefined;
   /** The sets as seen from team A (empty without a result). */
   sets: HostedSetScore[];
+  /** v12.2: the score of a set being scored live (as seen from team A), or null. */
+  running: HostedSetScore | null;
+  /** What the finished sets mean; `state` is `running` also while a first set is scored live. */
   outcome: MatchOutcome;
 }
 
@@ -53,6 +57,23 @@ export interface TournamentPlan {
   played: number;
 }
 
+/** v12.2: the score of the set a result is being scored live in, as seen from `teamId`. */
+function runningSeenFrom(result: HostedResult | undefined, teamId: string): HostedSetScore | null {
+  const score = result?.live ? runningScore({ sets: result.sets, live: result.live }) : null;
+  if (score === null || result?.teamAId === teamId) return score;
+  return { a: score.b, b: score.a };
+}
+
+/** A match whose first set is being scored live is running, not open. */
+function outcomeWith(
+  sets: readonly HostedSetScore[],
+  running: HostedSetScore | null,
+  settings: HostedSettings,
+): MatchOutcome {
+  const outcome = matchOutcome(sets, settings);
+  return running !== null && outcome.state === 'open' ? { ...outcome, state: 'running' } : outcome;
+}
+
 /** A round robin's rounds with the result of every pair. */
 function roundRobinRounds(
   tournament: PlanSource,
@@ -67,6 +88,7 @@ function roundRobinRounds(
     const matches = r.pairs.map(([a, b]): PlanMatch => {
       const result = results.get(pairKey(a, b));
       const sets = result ? setsSeenFrom(result, a) : [];
+      const running = runningSeenFrom(result, a);
       number += 1;
       return {
         round: r.round,
@@ -75,7 +97,8 @@ function roundRobinRounds(
         teamB: team(b),
         result,
         sets,
-        outcome: matchOutcome(sets, tournament),
+        running,
+        outcome: outcomeWith(sets, running, tournament),
       };
     });
     return { round: r.round, matches, resting: r.resting === null ? null : team(r.resting) };
@@ -94,6 +117,7 @@ function manualRounds(
     const teamA = byId.get(result.teamAId);
     const teamB = byId.get(result.teamBId);
     if (result.tournamentId !== tournament.id || !teamA || !teamB) continue;
+    const running = runningSeenFrom(result, result.teamAId);
     matches.push({
       round: 1,
       number: matches.length + 1,
@@ -101,7 +125,8 @@ function manualRounds(
       teamB,
       result,
       sets: result.sets,
-      outcome: matchOutcome(result.sets, tournament),
+      running,
+      outcome: outcomeWith(result.sets, running, tournament),
     });
   }
   return matches.length === 0 ? [] : [{ round: 1, matches, resting: null }];

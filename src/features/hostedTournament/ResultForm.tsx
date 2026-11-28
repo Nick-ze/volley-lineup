@@ -34,6 +34,11 @@ export interface ResultFormProps {
   deleteLabel?: string;
   /** Own matches (v12.1): saving without a set is fine — the match has no result then. */
   allowEmpty?: boolean;
+  /**
+   * v12.2: the match was scored live — its sets are shown but can't be changed here (the rallies
+   * would no longer add up); there is no Save.
+   */
+  locked?: boolean;
 }
 
 const EMPTY_ROW: SetInput = { a: '', b: '' };
@@ -53,6 +58,7 @@ export function ResultForm({
   onDelete,
   deleteLabel,
   allowEmpty = false,
+  locked = false,
 }: ResultFormProps) {
   const formStyles = useFormStyles();
   const styles = useStyles();
@@ -65,7 +71,8 @@ export function ResultForm({
   const [missing, setMissing] = useState<Partial<Record<number, SetInputError>>>({});
   const [resultError, setResultError] = useState<ResultError | undefined>();
 
-  const count = visibleSetRows(rows, settings);
+  // Locked: the stored sets, no empty row for a next one.
+  const count = locked ? rows.length : visibleSetRows(rows, settings);
   const shown = Array.from({ length: count }, (_, i) => rows[i] ?? EMPTY_ROW);
   const outcome = matchOutcome(leadingSets(shown), settings);
 
@@ -107,7 +114,8 @@ export function ResultForm({
                 onChangeText={(text) => change(index, 'a', text)}
                 accessibilityLabel={s.scoreLabel(set, teamA)}
                 error={error !== undefined}
-                autoFocus={index === 0 && initial.length === 0}
+                autoFocus={index === 0 && initial.length === 0 && !locked}
+                editable={!locked}
                 testID={`result-set-${set}-a`}
               />
               <Text style={styles.colon} accessibilityElementsHidden importantForAccessibility="no">
@@ -118,6 +126,7 @@ export function ResultForm({
                 onChangeText={(text) => change(index, 'b', text)}
                 accessibilityLabel={s.scoreLabel(set, teamB)}
                 error={error !== undefined}
+                editable={!locked}
                 testID={`result-set-${set}-b`}
               />
             </View>
@@ -134,7 +143,7 @@ export function ResultForm({
           </View>
         );
       })}
-      <Text style={formStyles.hint}>{s.hint}</Text>
+      {locked ? null : <Text style={formStyles.hint}>{s.hint}</Text>}
       {resultError ? (
         <Banner alert testID="result-error">
           {s.errors[resultError]}
@@ -152,7 +161,9 @@ export function ResultForm({
           />
         ) : null}
         <Button label={t.common.cancel} variant="secondary" compact onPress={onCancel} />
-        <Button label={t.common.save} compact onPress={save} testID="result-save" />
+        {locked ? null : (
+          <Button label={t.common.save} compact onPress={save} testID="result-save" />
+        )}
       </View>
     </View>
   );

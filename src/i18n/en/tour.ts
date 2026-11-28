@@ -95,6 +95,7 @@ export const tour = {
     tournamentTeams: 'Tournament teams',
     tournamentTeam: 'A team’s matches',
     tournamentResult: 'Result',
+    tournamentLive: 'Tournament live scoring',
   } satisfies Record<TourPage, string>,
   steps: {
     profiles: {
@@ -361,6 +362,16 @@ export const tour = {
       matches: {
         title: 'One team’s matches',
         text: 'The team’s rank and numbers, then how it played against each of the others. Tap a match to open its result.',
+      },
+    },
+    tournamentLive: {
+      score: {
+        title: 'Score point by point',
+        text: 'Tap the team that won the rally. “End set” closes a set when it is over, whatever its length; the next point starts the next set. “Undo” takes the last step back.',
+      },
+      details: {
+        title: 'Point details',
+        text: 'After a point you can say how it was won: attack, ace, block or the opponent’s error. If the team has players, you can also say who. All of it is optional.',
       },
     },
     tournamentResult: {

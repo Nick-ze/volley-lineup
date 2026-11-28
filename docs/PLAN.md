@@ -838,3 +838,31 @@ The owner's request after 12.0.0: "add that you can write the matches in yoursel
 - [x] No sideways scrolling; every control at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font (`scripts/layout-scan.js`, screenshots).
 - [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
 - [x] Released as 12.1.0: https://github.com/Nick-ze/volley-lineup/releases/tag/v12.1.0
+
+## 52. v12.2 — Players and live scoring in a hosted tournament
+
+The owner's request after 12.1.0: players for a tournament's teams, shown by number or by name, and a live mode like the one for a team's own matches — only the scoring, no rotations — that asks its questions with or without players ("team 1 blocked 4 times", or "player 6" / "Kelly scored an ace"). Two questions put to the owner were not answered; the simple choices were built (DECISIONS #393).
+
+- **Players are optional.** On a tournament team's screen: "Players are shown by" **Number** or **Name** (per team), a number field and a name field with "Add". A player has a number (0–999), a name, or both; a number is unique in its team; at most 30 players per team. Edit is inline, Delete asks.
+- **Live scoring** of any match of a hosted tournament, opened with "Live" at the top right of its result screen (`/tournament/[tournamentId]/live?a=&b=` or `?m=`): the set's score in large numbers, the sets won, one large "Point" button per team, "Undo" and "End set".
+- **A set ends when the scorer taps "End set"** (a hosted tournament has no rule on a set's length); it is allowed when the two scores differ. The next point starts the next set. The match is over as its format says (best of N, or all sets played); then the screen says who won and offers "Done". "Undo" takes back the last step, also the end of a set or of the match.
+- **Point details, all optional**: after a point the app asks how it was won — Attack, Ace, Block, Opponent's error. If the team in question has players it then asks who (for an error: who of the other team); a team without players is not asked. "Point details" under the board counts them per team ("4 blocks") and per player ("Kelly: 1 ace", or "#6: 1 ace" for a team shown by number).
+- **No rotations, lineups, serve, time-outs or substitutions** in this live mode.
+- **Elsewhere**: the Matches tab shows a running set's score in yellow; the result screen shows the point details and, for a match scored live, the sets as counted — to change them by hand, "Delete live details" (asks; the set scores stay). A team's screen adds up its point details over all its matches. Results, plan and table read the set scores as before; a running set doesn't count.
+- **Data model**: `HostedPlayer { id, teamId, number?, name? }` in `hostedPlayers`; `HostedTeam.playerLabel?: 'number' | 'name'`; `HostedResult.live?: HostedPoint[][]` (one list of rallies per set; one more than `sets` while a set is being played); `HostedPoint { team, kind?, playerId? }`. Store **v16**, export **schemaVersion 13** (older data and files get an empty player list). Not in cloud sync; nothing under `src/lib/sync`, `src/domain/sync*` or `supabase/` changes.
+
+## 53. v12.2 acceptance checklist
+
+- [x] A team's players can be added, edited and deleted; a number can't be used twice in a team; a player needs a number or a name; a 31st player is refused with a text.
+- [x] "Players are shown by" Number / Name changes how the team's players are named in the list, in the live questions and in the point details.
+- [x] "Live" on a result screen opens the match's live scoring, for a round robin's pair and for an added match; a tap on "Point" counts for that team; "Undo" takes back points, the end of a set and the end of the match.
+- [x] "End set" is offered only when the scores differ; the finished set shows in the Matches tab, the table and the team's screen; a running set shows in the Matches tab and counts nowhere.
+- [x] After a point the kind can be chosen, changed and taken back; a team with players is asked who, a team without isn't; "Opponent's error" asks for a player of the other team.
+- [x] "Point details" counts per team and per player on the live screen and the result screen; a team's screen adds up its matches.
+- [x] A match scored live shows its sets locked on the result screen; "Delete live details" asks, keeps the set scores and frees the form. Saving sets by hand drops nothing silently.
+- [x] Deleting a player keeps how the points were won and removes only the name; players go with their team, tournament and profile.
+- [x] Data stored by 12.1.0 (store 15) and export files v1–v12 open without loss; a round trip keeps players, how a team is shown, the rallies and a running set.
+- [x] A team's own matches and their live mode are unchanged (their tests are untouched).
+- [x] No sideways scrolling; every control at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font (`scripts/layout-scan.js`, screenshots).
+- [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
+- [ ] Released as 12.2.0.

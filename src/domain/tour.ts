@@ -55,6 +55,7 @@ export const OTHER_PAGES = [
   'tournamentTeams',
   'tournamentTeam',
   'tournamentResult',
+  'tournamentLive',
 ] as const satisfies readonly TourPage[];
 
 /** Every page with tips (quick pages first). */

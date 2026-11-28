@@ -306,6 +306,24 @@ makes the plan or he enters the matches himself.
   empty. Store 15 and export schema 12 give older tournaments `plan: 'roundRobin'`. Not in cloud sync.
 - One pull request (#131), checked in a browser and in Jest (2998 tests); not on a phone.
 
+### v12.2: players and live scoring in a hosted tournament (store 16, export schema 13)
+
+The owner's request after 12.1.0 (PLAN §52–53, DECISIONS #393–#403): players for a tournament's teams, shown by number
+or by name, and a live mode for tournament matches that only keeps the score.
+
+- **Players** (optional, on a tournament team's screen): a number, a name or both; "Players are shown by" Number /
+  Name per team; at most 30 per team, a number once per team.
+- **Live** (the "Live" button on a match's result screen, `/tournament/[tournamentId]/live`): one "Point" button per
+  team, "Undo" (also takes back the end of a set), "End set" (the scorer ends a set; the scores must differ). The match
+  is over as its format says. No rotations, lineups, serve, time-outs or substitutions.
+- **Point details** (optional, after each point): Attack, Ace, Block, Opponent's error; a team with players is then
+  asked who. Counted per team and per player on the live screen, the result screen and (all matches) the team's screen.
+- **Elsewhere**: a running set shows in yellow on the Matches tab and counts nowhere until it is ended; a match scored
+  live has its sets locked on the result screen until "Delete live details".
+- **Data**: `hostedPlayers`, `HostedTeam.playerLabel`, `HostedResult.live` (rallies per set). Store 16 and export
+  schema 13 give older data an empty player list. Not in cloud sync.
+- Two pull requests (#132, #133), checked in a browser and in Jest (3114 tests); not on a phone.
+
 ## Backend
 
 Since v10 the app can sync shared teams through **Supabase** (hosted project "Volleylineup manager",

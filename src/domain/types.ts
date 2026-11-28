@@ -376,7 +376,9 @@ export type TourPage =
   | 'tournamentMatches'
   | 'tournamentTeams'
   | 'tournamentTeam'
-  | 'tournamentResult';
+  | 'tournamentResult'
+  // v12.2: live scoring of a tournament match
+  | 'tournamentLive';
 
 /* ---- v10.0 accounts and cloud sync (store v13 `sync`; device-only, never exported) ---- */
 

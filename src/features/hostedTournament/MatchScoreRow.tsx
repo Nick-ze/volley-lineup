@@ -21,15 +21,15 @@ export interface MatchScoreRowProps {
  * A match as a scoreboard line: the two names one above the other; at the right one narrow
  * column per set with the two scores, and a last column with the sets won. The winner's name and
  * sets are bold in full colour, the loser's grey; a draw shows both in full colour. A match that
- * is still running shows both names in full colour and the set counts in grey. A match without a
- * result shows "–" and a chevron.
+ * is still running shows both names in full colour and the set counts in grey; a set that is being
+ * scored live is one more column in yellow. A match without a result shows "–" and a chevron.
  */
 export function MatchScoreRow({ match, onPress, testID }: MatchScoreRowProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const t = useT();
   const s = t.tournament.matches;
-  const { teamA, teamB, sets, outcome } = match;
+  const { teamA, teamB, sets, outcome, running: liveScore } = match;
   const open = outcome.state === 'open';
   // Not over yet: the sets so far are shown, the set counts stay quiet (a draw's are bold).
   const running = outcome.state === 'running';
@@ -40,13 +40,22 @@ export function MatchScoreRow({ match, onPress, testID }: MatchScoreRowProps) {
   const setList = sets.map((x) => `${x.a}:${x.b}`).join(', ');
   const label = open
     ? s.label.open(teamA.name, teamB.name)
-    : (running ? s.label.running : s.label.result)(
-        teamA.name,
-        teamB.name,
-        outcome.setsA,
-        outcome.setsB,
-        setList,
-      );
+    : liveScore
+      ? s.label.live(
+          teamA.name,
+          teamB.name,
+          outcome.setsA,
+          outcome.setsB,
+          sets.length + 1,
+          `${liveScore.a}:${liveScore.b}`,
+        )
+      : (running ? s.label.running : s.label.result)(
+          teamA.name,
+          teamB.name,
+          outcome.setsA,
+          outcome.setsB,
+          setList,
+        );
   return (
     <Pressable
       accessibilityRole="button"
@@ -82,6 +91,13 @@ export function MatchScoreRow({ match, onPress, testID }: MatchScoreRowProps) {
               <Text style={[styles.score, set.b > set.a && styles.scoreWon]}>{set.b}</Text>
             </View>
           ))}
+          {liveScore ? (
+            // The set being scored live: yellow, the colour of what is current.
+            <View style={styles.column} testID="match-running">
+              <Text style={[styles.score, styles.live]}>{liveScore.a}</Text>
+              <Text style={[styles.score, styles.live]}>{liveScore.b}</Text>
+            </View>
+          ) : null}
           <View style={[styles.column, styles.total]}>
             <Text style={[styles.sets, (lostA || running) && styles.lost]}>{outcome.setsA}</Text>
             <Text style={[styles.sets, (lostB || running) && styles.lost]}>{outcome.setsB}</Text>
@@ -118,6 +134,7 @@ const useStyles = makeStyles((theme) => {
       color: theme.colors.textMuted,
     },
     scoreWon: { fontWeight: '700', color: theme.colors.text },
+    live: { fontWeight: '700', color: theme.colors.highlightText },
     total: { marginLeft: spacing.xs },
     sets: {
       ...typography.body,

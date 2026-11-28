@@ -141,6 +141,15 @@ export const tournament = {
       open: (teamA: string, teamB: string) => `${teamA} – ${teamB}, not played yet. Enter result`,
       result: (teamA: string, teamB: string, setsA: number, setsB: number, sets: string) =>
         `${teamA} – ${teamB}, ${setsA}:${setsB} (${sets}). Change result`,
+      /** v12.2: a set is being scored live. */
+      live: (
+        teamA: string,
+        teamB: string,
+        setsA: number,
+        setsB: number,
+        set: number,
+        score: string,
+      ) => `${teamA} – ${teamB}, ${setsA}:${setsB}, set ${set} running ${score}. Open result`,
       running: (teamA: string, teamB: string, setsA: number, setsB: number, sets: string) =>
         `${teamA} – ${teamB}, ${setsA}:${setsB} (${sets}), not finished. Change result`,
     },
@@ -218,6 +227,57 @@ export const tournament = {
       TOO_LONG: 'This is too long.',
       TOO_MANY: (max: number) => `A team has at most ${max} players.`,
     },
+  },
+  /** v12.2: live scoring of a tournament match (only the score, with optional point details). */
+  live: {
+    title: 'Live',
+    open: 'Live',
+    openLabel: 'Live: score this match point by point',
+    set: (n: number) => `Set ${n}`,
+    sets: (a: number, b: number) => `Sets ${a}:${b}`,
+    colon: ':',
+    scoreLabel: (set: number, teamA: string, a: number, teamB: string, b: number) =>
+      `Set ${set}: ${teamA} ${a}, ${teamB} ${b}`,
+    point: 'Point',
+    pointLabel: (team: string) => `Point ${team}`,
+    undo: 'Undo',
+    undoLabel: 'Undo the last point',
+    undoSetLabel: (set: number) => `Undo: play set ${set} on`,
+    endSet: (set: number) => `End set ${set}`,
+    endSetHint: 'A set can end when the two scores differ.',
+    between: (set: number, a: number, b: number) => `Set ${set} ended ${a}:${b}.`,
+    nextSet: (set: number) => `The next point starts set ${set}.`,
+    over: {
+      win: (team: string, a: number, b: number) => `${team} wins ${a}:${b}`,
+      draw: (a: number, b: number) => `Draw ${a}:${b}`,
+    },
+    done: 'Done',
+    tag: {
+      label: 'Optional: how was the point won?',
+      kinds: { attack: 'Attack', ace: 'Ace', block: 'Block', error: 'Opponent’s error' },
+      kindLabel: (kind: string, team: string) => `${kind}: how ${team} won the point`,
+      clearKindLabel: (kind: string) => `${kind}: remove this detail`,
+      who: (kind: string, team: string) => `Optional: who? (${kind}, ${team})`,
+      errorWho: (team: string) => `Optional: whose error? (${team})`,
+      playerLabel: (player: string, full: string) => `${player}: ${full}`,
+      close: '✕',
+      closeLabel: '✕, close the point details',
+    },
+    stats: {
+      title: 'Point details',
+      none: 'No point details yet. After a point you can say how it was won.',
+      attack: (n: number) => plural(n, 'attack point', 'attack points'),
+      ace: (n: number) => plural(n, 'ace', 'aces'),
+      block: (n: number) => plural(n, 'block', 'blocks'),
+      error: (n: number) => plural(n, 'error', 'errors'),
+      teamLabel: (team: string, line: string) => `${team}: ${line}`,
+      playerLine: (player: string, line: string) => `${player}: ${line}`,
+    },
+    locked:
+      'This match was scored live. To change the sets by hand, delete the live details first.',
+    deleteLive: 'Delete live details',
+    confirmDeleteLive: 'Delete the point-by-point details of this match? The set scores stay.',
+    notFound: 'This match was not found.',
   },
   result: {
     title: 'Result',

@@ -92,6 +92,7 @@ export const tour: Strings['tour'] = {
     tournamentTeams: 'Turnierteams',
     tournamentTeam: 'Spiele eines Teams',
     tournamentResult: 'Ergebnis',
+    tournamentLive: 'Turnier live zählen',
   },
   steps: {
     profiles: {
@@ -358,6 +359,16 @@ export const tour: Strings['tour'] = {
       matches: {
         title: 'Die Spiele eines Teams',
         text: 'Rang und Zahlen des Teams, danach, wie es gegen jedes andere gespielt hat. Tippe auf ein Spiel, um sein Ergebnis zu öffnen.',
+      },
+    },
+    tournamentLive: {
+      score: {
+        title: 'Punkt für Punkt zählen',
+        text: 'Tippe auf das Team, das den Ballwechsel gewonnen hat. „Satz beenden“ schließt einen Satz, wenn er vorbei ist, egal wie lang er war; der nächste Punkt beginnt den nächsten Satz. „Rückgängig“ nimmt den letzten Schritt zurück.',
+      },
+      details: {
+        title: 'Punktdetails',
+        text: 'Nach einem Punkt kannst du angeben, wie er fiel: Angriff, Ass, Block oder Fehler des Gegners. Hat das Team Spieler, kannst du auch angeben, wer es war. Alles ist optional.',
       },
     },
     tournamentResult: {

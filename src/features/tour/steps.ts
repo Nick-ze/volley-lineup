@@ -183,6 +183,17 @@ const STEPS: Record<TourPage, (t: Strings) => TourStep[]> = {
   tournamentTeam: (t) => [
     step(t.tour.steps.tournamentTeam.matches, { kind: 'row', label: t.tour.sample.opponent }),
   ],
+  tournamentLive: (t) => [
+    step(t.tour.steps.tournamentLive.score, {
+      kind: 'score',
+      us: t.tournament.live.point,
+      them: t.tournament.live.point,
+    }),
+    step(t.tour.steps.tournamentLive.details, {
+      kind: 'tap',
+      label: t.tournament.live.tag.kinds.ace,
+    }),
+  ],
   tournamentResult: (t) => [
     step(t.tour.steps.tournamentResult.sets, {
       kind: 'form',
