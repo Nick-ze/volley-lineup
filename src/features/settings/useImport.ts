@@ -6,6 +6,7 @@ import {
   type ImportSummary,
   type TransferData,
 } from '@/domain/exportSchema';
+import { hostedOf, importHosted } from '@/domain/hostedTournament';
 import {
   importChangesMatches,
   importWithSharedTeams,
@@ -131,12 +132,24 @@ export function useImport() {
         setState({ step: 'error', error: 'LIVE_MATCH' });
         return;
       }
+      // v12: the hosted tournaments follow the same mode (they are never shared): Replace takes
+      // the file's, Merge matches by id. Only tournaments of profiles the import leaves here.
+      const hosted = importHosted(
+        hostedOf(store),
+        hostedOf(file),
+        mode,
+        new Set(result.data.profiles.map((p) => p.id)),
+      );
+      if (!hosted.ok) {
+        setState({ step: 'error', error: hosted.error });
+        return;
+      }
       // The pictures are in memory at once (`putPhotos` sets them before its first await) and
       // referred to in the same step, so the prune can't drop them in between; they are
       // written to storage while the screen moves on. Photos nobody refers to afterwards
       // (Replace) are removed by the prune.
       const saving = putPhotos(result.data.photos);
-      store.replaceAll(result.data);
+      store.replaceAll({ ...result.data, ...hosted.hosted });
       selectOnlyProfile();
       await saving;
       setState({ step: 'done', mode });

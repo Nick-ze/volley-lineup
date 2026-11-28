@@ -2,10 +2,23 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { isCaptain } from '@/domain/captain';
 import { shortName } from '@/domain/playerNames';
-import type { LineupPreset, Match, Opponent, Player, Season, Team } from '@/domain/types';
+import type {
+  HostedResult,
+  HostedTeam,
+  HostedTournament,
+  LineupPreset,
+  Match,
+  Opponent,
+  Player,
+  Season,
+  Team,
+} from '@/domain/types';
 
 import { useAppStore } from './appStore';
 import {
+  selectHostedResults,
+  selectHostedTeams,
+  selectHostedTournaments,
   selectMatchesForSeason,
   selectMatchesForTeam,
   selectOpponentsForSeason,
@@ -91,3 +104,18 @@ export const useIsCaptain = (player: Pick<Player, 'id' | 'teamId'> | undefined):
         )
       : false,
   );
+
+/** v14: the profile's hosted tournaments, newest first. */
+export const useHostedTournaments = (profileId: string | null | undefined): HostedTournament[] =>
+  useAppStore(useShallow((s) => (profileId ? selectHostedTournaments(s, profileId) : [])));
+
+export const useHostedTournament = (id: string | null | undefined): HostedTournament | undefined =>
+  useAppStore((s) => s.hostedTournaments.find((x) => x.id === id));
+
+/** v14: a hosted tournament's teams in the order they were added. */
+export const useHostedTeams = (tournamentId: string | null | undefined): HostedTeam[] =>
+  useAppStore(useShallow((s) => (tournamentId ? selectHostedTeams(s, tournamentId) : [])));
+
+/** v14: a hosted tournament's results. */
+export const useHostedResults = (tournamentId: string | null | undefined): HostedResult[] =>
+  useAppStore(useShallow((s) => (tournamentId ? selectHostedResults(s, tournamentId) : [])));

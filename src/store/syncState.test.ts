@@ -38,14 +38,16 @@ beforeEach(() => resetStores());
 describe('store v13 migration', () => {
   it('v12 → v13 adds an empty sync state and changes nothing else', () => {
     const v12 = { teams: [{ id: 't1', profileId: 'p', name: 'H', createdAt: '2026-01-01' }] };
-    expect(migrateStore(v12, 12)).toEqual({ ...v12, sync: emptySync() });
+    // (v12.0: the v13 → v14 step adds the empty hosted-tournament lists after it)
+    const hosted = { hostedTournaments: [], hostedTeams: [], hostedResults: [] };
+    expect(migrateStore(v12, 12)).toEqual({ ...v12, sync: emptySync(), ...hosted });
     // a state that already has one keeps it
     const v13 = { ...v12, sync: shared() };
-    expect(migrateStore(v13, 12)).toEqual(v13);
+    expect(migrateStore(v13, 12)).toEqual({ ...v13, ...hosted });
     expect(migrateStore(null, 12)).toBeNull();
   });
 
-  it('v1 data migrates all the way to v13', () => {
+  it('v1 data migrates all the way to the current version', () => {
     const up = migrateStore({ profiles: [], teams: [], players: [], matches: [] }, 1) as Record<
       string,
       unknown
@@ -65,7 +67,7 @@ describe('sync state in the store', () => {
     store().setSyncAccount({ userId: 'u1', email: 'a@example.test', profileId: 'p1' });
     await new Promise((r) => setTimeout(r, 0));
     const parsed = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
-    expect(parsed.version).toBe(13);
+    expect(parsed.version).toBe(14);
     expect(parsed.state.sync).toEqual({
       deviceId: 'dev9',
       account: { userId: 'u1', email: 'a@example.test', profileId: 'p1' },
@@ -141,13 +143,13 @@ describe('sync state in the store', () => {
     expect(store().sync.teams[TEAM_ID]?.role).toBe('manager');
   });
 
-  it('the export ignores the sync state (schema 10 unchanged)', () => {
+  it('the export ignores the sync state', () => {
     seedApp({ players: [makePlayer(1, 'Anna', ['S'])] });
     const before = buildExport({ ...selectAppData(store()), photos: [] }, { now: NOW });
     useAppStore.setState({ sync: shared() });
     const after = buildExport({ ...selectAppData(store()), photos: [] }, { now: NOW });
     expect(JSON.stringify(after)).toBe(JSON.stringify(before));
-    expect(after.schemaVersion).toBe(10);
+    expect(after.schemaVersion).toBe(11);
   });
 });
 

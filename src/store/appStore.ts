@@ -3,13 +3,32 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { chooseCaptain } from '@/domain/captain';
+import {
+  emptyHosted,
+  hostedOf,
+  hostedOfProfiles,
+  nextTeamOrder,
+  pairKey,
+  teamsOfTournament,
+  withoutHostedTeam,
+  withoutHostedTournament,
+} from '@/domain/hostedTournament';
 import { emptySetLineup } from '@/domain/lineup';
 import { emptyPresetLineup, removePlayerFromPreset, startersFor } from '@/domain/presets';
 import { removePlayerEverywhere } from '@/domain/playerUsage';
 import { goneTeamLinks, withoutTeamLinks } from '@/domain/syncAccess';
 import { storedSyncData } from '@/domain/syncSchema';
 import { withSeen } from '@/domain/tour';
-import type { LineupPreset, Match, Opponent, Season, SyncData } from '@/domain/types';
+import type {
+  HostedResult,
+  HostedTeam,
+  HostedTournament,
+  LineupPreset,
+  Match,
+  Opponent,
+  Season,
+  SyncData,
+} from '@/domain/types';
 import { createId } from '@/lib/id';
 
 import { migrateStore, STORE_VERSION } from './migrations';
@@ -60,6 +79,7 @@ export const emptyData = (): AppData => ({
   presets: [],
   seasons: [],
   opponents: [],
+  ...emptyHosted(),
 });
 
 /** v10: no account, no shared teams (the device id is kept where it exists). */
@@ -123,6 +143,11 @@ export const useAppStore = create<AppStore>()(
             matches: s.matches.filter((m) => !teamIds.has(m.teamId)),
             presets: s.presets.filter((p) => !teamIds.has(p.teamId)),
             ...withoutSeasonsOf(s, (x) => teamIds.has(x.teamId)),
+            // v14: the profile's hosted tournaments go with it (their teams and results too).
+            ...hostedOfProfiles(
+              hostedOf(s),
+              new Set(s.profiles.filter((p) => p.id !== id).map((p) => p.id)),
+            ),
             currentProfileId: s.currentProfileId === id ? null : s.currentProfileId,
             // v10: the account linked to this profile is unlinked, and so are the shared teams
             // that go with the profile — in this same write (audit C1): a link left behind
@@ -269,6 +294,65 @@ export const useAppStore = create<AppStore>()(
         }));
         return starters;
       },
+      addHostedTournament: (input) => {
+        const tournament: HostedTournament = { id: createId(), createdAt: now(), ...input };
+        set((s) => ({ hostedTournaments: [...s.hostedTournaments, tournament] }));
+        return tournament;
+      },
+      updateHostedTournament: (id, value) =>
+        set((s) => ({
+          hostedTournaments: s.hostedTournaments.map((x) =>
+            x.id === id
+              ? { id: x.id, profileId: x.profileId, createdAt: x.createdAt, ...value }
+              : x,
+          ),
+        })),
+      deleteHostedTournament: (id) => set((s) => withoutHostedTournament(hostedOf(s), id)),
+      addHostedTeam: (tournamentId, name) => {
+        const team: HostedTeam = {
+          id: createId(),
+          tournamentId,
+          name,
+          order: nextTeamOrder(get().hostedTeams, tournamentId),
+        };
+        set((s) => ({ hostedTeams: [...s.hostedTeams, team] }));
+        return team;
+      },
+      renameHostedTeam: (id, name) =>
+        set((s) => ({ hostedTeams: s.hostedTeams.map((x) => (x.id === id ? { ...x, name } : x)) })),
+      deleteHostedTeam: (id) => set((s) => withoutHostedTeam(hostedOf(s), id)),
+      setHostedResult: (tournamentId, teamId, otherTeamId, sets) => {
+        const order = teamsOfTournament(get().hostedTeams, tournamentId).map((x) => x.id);
+        const [one, other] = [order.indexOf(teamId), order.indexOf(otherTeamId)];
+        if (one < 0 || other < 0 || one === other) return undefined;
+        // Stored as seen from the pair's first team in the tournament's order.
+        const flip = one > other;
+        const key = pairKey(teamId, otherTeamId);
+        const old = get().hostedResults.find(
+          (r) => r.tournamentId === tournamentId && pairKey(r.teamAId, r.teamBId) === key,
+        );
+        const result: HostedResult = {
+          id: old?.id ?? createId(),
+          tournamentId,
+          teamAId: flip ? otherTeamId : teamId,
+          teamBId: flip ? teamId : otherTeamId,
+          sets: sets.map((x) => (flip ? { a: x.b, b: x.a } : { a: x.a, b: x.b })),
+        };
+        set((s) => ({
+          hostedResults: old
+            ? s.hostedResults.map((r) => (r.id === old.id ? result : r))
+            : [...s.hostedResults, result],
+        }));
+        return result;
+      },
+      deleteHostedResult: (tournamentId, teamId, otherTeamId) =>
+        set((s) => ({
+          hostedResults: s.hostedResults.filter(
+            (r) =>
+              r.tournamentId !== tournamentId ||
+              pairKey(r.teamAId, r.teamBId) !== pairKey(teamId, otherTeamId),
+          ),
+        })),
       replaceAll: (data) =>
         set((s) => {
           // v10: keep the shared teams' bookkeeping; the account link goes with its profile, and
@@ -285,6 +369,8 @@ export const useAppStore = create<AppStore>()(
             presets: data.presets,
             seasons: data.seasons,
             opponents: data.opponents,
+            // v14: hosted tournaments, only of profiles in the new data.
+            ...hostedOfProfiles(hostedOf(data), new Set(data.profiles.map((p) => p.id))),
             currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
               ? s.currentProfileId
               : null,
@@ -328,6 +414,9 @@ export const useAppStore = create<AppStore>()(
         presets: s.presets,
         seasons: s.seasons,
         opponents: s.opponents,
+        hostedTournaments: s.hostedTournaments,
+        hostedTeams: s.hostedTeams,
+        hostedResults: s.hostedResults,
         currentProfileId: s.currentProfileId,
         language: s.language,
         chipLabel: s.chipLabel,
@@ -363,5 +452,8 @@ export function selectAppData(s: AppData): AppData {
     presets: s.presets,
     seasons: s.seasons,
     opponents: s.opponents,
+    hostedTournaments: s.hostedTournaments,
+    hostedTeams: s.hostedTeams,
+    hostedResults: s.hostedResults,
   };
 }

@@ -425,10 +425,24 @@ describe('whole data', () => {
  */
 /** v10 (store v13): what the v12 → v13 step adds — no account, no shared teams. */
 const NO_SYNC = { deviceId: null, account: null, teams: {} };
+/** v12 (store v14): what the v13 → v14 step adds — no hosted tournaments. */
+const NO_HOSTED = { hostedTournaments: [], hostedTeams: [], hostedResults: [] };
 
 function withoutEmptySeasons(state: unknown): unknown {
-  const { seasons, opponents, themeMode, dyslexiaFont, tourMode, tourSeen, sync, ...rest } =
-    state as Record<string, unknown>;
+  const {
+    seasons,
+    opponents,
+    themeMode,
+    dyslexiaFont,
+    tourMode,
+    tourSeen,
+    sync,
+    hostedTournaments,
+    hostedTeams,
+    hostedResults,
+    ...rest
+  } = state as Record<string, unknown>;
+  expect({ hostedTournaments, hostedTeams, hostedResults }).toEqual(NO_HOSTED);
   expect(sync).toEqual(NO_SYNC);
   expect(seasons).toEqual([]);
   expect(opponents).toEqual([]);
@@ -546,6 +560,7 @@ describe('migrations', () => {
     it('replaces a malformed sync slice by the empty one instead of failing', () => {
       expect(migrateStore({ sync: { deviceId: 'd1', teams: 'x' } }, 13, 14)).toEqual({
         sync: { deviceId: 'd1', account: null, teams: {} },
+        ...NO_HOSTED,
       });
       expect(migrateStore(null, 13, 14)).toBeNull();
     });
@@ -765,7 +780,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(13); // v10.0: device-only sync state
+    expect(STORE_VERSION).toBe(14); // v12.0: hosted tournaments
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -779,7 +794,7 @@ describe('migrations', () => {
     };
     // (v9.0: the v10 → v11 step adds the tour settings after it, see the next test)
     const tour = { tourMode: null, tourSeen: [] };
-    const sync = { sync: NO_SYNC }; // v10.0: the v12 → v13 step
+    const sync = { sync: NO_SYNC, ...NO_HOSTED }; // v10.0: the v12 → v13 step; v12.0: v13 → v14
     expect(migrateStore(v9, 9)).toEqual({
       ...v9,
       themeMode: 'dark',
@@ -808,10 +823,11 @@ describe('migrations', () => {
       tourMode: null,
       tourSeen: [],
       sync: NO_SYNC,
+      ...NO_HOSTED,
     });
     // a state that already has the settings keeps them
     const v11 = { ...v10, tourMode: 'quick', tourSeen: ['profiles'] };
-    expect(migrateStore(v11, 10)).toEqual({ ...v11, sync: NO_SYNC });
+    expect(migrateStore(v11, 10)).toEqual({ ...v11, sync: NO_SYNC, ...NO_HOSTED });
     expect(migrateStore(null, 10)).toBeNull();
   });
 
@@ -829,8 +845,41 @@ describe('migrations', () => {
       tourMode: 'quick',
       tourSeen: ['profiles'],
     };
-    expect(migrateStore(v11, 11)).toEqual({ ...v11, sync: NO_SYNC });
+    expect(migrateStore(v11, 11)).toEqual({ ...v11, sync: NO_SYNC, ...NO_HOSTED });
     expect(migrateStore(null, 11)).toBeNull();
+  });
+
+  it('migrates v13 data (v10 / v11 app): gains the empty hosted-tournament lists, nothing else changes', () => {
+    const v13 = {
+      profiles: [{ id: 'p', name: 'Coach', color: '#FF6B00', createdAt: '2026-01-01' }],
+      teams: [{ id: 't1', profileId: 'p', name: 'Herren', createdAt: '2026-01-01' }],
+      players: [],
+      matches: [],
+      presets: [],
+      seasons: [],
+      opponents: [],
+      currentProfileId: 'p',
+      language: 'de',
+      chipLabel: 'name',
+      themeMode: 'light',
+      dyslexiaFont: true,
+      tourMode: 'quick',
+      tourSeen: ['profiles'],
+      sync: NO_SYNC,
+    };
+    expect(migrateStore(v13, 13)).toEqual({ ...v13, ...NO_HOSTED });
+    // a state that already has tournaments keeps them
+    const tournament = {
+      id: 'h1',
+      profileId: 'p',
+      name: 'Winter Cup',
+      setsPerMatch: 3,
+      matchEnd: 'bestOf',
+      createdAt: '2026-11-28',
+    };
+    const v14 = { ...v13, ...NO_HOSTED, hostedTournaments: [tournament] };
+    expect(migrateStore(v14, 13)).toEqual(v14);
+    expect(migrateStore(null, 13)).toBeNull();
   });
 
   it('migrates old data (v1) through to v11 with the tour not chosen', () => {

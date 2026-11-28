@@ -1,4 +1,9 @@
+import type { HostedData, TournamentFormValue } from '@/domain/hostedTournament';
 import type {
+  HostedResult,
+  HostedSetScore,
+  HostedTeam,
+  HostedTournament,
   LineupPreset,
   ManagerProfile,
   Match,
@@ -16,7 +21,7 @@ import type { PresetLineup } from '@/domain/presets';
 import type { ThemeMode } from '@/theme/theme';
 
 /** The persisted data. Bump STORE_VERSION and add a migration when this shape changes. */
-export interface AppData {
+export interface AppData extends HostedData {
   profiles: ManagerProfile[];
   teams: Team[];
   players: Player[];
@@ -26,7 +31,15 @@ export interface AppData {
   /** v9 (app 7.0): seasons / tournaments and their opponent teams. */
   seasons: Season[];
   opponents: Opponent[];
+  // v14 (app 12.0), from `HostedData`: `hostedTournaments`, `hostedTeams`, `hostedResults` —
+  // tournaments the coach hosts. They belong to a profile and are never synced.
 }
+
+/**
+ * The team collections (everything of `AppData` except the hosted tournaments): what an import
+ * or the sync engine hands to `replaceAll`.
+ */
+export type TeamCollections = Omit<AppData, keyof HostedData>;
 
 /** UI language (v2). English is the default; strings live in src/i18n. */
 export type Language = 'en' | 'de';
@@ -75,6 +88,8 @@ export type NewMatch = Pick<
 export type NewSeason = Pick<Season, 'teamId' | 'name' | 'kind'> &
   Partial<Pick<Season, 'startDate' | 'endDate' | 'location'>>;
 
+export type NewHostedTournament = Pick<HostedTournament, 'profileId'> & TournamentFormValue;
+
 export type NewPreset = Pick<LineupPreset, 'teamId' | 'name'> & Partial<PresetLineup>;
 
 export interface AppActions {
@@ -121,8 +136,33 @@ export interface AppActions {
   deletePreset(id: string): void;
   /** Creates or replaces the lineup of the team's single 'starters' preset. */
   setStarters(teamId: string, lineup: PresetLineup): LineupPreset;
+  // hosted tournaments (v14, app 12.0)
+  addHostedTournament(input: NewHostedTournament): HostedTournament;
+  /** Replaces name, date, place and settings (omitted optional fields are removed). */
+  updateHostedTournament(id: string, value: TournamentFormValue): void;
+  /** Deletes the tournament with its teams and results. */
+  deleteHostedTournament(id: string): void;
+  /** Adds a team at the end of the tournament's order. */
+  addHostedTeam(tournamentId: string, name: string): HostedTeam;
+  renameHostedTeam(id: string, name: string): void;
+  /** Deletes the team and every result it is part of. */
+  deleteHostedTeam(id: string): void;
+  /**
+   * Stores the result of a pair of teams (replacing the pair's earlier one). `sets` are as seen
+   * from `teamId` (`a` = that team); they are stored as seen from the pair's first team in the
+   * tournament's order. Does nothing when a team isn't in the tournament.
+   */
+  setHostedResult(
+    tournamentId: string,
+    teamId: string,
+    otherTeamId: string,
+    sets: readonly HostedSetScore[],
+  ): HostedResult | undefined;
+  /** Deletes the result of a pair of teams. */
+  deleteHostedResult(tournamentId: string, teamId: string, otherTeamId: string): void;
   // whole-data operations (used by import / settings)
-  replaceAll(data: AppData): void;
+  /** Replaces all data; hosted tournaments that are left out are removed. */
+  replaceAll(data: TeamCollections & Partial<HostedData>): void;
   resetAll(): void;
   setLanguage(language: Language): void;
   setChipLabel(chipLabel: ChipLabel): void;

@@ -41,6 +41,8 @@ export const transfer: Strings['transfer'] = {
       matches: number;
       presets: number;
       seasons: number;
+      /** v12: hosted tournaments; named only when the file has some. */
+      hostedTournaments?: number;
     }) =>
       [
         plural(s.teams, 'Team', 'Teams'),
@@ -49,6 +51,9 @@ export const transfer: Strings['transfer'] = {
         plural(s.seasons, 'Saison / Turnier', 'Saisons / Turniere'),
         plural(s.presets, 'gespeicherte Aufstellung', 'gespeicherte Aufstellungen'),
         plural(s.profiles, 'Profil', 'Profile'),
+        ...(s.hostedTournaments !== undefined && s.hostedTournaments > 0
+          ? [plural(s.hostedTournaments, 'eigenes Turnier', 'eigene Turniere')]
+          : []),
       ].join(', '),
     descriptions: (n: number) =>
       n === 1 ? 'Enthält 1 Spielerbeschreibung.' : `Enthält ${n} Spielerbeschreibungen.`,

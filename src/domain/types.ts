@@ -197,9 +197,66 @@ export interface LineupPreset {
   createdAt: string;
 }
 
+/* ---- v12.0 hosted tournaments (store v14, export v11; never synced) ---- */
+
+/** v12: how many sets a match of a hosted tournament has. */
+export type SetsPerMatch = 1 | 2 | 3 | 4 | 5;
+
+/**
+ * v12: how a match of a hosted tournament ends: `bestOf` (1, 3 or 5 sets) when a team has won
+ * more than half of the sets; `allSets` when every set was played (a draw is possible).
+ */
+export type MatchEnd = 'bestOf' | 'allSets';
+
+/**
+ * v12: a tournament the coach hosts: a neutral scoreboard for all its teams (names and results,
+ * no rosters, lineups or live scoring). It belongs to a profile, not to a team.
+ */
+export interface HostedTournament {
+  id: string;
+  profileId: string;
+  /** Unique within the profile, ignoring case. */
+  name: string;
+  /** ISO `YYYY-MM-DD`. */
+  date?: string;
+  location?: string;
+  setsPerMatch: SetsPerMatch;
+  /** Always `allSets` when `setsPerMatch` is 2 or 4. */
+  matchEnd: MatchEnd;
+  createdAt: string;
+}
+
+/** v12: a team of a hosted tournament (only a name). */
+export interface HostedTeam {
+  id: string;
+  tournamentId: string;
+  name: string;
+  /** The order added; the plan is built from it. */
+  order: number;
+}
+
+/** v12: one set of a hosted match: the ball points of the pair's two teams. */
+export interface HostedSetScore {
+  a: number;
+  b: number;
+}
+
+/**
+ * v12: a result of a hosted tournament. At most one per pair of teams; `teamAId` is the pair's
+ * team with the lower `order`. Only this is stored: plan, outcome and table are derived.
+ */
+export interface HostedResult {
+  id: string;
+  tournamentId: string;
+  teamAId: string;
+  teamBId: string;
+  /** 1 … `setsPerMatch` sets, in the order played. */
+  sets: HostedSetScore[];
+}
+
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 10;
+  schemaVersion: 11;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
@@ -211,6 +268,10 @@ export interface ExportFile {
   /** v8: seasons / tournaments and their opponent teams. */
   seasons: Season[];
   opponents: Opponent[];
+  /** v11 (app 12.0): hosted tournaments with their teams and results. */
+  hostedTournaments: HostedTournament[];
+  hostedTeams: HostedTeam[];
+  hostedResults: HostedResult[];
 }
 
 /* ---- v9.0 tutorial (device settings in the app store; not exported) ---- */
@@ -392,6 +453,9 @@ export type SetNumber = SetLineup['setNumber'];
 
 export const COURT_POSITIONS: readonly CourtPosition[] = [1, 2, 3, 4, 5, 6] as const;
 export const SET_NUMBERS: readonly SetNumber[] = [1, 2, 3, 4, 5] as const;
+/** v12: the choices for a hosted tournament's sets per match. */
+export const SETS_PER_MATCH: readonly SetsPerMatch[] = [1, 2, 3, 4, 5] as const;
+export const MATCH_ENDS: readonly MatchEnd[] = ['bestOf', 'allSets'] as const;
 /** v7: error types in display order. */
 export const ERROR_TYPES: readonly ErrorType[] = [
   'serve',

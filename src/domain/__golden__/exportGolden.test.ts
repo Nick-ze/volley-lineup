@@ -1,7 +1,9 @@
 /**
  * Export / import golden test (v8.3, DECISIONS #223): a fixed data set must export to exactly the
- * same bytes, and the v1–v9 files in this folder must import to exactly the same data, as when
- * the golden files were written (app 8.2.0). Refactors must keep these files unchanged.
+ * same bytes, and the v1–v10 files in this folder must import to exactly the same data, as when
+ * the golden files were written (app 8.2.0; rewritten for export schema 11 in app 12.0.0, which
+ * added two hosted tournaments to the input and `legacy-v10.json`, the 11.0.0 export of the
+ * input). Refactors must keep these files unchanged.
  *
  * The goldens are only rewritten on purpose: `UPDATE_GOLDEN=1 npx jest src/domain/__golden__`.
  * A schema change (new export `schemaVersion`) is the only good reason to do that.
@@ -15,16 +17,17 @@ import {
   parseImport,
   replaceData,
   serializeExport,
-  type TransferData,
+  type ExportData,
 } from '../exportSchema';
+import { hostedOf, importHosted } from '../hostedTournament';
 
 const DIR = __dirname;
 const NOW = new Date('2026-11-23T12:00:00.000Z');
 const UPDATE = process.env.UPDATE_GOLDEN === '1';
-const LEGACY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+const LEGACY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 const read = (name: string) => fs.readFileSync(path.join(DIR, name), 'utf8');
-const input = (): TransferData => JSON.parse(read('input.json'));
+const input = (): ExportData => JSON.parse(read('input.json'));
 const text = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 
 function expectGolden(name: string, actual: string): void {
@@ -82,6 +85,22 @@ describe('import golden', () => {
     expectGolden('replace-v9.json', text(replaceData(file)));
     expectGolden('merge-v7-into-input.json', text(mergeData(input(), parsed(7).file)));
     expectGolden('merge-v9-into-input.json', text(mergeData(input(), file)));
+  });
+
+  it('hosted tournaments: replace and merge give the same data (v11)', () => {
+    const device = hostedOf(input());
+    const profiles = new Set(input().profiles.map((p) => p.id));
+    // A v10 file has none: Replace empties them, Merge keeps the device's.
+    const old = hostedOf(parsed(10).file);
+    expect(importHosted(device, old, 'replace', profiles)).toEqual({ ok: true, hosted: old });
+    expect(importHosted(device, old, 'merge', profiles)).toEqual({ ok: true, hosted: device });
+    // The device's own export merged back changes nothing.
+    const exported = parseImport(serializeExport(buildExport(input(), { now: NOW })));
+    if (!exported.ok) throw new Error(exported.error);
+    expect(importHosted(device, hostedOf(exported.file), 'merge', profiles)).toEqual({
+      ok: true,
+      hosted: device,
+    });
   });
 
   it('an export of the input imports back to the same data (round trip)', () => {

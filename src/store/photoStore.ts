@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 import type { TransferData } from '@/domain/exportSchema';
+import type { HostedData } from '@/domain/hostedTournament';
 import { isCloudPhoto, referencedPhotoIds, withCloudPhotos } from '@/domain/photos';
 import { isUnchangedRecord } from '@/domain/syncAccess';
 import { playerRecordHash, recordKey, teamRecordHash } from '@/domain/syncRecords';
@@ -224,12 +225,12 @@ void whenPhotosLoaded();
  * The main store's data plus the photos as they are right now, without waiting. Only after
  * `whenPhotosLoaded()`; for code that must read and write the store in one step (the import).
  */
-export function transferSnapshotNow(): TransferData {
+export function transferSnapshotNow(): TransferData & HostedData {
   return { ...selectAppData(useAppStore.getState()), photos: photoList() };
 }
 
 /** Everything an export needs: the main store's data plus the photos (waits for them). */
-export async function transferSnapshot(): Promise<TransferData> {
+export async function transferSnapshot(): Promise<TransferData & HostedData> {
   await whenPhotosLoaded();
   return transferSnapshotNow();
 }

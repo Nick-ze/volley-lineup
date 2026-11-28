@@ -10,6 +10,7 @@ import {
   summarize,
   type TransferData,
 } from './exportSchema';
+import type { HostedData } from './hostedTournament';
 import { emptySetLineup } from './lineup';
 import type { ExportFile, Match, Opponent, Player, Season } from './types';
 
@@ -165,9 +166,13 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 10,
+      schemaVersion: 11,
       exportedAt: NOW.toISOString(),
       ...data,
+      // v11: no hosted tournaments in this data
+      hostedTournaments: [],
+      hostedTeams: [],
+      hostedResults: [],
     });
     // a copy, not the store's arrays
     expect(file.players).not.toBe(data.players);
@@ -199,6 +204,7 @@ describe('buildExport', () => {
       photos: 0,
       descriptions: 0,
       seasons: 0,
+      hostedTournaments: 0,
     });
   });
 });
@@ -235,6 +241,7 @@ describe('round trip', () => {
       photos: 0,
       descriptions: 0,
       seasons: 2,
+      hostedTournaments: 0,
     });
   });
 
@@ -284,7 +291,7 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([11, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', undefined])(
+  it.each([12, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', undefined])(
     'schemaVersion %p',
     (version) => {
       expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
@@ -307,7 +314,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
   });
 
@@ -318,7 +325,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v2);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(result.file.presets).toEqual([]);
     expect(result.summary.presets).toBe(0);
     expect(result.file.matches).toEqual(fixture().matches);
@@ -338,7 +345,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v3);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file).toEqual({ ...v3, schemaVersion: 10 });
+    expect(result.file).toEqual({ ...v3, schemaVersion: 11 });
   });
 
   it('a current file without presets is rejected as INVALID_SHAPE', () => {
@@ -770,7 +777,7 @@ describe('v5 libero switch and v6 formations', () => {
       setterAt: 4,
     });
     expect('roles' in result.file.presets[1]).toBe(false);
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
   });
 
   it.each([
@@ -902,7 +909,7 @@ describe('v7 photos, descriptions and error types', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1004,7 +1011,7 @@ describe('v8 seasons and opponents', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(result.file.seasons.map((x) => [x.id, x.teamId, x.name])).toEqual([
       ['season-t1', 't1', '2026/27'],
       ['season-t2', 't2', '2026'],
@@ -1132,7 +1139,7 @@ describe('v9 team pictures', () => {
     const result = parseImport(exportText(data));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(replaceData(result.file)).toEqual(data);
     expect(result.summary.photos).toBe(3);
   });
@@ -1157,7 +1164,7 @@ describe('v9 team pictures', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1202,7 +1209,7 @@ describe('v10 team captain', () => {
     const result = parseImport(serializeExport(file));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(replaceData(result.file)).toEqual(data);
   });
 
@@ -1216,7 +1223,7 @@ describe('v10 team captain', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(10);
+    expect(result.file.schemaVersion).toBe(11);
     expect(replaceData(result.file)).toEqual(fixture());
     expect(result.file.teams.every((t) => !('captainId' in t))).toBe(true);
   });
@@ -1319,5 +1326,139 @@ describe('v10 team captain', () => {
     expect(result.data.teams[0].captainId).toBe('p1');
     expect(result.data.teams[1]).toEqual(fixture().teams[1]);
     expect(result.data.players.find((p) => p.id === 'p4')?.teamId).toBe('t1');
+  });
+});
+
+describe('v11 hosted tournaments', () => {
+  const hosted = (): HostedData => ({
+    hostedTournaments: [
+      {
+        id: 'h1',
+        profileId: 'pr1',
+        name: 'Winter Cup',
+        date: '2026-12-05',
+        location: 'Halle Süd',
+        setsPerMatch: 3,
+        matchEnd: 'bestOf',
+        createdAt: '2026-11-28T10:00:00.000Z',
+      },
+      {
+        id: 'h2',
+        profileId: 'pr2',
+        name: 'Two sets',
+        setsPerMatch: 2,
+        matchEnd: 'allSets',
+        createdAt: '2026-11-28T11:00:00.000Z',
+      },
+    ],
+    hostedTeams: [
+      { id: 'ht1', tournamentId: 'h1', name: 'TV Nord', order: 0 },
+      { id: 'ht2', tournamentId: 'h1', name: 'Rivals', order: 1 },
+      { id: 'ht3', tournamentId: 'h1', name: 'SC Blau', order: 2 },
+    ],
+    hostedResults: [
+      {
+        id: 'hr1',
+        tournamentId: 'h1',
+        teamAId: 'ht1',
+        teamBId: 'ht2',
+        sets: [
+          { a: 25, b: 22 },
+          { a: 21, b: 25 },
+          { a: 15, b: 13 },
+        ],
+      },
+    ],
+  });
+  const withHosted = () => ({ ...fixture(), ...hosted() });
+
+  it('round trip restores the tournaments, teams and results exactly', () => {
+    const data = withHosted();
+    const file = buildExport(data, { now: NOW });
+    expect(file.schemaVersion).toBe(11);
+    expect(file.hostedTournaments).toEqual(data.hostedTournaments);
+    const result = parseImport(serializeExport(file));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file).toEqual(file);
+    expect(result.summary.hostedTournaments).toBe(2);
+    expect({
+      hostedTournaments: result.file.hostedTournaments,
+      hostedTeams: result.file.hostedTeams,
+      hostedResults: result.file.hostedResults,
+    }).toEqual(hosted());
+    // the team data is untouched by them
+    expect(replaceData(result.file)).toEqual(fixture());
+  });
+
+  it('a single team’s file has no hosted tournaments', () => {
+    const file = buildExport(withHosted(), { teamId: 't1', now: NOW });
+    expect(file.hostedTournaments).toEqual([]);
+    expect(file.hostedTeams).toEqual([]);
+    expect(file.hostedResults).toEqual([]);
+    expect(parseImport(serializeExport(file)).ok).toBe(true);
+  });
+
+  it('upgrades a v10 file (no hosted tournaments) without loss', () => {
+    const raw = rawExport();
+    raw.schemaVersion = 10;
+    delete raw.hostedTournaments;
+    delete raw.hostedTeams;
+    delete raw.hostedResults;
+    const result = parseObject(raw);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(11);
+    expect(result.file.hostedTournaments).toEqual([]);
+    expect(result.file.hostedTeams).toEqual([]);
+    expect(result.file.hostedResults).toEqual([]);
+    expect(replaceData(result.file)).toEqual(fixture());
+  });
+
+  it('a v11 file must have the three lists', () => {
+    const raw = rawExport();
+    delete raw.hostedResults;
+    expect(parseObject(raw)).toEqual({ ok: false, error: 'INVALID_SHAPE' });
+  });
+
+  it.each<[string, (h: HostedData) => void, string]>([
+    [
+      '6 sets per match',
+      (h) => Object.assign(h.hostedTournaments[0], { setsPerMatch: 6 }),
+      'INVALID_SHAPE',
+    ],
+    [
+      'an unknown match end',
+      (h) => Object.assign(h.hostedTournaments[0], { matchEnd: 'x' }),
+      'INVALID_SHAPE',
+    ],
+    ['a result without sets', (h) => (h.hostedResults[0].sets = []), 'INVALID_SHAPE'],
+    ['a negative score', (h) => (h.hostedResults[0].sets[0].a = -1), 'INVALID_SHAPE'],
+    [
+      'a team without order',
+      (h) => Object.assign(h.hostedTeams[0], { order: undefined }),
+      'INVALID_SHAPE',
+    ],
+    [
+      'a tournament of an unknown profile',
+      (h) => (h.hostedTournaments[0].profileId = 'nobody'),
+      'INCONSISTENT_REFERENCES',
+    ],
+    [
+      'a result of an unknown team',
+      (h) => (h.hostedResults[0].teamBId = 'nobody'),
+      'INCONSISTENT_REFERENCES',
+    ],
+    [
+      'a drawn set',
+      (h) => (h.hostedResults[0].sets[0] = { a: 20, b: 20 }),
+      'INCONSISTENT_REFERENCES',
+    ],
+    ['a score over 99', (h) => (h.hostedResults[0].sets[0].a = 100), 'INCONSISTENT_REFERENCES'],
+  ])('rejects %s', (_name, change, error) => {
+    const h = hosted();
+    change(h);
+    const file = { ...buildExport(fixture(), { now: NOW }), ...h };
+    expect(parseObject(file)).toEqual({ ok: false, error });
   });
 });

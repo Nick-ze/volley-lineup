@@ -1,6 +1,10 @@
+import { teamsOfTournament } from '@/domain/hostedTournament';
 import { namedPresetsFor, startersFor } from '@/domain/presets';
 import { opponentsForSeason, seasonsForTeam } from '@/domain/seasons';
 import type {
+  HostedResult,
+  HostedTeam,
+  HostedTournament,
   LineupPreset,
   ManagerProfile,
   Match,
@@ -42,3 +46,20 @@ export const selectMatchesForSeason = (s: AppState, seasonId: string): Match[] =
 
 export const selectStarters = (s: AppState, teamId: string): LineupPreset | undefined =>
   startersFor(s.presets, teamId);
+
+/** v14: the profile's hosted tournaments, newest first (by date, then by creation). */
+export const selectHostedTournaments = (s: AppState, profileId: string): HostedTournament[] =>
+  s.hostedTournaments
+    .filter((x) => x.profileId === profileId)
+    .sort(
+      (a, b) =>
+        (b.date ?? '').localeCompare(a.date ?? '') || b.createdAt.localeCompare(a.createdAt),
+    );
+
+/** v14: a hosted tournament's teams in the order they were added. */
+export const selectHostedTeams = (s: AppState, tournamentId: string): HostedTeam[] =>
+  teamsOfTournament(s.hostedTeams, tournamentId);
+
+/** v14: a hosted tournament's results. */
+export const selectHostedResults = (s: AppState, tournamentId: string): HostedResult[] =>
+  s.hostedResults.filter((r) => r.tournamentId === tournamentId);

@@ -21,6 +21,7 @@ import {
   type TransferData,
 } from './exportFormat';
 import { upgradeToCurrent } from './exportUpgrades';
+import { emptyHosted, hostedOf, isHostedConsistent, type HostedData } from './hostedData';
 import { isRecord } from './legacyData';
 import { keepReferencedPhotos, withoutDanglingPhoto, withoutDescription } from './photos';
 import type { ExportFile } from './types';
@@ -29,12 +30,16 @@ export * from './exportFormat';
 export * from './exportConsistency';
 export * from './exportMerge';
 
+/** What an export is built from: the team data and (v11) the hosted tournaments, if any. */
+export type ExportData = TransferData & Partial<HostedData>;
+
 /* ------------------------------------------------------------------ export */
 
 export interface BuildExportOptions {
   /**
    * Export only this team (plus its owning profile, players, matches, presets, seasons with
-   * their opponents, and the photos they refer to).
+   * their opponents, and the photos they refer to). v11: a team's file has no hosted
+   * tournaments — they belong to the profile, not to a team.
    */
   teamId?: string;
   /** Timestamp to write into `exportedAt` (defaults to now). */
@@ -51,7 +56,7 @@ export interface BuildExportOptions {
  * of the exported profiles, players and (v9) teams go with it (orphans never); descriptions only with
  * `includeDescriptions`.
  */
-export function buildExport(data: TransferData, options: BuildExportOptions = {}): ExportFile {
+export function buildExport(data: ExportData, options: BuildExportOptions = {}): ExportFile {
   const exportedAt = (options.now ?? new Date()).toISOString();
   const base = { app: EXPORT_APP_ID, schemaVersion: EXPORT_SCHEMA_VERSION, exportedAt };
   const teamId = options.teamId;
@@ -86,6 +91,7 @@ export function buildExport(data: TransferData, options: BuildExportOptions = {}
     photos: keepReferencedPhotos(data.photos, { profiles, players, teams }),
     seasons,
     opponents: data.opponents.filter((o) => seasonIds.has(o.seasonId)),
+    ...(teamId === undefined ? hostedOf(data) : emptyHosted()),
   };
 }
 
@@ -133,12 +139,14 @@ export interface ImportSummary {
   descriptions: number;
   /** v8: seasons / tournaments in the file. */
   seasons: number;
+  /** v11: hosted tournaments in the file. */
+  hostedTournaments: number;
 }
 
 export type ParseImportResult =
   { ok: true; file: ExportFile; summary: ImportSummary } | { ok: false; error: ImportErrorCode };
 
-export function summarize(data: TransferData): ImportSummary {
+export function summarize(data: ExportData): ImportSummary {
   return {
     profiles: data.profiles.length,
     teams: data.teams.length,
@@ -148,12 +156,14 @@ export function summarize(data: TransferData): ImportSummary {
     photos: data.photos.length,
     descriptions: data.players.filter((p) => p.description !== undefined).length,
     seasons: data.seasons.length,
+    hostedTournaments: hostedOf(data).hostedTournaments.length,
   };
 }
 
 /**
  * Parses and validates the text of an import file. Checks, in order: valid JSON, our app id,
- * the schema version, the shape (zod), then cross-references (`isConsistent`).
+ * the schema version, the shape (zod), then cross-references (`isConsistent`, and for the hosted
+ * tournaments `isHostedConsistent`).
  */
 export function parseImport(jsonText: string): ParseImportResult {
   let raw: unknown;
@@ -183,6 +193,9 @@ export function parseImport(jsonText: string): ParseImportResult {
     })),
     photos: keepReferencedPhotos(parsed.data.photos, parsed.data),
   };
-  if (!isConsistent(file)) return { ok: false, error: 'INCONSISTENT_REFERENCES' };
+  const profileIds = new Set(file.profiles.map((p) => p.id));
+  if (!isConsistent(file) || !isHostedConsistent(file, profileIds)) {
+    return { ok: false, error: 'INCONSISTENT_REFERENCES' };
+  }
   return { ok: true, file, summary: summarize(file) };
 }
