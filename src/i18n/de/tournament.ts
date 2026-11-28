@@ -157,6 +157,7 @@ export const tournament: Strings['tournament'] = {
     subtitle: (tournament: string, round: number, format: string) =>
       `${tournament} · Runde ${round} · ${format}`,
     set: (n: number) => `Satz ${n}`,
+    colon: ':',
     scoreLabel: (set: number, team: string) => `Satz ${set}, ${team}`,
     scoreboardLabel: (teamA: string, setsA: number, teamB: string, setsB: number) =>
       `${teamA} ${setsA}, ${teamB} ${setsB}`,

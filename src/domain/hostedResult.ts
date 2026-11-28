@@ -139,6 +139,50 @@ export interface SetInput {
   b: string;
 }
 
+/** A typed row as a set: null when a field is empty or isn't a score, or the set is invalid. */
+function validSetOf(row: SetInput): HostedSetScore | null {
+  const a = parseScoreInput(row.a);
+  const b = parseScoreInput(row.b);
+  if (a === null || b === null) return null;
+  return setScoreError({ a, b }) === null ? { a, b } : null;
+}
+
+/**
+ * What a row that has both fields filled is missing, shown while typing: `RANGE` / `EQUAL`, or
+ * null (also for a row that isn't complete yet).
+ */
+export function setInputError(row: SetInput): SetScoreError | null {
+  const a = parseScoreInput(row.a);
+  const b = parseScoreInput(row.b);
+  return a === null || b === null ? null : setScoreError({ a, b });
+}
+
+/**
+ * How many set rows the result form shows: the first always; the next one appears when every
+ * row before it holds a valid set and the match isn't over (`nextSetAllowed`).
+ */
+export function visibleSetRows(rows: readonly SetInput[], settings: HostedSettings): number {
+  const sets: HostedSetScore[] = [];
+  for (const row of rows.slice(0, settings.setsPerMatch)) {
+    const set = validSetOf(row);
+    if (set === null) break;
+    sets.push(set);
+    if (!nextSetAllowed(sets, settings)) return sets.length;
+  }
+  return sets.length + 1;
+}
+
+/** The valid sets at the start of the rows (what the form's scoreboard counts while typing). */
+export function leadingSets(rows: readonly SetInput[]): HostedSetScore[] {
+  const sets: HostedSetScore[] = [];
+  for (const row of rows) {
+    const set = validSetOf(row);
+    if (set === null) break;
+    sets.push(set);
+  }
+  return sets;
+}
+
 export type SetInputError = SetScoreError | 'INCOMPLETE';
 
 export type ResultFormResult =

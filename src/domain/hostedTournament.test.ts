@@ -6,6 +6,7 @@ import {
   hostedOfProfiles,
   importHosted,
   isHostedConsistent,
+  leadingSets,
   matchCount,
   matchEndChoices,
   matchEndFor,
@@ -20,6 +21,7 @@ import {
   resultOfPair,
   resultValidity,
   roundRobin,
+  setInputError,
   setScoreError,
   setsSeenFrom,
   setsToWin,
@@ -31,6 +33,7 @@ import {
   tournamentPlan,
   validateHostedTeamName,
   validateTournamentForm,
+  visibleSetRows,
   withoutHostedTeam,
   withoutHostedTournament,
   type HostedData,
@@ -352,6 +355,48 @@ describe('readResultForm', () => {
       errors: {},
       resultError: 'TOO_MANY_SETS',
     });
+  });
+});
+
+describe('the result form while typing', () => {
+  const row = (a: string, b: string) => ({ a, b });
+
+  it('says what a complete row is missing, and nothing for an incomplete one', () => {
+    expect(setInputError(row('25', '20'))).toBeNull();
+    expect(setInputError(row('25', ''))).toBeNull();
+    expect(setInputError(row('', '20'))).toBeNull();
+    expect(setInputError(row('20', '20'))).toBe('EQUAL');
+    expect(setInputError(row('x', '20'))).toBe('RANGE');
+  });
+
+  it('shows the first row, and the next one after every valid set until the match is over', () => {
+    expect(visibleSetRows([], BEST_OF_3)).toBe(1);
+    expect(visibleSetRows([row('', '')], BEST_OF_3)).toBe(1);
+    expect(visibleSetRows([row('25', '')], BEST_OF_3)).toBe(1);
+    expect(visibleSetRows([row('25', '25')], BEST_OF_3)).toBe(1);
+    expect(visibleSetRows([row('25', '20')], BEST_OF_3)).toBe(2);
+    // 1:1 in a best of 3: the third set can be played.
+    expect(visibleSetRows([row('25', '20'), row('20', '25')], BEST_OF_3)).toBe(3);
+    // 2:0: no third row, even when one was typed before.
+    expect(visibleSetRows([row('25', '20'), row('25', '20'), row('15', '9')], BEST_OF_3)).toBe(2);
+    expect(visibleSetRows([row('25', '20'), row('20', '25'), row('15', '9')], BEST_OF_3)).toBe(3);
+    // All sets: every set is played, never more than the tournament has.
+    expect(visibleSetRows([row('25', '20'), row('25', '20')], ALL_3)).toBe(3);
+    expect(visibleSetRows([row('25', '20'), row('25', '20')], ALL_2)).toBe(2);
+    expect(
+      visibleSetRows([row('25', '20'), row('25', '20'), row('1', '2'), row('1', '2')], ALL_3),
+    ).toBe(3);
+    expect(visibleSetRows([row('21', '19')], { setsPerMatch: 1, matchEnd: 'bestOf' })).toBe(1);
+  });
+
+  it('counts the valid sets at the start of the rows', () => {
+    expect(leadingSets([])).toEqual([]);
+    expect(leadingSets([row('25', '20'), row('20', '25'), row('', '')])).toEqual([
+      set(25, 20),
+      set(20, 25),
+    ]);
+    expect(leadingSets([row('25', '20'), row('7', '7'), row('15', '9')])).toEqual([set(25, 20)]);
+    expect(leadingSets([row('', '3')])).toEqual([]);
   });
 });
 
