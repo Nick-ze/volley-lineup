@@ -64,10 +64,13 @@ const SCREENS = [
   ['tournaments', '/tournaments'],
   ['tournament-new', '/tournament-new'],
   ['tournament-edit', '/tournament-new?tournamentId=h1'],
+  ['tournament-table', '/tournament/h1?tab=table'],
   ['tournament-matches', '/tournament/h1?tab=matches'],
   ['tournament-teams', '/tournament/h1?tab=teams'],
   ['tournament-result', '/tournament/h1/match?a=ht2&b=ht6'],
   ['tournament-result-new', '/tournament/h1/match?a=ht1&b=ht3'],
+  ['tournament-team', '/tournament/h1/team/ht2'],
+  ['tournament2-table', '/tournament/h2?tab=table'],
   ['tournament2-matches', '/tournament/h2?tab=matches'],
 ];
 

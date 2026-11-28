@@ -157,7 +157,8 @@ export function standings(
   const sorted = [...rows.values()].sort(
     (x, y) =>
       compareStandings(x, y) ||
-      foldName(x.team.name).localeCompare(foldName(y.team.name)) ||
+      // Numbers in names count as numbers: "Team 2" before "Team 10".
+      foldName(x.team.name).localeCompare(foldName(y.team.name), undefined, { numeric: true }) ||
       x.team.order - y.team.order,
   );
   sorted.forEach((row, index) => {

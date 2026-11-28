@@ -124,6 +124,8 @@ export const tournament = {
     record: (won: number, lost: number) => `${won}–${lost}`,
     recordWithDraws: (won: number, drawn: number, lost: number) => `${won}–${drawn}–${lost}`,
     sets: (won: number, lost: number) => `sets ${won}:${lost}`,
+    /** A part of the row's line that another one follows: "4 played ·". */
+    partLead: (part: string) => `${part} ·`,
     balls: (difference: string) => `balls ${difference}`,
     /** The label under the table points. */
     unit: { matches: 'Matches', sets: 'Sets' },
@@ -143,6 +145,7 @@ export const tournament = {
     record: 'Record',
     sets: 'Sets',
     balls: 'Balls',
+    points: 'Points',
     setsValue: (won: number, lost: number) => `${won}:${lost}`,
     empty: 'No matches yet: this is the only team.',
     summaryLabel: (

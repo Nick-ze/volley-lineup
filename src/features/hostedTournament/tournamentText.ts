@@ -1,9 +1,12 @@
 import { formatOptionalDate } from '@/domain/dates';
-import type {
-  HostedSettings,
-  HostedTeamNameError,
-  SettingsBlock,
-  TournamentFormError,
+import {
+  drawsPossible,
+  tableCounts,
+  type HostedSettings,
+  type HostedTeamNameError,
+  type SettingsBlock,
+  type Standing,
+  type TournamentFormError,
 } from '@/domain/hostedTournament';
 import type { HostedTournament } from '@/domain/types';
 import type { Strings } from '@/i18n';
@@ -72,3 +75,30 @@ export function settingsBlockText(t: Strings, block: SettingsBlock): string {
     ? s.TOO_MANY_SETS(teamA.name, teamB.name, sets.length)
     : s[block.error](teamA.name, teamB.name);
 }
+
+/** A team's record: "3–1", or "3–1–0" (won–drawn–lost) where a match can end in a draw. */
+export function recordText(t: Strings, standing: Standing, settings: HostedSettings): string {
+  const s = t.tournament.table;
+  return drawsPossible(settings) || standing.drawn > 0
+    ? s.recordWithDraws(standing.won, standing.drawn, standing.lost)
+    : s.record(standing.won, standing.lost);
+}
+
+/** The ball difference with its sign: "+24", "−31", "0". */
+export const ballDifferenceText = (t: Strings, standing: Standing): string =>
+  t.tournament.signed(standing.ballsFor - standing.ballsAgainst);
+
+/** The parts of a table row's line: "4 played", "3–1", "sets 7:3", "balls +24". */
+export function standingParts(t: Strings, standing: Standing, settings: HostedSettings): string[] {
+  const s = t.tournament.table;
+  return [
+    s.played(standing.played),
+    recordText(t, standing, settings),
+    s.sets(standing.setsFor, standing.setsAgainst),
+    s.balls(ballDifferenceText(t, standing)),
+  ];
+}
+
+/** The label under the table points: "Matches" or "Sets". */
+export const pointsUnit = (t: Strings, settings: HostedSettings): string =>
+  t.tournament.table.unit[tableCounts(settings)];
