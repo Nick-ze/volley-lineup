@@ -55,9 +55,10 @@ describe('profile photos', () => {
     const profile = store().profiles[0];
     expect(photos()).toEqual({ [profile.photoId as string]: URI_A });
     // The teams header (and the profile list underneath it in the stack) show the photo, as does
-    // the Profile tab: v8.1.1 mounts all three app tabs up front (hidden until shown).
+    // the Profile tab and (v12) the Tournaments tab: v8.1.1 mounts all app tabs up front (hidden
+    // until shown).
     expect(screen.getByTestId('teams-screen')).toBeTruthy();
-    expect(photoCount()).toBe(3);
+    expect(photoCount()).toBe(4);
   });
 
   it('disables Create profile while a picked picture is being prepared', async () => {

@@ -85,7 +85,7 @@ function ThemedRoot() {
             >
               {/* v11: the picker and the tabs show their title on the page (`Screen title`). */}
               <Stack.Screen name="index" options={{ headerShown: false, title: t.nav.profiles }} />
-              {/* Teams / Profile / Settings: bottom tabs. */}
+              {/* Teams / Tournaments / Profile / Settings: bottom tabs. */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false, title: t.nav.teams }} />
               <Stack.Screen name="team/[teamId]/index" options={{ title: t.nav.team }} />
               <Stack.Screen
@@ -131,6 +131,15 @@ function ThemedRoot() {
               <Stack.Screen name="account/teams" options={{ title: t.nav.cloudTeams }} />
               <Stack.Screen name="team/[teamId]/members" options={{ title: t.nav.members }} />
               <Stack.Screen name="join" options={{ title: t.nav.join }} />
+              {/* v12: hosted tournaments (the list is the Tournaments tab). */}
+              <Stack.Screen
+                name="tournament-new"
+                options={{ title: t.tournament.nav.newTournament, presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="tournament/[tournamentId]/index"
+                options={{ title: t.tournament.nav.tournament }}
+              />
             </Stack>
             {/* v10: background sync (does nothing without an account and shared teams). */}
             <SyncHost />

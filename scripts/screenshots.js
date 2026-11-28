@@ -60,6 +60,10 @@ const SCREENS = [
   // v11: the account screens (signed out).
   ['account', '/account'],
   ['sign-in', '/account/sign-in'],
+  // v12: hosted tournaments (the golden data's "Winter Cup": six teams, nine results).
+  ['tournaments', '/tournaments'],
+  ['tournament-new', '/tournament-new'],
+  ['tournament-edit', '/tournament-new?tournamentId=h1'],
 ];
 
 const WIDTHS = [
@@ -93,6 +97,10 @@ function storage(variant) {
     presets: DATA.presets,
     seasons: DATA.seasons,
     opponents: DATA.opponents,
+    // v12: the migration to store 14 keeps lists that are already there.
+    hostedTournaments: DATA.hostedTournaments,
+    hostedTeams: DATA.hostedTeams,
+    hostedResults: DATA.hostedResults,
     currentProfileId: 'pr1',
     chipLabel: 'number',
     // v9.0: no tour, so no tip popups over the screens.

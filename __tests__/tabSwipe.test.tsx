@@ -181,9 +181,10 @@ describe('no remount on a tab change (v8.1.1)', () => {
   });
 
   it('app tab bar: the Profile screen dragged in is the real one, not a copy', async () => {
-    await renderRouter('./app', { initialUrl: '/teams' });
+    // v12: Profile's left neighbour is Tournaments.
+    await renderRouter('./app', { initialUrl: '/tournaments' });
     const card = await screen.findByTestId('profile-card', hidden);
-    await swipe('app-tab-swipe-teams', -120);
+    await swipe('app-tab-swipe-tournaments', -120);
     await act(() => jest.runOnlyPendingTimers());
     expect(screen).toHavePathname('/profile');
     expect(screen.getByTestId('profile-card')).toBe(card);
@@ -235,14 +236,31 @@ describe('pages beside the shown one are drawable (v8.1.1)', () => {
 });
 
 describe('app tab bar (v8.1)', () => {
-  it('drags from Teams onto Profile and back', async () => {
+  // v12: Tournaments sits between Teams and Profile.
+  it('drags from Teams onto Tournaments, on to Profile, and back', async () => {
     await renderRouter('./app', { initialUrl: '/teams' });
     expect(await screen.findByTestId('app-tab-swipe-teams-pager')).toBeTruthy();
     await swipe('app-tab-swipe-teams', -120);
     await act(() => jest.runOnlyPendingTimers());
+    expect(screen).toHavePathname('/tournaments');
+    await swipe('app-tab-swipe-tournaments', -120);
+    await act(() => jest.runOnlyPendingTimers());
     expect(screen).toHavePathname('/profile');
     await swipe('app-tab-swipe-profile', 120);
     await act(() => jest.runOnlyPendingTimers());
+    expect(screen).toHavePathname('/tournaments');
+    await swipe('app-tab-swipe-tournaments', 120);
+    await act(() => jest.runOnlyPendingTimers());
     expect(screen).toHavePathname('/teams');
+  });
+
+  it('taps through the four tabs', async () => {
+    await renderRouter('./app', { initialUrl: '/teams' });
+    await screen.findByTestId('app-tab-swipe-teams-pager');
+    for (const tab of ['tournaments', 'profile', 'settings', 'teams'] as const) {
+      await fireEvent.press(screen.getByTestId(`tab-${tab}`));
+      await act(() => jest.runOnlyPendingTimers());
+      expect(screen).toHavePathname(`/${tab}`);
+    }
   });
 });
