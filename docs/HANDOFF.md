@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-28, with **v12.2.0** (players and live scoring in a hosted tournament) merged and its release started. The latest release is **v12.2.0** once the release workflow has finished (check `get_release_by_tag v12.2.0`); before it, **v12.1.0**.
+Last updated: 2026-11-28, after the release of **v12.2.0** (players and live scoring in a hosted tournament). The latest release is **v12.2.0**.
 
 ---
 
@@ -87,9 +87,9 @@ Last updated: 2026-11-28, with **v12.2.0** (players and live scoring in a hosted
 - Small known nits (not bugs): at 320 px (below the 375 px target) the German "Aufstellungen" / "Rückgängig" labels clip a few px inside their buttons; react-native-web's `Modal` plus the print choice card give two nested `role="dialog"` elements.
 - Remote branch `docs/v3` is merged content (via #29) but couldn't be deleted (git proxy refuses branch deletes) — safe to delete from GitHub.
 
-### After v12: fixes come as 12.0.x
+### After v12: fixes come as sub-versions (12.2.1, …)
 
-- The owner releases first and reports afterwards (#363). **Nothing has come back from the phone yet**: the first thing in the next chat is to ask what they saw in 12.0.0 (the list is under "Open items"). A fix is a small pull request, version 12.0.1 (and so on) in `app.json` + `package.json`, a line in `docs/README_LEGACY.md`, then the release workflow (§5).
+- The owner releases first and reports afterwards (#363). **Nothing has come back from the phone yet**: the first thing in the next chat is to ask what they saw in 12.0.0 – 12.2.0 (the lists are under "Open items") and whether the two choices of 12.2 suit them (#393). A fix is a small pull request, version 12.2.1 (and so on) in `app.json` + `package.json`, a line in `docs/README_LEGACY.md`, then the release workflow (§5).
 
 ### Ideas for next versions (from the owner's requests and the plan)
 
@@ -114,7 +114,7 @@ Last updated: 2026-11-28, with **v12.2.0** (players and live scoring in a hosted
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
 3. `docs/PLAN.md` — features and data model (v12.2 players and live scoring §52–53; v12.1 own matches §50–51; v12 hosted tournaments §48–49; v11 look §46–47; §1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7, §31–33 v8, §34–35 v8.3). PLAN §36–37 v8.4, §38–39 v9.0, §40–41 v9.1, §42–43 v9.2. `docs/AUDIT.md` — the v8.3 code audit (ranked findings, results, what was skipped).
-4. `docs/DECISIONS.md` — every choice made so far (#1–403; the look of v11 #336–359; the design of v12 #360–362, its build #363–386, own matches (v12.1) #387–392, players and live scoring (v12.2) #393–403; v10 accounts / sync #253–291, v10 audit #292–303, its follow-ups #304–308, its medium / low fixes #309–316, its engine fixes #317–334). `docs/AUDIT_V10.md` — the v10 audit: access-control matrix, every finding with where / why / fix, what was fixed (fix log at the end) and what was left. Skim headings; read the ones touching your task.
+4. `docs/DECISIONS.md` — every choice made so far (#1–404; the look of v11 #336–359; the design of v12 #360–362, its build #363–386, own matches (v12.1) #387–392, players and live scoring (v12.2) #393–404; v10 accounts / sync #253–291, v10 audit #292–303, its follow-ups #304–308, its medium / low fixes #309–316, its engine fixes #317–334). `docs/AUDIT_V10.md` — the v10 audit: access-control matrix, every finding with where / why / fix, what was fixed (fix log at the end) and what was left. Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Rewritten in v8.3 (conventions, tests, proof of no change).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
 7. **Backend (v10)**: `docs/V10_SYNC_DESIGN.md` (the sync design; the orchestrator amendments at the top win), `docs/SUPABASE.md` (schema, RLS, RPCs, error codes, quotas, advisors, test users, owner steps), PLAN §44–45.
