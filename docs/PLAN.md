@@ -887,3 +887,40 @@ The owner's request after 12.2.0: "print a PDF … which shows easily which team
 - [x] Sixteen teams with long names fit the table on the first page; a round is not split over two pages (looked at as PDFs from the web build).
 - [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
 - [x] Released as 12.3.0: https://github.com/Nick-ze/volley-lineup/releases/tag/v12.3.0
+
+## 56. v12.4 — Sharing a hosted tournament
+
+The owner's request after 12.3.0: give a code to someone who has the app, so they get the tournament and tally the points while it is played. Asked what a guest may do, the owner chose: **tally results and score live**, nothing else (DECISIONS #412). View-only guests were asked about and not answered: not built.
+
+**What the user sees**
+
+- **Share** (the host, on the tournament's screen): needs an account (the email-code sign-in of v10). "Share this tournament" uploads it; then the screen shows an invite code (valid 7 days, as often as needed), the people who joined (remove one), "Sync now" and "Stop sharing".
+- **Join** (the guest, on the Tournaments tab): "Join a tournament", type the code. The tournament appears in the guest's list, marked as shared. Tournaments of the account that aren't on this device are listed there too, to get them back (a new phone).
+- **A guest** can enter, change and delete results and score live. They can't edit the tournament, its teams or players, and can't add or delete own matches. "Delete" is "Leave" for them.
+- **Sync**: a change goes up about 3 seconds after it is made; other phones fetch every 15 seconds while a shared tournament is open and every 60 seconds otherwise; at once when the app comes to the foreground. Without a connection everything still works and is sent later; a line on the tournament's screen says where things stand.
+- **Two people, one match**: the later save of that match wins (the whole match: its sets and rallies). Two people on two different matches never collide.
+- **Stop sharing** removes the tournament from the cloud for everyone; every phone keeps its copy as an ordinary local tournament. A removed guest keeps their copy too. Deleting a shared tournament (host) stops sharing first; both need a connection.
+
+**How it works**
+
+- **Server** (`supabase/migrations/20261128190000_v12_tournaments.sql`; nothing of v10 is changed): `tournaments` (id, owner — deleting the owner's account deletes it), `tournament_members` (`host` / `scorer`), `tournament_invites`, `tournament_records` (kinds `tournament`, `team`, `player`, `result`; last write wins by the clamped save time, then the device id; tombstones). RLS: members read; every write through RPCs. `push_tournament_records` lets a scorer write `result` records only and refuses a batch with anything else. Limits: 20 hosted tournaments per account, 50 members, 2 000 records and 5 MB per tournament, 20 open codes. Tests: `supabase/tests/tournaments.sql` (TT1–TT14).
+- **Records** (`src/domain/hostedSync.ts`, pure): a tournament is its own record plus one per team, player and result (the entity without its id and parent). `noteHostedEdits` stamps local changes with the time they are noticed; `mergeHostedRows` applies server rows (later save wins against an unsent local change); `hostedPushItems` / `applyHostedPush` send them; `repairSlice` makes a merged tournament consistent the same way on every device (a result for a removed team goes, sets the format no longer allows are cut, live details that name a deleted player are dropped, one result per pair in a round robin).
+- **Ids and order**: a round robin's new result gets the id `pair-<teamA>-<teamB>`, so two phones entering the same pair's first result write the same record. An own match has `addedAt` (store v17, export schema 14; older matches get the tournament's creation time plus their place), so own matches keep their order on every phone.
+- **Bookkeeping**: `sync.tournaments[tournamentId] = { userId, role, cursor, base, edits }` (device only, optional). A link goes with its tournament or profile; an import keeps the device's copy of a shared tournament.
+- **Engine** (`src/lib/sync/tournament*.ts`): its own small cycle beside the team sync (which is not changed): memberships → per shared tournament: note, pull + merge + repair, push. It shares the session and the backend client.
+- Shared tournaments are still not part of a team's sync, and a team's own matches are untouched.
+
+## 57. v12.4 acceptance checklist
+
+- [ ] The host shares a tournament (signed in), sees a code, and the guest joins with it and sees the tournament with its teams, players and results.
+- [ ] A guest's result and live points reach the host, and the host's changes reach the guest, without either doing anything.
+- [ ] A guest can't edit the tournament, teams or players, add or delete own matches — neither in the app nor on the server (`supabase/tests/tournaments.sql`).
+- [ ] Changes made offline are sent later; two results for one pair entered on two phones end up as one.
+- [ ] The host removes a guest, stops sharing and deletes a shared tournament; a guest leaves. Each phone keeps or loses its copy as §56 says.
+- [ ] Sign-out, another account, "Delete all data", a deleted profile and an import never push deletions to the cloud and never write over a shared tournament.
+- [ ] Data stored by 12.3.0 (store 16) and export files v1–v13 open without loss; own matches keep their order.
+- [ ] Team sync (v10) behaves as before: its code and tests are unchanged.
+- [ ] EN and DE, 375 px, both themes, dyslexia font; controls at least 44 × 44; no sideways scrolling.
+- [ ] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds.
+- [ ] The migration is applied to the hosted project and `supabase/tests/tournaments.sql` passes there.
+- [ ] Released as 12.4.0.

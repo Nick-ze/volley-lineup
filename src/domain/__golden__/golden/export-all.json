@@ -1,6 +1,6 @@
 {
   "app": "volley-lineup",
-  "schemaVersion": 13,
+  "schemaVersion": 14,
   "exportedAt": "2026-11-23T12:00:00.000Z",
   "profiles": [
     {
@@ -766,7 +766,8 @@
           "a": 25,
           "b": 23
         }
-      ]
+      ],
+      "addedAt": "2026-11-28T11:00:00.000Z"
     },
     {
       "id": "hfm2",
@@ -786,7 +787,8 @@
           "a": 15,
           "b": 12
         }
-      ]
+      ],
+      "addedAt": "2026-11-28T11:00:00.001Z"
     },
     {
       "id": "hfm3",
@@ -835,14 +837,16 @@
             "playerId": "hp2"
           }
         ]
-      ]
+      ],
+      "addedAt": "2026-11-28T11:00:00.002Z"
     },
     {
       "id": "hfm4",
       "tournamentId": "h3",
       "teamAId": "hf2",
       "teamBId": "hf3",
-      "sets": []
+      "sets": [],
+      "addedAt": "2026-11-28T11:00:00.003Z"
     }
   ],
   "hostedPlayers": [

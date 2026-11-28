@@ -12,6 +12,7 @@ import {
   hostedOfProfiles,
   nextTeamOrder,
   pairKey,
+  pairResultId,
   storedLive,
   teamsOfTournament,
   withoutHostedPlayer,
@@ -37,6 +38,12 @@ import type {
 } from '@/domain/types';
 import { createId } from '@/lib/id';
 
+import {
+  keepLinkedTournaments,
+  tournamentLinks,
+  withoutGoneTournamentLinks,
+  withTournamentLink,
+} from '@/domain/hostedSync';
 import { migrateStore, STORE_VERSION } from './migrations';
 import type { AppData, AppState, AppStore } from './types';
 
@@ -142,6 +149,10 @@ export const useAppStore = create<AppStore>()(
       deleteProfile: (id) =>
         set((s) => {
           const teamIds = new Set(s.teams.filter((t) => t.profileId === id).map((t) => t.id));
+          const hosted = hostedOfProfiles(
+            hostedOf(s),
+            new Set(s.profiles.filter((p) => p.id !== id).map((p) => p.id)),
+          );
           return {
             profiles: s.profiles.filter((p) => p.id !== id),
             teams: s.teams.filter((t) => !teamIds.has(t.id)),
@@ -150,17 +161,18 @@ export const useAppStore = create<AppStore>()(
             presets: s.presets.filter((p) => !teamIds.has(p.teamId)),
             ...withoutSeasonsOf(s, (x) => teamIds.has(x.teamId)),
             // v14: the profile's hosted tournaments go with it (their teams and results too).
-            ...hostedOfProfiles(
-              hostedOf(s),
-              new Set(s.profiles.filter((p) => p.id !== id).map((p) => p.id)),
-            ),
+            ...hosted,
             currentProfileId: s.currentProfileId === id ? null : s.currentProfileId,
             // v10: the account linked to this profile is unlinked, and so are the shared teams
             // that go with the profile — in this same write (audit C1): a link left behind
             // would meet a later import of the same team and push deletions to every member.
-            sync: withoutTeamLinks(
-              s.sync.account?.profileId === id ? { ...s.sync, account: null } : s.sync,
-              teamIds,
+            // v12.4: the same for the profile's shared tournaments (the cloud's copies stay).
+            sync: withoutGoneTournamentLinks(
+              withoutTeamLinks(
+                s.sync.account?.profileId === id ? { ...s.sync, account: null } : s.sync,
+                teamIds,
+              ),
+              hosted.hostedTournaments,
             ),
           };
         }),
@@ -324,7 +336,13 @@ export const useAppStore = create<AppStore>()(
               : x,
           ),
         })),
-      deleteHostedTournament: (id) => set((s) => withoutHostedTournament(hostedOf(s), id)),
+      // v12.4: a shared tournament's link goes in the same write (its cloud copy is handled
+      // by the sync commands before this is called).
+      deleteHostedTournament: (id) =>
+        set((s) => ({
+          ...withoutHostedTournament(hostedOf(s), id),
+          sync: withTournamentLink(s.sync, id, undefined),
+        })),
       addHostedTeam: (tournamentId, name) => {
         const team: HostedTeam = {
           id: createId(),
@@ -353,7 +371,7 @@ export const useAppStore = create<AppStore>()(
           (r) => r.tournamentId === tournamentId && pairKey(r.teamAId, r.teamBId) === key,
         );
         const result: HostedResult = {
-          id: old?.id ?? createId(),
+          id: old?.id ?? pairResultId(teamId, otherTeamId),
           tournamentId,
           teamAId: flip ? otherTeamId : teamId,
           teamBId: flip ? teamId : otherTeamId,
@@ -381,7 +399,14 @@ export const useAppStore = create<AppStore>()(
         if (addMatchError(tournament, teamAId, teamBId, s.hostedTeams, s.hostedResults)) {
           return undefined;
         }
-        const match: HostedResult = { id: createId(), tournamentId, teamAId, teamBId, sets: [] };
+        const match: HostedResult = {
+          id: createId(),
+          tournamentId,
+          teamAId,
+          teamBId,
+          sets: [],
+          addedAt: new Date().toISOString(),
+        };
         set((state) => ({ hostedResults: [...state.hostedResults, match] }));
         return match;
       },
@@ -396,6 +421,7 @@ export const useAppStore = create<AppStore>()(
                   teamAId: r.teamAId,
                   teamBId: r.teamBId,
                   sets: sets.map((x) => ({ a: x.a, b: x.b })),
+                  ...(r.addedAt === undefined ? {} : { addedAt: r.addedAt }),
                 }
               : r,
           ),
@@ -430,6 +456,7 @@ export const useAppStore = create<AppStore>()(
                       teamAId: r.teamAId,
                       teamBId: r.teamBId,
                       ...storedLive(state),
+                      ...(r.addedAt === undefined ? {} : { addedAt: r.addedAt }),
                     }
                   : r,
               ),
@@ -452,7 +479,7 @@ export const useAppStore = create<AppStore>()(
             return old ? { hostedResults: others } : {};
           }
           const result: HostedResult = {
-            id: old?.id ?? createId(),
+            id: old?.id ?? pairResultId(teamAId, teamBId),
             tournamentId,
             teamAId: flip ? teamBId : teamAId,
             teamBId: flip ? teamAId : teamBId,
@@ -485,6 +512,12 @@ export const useAppStore = create<AppStore>()(
             s.sync.account && !data.profiles.some((p) => p.id === s.sync.account?.profileId)
               ? { ...s.sync, account: null }
               : s.sync;
+          // v12.4: a shared tournament keeps the device's copy (an imported one would be pushed
+          // over the cloud's as changes made now); its link goes only with its profile.
+          const hosted = hostedOfProfiles(
+            keepLinkedTournaments(hostedOf(s), hostedOf(data), Object.keys(tournamentLinks(sync))),
+            new Set(data.profiles.map((p) => p.id)),
+          );
           return {
             profiles: data.profiles,
             teams: data.teams,
@@ -494,7 +527,7 @@ export const useAppStore = create<AppStore>()(
             seasons: data.seasons,
             opponents: data.opponents,
             // v14: hosted tournaments, only of profiles in the new data.
-            ...hostedOfProfiles(hostedOf(data), new Set(data.profiles.map((p) => p.id))),
+            ...hosted,
             currentProfileId: data.profiles.some((p) => p.id === s.currentProfileId)
               ? s.currentProfileId
               : null,
@@ -502,12 +535,15 @@ export const useAppStore = create<AppStore>()(
             // data brings one under its id (a stale link, or a download that hasn't pulled
             // yet): a link must not adopt an imported team — its records would be pushed over
             // the cloud's. Downloading the team again links it with "the cloud wins".
-            sync: withoutTeamLinks(sync, [
-              ...goneTeamLinks(sync, data.teams),
-              ...data.teams
-                .map((t) => t.id)
-                .filter((id) => id in sync.teams && !s.teams.some((t) => t.id === id)),
-            ]),
+            sync: withoutGoneTournamentLinks(
+              withoutTeamLinks(sync, [
+                ...goneTeamLinks(sync, data.teams),
+                ...data.teams
+                  .map((t) => t.id)
+                  .filter((id) => id in sync.teams && !s.teams.some((t) => t.id === id)),
+              ]),
+              hosted.hostedTournaments,
+            ),
           };
         }),
       // v10: also forgets the account and every shared team on this device (the cloud is untouched).

@@ -33,6 +33,10 @@
  * v15 → v16 (app 12.2): the state gains the empty list `hostedPlayers` (a hosted team's optional
  * players); a team's `playerLabel` and a result's `live` rallies are optional, so nothing else
  * changes.
+ * v16 → v17 (app 12.4): shared hosted tournaments — every match of a tournament with own matches
+ * gets `addedAt`, the time it was added (`withMatchTimes`: the tournament's creation time plus
+ * its place in the list), so the matches keep their order on every device. The device-only
+ * `sync` state may now hold `tournaments` (optional: left out until one is shared).
  *
  * Every step from v13 on (v10 audit L6): the shared teams' pull cursors go back to the start
  * (`withPullCursorsReset`: -1, a normal pull of everything, not the "replace by the cloud's copy"
@@ -50,11 +54,11 @@ import {
   mapSets,
   type Rec,
 } from '@/domain/legacyData';
-import { withRoundRobinPlan } from '@/domain/exportUpgrades';
+import { withMatchTimes, withRoundRobinPlan } from '@/domain/exportUpgrades';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
 import { storedSyncData, withPullCursorsReset } from '@/domain/syncSchema';
-export const STORE_VERSION = 16;
+export const STORE_VERSION = 17;
 
 /** The first store version with shared teams (the `sync` slice). */
 const FIRST_SYNC_VERSION = 13;
@@ -98,6 +102,11 @@ export function migrateStore(
   if (fromVersion < 15 && isRec(state))
     state = { ...state, hostedTournaments: withRoundRobinPlan(state.hostedTournaments) };
   if (fromVersion < 16 && isRec(state)) state = { hostedPlayers: [], ...state };
+  if (fromVersion < 17 && toVersion >= 17 && isRec(state))
+    state = {
+      ...state,
+      hostedResults: withMatchTimes(state.hostedTournaments, state.hostedResults),
+    };
   // An update from any version that already had shared teams (see the head of this file).
   if (fromVersion >= FIRST_SYNC_VERSION && fromVersion < toVersion && isRec(state))
     state = { ...state, sync: withPullCursorsReset(storedSyncData(state.sync)) };

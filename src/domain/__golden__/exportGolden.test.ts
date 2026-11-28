@@ -1,13 +1,14 @@
 /**
  * Export / import golden test (v8.3, DECISIONS #223): a fixed data set must export to exactly the
- * same bytes, and the v1–v12 files in this folder must import to exactly the same data, as when
+ * same bytes, and the v1–v13 files in this folder must import to exactly the same data, as when
  * the golden files were written (app 8.2.0; rewritten for export schema 11 in app 12.0.0, which
  * added two hosted tournaments to the input and `legacy-v10.json`, the 11.0.0 export of the
  * input; rewritten again for schema 12 in app 12.1.0, which gave the input's tournaments a
  * `plan`, added a tournament with own matches and `legacy-v11.json`, the 12.0.0 export of the
  * input; and for schema 13 in app 12.2.0: players, a player label, a live-scored match in the
- * input, and `legacy-v12.json`, the 12.1.0 export of the input). Refactors must keep these files
- * unchanged.
+ * input, and `legacy-v12.json`, the 12.1.0 export of the input; and for schema 14 in app 12.4.0:
+ * the time each own match was added, and `legacy-v13.json`, the 12.3.0 export of the input).
+ * Refactors must keep these files unchanged.
  *
  * The goldens are only rewritten on purpose: `UPDATE_GOLDEN=1 npx jest src/domain/__golden__`.
  * A schema change (new export `schemaVersion`) is the only good reason to do that.
@@ -28,7 +29,7 @@ import { hostedOf, importHosted } from '../hostedTournament';
 const DIR = __dirname;
 const NOW = new Date('2026-11-23T12:00:00.000Z');
 const UPDATE = process.env.UPDATE_GOLDEN === '1';
-const LEGACY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+const LEGACY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
 
 const read = (name: string) => fs.readFileSync(path.join(DIR, name), 'utf8');
 const input = (): ExportData => JSON.parse(read('input.json'));

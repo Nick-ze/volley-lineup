@@ -77,6 +77,14 @@ function orderedPair(one: string, other: string, rank: ReadonlyMap<string, numbe
 export const pairKey = (one: string, other: string): string =>
   one < other ? `${one}|${other}` : `${other}|${one}`;
 
+/**
+ * v12.4: the id of a round robin's result of a pair. Made from the two teams, so two devices
+ * that share the tournament and both enter the pair's first result write the same record.
+ * Results stored before 12.4 keep the random id they have.
+ */
+export const pairResultId = (one: string, other: string): string =>
+  one < other ? `pair-${one}-${other}` : `pair-${other}-${one}`;
+
 /** A tournament's results by pair key. */
 export function resultsByPair(
   results: readonly HostedResult[],

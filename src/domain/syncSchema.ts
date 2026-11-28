@@ -181,6 +181,16 @@ const storedSyncTeam = z.looseObject({
   photos: z.array(z.string()),
 });
 
+/** v12.4: the bookkeeping of one shared hosted tournament. */
+const storedSyncTournament = z.looseObject({
+  userId: z.string(),
+  role: z.enum(['host', 'scorer']),
+  cursor: z.number(),
+  base: z.record(z.string(), z.looseObject({ v: z.number(), h: z.string(), at: z.string() })),
+  edits: z.record(z.string(), z.looseObject({ at: z.string(), h: z.string() })),
+});
+const storedSyncTournaments = z.record(z.string(), storedSyncTournament);
+
 const storedSync = z.looseObject({
   deviceId: z.string().nullable(),
   account: z
@@ -196,7 +206,15 @@ const storedSync = z.looseObject({
  * only a valid device id; its links are lost, the teams stay on the device as local teams.
  */
 export function storedSyncData(value: unknown): SyncData {
-  if (storedSync.safeParse(value).success) return value as SyncData;
+  if (storedSync.safeParse(value).success) {
+    const sync = value as SyncData;
+    // v12.4: malformed links of shared tournaments are dropped (the tournaments themselves stay
+    // on the device); none at all is fine.
+    if (sync.tournaments === undefined) return sync;
+    if (storedSyncTournaments.safeParse(sync.tournaments).success) return sync;
+    const { tournaments: _dropped, ...rest } = sync;
+    return rest;
+  }
   const deviceId =
     typeof value === 'object' && value !== null && 'deviceId' in value
       ? (value as { deviceId: unknown }).deviceId

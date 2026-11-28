@@ -787,7 +787,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(16); // v12.2: players of hosted teams, live scoring
+    expect(STORE_VERSION).toBe(17); // v12.4: shared hosted tournaments, match times
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -901,11 +901,64 @@ describe('migrations', () => {
       hostedResults: [{ id: 'm1', tournamentId: 'h1', teamAId: 'a', teamBId: 'b', sets: [] }],
       sync: NO_SYNC,
     };
-    expect(migrateStore(v15, 15)).toEqual({ ...v15, hostedPlayers: [] });
+    // (to store 16: the step of 12.4 is the next test)
+    expect(migrateStore(v15, 15, 16)).toEqual({ ...v15, hostedPlayers: [] });
     // a state that already has players keeps them
     const v16 = { ...v15, hostedPlayers: [{ id: 'p1', teamId: 'a', number: 6 }] };
-    expect(migrateStore(v16, 15)).toEqual(v16);
+    expect(migrateStore(v16, 15, 16)).toEqual(v16);
     expect(migrateStore(null, 15)).toBeNull();
+  });
+
+  it('migrates v16 data (v12.3 app): own matches get the time they were added, in the list’s order', () => {
+    const created = '2026-11-28T11:00:00.000Z';
+    const result = (id: string, tournamentId: string, extra: object = {}) => ({
+      id,
+      tournamentId,
+      teamAId: 'a',
+      teamBId: 'b',
+      sets: [],
+      ...extra,
+    });
+    const v16 = {
+      profiles: [],
+      hostedTournaments: [
+        { id: 'own', profileId: 'p', name: 'Own', plan: 'manual', createdAt: created },
+        { id: 'rr', profileId: 'p', name: 'Cup', plan: 'roundRobin', createdAt: created },
+        { id: 'old', profileId: 'p', name: 'No date', plan: 'manual' },
+      ],
+      hostedTeams: [],
+      hostedResults: [
+        result('m1', 'own'),
+        result('r1', 'rr'),
+        result('m2', 'own', { addedAt: '2026-12-01T09:00:00.000Z' }),
+        result('m3', 'own'),
+        result('o1', 'old'),
+        'not a record',
+      ],
+      hostedPlayers: [],
+      sync: NO_SYNC,
+    };
+    const next = migrateStore(v16, 16) as typeof v16;
+    expect(next.hostedResults).toEqual([
+      result('m1', 'own', { addedAt: '2026-11-28T11:00:00.000Z' }),
+      result('r1', 'rr'), // a round robin's result has none
+      result('m2', 'own', { addedAt: '2026-12-01T09:00:00.000Z' }), // kept
+      result('m3', 'own', { addedAt: '2026-11-28T11:00:00.002Z' }), // its place in the list
+      result('o1', 'old', { addedAt: '1970-01-01T00:00:00.000Z' }), // no creation time
+      'not a record',
+    ]);
+    expect({ ...next, hostedResults: [] }).toEqual({ ...v16, hostedResults: [] });
+    // Malformed lists are passed through.
+    expect(migrateStore({ hostedTournaments: 'x', hostedResults: [1] }, 16)).toEqual({
+      hostedTournaments: 'x',
+      hostedResults: [1],
+      sync: NO_SYNC,
+    });
+    expect(migrateStore({ hostedTournaments: [], hostedResults: 'x' }, 16)).toEqual({
+      hostedTournaments: [],
+      hostedResults: 'x',
+      sync: NO_SYNC,
+    });
   });
 
   it('migrates v14 data (v12.0 app): every hosted tournament gets the app-made plan', () => {

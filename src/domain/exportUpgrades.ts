@@ -44,7 +44,9 @@ function upgradeV5(raw: Rec): Rec {
  * is optional, so nothing changes), v9 → v10 (teams may have a `captainId`, also optional, so
  * nothing changes), v10 → v11 (app 12.0: the three empty hosted-tournament collections),
  * v11 → v12 (app 12.1: every hosted tournament gains `plan: 'roundRobin'`), v12 → v13 (app 12.2:
- * the empty list of hosted teams' players; player labels and live rallies are optional).
+ * the empty list of hosted teams' players; player labels and live rallies are optional),
+ * v13 → v14 (app 12.4: the matches of a tournament with own matches get the time they were
+ * added, `withMatchTimes`).
  */
 export function upgradeToCurrent(raw: Rec): Rec {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
@@ -69,7 +71,40 @@ export function upgradeToCurrent(raw: Rec): Rec {
       ? { ...v11, schemaVersion: 12, hostedTournaments: withRoundRobinPlan(v11.hostedTournaments) }
       : v11;
   // v12 → v13 (app 12.2): hosted teams may have players; older files have none.
-  return v12.schemaVersion === 12 ? { hostedPlayers: [], ...v12, schemaVersion: 13 } : v12;
+  const v13 = v12.schemaVersion === 12 ? { hostedPlayers: [], ...v12, schemaVersion: 13 } : v12;
+  // v13 → v14 (app 12.4): own matches are ordered by when they were added.
+  return v13.schemaVersion === 13
+    ? {
+        ...v13,
+        schemaVersion: 14,
+        hostedResults: withMatchTimes(v13.hostedTournaments, v13.hostedResults),
+      }
+    : v13;
+}
+
+/**
+ * v13 → v14 (also the store's v16 → v17 step): every match of a tournament with own matches
+ * that has no `addedAt` gets one that keeps the list's order — the tournament's creation time
+ * plus one millisecond per place. A round robin's results get none. Anything that isn't a list
+ * of records is passed through for the shape check to report.
+ */
+export function withMatchTimes(tournaments: unknown, results: unknown): unknown {
+  if (!Array.isArray(tournaments) || !Array.isArray(results)) return results;
+  const start = new Map<unknown, number>();
+  for (const x of tournaments) {
+    if (!isRecord(x) || x.plan !== 'manual') continue;
+    const created = typeof x.createdAt === 'string' ? Date.parse(x.createdAt) : NaN;
+    start.set(x.id, Number.isFinite(created) ? created : 0);
+  }
+  const place = new Map<unknown, number>();
+  return results.map((r) => {
+    if (!isRecord(r) || !start.has(r.tournamentId)) return r;
+    const n = place.get(r.tournamentId) ?? 0;
+    place.set(r.tournamentId, n + 1);
+    if (typeof r.addedAt === 'string') return r;
+    const at = new Date((start.get(r.tournamentId) as number) + n).toISOString();
+    return { ...r, addedAt: at };
+  });
 }
 
 /**

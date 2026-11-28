@@ -305,11 +305,16 @@ export interface HostedResult {
    * being played, which is not in `sets` yet. Left out for a result that was only typed in.
    */
   live?: HostedPoint[][];
+  /**
+   * v12.4: when a match of a `manual` tournament was added (ISO). The matches keep the order
+   * added on every device that shares the tournament; a round robin's results have none.
+   */
+  addedAt?: string;
 }
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 13;
+  schemaVersion: 14;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
@@ -428,6 +433,23 @@ export interface SyncedTeam {
   photos: string[];
 }
 
+/** v12.4: what a member of a shared hosted tournament may do: everything, or results only. */
+export type TournamentRole = 'host' | 'scorer';
+
+/**
+ * v12.4: sync bookkeeping for one shared hosted tournament on this device. Keys are
+ * `${kind}:${id}` with the kinds `tournament`, `team`, `player` and `result`.
+ */
+export interface SyncedTournament {
+  /** The account this tournament syncs through on this device. */
+  userId: string;
+  role: TournamentRole;
+  /** Highest gap-free server version pulled (0: nothing yet). */
+  cursor: number;
+  base: Record<string, SyncBase>;
+  edits: Record<string, SyncEdit>;
+}
+
 /** v10 (store v13): device-only sync state, persisted with the data so both are written at once. */
 export interface SyncData {
   /** Random id of this installation (set on first sync start). */
@@ -435,6 +457,11 @@ export interface SyncData {
   account: SyncAccount | null;
   /** Shared (linked) teams by team id. A team missing here is a local-only team. */
   teams: Record<string, SyncedTeam>;
+  /**
+   * v12.4: shared hosted tournaments by tournament id. Left out while none is shared (and in
+   * data of older versions), so nothing about the teams' sync state changes.
+   */
+  tournaments?: Record<string, SyncedTournament>;
 }
 
 /** v10: the sync engine's state for the status badge (runtime only, not persisted). */

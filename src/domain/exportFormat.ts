@@ -37,10 +37,10 @@ import {
 } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 13 as const;
+export const EXPORT_SCHEMA_VERSION = 14 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
 export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
 ];
 
 /**
@@ -196,7 +196,7 @@ export const presetSchema = z.object({
 });
 
 /** v11 (app 12.0): a hosted tournament, its teams and results. */
-const hostedTournamentSchema = z.object({
+export const hostedTournamentSchema = z.object({
   id,
   profileId: id,
   name: z.string(),
@@ -209,7 +209,7 @@ const hostedTournamentSchema = z.object({
   createdAt: z.string(),
 });
 
-const hostedTeamSchema = z.object({
+export const hostedTeamSchema = z.object({
   id,
   tournamentId: id,
   name: z.string(),
@@ -219,7 +219,7 @@ const hostedTeamSchema = z.object({
 });
 
 /** v13 (app 12.2): a player of a hosted team. */
-const hostedPlayerSchema = z.object({
+export const hostedPlayerSchema = z.object({
   id,
   teamId: id,
   number: z.number().optional(),
@@ -233,7 +233,7 @@ const hostedPointSchema = z.object({
   playerId: id.optional(),
 });
 
-const hostedResultSchema = z.object({
+export const hostedResultSchema = z.object({
   id,
   tournamentId: id,
   teamAId: id,
@@ -244,6 +244,8 @@ const hostedResultSchema = z.object({
     .max(5),
   /** v13: live scoring's rallies, one list per set (at most one more than `sets`). */
   live: z.array(z.array(hostedPointSchema)).max(6).optional(),
+  /** v14: when a match of a tournament with own matches was added. */
+  addedAt: z.string().optional(),
 });
 
 export const exportFileSchema = z.object({

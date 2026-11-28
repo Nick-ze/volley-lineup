@@ -249,7 +249,7 @@ describe('hosted tournaments', () => {
     const result = store().setHostedResult(cup.id, a.id, b.id, [{ a: 25, b: 10 }]);
     await new Promise((r) => setTimeout(r, 0));
     const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
-    expect(saved.version).toBe(16);
+    expect(saved.version).toBe(17);
     expect(saved.state.hostedTournaments).toEqual([cup]);
     expect(saved.state.hostedResults).toEqual([result]);
     useAppStore.setState({ ...emptyData() });

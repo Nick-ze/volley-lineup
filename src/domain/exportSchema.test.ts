@@ -166,7 +166,7 @@ describe('buildExport', () => {
     const file = buildExport(data, { now: NOW });
     expect(file).toEqual({
       app: 'volley-lineup',
-      schemaVersion: 13,
+      schemaVersion: 14,
       exportedAt: NOW.toISOString(),
       ...data,
       // v11: no hosted tournaments in this data
@@ -292,15 +292,30 @@ describe('parseImport rejects', () => {
     expect(parseObject(value)).toEqual({ ok: false, error: 'NOT_VOLLEY_LINEUP' });
   });
 
-  it.each([14, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', undefined])(
-    'schemaVersion %p',
-    (version) => {
-      expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
-        ok: false,
-        error: 'UNSUPPORTED_VERSION',
-      });
-    },
-  );
+  it.each([
+    15,
+    0,
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+    '11',
+    '12',
+    '13',
+    '14',
+    undefined,
+  ])('schemaVersion %p', (version) => {
+    expect(parseObject({ ...rawExport(), schemaVersion: version })).toEqual({
+      ok: false,
+      error: 'UNSUPPORTED_VERSION',
+    });
+  });
 
   it('upgrades a v1 file (sets without liberoReplaces/events) to the current version', () => {
     const v1 = rawExport();
@@ -315,7 +330,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(result.file).toEqual({ ...JSON.parse(exportText()), presets: [] });
   });
 
@@ -326,7 +341,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v2);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(result.file.presets).toEqual([]);
     expect(result.summary.presets).toBe(0);
     expect(result.file.matches).toEqual(fixture().matches);
@@ -346,7 +361,7 @@ describe('parseImport rejects', () => {
     const result = parseObject(v3);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file).toEqual({ ...v3, schemaVersion: 13 });
+    expect(result.file).toEqual({ ...v3, schemaVersion: 14 });
   });
 
   it('a current file without presets is rejected as INVALID_SHAPE', () => {
@@ -778,7 +793,7 @@ describe('v5 libero switch and v6 formations', () => {
       setterAt: 4,
     });
     expect('roles' in result.file.presets[1]).toBe(false);
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
   });
 
   it.each([
@@ -910,7 +925,7 @@ describe('v7 photos, descriptions and error types', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1012,7 +1027,7 @@ describe('v8 seasons and opponents', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(result.file.seasons.map((x) => [x.id, x.teamId, x.name])).toEqual([
       ['season-t1', 't1', '2026/27'],
       ['season-t2', 't2', '2026'],
@@ -1140,7 +1155,7 @@ describe('v9 team pictures', () => {
     const result = parseImport(exportText(data));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(replaceData(result.file)).toEqual(data);
     expect(result.summary.photos).toBe(3);
   });
@@ -1165,7 +1180,7 @@ describe('v9 team pictures', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(replaceData(result.file)).toEqual(fixture());
   });
 
@@ -1210,7 +1225,7 @@ describe('v10 team captain', () => {
     const result = parseImport(serializeExport(file));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(replaceData(result.file)).toEqual(data);
   });
 
@@ -1224,7 +1239,7 @@ describe('v10 team captain', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(replaceData(result.file)).toEqual(fixture());
     expect(result.file.teams.every((t) => !('captainId' in t))).toBe(true);
   });
@@ -1379,7 +1394,7 @@ describe('v11 hosted tournaments', () => {
   it('round trip restores the tournaments, teams and results exactly', () => {
     const data = withHosted();
     const file = buildExport(data, { now: NOW });
-    expect(file.schemaVersion).toBe(13);
+    expect(file.schemaVersion).toBe(14);
     expect(file.hostedTournaments).toEqual(data.hostedTournaments);
     const result = parseImport(serializeExport(file));
     expect(result.ok).toBe(true);
@@ -1413,7 +1428,7 @@ describe('v11 hosted tournaments', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(result.file.hostedTournaments).toEqual([]);
     expect(result.file.hostedTeams).toEqual([]);
     expect(result.file.hostedResults).toEqual([]);
@@ -1511,7 +1526,7 @@ describe('v12 hosted tournaments with own matches', () => {
 
   it('round trip keeps the plan kind, the order of the matches and a match without a result', () => {
     const file = buildExport({ ...fixture(), ...hosted() }, { now: NOW_12 });
-    expect(file.schemaVersion).toBe(13);
+    expect(file.schemaVersion).toBe(14);
     const result = parseImport(serializeExport(file));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -1530,7 +1545,7 @@ describe('v12 hosted tournaments with own matches', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(result.file.hostedTournaments.map((x) => x.plan)).toEqual(['roundRobin']);
     expect(result.file.hostedResults).toEqual(roundRobin.hostedResults);
   });
@@ -1608,7 +1623,7 @@ describe('v13 players of hosted teams and live rallies', () => {
 
   it('round trip keeps players, the label and every rally', () => {
     const file = buildExport({ ...fixture(), ...hosted() }, { now: NOW_13 });
-    expect(file.schemaVersion).toBe(13);
+    expect(file.schemaVersion).toBe(14);
     const result = parseImport(serializeExport(file));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -1635,7 +1650,7 @@ describe('v13 players of hosted teams and live rallies', () => {
     const result = parseObject(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.file.schemaVersion).toBe(13);
+    expect(result.file.schemaVersion).toBe(14);
     expect(result.file.hostedPlayers).toEqual([]);
     expect(result.file.hostedResults).toEqual(typed.hostedResults);
   });
@@ -1691,5 +1706,78 @@ describe('v13 players of hosted teams and live rallies', () => {
     const h = hosted();
     change(h);
     expect(parseObject(fileOf(h))).toEqual({ ok: false, error });
+  });
+});
+
+describe('v14 the time an own match was added', () => {
+  const NOW_14 = new Date(2026, 10, 28, 20, 0);
+  const created = '2026-11-28T11:00:00.000Z';
+  const hosted = (): HostedData => ({
+    hostedTournaments: [
+      {
+        id: 'own',
+        profileId: 'pr1',
+        name: 'Friendlies',
+        setsPerMatch: 3,
+        matchEnd: 'bestOf',
+        plan: 'manual',
+        createdAt: created,
+      },
+      {
+        id: 'rr',
+        profileId: 'pr1',
+        name: 'Cup',
+        setsPerMatch: 3,
+        matchEnd: 'bestOf',
+        plan: 'roundRobin',
+        createdAt: created,
+      },
+    ],
+    hostedTeams: [
+      { id: 'a', tournamentId: 'own', name: 'A', order: 0 },
+      { id: 'b', tournamentId: 'own', name: 'B', order: 1 },
+      { id: 'c', tournamentId: 'rr', name: 'C', order: 0 },
+      { id: 'd', tournamentId: 'rr', name: 'D', order: 1 },
+    ],
+    hostedPlayers: [],
+    hostedResults: [
+      { id: 'm1', tournamentId: 'own', teamAId: 'a', teamBId: 'b', sets: [], addedAt: created },
+      { id: 'r1', tournamentId: 'rr', teamAId: 'c', teamBId: 'd', sets: [{ a: 25, b: 20 }] },
+      {
+        id: 'm2',
+        tournamentId: 'own',
+        teamAId: 'b',
+        teamBId: 'a',
+        sets: [],
+        addedAt: '2026-11-28T12:30:00.000Z',
+      },
+    ],
+  });
+
+  it('round trip keeps the times', () => {
+    const file = buildExport({ ...fixture(), ...hosted() }, { now: NOW_14 });
+    expect(file.schemaVersion).toBe(14);
+    const result = parseImport(serializeExport(file));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.hostedResults).toEqual(hosted().hostedResults);
+  });
+
+  it('upgrades a v13 file: own matches get the tournament’s time plus their place', () => {
+    const file = buildExport({ ...fixture(), ...hosted() }, { now: NOW_14 });
+    const raw = JSON.parse(serializeExport(file)) as Record<string, unknown>;
+    raw.schemaVersion = 13;
+    raw.hostedResults = (raw.hostedResults as Record<string, unknown>[]).map(
+      ({ addedAt: _addedAt, ...result }) => result,
+    );
+    const result = parseImport(JSON.stringify(raw));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.file.schemaVersion).toBe(14);
+    expect(result.file.hostedResults.map((r) => [r.id, r.addedAt])).toEqual([
+      ['m1', '2026-11-28T11:00:00.000Z'],
+      ['r1', undefined],
+      ['m2', '2026-11-28T11:00:00.001Z'],
+    ]);
   });
 });

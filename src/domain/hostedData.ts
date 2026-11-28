@@ -82,7 +82,7 @@ export function isHostedConsistent(data: HostedData, profileIds: ReadonlySet<str
 }
 
 /** A player has a jersey number (whole, 0–999) or a name. */
-function playerOk(player: HostedPlayer): boolean {
+export function playerOk(player: HostedPlayer): boolean {
   const { number, name } = player;
   if (number === undefined) return name !== undefined && name.trim() !== '';
   return Number.isInteger(number) && number >= 0 && number <= MAX_HOSTED_PLAYER_NUMBER;
@@ -93,7 +93,7 @@ function playerOk(player: HostedPlayer): boolean {
  * score, otherwise adding up to exactly that score) and at most one more, non-empty, for a set
  * that may be played; a named player belongs to the side the tag is about.
  */
-function liveOk(
+export function liveOk(
   result: HostedResult,
   tournament: HostedTournament,
   teamOfPlayer: ReadonlyMap<string, string>,
