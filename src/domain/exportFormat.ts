@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import type {
   ExportFile,
+  HostedPlayer,
   HostedResult,
   HostedTeam,
   HostedTournament,
@@ -25,12 +26,22 @@ import type {
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from './roles';
 import { SEASON_KINDS } from './seasonNames';
 import { isPhotoDataUri, isValidDescription } from './photos';
-import { ALL_POSITIONS, ERROR_TYPES, HOSTED_PLAN_KINDS, MATCH_ENDS, POINT_KINDS } from './types';
+import {
+  ALL_POSITIONS,
+  ERROR_TYPES,
+  HOSTED_PLAN_KINDS,
+  HOSTED_PLAYER_LABELS,
+  HOSTED_POINT_KINDS,
+  MATCH_ENDS,
+  POINT_KINDS,
+} from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 12 as const;
+export const EXPORT_SCHEMA_VERSION = 13 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+];
 
 /**
  * The persisted team collections. Derived from `ExportFile` (the domain layer can't import the
@@ -203,6 +214,23 @@ const hostedTeamSchema = z.object({
   tournamentId: id,
   name: z.string(),
   order: z.number().int().nonnegative(),
+  /** v13: its players go by number (also when left out) or by name. */
+  playerLabel: z.enum(HOSTED_PLAYER_LABELS).optional(),
+});
+
+/** v13 (app 12.2): a player of a hosted team. */
+const hostedPlayerSchema = z.object({
+  id,
+  teamId: id,
+  number: z.number().optional(),
+  name: z.string().optional(),
+});
+
+/** v13: one rally of a live-scored hosted match. */
+const hostedPointSchema = z.object({
+  team: z.enum(['a', 'b']),
+  kind: z.enum(HOSTED_POINT_KINDS).optional(),
+  playerId: id.optional(),
 });
 
 const hostedResultSchema = z.object({
@@ -214,6 +242,8 @@ const hostedResultSchema = z.object({
     // v12: a match of a tournament with own matches has no sets until its result is typed in.
     .array(z.object({ a: z.number().int().nonnegative(), b: z.number().int().nonnegative() }))
     .max(5),
+  /** v13: live scoring's rallies, one list per set (at most one more than `sets`). */
+  live: z.array(z.array(hostedPointSchema)).max(6).optional(),
 });
 
 export const exportFileSchema = z.object({
@@ -231,6 +261,7 @@ export const exportFileSchema = z.object({
   hostedTournaments: z.array(hostedTournamentSchema),
   hostedTeams: z.array(hostedTeamSchema),
   hostedResults: z.array(hostedResultSchema),
+  hostedPlayers: z.array(hostedPlayerSchema),
 });
 
 /*
@@ -253,5 +284,6 @@ export type SchemaMatchesTypes = [
   Assert<Same<z.infer<typeof hostedTournamentSchema>, HostedTournament>>,
   Assert<Same<z.infer<typeof hostedTeamSchema>, HostedTeam>>,
   Assert<Same<z.infer<typeof hostedResultSchema>, HostedResult>>,
+  Assert<Same<z.infer<typeof hostedPlayerSchema>, HostedPlayer>>,
   Assert<Same<z.infer<typeof exportFileSchema>, ExportFile>>,
 ];

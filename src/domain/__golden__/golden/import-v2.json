@@ -12,7 +12,7 @@
   },
   "file": {
     "app": "volley-lineup",
-    "schemaVersion": 12,
+    "schemaVersion": 13,
     "exportedAt": "2026-11-20T10:00:00.000Z",
     "profiles": [
       {
@@ -380,6 +380,7 @@
     ],
     "hostedTournaments": [],
     "hostedTeams": [],
-    "hostedResults": []
+    "hostedResults": [],
+    "hostedPlayers": []
   }
 }

@@ -39,7 +39,12 @@ describe('store v13 migration', () => {
   it('v12 → v13 adds an empty sync state and changes nothing else', () => {
     const v12 = { teams: [{ id: 't1', profileId: 'p', name: 'H', createdAt: '2026-01-01' }] };
     // (v12.0: the v13 → v14 step adds the empty hosted-tournament lists after it)
-    const hosted = { hostedTournaments: [], hostedTeams: [], hostedResults: [] };
+    const hosted = {
+      hostedTournaments: [],
+      hostedTeams: [],
+      hostedResults: [],
+      hostedPlayers: [],
+    };
     expect(migrateStore(v12, 12)).toEqual({ ...v12, sync: emptySync(), ...hosted });
     // a state that already has one keeps it
     const v13 = { ...v12, sync: shared() };
@@ -67,7 +72,7 @@ describe('sync state in the store', () => {
     store().setSyncAccount({ userId: 'u1', email: 'a@example.test', profileId: 'p1' });
     await new Promise((r) => setTimeout(r, 0));
     const parsed = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
-    expect(parsed.version).toBe(15);
+    expect(parsed.version).toBe(16);
     expect(parsed.state.sync).toEqual({
       deviceId: 'dev9',
       account: { userId: 'u1', email: 'a@example.test', profileId: 'p1' },
@@ -149,7 +154,7 @@ describe('sync state in the store', () => {
     useAppStore.setState({ sync: shared() });
     const after = buildExport({ ...selectAppData(store()), photos: [] }, { now: NOW });
     expect(JSON.stringify(after)).toBe(JSON.stringify(before));
-    expect(after.schemaVersion).toBe(12);
+    expect(after.schemaVersion).toBe(13);
   });
 });
 

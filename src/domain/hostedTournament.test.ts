@@ -764,6 +764,7 @@ describe('settingsChangeBlock', () => {
 describe('hosted data', () => {
   const profiles = new Set(['pr1', 'pr2']);
   const data = (): HostedData => ({
+    hostedPlayers: [],
     hostedTournaments: [tournament(), tournament({ id: 'h2', profileId: 'pr2', name: 'Other' })],
     hostedTeams: [...teams(3), team('o1', 0, 'O1', 'h2'), team('o2', 1, 'O2', 'h2')],
     hostedResults: [
@@ -773,7 +774,12 @@ describe('hosted data', () => {
   });
 
   it('reads the collections of anything, empty when missing', () => {
-    expect(emptyHosted()).toEqual({ hostedTournaments: [], hostedTeams: [], hostedResults: [] });
+    expect(emptyHosted()).toEqual({
+      hostedTournaments: [],
+      hostedTeams: [],
+      hostedResults: [],
+      hostedPlayers: [],
+    });
     expect(hostedOf({})).toEqual(emptyHosted());
     const full = { ...data(), profiles: [] };
     expect(hostedOf(full)).toEqual(data());
@@ -849,6 +855,7 @@ describe('hosted data', () => {
 
     it('merge matches by id, the file wins, the rest stays', () => {
       const file: HostedData = {
+        hostedPlayers: [],
         hostedTournaments: [
           tournament({ name: 'Winter Cup 2' }),
           tournament({ id: 'h3', name: 'New' }),
@@ -1032,6 +1039,7 @@ describe('own matches (v12.1)', () => {
   describe('stored data', () => {
     const profiles = new Set(['pr1']);
     const data = (): HostedData => ({
+      hostedPlayers: [],
       hostedTournaments: [manual()],
       hostedTeams: teams(3),
       hostedResults: [
@@ -1085,11 +1093,13 @@ describe('own matches (v12.1)', () => {
 
     it('merge: the file can turn a tournament into one with own matches', () => {
       const device: HostedData = {
+        hostedPlayers: [],
         hostedTournaments: [tournament()],
         hostedTeams: teams(2),
         hostedResults: [result('r1', 't1', 't2', [set(25, 20), set(25, 20)])],
       };
       const file: HostedData = {
+        hostedPlayers: [],
         hostedTournaments: [manual()],
         hostedTeams: [],
         hostedResults: [result('m9', 't2', 't1', [])],

@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-28, after **v12.1.0** (own matches in a hosted tournament) was built. The latest release is **v12.0.0**; 12.1.0 is released by the workflow run after its pull request (see §1).
+Last updated: 2026-11-28, after the release of **v12.1.0** (own matches in a hosted tournament), while **v12.2** (players and live scoring in a hosted tournament) is being built. The latest release is **v12.1.0**.
 
 ---
 
@@ -48,7 +48,7 @@ Last updated: 2026-11-28, after **v12.1.0** (own matches in a hosted tournament)
 - **Migration `20261126140000_v10_audit_medium_low.sql` (M9, L1, L2) is applied** to the live project (2026-11-26, the owner confirmed the connector's prompts; recorded under its version; 10 migrations). Afterwards the whole `supabase/tests/rls.sql` (T1–T34) passed and the security advisor lists only the intended items (12 RPCs under 0029, the `team_removals` INFO).
 - **10.0.1 is released** (2026-11-27): everything the v10 audit and its follow-ups put on `main` (PRs #96–#110; three database migrations `20261126120000`, `20261126130000`, `20261126140000`, all applied). Before the release the owner checked a test build of `main` on one Android phone: the update over 10.0.0 keeps the data, sign-in with the email code, sharing a team (the server then held the team, its 8 players and a photo), still signed in after reopening, and the offline status. **Not checked on a device** (one phone only; covered by the two-device engine tests): the delete / import gates while another device scores live, a changed picture arriving on a second phone, the 200-character limit with emoji, and the "ask first" dialog (share sheet from inside it, its height on a small screen in German). The first real sign-in showed that the dashboard setup was incomplete (Gmail app password, both email templates, 8-digit codes) — fixed by the owner; `docs/SUPABASE.md` now has a "When sign-in doesn't work" table.
 - Current versions: app **12.1.0** (`app.json` + `package.json`, must match), store **15** (v15 adds `plan` to hosted tournaments; v14 added the hosted-tournament lists; v13 added the device-only `sync` slice, not exported), export `schemaVersion` **12** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont`, `tourMode`, `tourSeen` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#391**. Continue at #392.
+- Last decision number in `docs/DECISIONS.md`: **#395**. Continue at #396.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps

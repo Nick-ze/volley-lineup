@@ -1,7 +1,8 @@
-import { teamsOfTournament } from '@/domain/hostedTournament';
+import { playersOfTeam, teamsOfTournament } from '@/domain/hostedTournament';
 import { namedPresetsFor, startersFor } from '@/domain/presets';
 import { opponentsForSeason, seasonsForTeam } from '@/domain/seasons';
 import type {
+  HostedPlayer,
   HostedResult,
   HostedTeam,
   HostedTournament,
@@ -63,3 +64,7 @@ export const selectHostedTeams = (s: AppState, tournamentId: string): HostedTeam
 /** v14: a hosted tournament's results. */
 export const selectHostedResults = (s: AppState, tournamentId: string): HostedResult[] =>
   s.hostedResults.filter((r) => r.tournamentId === tournamentId);
+
+/** v16: a hosted team's players, by number, then by name. */
+export const selectHostedPlayers = (s: AppState, teamId: string): HostedPlayer[] =>
+  playersOfTeam(s.hostedPlayers, teamId);

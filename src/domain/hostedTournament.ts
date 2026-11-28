@@ -13,3 +13,6 @@ export * from './hostedResult';
 export * from './hostedStandings';
 export * from './hostedForms';
 export * from './hostedData';
+// v12.2: a team's optional players, and live scoring of a match (point tags, what they add up to).
+export * from './hostedPlayers';
+export * from './hostedLive';

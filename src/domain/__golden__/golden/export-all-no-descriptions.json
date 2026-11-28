@@ -1,6 +1,6 @@
 {
   "app": "volley-lineup",
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "exportedAt": "2026-11-23T12:00:00.000Z",
   "profiles": [
     {
@@ -566,7 +566,8 @@
       "id": "hf1",
       "tournamentId": "h3",
       "name": "Gastgeber",
-      "order": 0
+      "order": 0,
+      "playerLabel": "name"
     },
     {
       "id": "hf2",
@@ -796,6 +797,43 @@
           "a": 25,
           "b": 20
         }
+      ],
+      "live": [
+        [],
+        [
+          {
+            "team": "a",
+            "kind": "ace",
+            "playerId": "hp4"
+          },
+          {
+            "team": "b",
+            "kind": "attack",
+            "playerId": "hp1"
+          },
+          {
+            "team": "b",
+            "kind": "block"
+          },
+          {
+            "team": "a",
+            "kind": "error",
+            "playerId": "hp3"
+          },
+          {
+            "team": "a"
+          },
+          {
+            "team": "b",
+            "kind": "attack",
+            "playerId": "hp1"
+          },
+          {
+            "team": "b",
+            "kind": "ace",
+            "playerId": "hp2"
+          }
+        ]
       ]
     },
     {
@@ -804,6 +842,35 @@
       "teamAId": "hf2",
       "teamBId": "hf3",
       "sets": []
+    }
+  ],
+  "hostedPlayers": [
+    {
+      "id": "hp1",
+      "teamId": "hf1",
+      "number": 6,
+      "name": "Kelly"
+    },
+    {
+      "id": "hp2",
+      "teamId": "hf1",
+      "number": 9
+    },
+    {
+      "id": "hp3",
+      "teamId": "hf1",
+      "name": "Mia"
+    },
+    {
+      "id": "hp4",
+      "teamId": "hf2",
+      "number": 4,
+      "name": "Jonas"
+    },
+    {
+      "id": "hp5",
+      "teamId": "hf2",
+      "number": 11
     }
   ]
 }

@@ -2,6 +2,7 @@ import { formatOptionalDate } from '@/domain/dates';
 import {
   drawsPossible,
   tableCounts,
+  type HostedPlayerError,
   type HostedSettings,
   type HostedTeamNameError,
   type PlanMatch,
@@ -113,3 +114,14 @@ export const matchLabel = (
   kind === 'manual'
     ? t.tournament.matches.match(match.number)
     : t.tournament.matches.round(match.round);
+
+/** The translated text of a player form error (undefined = no error). */
+export function playerErrorText(
+  t: Strings,
+  error: HostedPlayerError | undefined,
+  maxPlayers: number,
+): string | undefined {
+  const s = t.tournament.players.errors;
+  if (error === undefined) return undefined;
+  return error === 'TOO_MANY' ? s.TOO_MANY(maxPlayers) : s[error];
+}

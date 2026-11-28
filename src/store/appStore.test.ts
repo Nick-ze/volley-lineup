@@ -426,7 +426,13 @@ describe('whole data', () => {
 /** v10 (store v13): what the v12 → v13 step adds — no account, no shared teams. */
 const NO_SYNC = { deviceId: null, account: null, teams: {} };
 /** v12 (store v14): what the v13 → v14 step adds — no hosted tournaments. */
-const NO_HOSTED = { hostedTournaments: [], hostedTeams: [], hostedResults: [] };
+const NO_HOSTED = {
+  hostedTournaments: [],
+  hostedTeams: [],
+  hostedResults: [],
+  // v12.2 (store v16): what the v15 → v16 step adds — no players of hosted teams
+  hostedPlayers: [],
+};
 
 function withoutEmptySeasons(state: unknown): unknown {
   const {
@@ -440,9 +446,10 @@ function withoutEmptySeasons(state: unknown): unknown {
     hostedTournaments,
     hostedTeams,
     hostedResults,
+    hostedPlayers,
     ...rest
   } = state as Record<string, unknown>;
-  expect({ hostedTournaments, hostedTeams, hostedResults }).toEqual(NO_HOSTED);
+  expect({ hostedTournaments, hostedTeams, hostedResults, hostedPlayers }).toEqual(NO_HOSTED);
   expect(sync).toEqual(NO_SYNC);
   expect(seasons).toEqual([]);
   expect(opponents).toEqual([]);
@@ -780,7 +787,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(15); // v12.1: hosted tournaments with own matches
+    expect(STORE_VERSION).toBe(16); // v12.2: players of hosted teams, live scoring
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -886,6 +893,21 @@ describe('migrations', () => {
     expect(migrateStore(null, 13)).toBeNull();
   });
 
+  it('migrates v15 data (v12.1 app): gains the empty list of hosted players, nothing else changes', () => {
+    const v15 = {
+      profiles: [],
+      hostedTournaments: [{ id: 'h1', profileId: 'p', name: 'Cup', plan: 'manual' }],
+      hostedTeams: [{ id: 'a', tournamentId: 'h1', name: 'A', order: 0 }],
+      hostedResults: [{ id: 'm1', tournamentId: 'h1', teamAId: 'a', teamBId: 'b', sets: [] }],
+      sync: NO_SYNC,
+    };
+    expect(migrateStore(v15, 15)).toEqual({ ...v15, hostedPlayers: [] });
+    // a state that already has players keeps them
+    const v16 = { ...v15, hostedPlayers: [{ id: 'p1', teamId: 'a', number: 6 }] };
+    expect(migrateStore(v16, 15)).toEqual(v16);
+    expect(migrateStore(null, 15)).toBeNull();
+  });
+
   it('migrates v14 data (v12.0 app): every hosted tournament gets the app-made plan', () => {
     const tournament = {
       id: 'h1',
@@ -910,8 +932,11 @@ describe('migrations', () => {
       hostedResults: [result],
       sync: NO_SYNC,
     };
+    // (v12.2: the v15 → v16 step then adds the empty player list)
+    const players = { hostedPlayers: [] };
     expect(migrateStore(v14, 14)).toEqual({
       ...v14,
+      ...players,
       hostedTournaments: [
         { ...tournament, plan: 'roundRobin' },
         // one that already says who makes the plan keeps it
@@ -922,10 +947,12 @@ describe('migrations', () => {
     expect(migrateStore({ hostedTournaments: 'x', sync: NO_SYNC }, 14)).toEqual({
       hostedTournaments: 'x',
       sync: NO_SYNC,
+      ...players,
     });
     expect(migrateStore({ hostedTournaments: [7], sync: NO_SYNC }, 14)).toEqual({
       hostedTournaments: [7],
       sync: NO_SYNC,
+      ...players,
     });
     expect(migrateStore(null, 14)).toBeNull();
   });

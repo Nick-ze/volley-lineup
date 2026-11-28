@@ -7,7 +7,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetStores } from '@/test-utils';
 
 import { STORAGE_KEY, emptyData, selectAppData, useAppStore } from './appStore';
-import { selectHostedResults, selectHostedTeams, selectHostedTournaments } from './selectors';
+import {
+  selectHostedPlayers,
+  selectHostedResults,
+  selectHostedTeams,
+  selectHostedTournaments,
+} from './selectors';
 
 const store = () => useAppStore.getState();
 
@@ -244,7 +249,7 @@ describe('hosted tournaments', () => {
     const result = store().setHostedResult(cup.id, a.id, b.id, [{ a: 25, b: 10 }]);
     await new Promise((r) => setTimeout(r, 0));
     const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
-    expect(saved.version).toBe(15);
+    expect(saved.version).toBe(16);
     expect(saved.state.hostedTournaments).toEqual([cup]);
     expect(saved.state.hostedResults).toEqual([result]);
     useAppStore.setState({ ...emptyData() });
@@ -432,5 +437,224 @@ describe('own matches (v15, app 12.1)', () => {
     expect(store().hostedTournaments).toEqual([{ ...tournament, plan: 'roundRobin' }]);
     expect(store().hostedTeams).toHaveLength(2);
     expect(store().hostedResults).toEqual([result]);
+  });
+});
+
+describe('players of hosted teams and live scoring (v16, app 12.2)', () => {
+  const pt = (team: 'a' | 'b', extra: object = {}) => ({ team, ...extra });
+
+  it('a team’s players go by number until it says by name', () => {
+    const { a } = seed();
+    expect(store().hostedTeams.find((t) => t.id === a.id)).not.toHaveProperty('playerLabel');
+    store().setHostedPlayerLabel(a.id, 'name');
+    expect(store().hostedTeams.find((t) => t.id === a.id)?.playerLabel).toBe('name');
+    expect(store().hostedTeams.filter((t) => t.playerLabel !== undefined)).toHaveLength(1);
+  });
+
+  it('adds, changes and lists players by number', () => {
+    const { a, b } = seed();
+    const kelly = store().addHostedPlayer(a.id, { number: 9, name: 'Kelly' });
+    const four = store().addHostedPlayer(a.id, { number: 4 });
+    store().addHostedPlayer(b.id, { name: 'Mia' });
+    expect(kelly).toMatchObject({ teamId: a.id, number: 9, name: 'Kelly' });
+    expect(selectHostedPlayers(store(), a.id).map((p) => p.id)).toEqual([four.id, kelly.id]);
+    // a field left out of the update is removed
+    store().updateHostedPlayer(kelly.id, { name: 'Kelly B.' });
+    expect(store().hostedPlayers.find((p) => p.id === kelly.id)).toEqual({
+      id: kelly.id,
+      teamId: a.id,
+      name: 'Kelly B.',
+    });
+    expect(selectHostedPlayers(store(), 'nope')).toEqual([]);
+  });
+
+  it('round robin: live scoring creates the pair’s result with the first point', () => {
+    const { cup, a, b } = seed();
+    const match = { tournamentId: cup.id, teamAId: a.id, teamBId: b.id };
+    store().saveHostedLive(match, { sets: [], live: [[pt('a')]] });
+    expect(store().hostedResults).toHaveLength(1);
+    const first = store().hostedResults[0];
+    expect(first).toMatchObject({ teamAId: a.id, teamBId: b.id, sets: [], live: [[pt('a')]] });
+    // the next state replaces it under the same id
+    store().saveHostedLive(match, { sets: [{ a: 2, b: 1 }], live: [[pt('a'), pt('a'), pt('b')]] });
+    expect(store().hostedResults).toEqual([
+      { ...first, sets: [{ a: 2, b: 1 }], live: [[pt('a'), pt('a'), pt('b')]] },
+    ]);
+  });
+
+  it('round robin: a state given from the second team’s side is stored the right way round', () => {
+    const { cup, a, b } = seed();
+    store().saveHostedLive(
+      { tournamentId: cup.id, teamAId: b.id, teamBId: a.id },
+      { sets: [{ a: 1, b: 2 }], live: [[pt('a', { kind: 'ace' }), pt('b'), pt('b')]] },
+    );
+    expect(store().hostedResults[0]).toMatchObject({
+      teamAId: a.id,
+      teamBId: b.id,
+      sets: [{ a: 2, b: 1 }],
+      live: [[pt('b', { kind: 'ace' }), pt('a'), pt('a')]],
+    });
+  });
+
+  it('round robin: taking back the only point leaves no result; unknown teams change nothing', () => {
+    const { cup, a, b } = seed();
+    const match = { tournamentId: cup.id, teamAId: a.id, teamBId: b.id };
+    store().saveHostedLive(match, { sets: [], live: [] });
+    expect(store().hostedResults).toEqual([]);
+    store().saveHostedLive(match, { sets: [], live: [[pt('b')]] });
+    store().saveHostedLive(match, { sets: [], live: [] });
+    expect(store().hostedResults).toEqual([]);
+    store().saveHostedLive({ ...match, teamBId: 'nobody' }, { sets: [], live: [[pt('a')]] });
+    store().saveHostedLive({ ...match, teamBId: a.id }, { sets: [], live: [[pt('a')]] });
+    expect(store().hostedResults).toEqual([]);
+  });
+
+  it('round robin: typed-in sets without rallies are stored without a rally list', () => {
+    const { cup, a, b } = seed();
+    store().saveHostedLive(
+      { tournamentId: cup.id, teamAId: a.id, teamBId: b.id },
+      { sets: [{ a: 25, b: 20 }], live: [[]] },
+    );
+    expect(store().hostedResults[0]).not.toHaveProperty('live');
+    expect(store().hostedResults[0].sets).toEqual([{ a: 25, b: 20 }]);
+  });
+
+  it('own matches: live scoring is stored on that match; nothing left empties it', () => {
+    const { coach } = seed();
+    const own = store().addHostedTournament({
+      profileId: coach.id,
+      name: 'Friendlies',
+      setsPerMatch: 3,
+      matchEnd: 'bestOf',
+      plan: 'manual',
+    });
+    const x = store().addHostedTeam(own.id, 'X');
+    const y = store().addHostedTeam(own.id, 'Y');
+    const first = store().addHostedMatch(own.id, y.id, x.id);
+    const second = store().addHostedMatch(own.id, y.id, x.id);
+    if (!first || !second) throw new Error('seed');
+    store().saveHostedLive({ matchId: second.id }, { sets: [], live: [[pt('a'), pt('b')]] });
+    expect(store().hostedResults).toEqual([first, { ...second, live: [[pt('a'), pt('b')]] }]);
+    store().saveHostedLive({ matchId: second.id }, { sets: [], live: [] });
+    expect(store().hostedResults).toEqual([first, second]);
+    // typing sets in by hand replaces the rallies
+    store().saveHostedLive({ matchId: first.id }, { sets: [], live: [[pt('a')]] });
+    store().setHostedMatchSets(first.id, [{ a: 25, b: 20 }]);
+    expect(store().hostedResults[0]).toEqual({ ...first, sets: [{ a: 25, b: 20 }] });
+  });
+
+  it('removing the rallies keeps the finished sets; a result that was only a running set goes', () => {
+    const { cup, a, b, c } = seed();
+    const ab = { tournamentId: cup.id, teamAId: a.id, teamBId: b.id };
+    store().saveHostedLive(ab, {
+      sets: [{ a: 2, b: 1 }],
+      live: [[pt('a'), pt('a'), pt('b')], [pt('b')]],
+    });
+    store().saveHostedLive({ ...ab, teamBId: c.id }, { sets: [], live: [[pt('a')]] });
+    const [first, second] = store().hostedResults;
+    store().clearHostedLive(first.id);
+    store().clearHostedLive(second.id);
+    store().clearHostedLive('nope');
+    expect(store().hostedResults).toEqual([
+      { id: first.id, tournamentId: cup.id, teamAId: a.id, teamBId: b.id, sets: [{ a: 2, b: 1 }] },
+    ]);
+  });
+
+  it('removing the rallies of an added match without sets keeps the match', () => {
+    const { coach } = seed();
+    const own = store().addHostedTournament({
+      profileId: coach.id,
+      name: 'Friendlies',
+      setsPerMatch: 3,
+      matchEnd: 'bestOf',
+      plan: 'manual',
+    });
+    const x = store().addHostedTeam(own.id, 'X');
+    const y = store().addHostedTeam(own.id, 'Y');
+    const match = store().addHostedMatch(own.id, x.id, y.id);
+    if (!match) throw new Error('seed');
+    store().saveHostedLive({ matchId: match.id }, { sets: [], live: [[pt('a')]] });
+    store().clearHostedLive(match.id);
+    expect(store().hostedResults).toEqual([match]);
+  });
+
+  it('deleting a player keeps the rallies’ kinds; deleting a team or tournament deletes its players', () => {
+    const { cup, a, b, c } = seed();
+    const kelly = store().addHostedPlayer(a.id, { number: 6, name: 'Kelly' });
+    const mia = store().addHostedPlayer(b.id, { name: 'Mia' });
+    store().addHostedPlayer(c.id, { number: 1 });
+    store().saveHostedLive(
+      { tournamentId: cup.id, teamAId: a.id, teamBId: b.id },
+      {
+        sets: [],
+        live: [
+          [
+            pt('a', { kind: 'ace', playerId: kelly.id }),
+            pt('b', { kind: 'block', playerId: mia.id }),
+          ],
+        ],
+      },
+    );
+    store().deleteHostedPlayer(kelly.id);
+    expect(store().hostedPlayers.map((p) => p.id)).not.toContain(kelly.id);
+    expect(store().hostedResults[0].live).toEqual([
+      [pt('a', { kind: 'ace' }), pt('b', { kind: 'block', playerId: mia.id })],
+    ]);
+    store().deleteHostedTeam(c.id);
+    expect(store().hostedPlayers.map((p) => p.id)).toEqual([mia.id]);
+    store().deleteHostedTournament(cup.id);
+    expect(store().hostedPlayers).toEqual([]);
+  });
+
+  it('players are persisted, and deleted with their profile', async () => {
+    const { coach, a } = seed();
+    const kelly = store().addHostedPlayer(a.id, { number: 6, name: 'Kelly' });
+    await new Promise((r) => setTimeout(r, 0));
+    const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
+    expect(saved.state.hostedPlayers).toEqual([kelly]);
+    expect(selectAppData(store()).hostedPlayers).toEqual([kelly]);
+    store().deleteProfile(coach.id);
+    expect(store().hostedPlayers).toEqual([]);
+  });
+
+  it('data stored by 12.1.0 (store 15) opens with an empty player list', async () => {
+    const v15 = {
+      version: 15,
+      state: {
+        profiles: [{ id: 'p', name: 'Coach', color: '#FF6B00', createdAt: '2026-01-01' }],
+        teams: [],
+        players: [],
+        matches: [],
+        presets: [],
+        seasons: [],
+        opponents: [],
+        hostedTournaments: [
+          {
+            id: 'h1',
+            profileId: 'p',
+            name: 'Cup',
+            setsPerMatch: 3,
+            matchEnd: 'bestOf',
+            plan: 'manual',
+            createdAt: '2026-11-28T10:00:00.000Z',
+          },
+        ],
+        hostedTeams: [{ id: 'a', tournamentId: 'h1', name: 'A', order: 0 }],
+        hostedResults: [],
+        currentProfileId: 'p',
+        language: 'en',
+        chipLabel: 'number',
+        themeMode: 'dark',
+        dyslexiaFont: false,
+        tourMode: 'none',
+        tourSeen: [],
+        sync: { deviceId: 'd1', account: null, teams: {} },
+      },
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(v15));
+    await useAppStore.persist.rehydrate();
+    expect(store().hostedPlayers).toEqual([]);
+    expect(store().hostedTournaments[0].plan).toBe('manual');
+    expect(store().hostedTeams).toHaveLength(1);
   });
 });

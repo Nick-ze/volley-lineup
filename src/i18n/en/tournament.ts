@@ -186,6 +186,39 @@ export const tournament = {
     ) =>
       `Rank ${rank}, ${played} played, record ${record}, sets ${sets}, balls ${balls}, ${points} ${unit}`,
   },
+  /** v12.2: a team's optional players. */
+  players: {
+    title: 'Players',
+    hint: 'Optional. With players, live scoring can say who scored; without, the team is scored as a team.',
+    shownBy: 'Players are shown by',
+    label: { number: 'Number', name: 'Name' },
+    labelOption: {
+      number: 'Number: players are shown by their number',
+      name: 'Name: players are shown by their name',
+    },
+    number: 'Number',
+    numberPlaceholder: 'No.',
+    name: 'Name',
+    namePlaceholder: 'Player name',
+    add: 'Add',
+    addLabel: 'Add player',
+    count: (n: number, max: number) => `${n} of ${max} players`,
+    empty: 'No players yet.',
+    /** A jersey number as shown: "#6". */
+    numberText: (n: number) => `#${n}`,
+    editLabel: (player: string) => `Edit player ${player}`,
+    deleteLabel: (player: string) => `Delete player ${player}`,
+    confirmDelete: (player: string) => `Delete player ${player}?`,
+    editNumber: (player: string) => `Number of ${player}`,
+    editName: (player: string) => `Name of ${player}`,
+    errors: {
+      REQUIRED: 'Enter a number or a name.',
+      INVALID_NUMBER: 'Enter a whole number from 0 to 999.',
+      DUPLICATE_NUMBER: 'This team already has a player with this number.',
+      TOO_LONG: 'This is too long.',
+      TOO_MANY: (max: number) => `A team has at most ${max} players.`,
+    },
+  },
   result: {
     title: 'Result',
     /** `label` is "Round 3" or (own matches) "Match 3". */
