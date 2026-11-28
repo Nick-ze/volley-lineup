@@ -6,17 +6,25 @@
  * Part of the `hostedTournament.ts` barrel: import sibling modules directly, never the barrel.
  */
 import { parseDateInput } from './dates';
-import { MAX_HOSTED_TEAMS, teamsOfTournament } from './hostedPlan';
+import { MAX_HOSTED_TEAMS, MAX_MANUAL_MATCHES, teamsOfTournament } from './hostedPlan';
 import { matchEndFor, resultValidity, type HostedSettings, type ResultError } from './hostedResult';
-import { tournamentPlan, type PlanMatch } from './hostedStandings';
+import { tournamentPlan, type PlanMatch, type PlanSource } from './hostedStandings';
 import { foldName, MAX_LOCATION_LENGTH, MAX_SEASON_NAME_LENGTH } from './seasonNames';
 import { MAX_NAME_LENGTH } from './syncSchema';
-import type { HostedResult, HostedTeam, HostedTournament, MatchEnd, SetsPerMatch } from './types';
+import type {
+  HostedPlanKind,
+  HostedResult,
+  HostedTeam,
+  HostedTournament,
+  MatchEnd,
+  SetsPerMatch,
+} from './types';
 
 export const MAX_TOURNAMENT_NAME_LENGTH = MAX_SEASON_NAME_LENGTH;
 export const MAX_HOSTED_TEAM_NAME_LENGTH = MAX_NAME_LENGTH;
 export const DEFAULT_SETS_PER_MATCH: SetsPerMatch = 3;
 export const DEFAULT_MATCH_END: MatchEnd = 'bestOf';
+export const DEFAULT_PLAN_KIND: HostedPlanKind = 'roundRobin';
 
 export interface TournamentFormInput {
   name: string;
@@ -24,12 +32,13 @@ export interface TournamentFormInput {
   location: string;
   setsPerMatch: SetsPerMatch;
   matchEnd: MatchEnd;
+  plan: HostedPlanKind;
 }
 
 /** What the form stores: everything of a tournament except its ids and creation time. */
 export type TournamentFormValue = Pick<
   HostedTournament,
-  'name' | 'date' | 'location' | 'setsPerMatch' | 'matchEnd'
+  'name' | 'date' | 'location' | 'setsPerMatch' | 'matchEnd' | 'plan'
 >;
 
 export type TournamentFormField = 'name' | 'date' | 'location';
@@ -39,13 +48,14 @@ export type TournamentFormResult =
   | { ok: true; value: TournamentFormValue }
   | { ok: false; errors: Partial<Record<TournamentFormField, TournamentFormError>> };
 
-/** The empty form of a new tournament: 3 sets, best of 3. */
+/** The empty form of a new tournament: 3 sets, best of 3, the app makes the plan. */
 export const emptyTournamentForm = (): TournamentFormInput => ({
   name: '',
   date: '',
   location: '',
   setsPerMatch: DEFAULT_SETS_PER_MATCH,
   matchEnd: DEFAULT_MATCH_END,
+  plan: DEFAULT_PLAN_KIND,
 });
 
 /**
@@ -84,6 +94,7 @@ export function validateTournamentForm(
       ...(location === '' ? {} : { location }),
       setsPerMatch: input.setsPerMatch,
       matchEnd: matchEndFor(input.setsPerMatch, input.matchEnd),
+      plan: input.plan,
     },
   };
 }
@@ -124,16 +135,48 @@ export interface SettingsBlock {
  * change is fine. A change is only allowed while every stored result stays valid.
  */
 export function settingsChangeBlock(
-  tournamentId: string,
+  tournament: Pick<PlanSource, 'id' | 'plan'>,
   next: HostedSettings,
   teams: readonly HostedTeam[],
   results: readonly HostedResult[],
 ): SettingsBlock | null {
-  const plan = tournamentPlan({ id: tournamentId, ...next }, teams, results);
+  const plan = tournamentPlan({ ...tournament, ...next }, teams, results);
   for (const match of plan.rounds.flatMap((r) => r.matches)) {
     if (match.result === undefined) continue;
     const validity = resultValidity(match.sets, next);
     if (!validity.ok && validity.error !== 'EMPTY') return { match, error: validity.error };
   }
   return null;
+}
+
+/**
+ * v12.1: who makes the plan can only be changed while the tournament has nothing stored — no
+ * result (round robin) and no match (own matches). A round robin's results are one per pair and
+ * never empty; own matches may repeat a pair and may have no result, so neither turns into the
+ * other without loss.
+ */
+export function planKindLocked(tournamentId: string, results: readonly HostedResult[]): boolean {
+  return results.some((r) => r.tournamentId === tournamentId);
+}
+
+export type AddMatchError = 'SAME_TEAM' | 'UNKNOWN_TEAM' | 'TOO_MANY' | 'NOT_MANUAL';
+
+/**
+ * v12.1: whether the coach can add a match between these two teams: the tournament has own
+ * matches, both are different teams of it, and it has fewer than `MAX_MANUAL_MATCHES`. The same
+ * pair may meet again.
+ */
+export function addMatchError(
+  tournament: Pick<HostedTournament, 'id' | 'plan'>,
+  teamAId: string,
+  teamBId: string,
+  teams: readonly HostedTeam[],
+  results: readonly HostedResult[],
+): AddMatchError | null {
+  if (tournament.plan !== 'manual') return 'NOT_MANUAL';
+  const own = new Set(teamsOfTournament(teams, tournament.id).map((t) => t.id));
+  if (!own.has(teamAId) || !own.has(teamBId)) return 'UNKNOWN_TEAM';
+  if (teamAId === teamBId) return 'SAME_TEAM';
+  const count = results.filter((r) => r.tournamentId === tournament.id).length;
+  return count >= MAX_MANUAL_MATCHES ? 'TOO_MANY' : null;
 }

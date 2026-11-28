@@ -280,6 +280,7 @@ describe('tournament form', () => {
         name: 'Winter Cup 2',
         setsPerMatch: 4,
         matchEnd: 'allSets',
+        plan: 'roundRobin',
       },
     ]);
     expect(store().hostedTeams).toHaveLength(3);

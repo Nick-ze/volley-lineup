@@ -4,6 +4,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { chooseCaptain } from '@/domain/captain';
 import {
+  addMatchError,
+  DEFAULT_PLAN_KIND,
   emptyHosted,
   hostedOf,
   hostedOfProfiles,
@@ -295,7 +297,12 @@ export const useAppStore = create<AppStore>()(
         return starters;
       },
       addHostedTournament: (input) => {
-        const tournament: HostedTournament = { id: createId(), createdAt: now(), ...input };
+        const tournament: HostedTournament = {
+          id: createId(),
+          createdAt: now(),
+          plan: DEFAULT_PLAN_KIND,
+          ...input,
+        };
         set((s) => ({ hostedTournaments: [...s.hostedTournaments, tournament] }));
         return tournament;
       },
@@ -303,7 +310,13 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({
           hostedTournaments: s.hostedTournaments.map((x) =>
             x.id === id
-              ? { id: x.id, profileId: x.profileId, createdAt: x.createdAt, ...value }
+              ? {
+                  id: x.id,
+                  profileId: x.profileId,
+                  createdAt: x.createdAt,
+                  plan: x.plan,
+                  ...value,
+                }
               : x,
           ),
         })),
@@ -322,6 +335,10 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({ hostedTeams: s.hostedTeams.map((x) => (x.id === id ? { ...x, name } : x)) })),
       deleteHostedTeam: (id) => set((s) => withoutHostedTeam(hostedOf(s), id)),
       setHostedResult: (tournamentId, teamId, otherTeamId, sets) => {
+        // A tournament with own matches stores its results per match, not per pair.
+        if (get().hostedTournaments.find((x) => x.id === tournamentId)?.plan === 'manual') {
+          return undefined;
+        }
         const order = teamsOfTournament(get().hostedTeams, tournamentId).map((x) => x.id);
         const [one, other] = [order.indexOf(teamId), order.indexOf(otherTeamId)];
         if (one < 0 || other < 0 || one === other) return undefined;
@@ -353,6 +370,25 @@ export const useAppStore = create<AppStore>()(
               pairKey(r.teamAId, r.teamBId) !== pairKey(teamId, otherTeamId),
           ),
         })),
+      addHostedMatch: (tournamentId, teamAId, teamBId) => {
+        const s = get();
+        const tournament = s.hostedTournaments.find((x) => x.id === tournamentId);
+        if (!tournament) return undefined;
+        if (addMatchError(tournament, teamAId, teamBId, s.hostedTeams, s.hostedResults)) {
+          return undefined;
+        }
+        const match: HostedResult = { id: createId(), tournamentId, teamAId, teamBId, sets: [] };
+        set((state) => ({ hostedResults: [...state.hostedResults, match] }));
+        return match;
+      },
+      setHostedMatchSets: (matchId, sets) =>
+        set((s) => ({
+          hostedResults: s.hostedResults.map((r) =>
+            r.id === matchId ? { ...r, sets: sets.map((x) => ({ a: x.a, b: x.b })) } : r,
+          ),
+        })),
+      deleteHostedMatch: (matchId) =>
+        set((s) => ({ hostedResults: s.hostedResults.filter((r) => r.id !== matchId) })),
       replaceAll: (data) =>
         set((s) => {
           // v10: keep the shared teams' bookkeeping; the account link goes with its profile, and

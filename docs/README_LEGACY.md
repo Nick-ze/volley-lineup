@@ -291,6 +291,21 @@ as in 11.0.0 (their best-of-5 is unchanged).
   on a phone before the release (owner: release when built, fixes follow as 12.0.x).
 - Released as `v12.0.0` on 2026-11-28.
 
+### v12.1: own matches in a hosted tournament (store 15, export schema 12)
+
+The owner's request after 12.0.0 (PLAN §50–51, DECISIONS #387–#391): per tournament the coach chooses whether the app
+makes the plan or he enters the matches himself.
+
+- **The form** has "The matches": "Everyone plays everyone once" (as in 12.0, the default) or "I enter the matches
+  myself". The choice is fixed once the tournament has a result or a match.
+- **Own matches**: on the Matches tab choose two teams (chips) and tap "Add match"; the matches are one list in the
+  order added ("Match 1", "Match 2", …), two teams can meet more than once, at most 200. A result is entered per
+  match and can be cleared again; "Delete match" removes the match.
+- **Table, a team's screen, removing a team** work with every match, also several of one pair.
+- **Data**: `HostedTournament.plan` (`roundRobin` / `manual`); an added match is a `HostedResult` whose `sets` may be
+  empty. Store 15 and export schema 12 give older tournaments `plan: 'roundRobin'`. Not in cloud sync.
+- One pull request (#131), checked in a browser and in Jest (2998 tests); not on a phone.
+
 ## Backend
 
 Since v10 the app can sync shared teams through **Supabase** (hosted project "Volleylineup manager",

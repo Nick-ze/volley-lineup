@@ -81,6 +81,10 @@ const SCREENS: [string, string][] = [
   ['tournament-team', '/tournament/h1/team/ht2'],
   ['tournament-result', '/tournament/h1/match?a=ht2&b=ht6'],
   ['tournament2-table', '/tournament/h2?tab=table'],
+  // v12.1: a tournament with own matches.
+  ['tournament3-matches', '/tournament/h3?tab=matches'],
+  ['tournament3-teams', '/tournament/h3?tab=teams'],
+  ['tournament3-result', '/tournament/h3/match?m=hfm2'],
 ];
 
 const CONTROL_ROLES = new Set([

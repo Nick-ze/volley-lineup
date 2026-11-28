@@ -28,7 +28,11 @@ Available in English and German.
   invite your players (view only) and other coaches (can edit) with a code.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 12.0**: host a tournament. A new tab, **Tournaments**, sits between Teams and Profile. Create a
+**What's new in 12.1**: in a tournament you host you can now enter the matches yourself. When you create it, choose
+"I enter the matches myself" instead of "Everyone plays everyone once": on the Matches tab pick two teams and tap
+"Add match", as often as you like, also the same two teams again. Results, table and a team's matches work as before.
+
+**New in 12.0**: host a tournament. A new tab, **Tournaments**, sits between Teams and Profile. Create a
 tournament, enter its teams (2 to 16) and type in the result of each match, set by set. The app works out the plan
 (everyone plays everyone once, in rounds) and keeps the table. A match has 1 to 5 sets, and you choose how it ends:
 "best of" (the table then counts matches) or "all sets are played" (the table counts sets, and a match can end in a

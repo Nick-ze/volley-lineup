@@ -88,7 +88,11 @@ export type NewMatch = Pick<
 export type NewSeason = Pick<Season, 'teamId' | 'name' | 'kind'> &
   Partial<Pick<Season, 'startDate' | 'endDate' | 'location'>>;
 
-export type NewHostedTournament = Pick<HostedTournament, 'profileId'> & TournamentFormValue;
+/** What a tournament is created or updated with; `plan` may be left out (new: the app makes the
+ * plan; update: it stays as it is). */
+export type HostedTournamentValue = Omit<TournamentFormValue, 'plan'> &
+  Partial<Pick<TournamentFormValue, 'plan'>>;
+export type NewHostedTournament = Pick<HostedTournament, 'profileId'> & HostedTournamentValue;
 
 export type NewPreset = Pick<LineupPreset, 'teamId' | 'name'> & Partial<PresetLineup>;
 
@@ -139,7 +143,7 @@ export interface AppActions {
   // hosted tournaments (v14, app 12.0)
   addHostedTournament(input: NewHostedTournament): HostedTournament;
   /** Replaces name, date, place and settings (omitted optional fields are removed). */
-  updateHostedTournament(id: string, value: TournamentFormValue): void;
+  updateHostedTournament(id: string, value: HostedTournamentValue): void;
   /** Deletes the tournament with its teams and results. */
   deleteHostedTournament(id: string): void;
   /** Adds a team at the end of the tournament's order. */
@@ -148,9 +152,10 @@ export interface AppActions {
   /** Deletes the team and every result it is part of. */
   deleteHostedTeam(id: string): void;
   /**
-   * Stores the result of a pair of teams (replacing the pair's earlier one). `sets` are as seen
-   * from `teamId` (`a` = that team); they are stored as seen from the pair's first team in the
-   * tournament's order. Does nothing when a team isn't in the tournament.
+   * Round robin: stores the result of a pair of teams (replacing the pair's earlier one). `sets`
+   * are as seen from `teamId` (`a` = that team); they are stored as seen from the pair's first
+   * team in the tournament's order. Does nothing when a team isn't in the tournament, or in a
+   * tournament with own matches (those go by `setHostedMatchSets`).
    */
   setHostedResult(
     tournamentId: string,
@@ -160,6 +165,15 @@ export interface AppActions {
   ): HostedResult | undefined;
   /** Deletes the result of a pair of teams. */
   deleteHostedResult(tournamentId: string, teamId: string, otherTeamId: string): void;
+  /**
+   * v15 (app 12.1): adds a match to a tournament with own matches (`plan: 'manual'`); team A is
+   * the team given first. Undefined (nothing added) when it can't be (`addMatchError`).
+   */
+  addHostedMatch(tournamentId: string, teamAId: string, teamBId: string): HostedResult | undefined;
+  /** v15: the sets of one added match (none: the match has no result again). */
+  setHostedMatchSets(matchId: string, sets: readonly HostedSetScore[]): void;
+  /** v15: removes one added match. */
+  deleteHostedMatch(matchId: string): void;
   // whole-data operations (used by import / settings)
   /** Replaces all data; hosted tournaments that are left out are removed. */
   replaceAll(data: TeamCollections & Partial<HostedData>): void;

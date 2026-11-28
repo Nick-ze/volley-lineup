@@ -72,6 +72,10 @@ const SCREENS = [
   ['tournament-team', '/tournament/h1/team/ht2'],
   ['tournament2-table', '/tournament/h2?tab=table'],
   ['tournament2-matches', '/tournament/h2?tab=matches'],
+  // v12.1: a tournament with own matches ("Freundschaftsspiele": four matches, one pair twice).
+  ['tournament3-matches', '/tournament/h3?tab=matches'],
+  ['tournament3-teams', '/tournament/h3?tab=teams'],
+  ['tournament3-result', '/tournament/h3/match?m=hfm2'],
 ];
 
 const WIDTHS = [

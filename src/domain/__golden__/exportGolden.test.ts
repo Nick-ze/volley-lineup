@@ -1,8 +1,10 @@
 /**
  * Export / import golden test (v8.3, DECISIONS #223): a fixed data set must export to exactly the
- * same bytes, and the v1–v10 files in this folder must import to exactly the same data, as when
+ * same bytes, and the v1–v11 files in this folder must import to exactly the same data, as when
  * the golden files were written (app 8.2.0; rewritten for export schema 11 in app 12.0.0, which
  * added two hosted tournaments to the input and `legacy-v10.json`, the 11.0.0 export of the
+ * input; rewritten again for schema 12 in app 12.1.0, which gave the input's tournaments a
+ * `plan`, added a tournament with own matches and `legacy-v11.json`, the 12.0.0 export of the
  * input). Refactors must keep these files unchanged.
  *
  * The goldens are only rewritten on purpose: `UPDATE_GOLDEN=1 npx jest src/domain/__golden__`.
@@ -24,7 +26,7 @@ import { hostedOf, importHosted } from '../hostedTournament';
 const DIR = __dirname;
 const NOW = new Date('2026-11-23T12:00:00.000Z');
 const UPDATE = process.env.UPDATE_GOLDEN === '1';
-const LEGACY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+const LEGACY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
 const read = (name: string) => fs.readFileSync(path.join(DIR, name), 'utf8');
 const input = (): ExportData => JSON.parse(read('input.json'));

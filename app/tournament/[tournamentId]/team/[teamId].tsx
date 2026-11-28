@@ -13,7 +13,9 @@ import {
 import { standings, teamMatches } from '@/domain/hostedTournament';
 import type { HostedTournament } from '@/domain/types';
 import { MatchScoreRow } from '@/features/hostedTournament/MatchScoreRow';
+import { matchHref, matchKey } from '@/features/hostedTournament/matchRoute';
 import { TeamNumbers } from '@/features/hostedTournament/TeamNumbers';
+import { matchLabel } from '@/features/hostedTournament/tournamentText';
 import { useTournamentPlan } from '@/features/hostedTournament/useTournamentPlan';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
@@ -58,11 +60,13 @@ function TeamMatches({ tournament, teamId }: { tournament: HostedTournament; tea
   const teams = useHostedTeams(tournament.id);
   const results = useHostedResults(tournament.id);
   const plan = useTournamentPlan(tournament);
-  const { id, setsPerMatch, matchEnd } = tournament;
+  const { id, plan: planKind, setsPerMatch, matchEnd } = tournament;
   const standing = useMemo(
     () =>
-      standings({ id, setsPerMatch, matchEnd }, teams, results).find((x) => x.team.id === teamId),
-    [id, setsPerMatch, matchEnd, teams, results, teamId],
+      standings({ id, plan: planKind, setsPerMatch, matchEnd }, teams, results).find(
+        (x) => x.team.id === teamId,
+      ),
+    [id, planKind, setsPerMatch, matchEnd, teams, results, teamId],
   );
   const matches = useMemo(() => teamMatches(teamId, plan), [teamId, plan]);
   useTourPage(standing ? 'tournamentTeam' : null);
@@ -82,17 +86,13 @@ function TeamMatches({ tournament, teamId }: { tournament: HostedTournament; tea
       <TeamNumbers standing={standing} settings={tournament} />
       {matches.length === 0 ? <EmptyState>{s.team.empty}</EmptyState> : null}
       <View style={styles.list} testID="team-matches">
-        {matches.map(({ round, match }) => (
-          <View key={`${match.teamA.id}|${match.teamB.id}`} style={styles.match}>
-            <Text style={formStyles.eyebrow}>{s.matches.round(round)}</Text>
+        {matches.map(({ match }) => (
+          <View key={matchKey(plan.kind, match)} style={styles.match}>
+            <Text style={formStyles.eyebrow}>{matchLabel(t, plan.kind, match)}</Text>
             <MatchScoreRow
               match={match}
-              onPress={() =>
-                router.push(
-                  `/tournament/${tournament.id}/match?a=${match.teamA.id}&b=${match.teamB.id}`,
-                )
-              }
-              testID={`team-match-${match.teamA.id}-${match.teamB.id}`}
+              onPress={() => router.push(matchHref(tournament.id, plan.kind, match))}
+              testID={`team-match-${matchKey(plan.kind, match)}`}
             />
           </View>
         ))}

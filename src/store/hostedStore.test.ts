@@ -69,6 +69,8 @@ describe('hosted tournaments', () => {
         name: 'Winter Cup 2',
         setsPerMatch: 2,
         matchEnd: 'allSets',
+        // left out of the update: who makes the plan stays
+        plan: 'roundRobin',
       },
       second,
     ]);
@@ -242,7 +244,7 @@ describe('hosted tournaments', () => {
     const result = store().setHostedResult(cup.id, a.id, b.id, [{ a: 25, b: 10 }]);
     await new Promise((r) => setTimeout(r, 0));
     const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
-    expect(saved.version).toBe(14);
+    expect(saved.version).toBe(15);
     expect(saved.state.hostedTournaments).toEqual([cup]);
     expect(saved.state.hostedResults).toEqual([result]);
     useAppStore.setState({ ...emptyData() });
@@ -290,5 +292,145 @@ describe('hosted tournaments', () => {
       hostedResults: [],
     });
     expect(store().sync.deviceId).toBe('d1');
+  });
+});
+
+describe('own matches (v15, app 12.1)', () => {
+  function seedManual() {
+    const base = seed();
+    const own = store().addHostedTournament({
+      profileId: base.coach.id,
+      name: 'Friendlies',
+      setsPerMatch: 3,
+      matchEnd: 'bestOf',
+      plan: 'manual',
+    });
+    const x = store().addHostedTeam(own.id, 'X');
+    const y = store().addHostedTeam(own.id, 'Y');
+    return { ...base, own, x, y };
+  }
+
+  it('a new tournament has the app-made plan unless it says otherwise', () => {
+    const { cup, own } = seedManual();
+    expect(cup.plan).toBe('roundRobin');
+    expect(own.plan).toBe('manual');
+    store().updateHostedTournament(own.id, {
+      name: 'Renamed',
+      setsPerMatch: 5,
+      matchEnd: 'bestOf',
+    });
+    expect(store().hostedTournaments.find((t) => t.id === own.id)).toMatchObject({
+      name: 'Renamed',
+      plan: 'manual',
+    });
+    store().updateHostedTournament(own.id, {
+      name: 'Renamed',
+      setsPerMatch: 5,
+      matchEnd: 'bestOf',
+      plan: 'roundRobin',
+    });
+    expect(store().hostedTournaments.find((t) => t.id === own.id)?.plan).toBe('roundRobin');
+  });
+
+  it('adds matches in order, the team given first as team A, the same pair again', () => {
+    const { own, x, y } = seedManual();
+    const first = store().addHostedMatch(own.id, y.id, x.id);
+    const second = store().addHostedMatch(own.id, x.id, y.id);
+    expect(first).toMatchObject({ tournamentId: own.id, teamAId: y.id, teamBId: x.id, sets: [] });
+    expect(second?.id).not.toBe(first?.id);
+    expect(selectHostedResults(store(), own.id)).toEqual([first, second]);
+  });
+
+  it('adds nothing to a round robin, for an unknown tournament or team, or one team twice', () => {
+    const { cup, a, b, own, x } = seedManual();
+    expect(store().addHostedMatch(cup.id, a.id, b.id)).toBeUndefined();
+    expect(store().addHostedMatch('nope', a.id, b.id)).toBeUndefined();
+    expect(store().addHostedMatch(own.id, x.id, a.id)).toBeUndefined();
+    expect(store().addHostedMatch(own.id, x.id, x.id)).toBeUndefined();
+    expect(store().hostedResults).toEqual([]);
+  });
+
+  it('stores, clears and replaces one match’s sets without touching the pair’s other match', () => {
+    const { own, x, y } = seedManual();
+    const first = store().addHostedMatch(own.id, x.id, y.id);
+    const second = store().addHostedMatch(own.id, x.id, y.id);
+    store().setHostedMatchSets(first?.id ?? '', [
+      { a: 25, b: 20 },
+      { a: 25, b: 22 },
+    ]);
+    expect(store().hostedResults.map((r) => r.sets.length)).toEqual([2, 0]);
+    store().setHostedMatchSets(first?.id ?? '', []);
+    store().setHostedMatchSets(second?.id ?? '', [{ a: 9, b: 25 }]);
+    expect(store().hostedResults.map((r) => r.sets)).toEqual([[], [{ a: 9, b: 25 }]]);
+    store().setHostedMatchSets('nope', [{ a: 1, b: 0 }]);
+    expect(store().hostedResults).toHaveLength(2);
+  });
+
+  it('a result by pair is not stored in a tournament with own matches', () => {
+    const { own, x, y } = seedManual();
+    store().addHostedMatch(own.id, x.id, y.id);
+    expect(store().setHostedResult(own.id, x.id, y.id, [{ a: 25, b: 20 }])).toBeUndefined();
+    expect(store().hostedResults.map((r) => r.sets)).toEqual([[]]);
+  });
+
+  it('deletes one match; removing a team deletes its matches', () => {
+    const { own, x, y } = seedManual();
+    const z = store().addHostedTeam(own.id, 'Z');
+    const first = store().addHostedMatch(own.id, x.id, y.id);
+    const second = store().addHostedMatch(own.id, x.id, y.id);
+    const third = store().addHostedMatch(own.id, y.id, z.id);
+    store().deleteHostedMatch(first?.id ?? '');
+    expect(store().hostedResults).toEqual([second, third]);
+    store().deleteHostedTeam(x.id);
+    expect(store().hostedResults).toEqual([third]);
+  });
+
+  it('data stored by 12.0.0 (store 14) opens with the app-made plan for every tournament', async () => {
+    const tournament = {
+      id: 'h1',
+      profileId: 'p',
+      name: 'Winter Cup',
+      setsPerMatch: 3,
+      matchEnd: 'bestOf',
+      createdAt: '2026-11-28T10:00:00.000Z',
+    };
+    const result = {
+      id: 'r1',
+      tournamentId: 'h1',
+      teamAId: 'a',
+      teamBId: 'b',
+      sets: [{ a: 25, b: 20 }],
+    };
+    const v14 = {
+      version: 14,
+      state: {
+        profiles: [{ id: 'p', name: 'Coach', color: '#FF6B00', createdAt: '2026-01-01' }],
+        teams: [],
+        players: [],
+        matches: [],
+        presets: [],
+        seasons: [],
+        opponents: [],
+        hostedTournaments: [tournament],
+        hostedTeams: [
+          { id: 'a', tournamentId: 'h1', name: 'A', order: 0 },
+          { id: 'b', tournamentId: 'h1', name: 'B', order: 1 },
+        ],
+        hostedResults: [result],
+        currentProfileId: 'p',
+        language: 'en',
+        chipLabel: 'number',
+        themeMode: 'dark',
+        dyslexiaFont: false,
+        tourMode: 'none',
+        tourSeen: [],
+        sync: { deviceId: 'd1', account: null, teams: {} },
+      },
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(v14));
+    await useAppStore.persist.rehydrate();
+    expect(store().hostedTournaments).toEqual([{ ...tournament, plan: 'roundRobin' }]);
+    expect(store().hostedTeams).toHaveLength(2);
+    expect(store().hostedResults).toEqual([result]);
   });
 });

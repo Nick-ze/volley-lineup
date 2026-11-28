@@ -780,7 +780,7 @@ describe('migrations', () => {
     };
     expect(withoutEmptySeasons(migrateStore(current, 6))).toEqual(current);
     expect(migrateStore(null, 6)).toBeNull();
-    expect(STORE_VERSION).toBe(14); // v12.0: hosted tournaments
+    expect(STORE_VERSION).toBe(15); // v12.1: hosted tournaments with own matches
   });
 
   it('migrates v9 data (v7 app): dark theme and platform font, nothing else changes', () => {
@@ -877,9 +877,57 @@ describe('migrations', () => {
       matchEnd: 'bestOf',
       createdAt: '2026-11-28',
     };
+    // (v12.1: the v14 → v15 step then gives it `plan: 'roundRobin'`)
     const v14 = { ...v13, ...NO_HOSTED, hostedTournaments: [tournament] };
-    expect(migrateStore(v14, 13)).toEqual(v14);
+    expect(migrateStore(v14, 13)).toEqual({
+      ...v14,
+      hostedTournaments: [{ ...tournament, plan: 'roundRobin' }],
+    });
     expect(migrateStore(null, 13)).toBeNull();
+  });
+
+  it('migrates v14 data (v12.0 app): every hosted tournament gets the app-made plan', () => {
+    const tournament = {
+      id: 'h1',
+      profileId: 'p',
+      name: 'Winter Cup',
+      setsPerMatch: 3,
+      matchEnd: 'bestOf',
+      createdAt: '2026-11-28',
+    };
+    const result = {
+      id: 'r1',
+      tournamentId: 'h1',
+      teamAId: 'a',
+      teamBId: 'b',
+      sets: [{ a: 25, b: 20 }],
+    };
+    const v14 = {
+      profiles: [],
+      teams: [],
+      hostedTournaments: [tournament, { ...tournament, id: 'h2', plan: 'manual' }],
+      hostedTeams: [],
+      hostedResults: [result],
+      sync: NO_SYNC,
+    };
+    expect(migrateStore(v14, 14)).toEqual({
+      ...v14,
+      hostedTournaments: [
+        { ...tournament, plan: 'roundRobin' },
+        // one that already says who makes the plan keeps it
+        { ...tournament, id: 'h2', plan: 'manual' },
+      ],
+    });
+    // anything that isn't a list of records is left for the load to deal with
+    expect(migrateStore({ hostedTournaments: 'x', sync: NO_SYNC }, 14)).toEqual({
+      hostedTournaments: 'x',
+      sync: NO_SYNC,
+    });
+    expect(migrateStore({ hostedTournaments: [7], sync: NO_SYNC }, 14)).toEqual({
+      hostedTournaments: [7],
+      sync: NO_SYNC,
+    });
+    expect(migrateStore(null, 14)).toBeNull();
   });
 
   it('migrates old data (v1) through to v11 with the tour not chosen', () => {

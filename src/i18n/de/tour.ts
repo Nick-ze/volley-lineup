@@ -329,7 +329,7 @@ export const tour: Strings['tour'] = {
     tournamentForm: {
       format: {
         title: 'Sätze und Spielende',
-        text: 'Wähle 1 bis 5 Sätze pro Spiel. Bei „Best of“ endet ein Spiel, sobald ein Team mehr als die Hälfte der Sätze gewonnen hat, und die Tabelle zählt Spiele. Bei „Alle Sätze werden gespielt“ zählt die Tabelle Sätze.',
+        text: 'Wähle 1 bis 5 Sätze pro Spiel und wie ein Spiel endet: Bei „Best of“ zählt die Tabelle Spiele, bei „Alle Sätze werden gespielt“ Sätze. Du wählst auch, ob die App den Spielplan erstellt oder du die Spiele selbst einträgst.',
       },
     },
     tournamentTable: {
@@ -341,7 +341,7 @@ export const tour: Strings['tour'] = {
     tournamentMatches: {
       result: {
         title: 'Der Spielplan',
-        text: 'Jeder spielt einmal gegen jeden, Runde für Runde. Tippe auf ein Spiel, um das Ergebnis einzutragen oder zu ändern.',
+        text: 'Die App erstellt den Spielplan (jeder einmal gegen jeden), oder du trägst die Spiele selbst ein, wenn du das gewählt hast. Tippe auf ein Spiel, um das Ergebnis einzutragen oder zu ändern.',
       },
       tabs: {
         title: 'Tabelle, Spiele, Teams',

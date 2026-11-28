@@ -1,4 +1,5 @@
 import {
+  addMatchError,
   bestOfAllowed,
   drawsPossible,
   emptyHosted,
@@ -12,11 +13,13 @@ import {
   matchEndChoices,
   matchEndFor,
   matchOutcome,
+  MAX_MANUAL_MATCHES,
   MAX_HOSTED_TEAM_NAME_LENGTH,
   nextSetAllowed,
   nextTeamOrder,
   pairKey,
   parseScoreInput,
+  planKindLocked,
   readResultForm,
   resultCountOfTeam,
   resultOfPair,
@@ -61,6 +64,7 @@ function tournament(extra: Partial<HostedTournament> = {}): HostedTournament {
     name: 'Winter Cup',
     setsPerMatch: 3,
     matchEnd: 'bestOf',
+    plan: 'roundRobin',
     createdAt: '2026-11-28T10:00:00.000Z',
     ...extra,
   };
@@ -602,19 +606,26 @@ describe('validateTournamentForm', () => {
       location: '',
       setsPerMatch: 3,
       matchEnd: 'bestOf',
+      plan: 'roundRobin',
     });
   });
 
   it('accepts a name alone and leaves blank optional fields out', () => {
     expect(validateTournamentForm(input({ name: '  Sommer-Cup ' }), existing, 'pr1')).toEqual({
       ok: true,
-      value: { name: 'Sommer-Cup', setsPerMatch: 3, matchEnd: 'bestOf' },
+      value: { name: 'Sommer-Cup', setsPerMatch: 3, matchEnd: 'bestOf', plan: 'roundRobin' },
     });
   });
 
   it('stores the date as ISO and the place trimmed', () => {
     const value = validateTournamentForm(
-      input({ date: '5.12.26', location: ' Halle Süd ', setsPerMatch: 5, matchEnd: 'allSets' }),
+      input({
+        date: '5.12.26',
+        location: ' Halle Süd ',
+        setsPerMatch: 5,
+        matchEnd: 'allSets',
+        plan: 'manual',
+      }),
       existing,
       'pr1',
     );
@@ -626,6 +637,7 @@ describe('validateTournamentForm', () => {
         location: 'Halle Süd',
         setsPerMatch: 5,
         matchEnd: 'allSets',
+        plan: 'manual',
       },
     });
   });
@@ -710,6 +722,7 @@ describe('validateHostedTeamName', () => {
 });
 
 describe('settingsChangeBlock', () => {
+  const CUP = { id: 'h1', plan: 'roundRobin' } as const;
   const list = teams(3);
   const results = [
     result('r1', 't2', 't3', [set(25, 20), set(25, 20), set(20, 25)]),
@@ -717,34 +730,34 @@ describe('settingsChangeBlock', () => {
   ];
 
   it('allows a change that keeps every result valid', () => {
-    expect(settingsChangeBlock('h1', ALL_3, list, results)).toBeNull();
+    expect(settingsChangeBlock(CUP, ALL_3, list, results)).toBeNull();
     expect(
-      settingsChangeBlock('h1', { setsPerMatch: 5, matchEnd: 'allSets' }, list, results),
+      settingsChangeBlock(CUP, { setsPerMatch: 5, matchEnd: 'allSets' }, list, results),
     ).toBeNull();
-    expect(settingsChangeBlock('h1', BEST_OF_3, list, [results[1]])).toBeNull();
-    expect(settingsChangeBlock('h1', ALL_2, list, [])).toBeNull();
+    expect(settingsChangeBlock(CUP, BEST_OF_3, list, [results[1]])).toBeNull();
+    expect(settingsChangeBlock(CUP, ALL_2, list, [])).toBeNull();
   });
 
   it('names the first match with more sets than the new number', () => {
-    const block = settingsChangeBlock('h1', ALL_2, list, results);
+    const block = settingsChangeBlock(CUP, ALL_2, list, results);
     expect(block?.error).toBe('TOO_MANY_SETS');
     expect([block?.match.teamA.id, block?.match.teamB.id]).toEqual(['t2', 't3']);
     expect(block?.match.sets).toHaveLength(3);
   });
 
   it('names the match with a set after the deciding one', () => {
-    const block = settingsChangeBlock('h1', BEST_OF_3, list, results);
+    const block = settingsChangeBlock(CUP, BEST_OF_3, list, results);
     expect(block?.error).toBe('SET_AFTER_DECIDED');
     expect(block?.match.result?.id).toBe('r1');
     // Fewer sets than a result has, with best of 1.
     expect(
-      settingsChangeBlock('h1', { setsPerMatch: 1, matchEnd: 'bestOf' }, list, [results[1]])?.error,
+      settingsChangeBlock(CUP, { setsPerMatch: 1, matchEnd: 'bestOf' }, list, [results[1]])?.error,
     ).toBe('TOO_MANY_SETS');
   });
 
   it('names a result whose set is invalid', () => {
     const bad = [result('r1', 't1', 't2', [set(7, 7)])];
-    expect(settingsChangeBlock('h1', ALL_3, list, bad)?.error).toBe('INVALID_SET');
+    expect(settingsChangeBlock(CUP, ALL_3, list, bad)?.error).toBe('INVALID_SET');
   });
 });
 
@@ -890,6 +903,199 @@ describe('hosted data', () => {
     it('merge drops tournaments of profiles that are gone', () => {
       const merged = importHosted(data(), emptyHosted(), 'merge', new Set(['pr1']));
       expect(merged.ok && merged.hosted.hostedTournaments.map((x) => x.id)).toEqual(['h1']);
+    });
+  });
+});
+
+describe('own matches (v12.1)', () => {
+  const manual = (extra: Partial<HostedTournament> = {}) =>
+    tournament({ plan: 'manual', ...extra });
+  const list = teams(3);
+
+  describe('tournamentPlan', () => {
+    it('lists the matches the coach added, in the order added, as one list without rounds', () => {
+      const results = [
+        result('m1', 't2', 't1', [set(25, 20), set(25, 22)]),
+        result('m2', 't1', 't3', []),
+        // the same two teams again, the other way round
+        result('m3', 't1', 't2', [set(25, 20)]),
+        result('mx', 't1', 't2', [set(25, 0), set(25, 0)], 'other'),
+      ];
+      const plan = tournamentPlan(manual(), list, results);
+      expect(plan.kind).toBe('manual');
+      expect(plan.total).toBe(3);
+      expect(plan.played).toBe(1);
+      expect(plan.rounds).toHaveLength(1);
+      expect(plan.rounds[0].resting).toBeNull();
+      const [first, second, third] = plan.rounds[0].matches;
+      // Team A is the team the coach chose first; the sets are stored from its side.
+      expect(first).toMatchObject({
+        round: 1,
+        number: 1,
+        teamA: { id: 't2' },
+        teamB: { id: 't1' },
+        sets: [set(25, 20), set(25, 22)],
+        outcome: { state: 'done', winner: 'a' },
+      });
+      expect(first.result?.id).toBe('m1');
+      expect(second).toMatchObject({ number: 2, sets: [], outcome: { state: 'open' } });
+      expect(second.result?.id).toBe('m2');
+      expect(third).toMatchObject({ number: 3, outcome: { state: 'running' } });
+    });
+
+    it('has no rounds before a match is added, and skips a match whose team is gone', () => {
+      expect(tournamentPlan(manual(), list, [])).toMatchObject({ rounds: [], total: 0, played: 0 });
+      const stray = [result('m1', 't1', 'gone', [set(25, 20)]), result('m2', 'gone', 't1', [])];
+      expect(tournamentPlan(manual(), list, stray).rounds).toEqual([]);
+    });
+
+    it('numbers a round robin’s matches through the rounds', () => {
+      const plan = tournamentPlan(tournament(), teams(4), []);
+      expect(plan.kind).toBe('roundRobin');
+      expect(plan.rounds.flatMap((r) => r.matches.map((m) => m.number))).toEqual([
+        1, 2, 3, 4, 5, 6,
+      ]);
+    });
+  });
+
+  it('the table counts every match, also two of the same pair', () => {
+    const results = [
+      result('m1', 't1', 't2', [set(25, 20), set(25, 20)]),
+      result('m2', 't2', 't1', [set(25, 23), set(25, 23)]),
+      result('m3', 't1', 't2', [set(25, 10), set(25, 10)]),
+      result('m4', 't1', 't3', []), // no result yet
+    ];
+    const table = standings(manual(), list, results);
+    expect(table.map((s) => [s.rank, s.team.id, s.points, s.played])).toEqual([
+      [1, 't1', 4, 3],
+      [2, 't2', 2, 3],
+      [3, 't3', 0, 0],
+    ]);
+    expect(table[0]).toMatchObject({ won: 2, lost: 1, setsFor: 4, setsAgainst: 2 });
+  });
+
+  it('a team’s matches are the ones it is in, with their numbers', () => {
+    const plan = tournamentPlan(manual(), list, [
+      result('m1', 't1', 't2', []),
+      result('m2', 't2', 't3', []),
+      result('m3', 't3', 't1', []),
+    ]);
+    expect(teamMatches('t1', plan).map((m) => [m.match.number, m.opponent.id])).toEqual([
+      [1, 't2'],
+      [3, 't3'],
+    ]);
+  });
+
+  it('a settings change looks at the added matches; one without a result never blocks', () => {
+    const results = [
+      result('m1', 't1', 't2', []),
+      result('m2', 't2', 't1', [set(25, 20), set(20, 25), set(15, 9)]),
+    ];
+    const cup = { id: 'h1', plan: 'manual' } as const;
+    expect(settingsChangeBlock(cup, ALL_3, list, results)).toBeNull();
+    const block = settingsChangeBlock(cup, ALL_2, list, results);
+    expect(block?.error).toBe('TOO_MANY_SETS');
+    expect(block?.match.result?.id).toBe('m2');
+  });
+
+  it('who makes the plan is fixed once anything is stored', () => {
+    expect(planKindLocked('h1', [])).toBe(false);
+    expect(planKindLocked('h1', [result('m1', 't1', 't2', [], 'other')])).toBe(false);
+    expect(planKindLocked('h1', [result('m1', 't1', 't2', [])])).toBe(true);
+    expect(planKindLocked('h1', [result('r1', 't1', 't2', [set(25, 20)])])).toBe(true);
+  });
+
+  describe('addMatchError', () => {
+    const cup = manual();
+
+    it('allows two different teams of the tournament, also a pair that already has a match', () => {
+      expect(addMatchError(cup, 't1', 't2', list, [])).toBeNull();
+      expect(addMatchError(cup, 't2', 't1', list, [result('m1', 't1', 't2', [])])).toBeNull();
+    });
+
+    it('refuses a round robin, an unknown team, one team twice and a 201st match', () => {
+      expect(addMatchError(tournament(), 't1', 't2', list, [])).toBe('NOT_MANUAL');
+      expect(addMatchError(cup, 't1', 'nobody', list, [])).toBe('UNKNOWN_TEAM');
+      expect(addMatchError(cup, 'nobody', 't1', list, [])).toBe('UNKNOWN_TEAM');
+      expect(addMatchError(cup, 't1', 't1', list, [])).toBe('SAME_TEAM');
+      const many = Array.from({ length: MAX_MANUAL_MATCHES }, (_, i) =>
+        result(`m${i}`, 't1', 't2', []),
+      );
+      expect(addMatchError(cup, 't1', 't2', list, many)).toBe('TOO_MANY');
+      expect(addMatchError(cup, 't1', 't2', list, many.slice(1))).toBeNull();
+      // another tournament's matches don't count
+      const elsewhere = many.map((m) => ({ ...m, tournamentId: 'other' }));
+      expect(addMatchError(cup, 't1', 't2', list, elsewhere)).toBeNull();
+    });
+  });
+
+  describe('stored data', () => {
+    const profiles = new Set(['pr1']);
+    const data = (): HostedData => ({
+      hostedTournaments: [manual()],
+      hostedTeams: teams(3),
+      hostedResults: [
+        result('m1', 't1', 't2', [set(25, 20), set(25, 20)]),
+        result('m2', 't2', 't1', []),
+        result('m3', 't1', 't2', [set(25, 20)]),
+      ],
+    });
+
+    it('accepts several matches of a pair and a match without a result', () => {
+      expect(isHostedConsistent(data(), profiles)).toBe(true);
+    });
+
+    it('still refuses an invalid set, a set after the deciding one and a foreign team', () => {
+      const bad = (change: (d: HostedData) => void) => {
+        const d = data();
+        change(d);
+        return isHostedConsistent(d, profiles);
+      };
+      expect(bad((d) => (d.hostedResults[0].sets = [set(7, 7)]))).toBe(false);
+      expect(bad((d) => d.hostedResults[0].sets.push(set(25, 1)))).toBe(false);
+      expect(bad((d) => (d.hostedResults[1].teamBId = 'nobody'))).toBe(false);
+    });
+
+    it('a round robin still needs a set in every result and one result per pair', () => {
+      const d = data();
+      d.hostedTournaments[0].plan = 'roundRobin';
+      expect(isHostedConsistent(d, profiles)).toBe(false);
+      d.hostedResults = [d.hostedResults[1]];
+      expect(isHostedConsistent(d, profiles)).toBe(false);
+      d.hostedResults = [data().hostedResults[0]];
+      expect(isHostedConsistent(d, profiles)).toBe(true);
+    });
+
+    it('merge matches added matches by id only: both devices’ matches of a pair stay', () => {
+      const file: HostedData = {
+        ...emptyHosted(),
+        hostedResults: [
+          result('m2', 't2', 't1', [set(25, 9), set(25, 9)]),
+          result('new', 't1', 't2', []),
+        ],
+      };
+      const merged = importHosted(data(), file, 'merge', profiles);
+      expect(merged.ok && merged.hosted.hostedResults.map((r) => [r.id, r.sets.length])).toEqual([
+        ['m1', 2],
+        ['m2', 2],
+        ['m3', 1],
+        ['new', 0],
+      ]);
+    });
+
+    it('merge: the file can turn a tournament into one with own matches', () => {
+      const device: HostedData = {
+        hostedTournaments: [tournament()],
+        hostedTeams: teams(2),
+        hostedResults: [result('r1', 't1', 't2', [set(25, 20), set(25, 20)])],
+      };
+      const file: HostedData = {
+        hostedTournaments: [manual()],
+        hostedTeams: [],
+        hostedResults: [result('m9', 't2', 't1', [])],
+      };
+      const merged = importHosted(device, file, 'merge', profiles);
+      expect(merged.ok && merged.hosted.hostedResults.map((r) => r.id)).toEqual(['r1', 'm9']);
     });
   });
 });

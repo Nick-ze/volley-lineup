@@ -811,3 +811,30 @@ Later, not now: knock-out rounds and finals; groups; playing each other twice; c
 - [x] Released as 12.0.0 (owner, 2026-11-28: release when it is done; fixes follow as 12.0.x): https://github.com/Nick-ze/volley-lineup/releases/tag/v12.0.0
 
 Checked in a browser and in Jest (DECISIONS #384); nothing was tried on a phone before the release (#385).
+
+## 50. v12.1 — Own matches in a hosted tournament
+
+The owner's request after 12.0.0: "add that you can write the matches in yourself". Asked how, the owner chose: per tournament.
+
+- **Who makes the plan** is a choice in the tournament form ("The matches"): **"Everyone plays everyone once"** (the app works out the plan, as in 12.0; the default) or **"I enter the matches myself"**.
+- **Own matches**: on the Matches tab the coach chooses two teams (chips that wrap; the team tapped first is the upper one) and taps "Add match". The matches are one list in the order added, labelled "Match 1", "Match 2", …; there are no rounds and no resting team. Two teams can meet more than once. At most 200 matches.
+- **Results** are entered as before, per match. A match can be saved without a result again (clear every set); "Delete match" on the result screen removes the match after a question.
+- **Table and a team's screen** count and list every match, also several of one pair.
+- **Removing a team** deletes its matches; the question says how many.
+- **The choice is fixed once the tournament has a result or a match**: a round robin has one result per pair and never an empty one, own matches may repeat a pair and may have no result, so neither turns into the other without loss. The form says so.
+- **Data model**: `HostedTournament.plan: 'roundRobin' | 'manual'`. An added match is a `HostedResult` (in the order of the list; `sets` empty until its result is typed in; team A is the team chosen first; several per pair). Store **v15** (every tournament from before gets `plan: 'roundRobin'`); export **schemaVersion 12** (files v1–v11 upgrade the same way). Not in cloud sync; nothing under `src/lib/sync`, `src/domain/sync*` or `supabase/` changes.
+- **Routes**: a round robin's result stays `/tournament/[tournamentId]/match?a=&b=`; an added match's is `/tournament/[tournamentId]/match?m=<match id>`.
+
+## 51. v12.1 acceptance checklist
+
+- [x] The form offers both ways, the app-made plan first, and says what each means; a new tournament can be created with own matches.
+- [x] With own matches the Matches tab shows no plan of its own: two teams are chosen and "Add match" adds their match; the same two teams can be added again; a 201st match is refused with a text.
+- [x] A result is entered, changed and cleared per match; "Delete match" asks and removes only that match.
+- [x] The table counts every played match; a team's screen lists its matches under their numbers.
+- [x] Removing a team says how many matches go and deletes them.
+- [x] The choice can be changed while nothing is stored and is fixed afterwards, with a text.
+- [x] Data stored by 12.0.0 (store 14) and export files v1–v11 open without loss, their tournaments with the app-made plan; a round trip keeps the plan kind, the order of the matches and a match without a result.
+- [x] A round robin behaves as in 12.0.0 (its tests are unchanged apart from the versions and the new field).
+- [x] No sideways scrolling; every control at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font (`scripts/layout-scan.js`, screenshots).
+- [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
+- [ ] Released as 12.1.0.

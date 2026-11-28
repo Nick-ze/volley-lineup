@@ -332,7 +332,7 @@ export const tour = {
     tournamentForm: {
       format: {
         title: 'Sets and how a match ends',
-        text: 'Choose 1 to 5 sets per match. “Best of” ends a match when a team has won more than half of the sets, and the table counts matches. With “All sets are played” the table counts sets.',
+        text: 'Choose 1 to 5 sets per match and how a match ends: with “Best of” the table counts matches, with “All sets are played” it counts sets. You also choose whether the app makes the plan or you enter the matches yourself.',
       },
     },
     tournamentTable: {
@@ -344,7 +344,7 @@ export const tour = {
     tournamentMatches: {
       result: {
         title: 'The plan',
-        text: 'Everyone plays everyone once, round by round. Tap a match to enter or change its result.',
+        text: 'The app makes the plan (everyone plays everyone once), or you add the matches yourself if you chose that. Tap a match to enter or change its result.',
       },
       tabs: {
         title: 'Table, matches, teams',
