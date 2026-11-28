@@ -249,8 +249,11 @@ was touched. The palette is the same; `src/theme/colors.ts` gained soft shades o
 - **Live**: the score in the display typeface with fixed-width digits and a short tick when it changes; quiet Undo,
   Reset as red text. Substitution is not lower than in 10.0.1.
 - **Motion**: press feedback, the tab marker's slide, the score's tick; none with "reduce motion".
-- Checked in a browser only (528 screenshots per pull request, measurements, a touch-target scan, a drag-and-drop
-  run); not on a phone before the release build.
+- **After the first test on a phone**: when a point is tagged, every player chip is shown (the chips wrap; the one
+  line that scrolled sideways could not be scrolled on the phone), and a season's Matches and Opponents tabs keep
+  their parts apart.
+- Checked in a browser (528 screenshots per pull request, measurements, a touch-target scan, a scan for touching
+  panels, a drag-and-drop run, one independent QA pass) and by the owner on an Android phone with two test builds.
 
 ## Backend
 
