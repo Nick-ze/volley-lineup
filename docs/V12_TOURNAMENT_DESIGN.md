@@ -15,7 +15,7 @@ It is separate from everything that exists:
 
 ## Decisions
 
-1. **Where**: on the **Teams screen**, as a section "Tournaments" under the teams (owner, 2026-11-28: "the tournament option should be on the teams screen"). No extra app tab. A hosted tournament belongs to the profile, not to a team.
+1. **Where**: a fourth app tab, **Tournaments**, between Teams and Profile (Ionicons `trophy` / `trophy-outline`). A hosted tournament belongs to the profile, not to a team. (The owner looked at a section on the Teams screen instead and decided for the tab, DECISIONS #361–#362.)
 2. **Format**: one group, everyone plays everyone once. No knock-out, groups, second round, courts or times in this version.
 3. **The plan is derived, not stored.** The rounds come from the teams in the order they were added (circle method; with an odd number one team rests per round). Adding or removing a team recalculates the plan; results stay with their pair of teams.
 4. **Sets per match: 1 to 5** (default 3), chosen per tournament.
@@ -85,7 +85,7 @@ Pure logic in `src/domain/hostedTournament.ts` (split into sub-modules if it gro
 
 All in the V11 look (`docs/V11_DESIGN.md`, HANDOFF "Look (v11)"): titles on the page, flat panels, pills, `useTrackStyles`, `IconButton`, `EmptyState`, `Banner`, tabular digits, one solid-orange action per screen. No sideways scrolling anywhere (it failed on the owner's phone, DECISIONS #357).
 
-**Teams screen** (`app/(tabs)/teams.tsx`, feature code in `src/features/hostedTournament/`): under the list of teams a small label "Tournaments", then the profile's hosted tournaments as `ListRow`s — a trophy mark in a rounded square (`surfaceRaised`, Ionicons `trophy-outline` in `textMuted`), the name, under it "6 teams · 9 of 15 played"; Edit and Delete as icon buttons — and below the list "New tournament" as a **secondary** button ("New team" stays the screen's one orange action). Without tournaments: the label, one grey sentence ("Host a tournament: enter all teams and results, the app keeps the plan and the table.") and the button; no court drawing here, so the team list's empty state stays the only one. The sentence also says that a tournament your own team plays in, with lineups and live scoring, is created in the team's Matches tab. The section shows for every profile, also one without teams.
+**Tournaments tab** (`app/(tabs)/tournaments.tsx`, feature code in `src/features/hostedTournament/`): page title "Tournaments", the profile's name above it (`Screen title`, like the other tabs). "New tournament" (primary: the tab's one orange action). Each tournament is a `ListRow`: a trophy mark in a rounded square (`surfaceRaised`, Ionicons `trophy-outline` in `textMuted`), the name, under it "6 teams · 9 of 15 played" and the date; Edit and Delete as icon buttons. Empty state with one sentence. A short grey line under the list says that a tournament your own team plays in, with lineups and live scoring, is created in the team's Matches tab. The tab joins the pager of the app tabs (`APP_TABS`, `AppTabBar` icons, `TabScene`): four tabs, swipe and tap as today; check the four labels at 375 px in German with the dyslexia font.
 
 **New / edit tournament** (`/tournament-new?tournamentId=`, modal, compact header): name, date (dd.mm.yy, optional), place (optional), "Sets per match" as a track 1–5, "A match ends" as a track "Best of N" / "All sets are played" (with 2 or 4 sets only the second is offered), and one line that says what the table counts. Save (primary), Cancel.
 
@@ -105,14 +105,14 @@ New i18n files `src/i18n/en/tournament.ts` and `src/i18n/de/tournament.ts` (Germ
 
 ## Tour
 
-Per HANDOFF ("New screens need a tour page"): the Teams page gets one tip about the Tournaments section; new pages for the tournament screen (one per tab) and the result screen, each with one or two short tips. Add them to the quick tour only if it stays short.
+Per HANDOFF ("New screens need a tour page"): pages for the Tournaments tab, the tournament screen (one per tab) and the result screen, each with one or two short tips. Add them to the quick tour only if it stays short.
 
 ## How to build it
 
 Five pull requests, in this order, each merged only on green CI, with screenshots before and after (`scripts/screenshots.js`; add the new screens to `SCREENS` and seed a tournament with six teams and some results in the script's storage).
 
 1. **Foundation**: types, `src/domain/hostedTournament*` with tests, store v14 + migration, export v11 + upgrade + golden, store hooks, the i18n files with all strings, the routes registered in `app/_layout.tsx`, `parentRoute.ts` and `headerVariant.ts`, PLAN §48 (features) and §49 (acceptance list), DECISIONS. No visible change yet.
-2. **The Tournaments section on the Teams screen and the form.**
+2. **The Tournaments tab, its list and the form.**
 3. **Tournament screen**: Teams and Matches tabs, the result screen.
 4. **Table and a team's matches.**
 5. **Tour pages, the full check, docs** (README "What's new", version history, HANDOFF), **version 12.0.0** and a test build (`android-apk.yml` with `release: false`). No release without the owner.
@@ -121,7 +121,7 @@ Checks for every pull request: `npm run check`, `npx expo export -p web --clear`
 
 ## Acceptance list (PLAN §49)
 
-- [ ] The Teams screen lists the profile's hosted tournaments under its teams; create, edit, delete (with confirmation). There is no extra app tab, and "New team" is still the screen's only solid-orange button.
+- [ ] A fourth tab "Tournaments" lists the profile's hosted tournaments; create, edit, delete (with confirmation). The four tabs swipe and tap as the three did, and their labels fit at 375 px in German with the dyslexia font.
 - [ ] Sets per match can be 1 to 5; "best of" is offered only for 1, 3 and 5; the form says what the table counts.
 - [ ] Teams can be added (2 to 16), renamed and removed; names are unique; removing a team with results asks and says how many results go.
 - [ ] The Matches tab shows every pair once, grouped in rounds, with a resting team when the number is odd.
@@ -132,7 +132,7 @@ Checks for every pull request: `npm run check`, `npx expo export -p web --clear`
 - [ ] Old data (store 13) and export files v1–v10 open without loss; an export / import round trip restores tournaments exactly; deleting a profile removes its tournaments.
 - [ ] Nothing under `src/lib/sync`, `src/domain/sync*`, `supabase/` changed; a team's seasons, matches and live scoring behave as in 11.0.0.
 - [ ] No sideways scrolling on the new screens; every control is at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overlaps or is cut without "…".
-- [ ] The Teams page has a tip about the Tournaments section; tour pages exist for the new screens.
+- [ ] Tour pages exist for the new screens.
 - [ ] Lint, typecheck and tests pass in CI; `src/domain` at 100 %; the web export builds.
 - [ ] The owner tried the test build on the phone. Only then: release.
 
