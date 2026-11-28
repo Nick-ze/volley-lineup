@@ -10,12 +10,14 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>
 
 const ICONS: Record<AppTab, { active: IconName; inactive: IconName }> = {
   teams: { active: 'people', inactive: 'people-outline' },
+  tournaments: { active: 'trophy', inactive: 'trophy-outline' },
   profile: { active: 'person-circle', inactive: 'person-circle-outline' },
   settings: { active: 'settings', inactive: 'settings-outline' },
 };
 
 /**
- * v11: the app's bottom tab bar (Teams · Profile · Settings) as the pill bar. It presses a tab the
+ * v11: the app's bottom tab bar (Teams · Tournaments · Profile · Settings; v12: four tabs) as
+ * the pill bar. It presses a tab the
  * way the navigator's own bar does — a `tabPress` event, then the navigation unless a listener
  * prevented it — so the pager in `app/(tabs)/_layout.tsx` keeps working.
  */

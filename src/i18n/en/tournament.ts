@@ -13,6 +13,8 @@ export const tournament = {
   tab: { label: 'Tournaments', accessibilityLabel: 'Tournaments tab' },
   /** `+24`, `−31` (a real minus sign) or `0`. */
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),
+  /** Between the parts of a quiet line (date · place · format). */
+  metaSeparator: ' · ',
   /** The format in a quiet line: "best of 3", "2 sets". */
   format: {
     bestOf: (sets: number) => `best of ${sets}`,
@@ -21,8 +23,11 @@ export const tournament = {
   list: {
     new: 'New tournament',
     empty: 'No tournaments yet. Host one: enter its teams and results, the app keeps the table.',
-    summary: (teams: number, played: number, total: number) =>
-      `${plural(teams, 'team', 'teams')} · ${played} of ${total} played`,
+    teamCount: (teams: number) => plural(teams, 'team', 'teams'),
+    /** "6 teams · 9 of 15 played" from its two parts. */
+    summary: (teams: string, played: string) => `${teams} · ${played}`,
+    /** The first part when the two are drawn apart (they may wrap): "6 teams ·". */
+    summaryLead: (teams: string) => `${teams} ·`,
     open: (name: string, summary: string) => `${name}, ${summary}. Open`,
     edit: 'Edit',
     editLabel: (name: string) => `Edit tournament ${name}`,

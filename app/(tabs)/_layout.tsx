@@ -11,8 +11,8 @@ import { useT } from '@/i18n';
 import { useTheme } from '@/theme';
 
 /**
- * Bottom tab bar for the three top-level screens (Teams, Profile, Settings; v11: the pill bar
- * `AppTabBar`). Detail screens (team, match, …) live in the root Stack and are pushed over the
+ * Bottom tab bar for the four top-level screens (Teams, Tournaments, Profile, Settings; v11: the
+ * pill bar `AppTabBar`; v12: the Tournaments tab). Detail screens (team, match, …) live in the root Stack and are pushed over the
  * tabs, without a tab bar.
  */
 export default function TabsLayout() {
@@ -20,7 +20,7 @@ export default function TabsLayout() {
   const t = useT();
   const router = useRouter();
   const shown = useShownTab();
-  // v8.1.1: one pager for the three scenes; a drag that went on navigates to the new tab.
+  // v8.1.1: one pager for all scenes; a drag that went on navigates to the new tab.
   const pager = useTabPager(APP_TABS.length, APP_TABS.indexOf(shown), (next) =>
     router.navigate(`/${APP_TABS[next]}`),
   );
@@ -40,7 +40,7 @@ export default function TabsLayout() {
           detachInactiveScreens={false}
           screenOptions={{
             animation: 'none',
-            // All three tabs mount up front (phones too: the screens are light), so a drag always
+            // All tabs mount up front (phones too: the screens are light), so a drag always
             // shows the real neighbouring screen.
             lazy: false,
             // v11: no header — each tab screen opens with its title on the page.
@@ -57,6 +57,15 @@ export default function TabsLayout() {
               tabBarLabel: t.profile.tabs.teams,
               tabBarAccessibilityLabel: t.profile.tabs.teamsLabel,
               tabBarButtonTestID: 'tab-teams',
+            }}
+          />
+          <Tabs.Screen
+            name="tournaments"
+            options={{
+              title: t.tournament.nav.tournaments,
+              tabBarLabel: t.tournament.tab.label,
+              tabBarAccessibilityLabel: t.tournament.tab.accessibilityLabel,
+              tabBarButtonTestID: 'tab-tournaments',
             }}
           />
           <Tabs.Screen

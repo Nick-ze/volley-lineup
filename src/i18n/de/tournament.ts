@@ -14,6 +14,7 @@ export const tournament: Strings['tournament'] = {
   },
   tab: { label: 'Turniere', accessibilityLabel: 'Turniere-Tab' },
   signed: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'),
+  metaSeparator: ' · ',
   format: {
     bestOf: (sets: number) => `Best of ${sets}`,
     allSets: (sets: number) => plural(sets, 'Satz', 'Sätze'),
@@ -22,8 +23,9 @@ export const tournament: Strings['tournament'] = {
     new: 'Neues Turnier',
     empty:
       'Noch keine Turniere. Richte eines aus: Trag Teams und Ergebnisse ein, die App führt die Tabelle.',
-    summary: (teams: number, played: number, total: number) =>
-      `${plural(teams, 'Team', 'Teams')} · ${played} von ${total} gespielt`,
+    teamCount: (teams: number) => plural(teams, 'Team', 'Teams'),
+    summary: (teams: string, played: string) => `${teams} · ${played}`,
+    summaryLead: (teams: string) => `${teams} ·`,
     open: (name: string, summary: string) => `${name}, ${summary}. Öffnen`,
     edit: 'Bearbeiten',
     editLabel: (name: string) => `Bearbeiten: Turnier ${name}`,

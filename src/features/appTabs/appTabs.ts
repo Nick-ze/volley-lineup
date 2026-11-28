@@ -4,7 +4,7 @@ import { createContext, useState } from 'react';
 import type { TabPager } from '@/components';
 
 /** The tabs in bar order (v8: swipe left → the next one). */
-export const APP_TABS = ['teams', 'profile', 'settings'] as const;
+export const APP_TABS = ['teams', 'tournaments', 'profile', 'settings'] as const;
 export type AppTab = (typeof APP_TABS)[number];
 
 export const isAppTab = (name: string | undefined): name is AppTab =>
@@ -21,5 +21,5 @@ export function useShownTab(): AppTab {
   return current ?? last;
 }
 
-/** v8.1.1: the pager all three tab scenes share. */
+/** v8.1.1: the pager all the tab scenes share. */
 export const AppTabPagerContext = createContext<TabPager | null>(null);
