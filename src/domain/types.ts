@@ -313,7 +313,15 @@ export type TourPage =
   | 'signIn'
   | 'cloudTeams'
   | 'members'
-  | 'join';
+  | 'join'
+  // v12.0: hosted tournaments
+  | 'tournaments'
+  | 'tournamentForm'
+  | 'tournamentTable'
+  | 'tournamentMatches'
+  | 'tournamentTeams'
+  | 'tournamentTeam'
+  | 'tournamentResult';
 
 /* ---- v10.0 accounts and cloud sync (store v13 `sync`; device-only, never exported) ---- */
 

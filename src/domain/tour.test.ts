@@ -8,6 +8,7 @@ import {
   teamTabPage,
   TOUR_PAGES,
   tourAction,
+  tournamentTabPage,
   withSeen,
 } from './tour';
 import type { TourPage } from './types';
@@ -31,7 +32,9 @@ describe('tour pages', () => {
   it('has every page once, quick pages first', () => {
     expect(TOUR_PAGES).toEqual([...QUICK_PAGES, ...OTHER_PAGES]);
     expect(new Set(TOUR_PAGES).size).toBe(TOUR_PAGES.length);
-    expect(TOUR_PAGES).toHaveLength(29); // v10: + account, signIn, cloudTeams, members, join
+    // v10: + account, signIn, cloudTeams, members, join; v12: + the seven tournament pages
+    expect(TOUR_PAGES).toHaveLength(36);
+    expect(OTHER_PAGES.filter((page) => page.startsWith('tournament'))).toHaveLength(7);
   });
 
   it('tells quick pages from the others', () => {
@@ -99,5 +102,19 @@ describe('tab pages', () => {
   it('maps the live views', () => {
     expect(liveViewPage('live')).toBe('live');
     expect(liveViewPage('performance')).toBe('performance');
+  });
+});
+
+describe('hosted tournament pages (v12)', () => {
+  it('maps a tournament tab to its page', () => {
+    expect(tournamentTabPage('table')).toBe('tournamentTable');
+    expect(tournamentTabPage('matches')).toBe('tournamentMatches');
+    expect(tournamentTabPage('teams')).toBe('tournamentTeams');
+  });
+
+  it('are not part of the quick tour: offered there, shown in the full tour', () => {
+    expect(isQuickPage('tournaments')).toBe(false);
+    expect(tourAction('quick', [], 'tournaments')).toBe('offer');
+    expect(tourAction('full', [], 'tournamentResult')).toBe('steps');
   });
 });

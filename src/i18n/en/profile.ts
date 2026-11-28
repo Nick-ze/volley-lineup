@@ -20,7 +20,7 @@ export const profile = {
   logout: 'Log out',
   logoutNote: 'Your data stays on this device.',
   dangerTitle: 'Delete profile',
-  dangerHint: 'Deletes this profile with all its teams, players and matches.',
+  dangerHint: 'Deletes this profile with all its teams, players, matches and hosted tournaments.',
   delete: 'Delete profile',
   deleteLabel: (name: string) => `Delete profile ${name}`,
 } as const;

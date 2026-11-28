@@ -71,6 +71,16 @@ const SCREENS: [string, string][] = [
   // v10: a local team's members screen and joining (signed out: "Sign in first").
   ['members-local', '/team/t1/members'],
   ['join', '/join?code=ABCDEFGHJK'],
+  // v12: hosted tournaments (the golden data's "Winter Cup" and "Mixed-Abend").
+  ['tournaments', '/tournaments'],
+  ['tournament-new', '/tournament-new'],
+  ['tournament-edit', '/tournament-new?tournamentId=h1'],
+  ['tournament-table', '/tournament/h1?tab=table'],
+  ['tournament-matches', '/tournament/h1?tab=matches'],
+  ['tournament-teams', '/tournament/h1?tab=teams'],
+  ['tournament-team', '/tournament/h1/team/ht2'],
+  ['tournament-result', '/tournament/h1/match?a=ht2&b=ht6'],
+  ['tournament2-table', '/tournament/h2?tab=table'],
 ];
 
 const CONTROL_ROLES = new Set([

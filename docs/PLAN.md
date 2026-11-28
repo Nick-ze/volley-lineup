@@ -795,17 +795,19 @@ Later, not now: knock-out rounds and finals; groups; playing each other twice; c
 
 ## 49. v12.0 acceptance checklist
 
-- [ ] A fourth tab "Tournaments" lists the profile's hosted tournaments; create, edit, delete (with confirmation). The four tabs swipe and tap as the three did, and their labels fit at 375 px in German with the dyslexia font.
-- [ ] Sets per match can be 1 to 5; "best of" is offered only for 1, 3 and 5; the form says what the table counts.
-- [ ] Teams can be added (2 to 16), renamed and removed; names are unique; removing a team with results asks and says how many results go.
-- [ ] The Matches tab shows every pair once, grouped in rounds, with a resting team when the number is odd.
-- [ ] A result can be entered, changed and deleted set by set; invalid sets are refused with a text; in best-of no set can be added after the deciding one.
-- [ ] The table follows the ranking order above and counts matches or sets by the format (unit tests for wins, draws, shared ranks, odd team numbers).
-- [ ] A team's screen shows all its matches with results.
-- [ ] A settings change that would make a result invalid is refused and names the match.
-- [ ] Old data (store 13) and export files v1–v10 open without loss; an export / import round trip restores tournaments exactly; deleting a profile removes its tournaments.
-- [ ] Nothing under `src/lib/sync`, `src/domain/sync*`, `supabase/` changed; a team's seasons, matches and live scoring behave as in 11.0.0.
-- [ ] No sideways scrolling on the new screens; every control is at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overlaps or is cut without "…".
-- [ ] Tour pages exist for the new screens.
-- [ ] Lint, typecheck and tests pass in CI; `src/domain` at 100 %; the web export builds.
-- [ ] Released as 12.0.0 (owner, 2026-11-28: release when it is done; fixes follow as 12.0.x).
+- [x] A fourth tab "Tournaments" lists the profile's hosted tournaments; create, edit, delete (with confirmation). The four tabs swipe and tap as the three did, and their labels fit at 375 px in German with the dyslexia font.
+- [x] Sets per match can be 1 to 5; "best of" is offered only for 1, 3 and 5; the form says what the table counts.
+- [x] Teams can be added (2 to 16), renamed and removed; names are unique; removing a team with results asks and says how many results go.
+- [x] The Matches tab shows every pair once, grouped in rounds, with a resting team when the number is odd.
+- [x] A result can be entered, changed and deleted set by set; invalid sets are refused with a text; in best-of no set can be added after the deciding one.
+- [x] The table follows the ranking order above and counts matches or sets by the format (unit tests for wins, draws, shared ranks, odd team numbers).
+- [x] A team's screen shows all its matches with results.
+- [x] A settings change that would make a result invalid is refused and names the match.
+- [x] Old data (store 13) and export files v1–v10 open without loss; an export / import round trip restores tournaments exactly; deleting a profile removes its tournaments.
+- [x] Nothing under `src/lib/sync`, `src/domain/sync*`, `supabase/` changed; a team's seasons, matches and live scoring behave as in 11.0.0.
+- [x] No sideways scrolling on the new screens; every control is at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overlaps or is cut without "…".
+- [x] Tour pages exist for the new screens.
+- [x] Lint, typecheck and tests pass in CI; `src/domain` at 100 %; the web export builds.
+- [ ] Released as 12.0.0 (owner, 2026-11-28: release when it is done; fixes follow as 12.0.x). Ticked in HANDOFF §1 once the release workflow has run.
+
+Checked in a browser and in Jest (DECISIONS #384); nothing was tried on a phone before the release (#385).

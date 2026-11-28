@@ -307,7 +307,7 @@ Since v5 (data model v6) a set has a **formation** (`types.ts` `Formation`: syst
 49. **Set 5's first serve comes from a new toss.** PASS (manual). The next-set setup asks for the serve choice for every new set (PLAN §15.1). `matchFlow.ts` `defaultWeServeFirst` pre-fills alternation for set 5 too, which is only a default; the manager must enter the toss result.
 50. **Changing ends after each set, and at 8 points in set 5.** NOT MODELLED. Not needed for lineups or score; a "change ends" hint at 8 in set 5 would be a nice-to-have.
 51. **Time-outs (2 per set).** NOT MODELLED.
-52. **Best-of-three match formats (youth, tournaments).** NOT MODELLED. `SETS_TO_WIN` and the 15-point set are fixed to set 5.
+52. **Best-of-three match formats (youth, tournaments).** NOT MODELLED for a team's own matches: `SETS_TO_WIN` and the 15-point set are fixed to set 5. Since v12 a **hosted tournament** (a scoreboard of typed-in results, `hostedTournament.ts`) has 1 to 5 sets per match, ending "best of N" (1, 3, 5) or after all N sets (any number; a draw is possible), and no rule on a set's length, because tournaments play to 15, 21, 25 or on time.
 
 ### Formation patterns (v5)
 

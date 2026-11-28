@@ -221,6 +221,21 @@ describe('Matches tab', () => {
     expect(screen.getByTestId('plan-played')).toHaveTextContent('1 of 1 played');
   });
 
+  it('says of a match that is not over that it is not finished', async () => {
+    const { cup, teams } = seedCup(['TV Nord', 'Rivals']);
+    const [a, b] = teams;
+    store().setHostedResult(cup.id, a.id, b.id, [
+      { a: 25, b: 23 },
+      { a: 20, b: 25 },
+    ]);
+    await renderApp(`/tournament/${cup.id}`);
+    // 1:1 in a best of 3 is running, not a draw.
+    expect(screen.getByTestId(`plan-match-${a.id}-${b.id}`).props.accessibilityLabel).toBe(
+      'TV Nord – Rivals, 1:1 (25:23, 20:25), not finished. Change result',
+    );
+    expect(screen.getByTestId('plan-played')).toHaveTextContent('0 of 1 played');
+  });
+
   it('tapping a match opens its result', async () => {
     const { cup, teams } = seedCup(['TV Nord', 'Rivals']);
     await renderApp(`/tournament/${cup.id}`);

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
@@ -162,7 +162,7 @@ describe('hosted tournaments in export and import (v12)', () => {
     await renderSettings();
     await fireEvent.press(screen.getByLabelText('Export everything'));
     const text = mockSave.mock.calls[0][1];
-    store().resetAll();
+    await act(() => store().resetAll());
     expect(store().hostedTournaments).toEqual([]);
 
     mockPick.mockResolvedValue({ name: 'backup.json', text });
@@ -407,17 +407,17 @@ describe('delete all and version', () => {
     store().setLanguage('en');
   });
 
-  it('says that saved lineups (presets and team starters) are deleted too', async () => {
+  it('says that saved lineups (presets and team starters) and hosted tournaments are deleted too', async () => {
     seed();
     await renderSettings();
     expect(
       screen.getByText(
-        'Removes every profile, team, player, photo, season, match and saved lineup (presets and team starters) from this device.',
+        'Removes every profile, team, player, photo, season, match, saved lineup (presets and team starters) and hosted tournament from this device.',
       ),
     ).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Delete all data'));
     expect(screen.getByTestId('delete-confirm')).toHaveTextContent(
-      /matches and saved lineups \(presets and team starters\) will be deleted/,
+      /matches, saved lineups \(presets and team starters\) and hosted tournaments will be deleted/,
     );
   });
 

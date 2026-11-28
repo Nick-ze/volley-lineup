@@ -15,6 +15,7 @@ import type { HostedTournament } from '@/domain/types';
 import { MatchScoreRow } from '@/features/hostedTournament/MatchScoreRow';
 import { TeamNumbers } from '@/features/hostedTournament/TeamNumbers';
 import { useTournamentPlan } from '@/features/hostedTournament/useTournamentPlan';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import {
   selectCurrentProfile,
@@ -64,6 +65,7 @@ function TeamMatches({ tournament, teamId }: { tournament: HostedTournament; tea
     [id, setsPerMatch, matchEnd, teams, results, teamId],
   );
   const matches = useMemo(() => teamMatches(teamId, plan), [teamId, plan]);
+  useTourPage(standing ? 'tournamentTeam' : null);
 
   if (!standing)
     return (

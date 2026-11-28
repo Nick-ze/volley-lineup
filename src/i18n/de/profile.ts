@@ -22,7 +22,7 @@ export const profile: Strings['profile'] = {
   logout: 'Abmelden',
   logoutNote: 'Deine Daten bleiben auf diesem Gerät.',
   dangerTitle: 'Profil löschen',
-  dangerHint: 'Löscht dieses Profil mit allen Teams, Spielern und Spielen.',
+  dangerHint: 'Löscht dieses Profil mit allen Teams, Spielern, Spielen und eigenen Turnieren.',
   delete: 'Profil löschen',
   deleteLabel: (name: string) => `Profil löschen: ${name}`,
 };

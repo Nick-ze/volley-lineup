@@ -20,8 +20,9 @@ export interface MatchScoreRowProps {
 /**
  * A match as a scoreboard line: the two names one above the other; at the right one narrow
  * column per set with the two scores, and a last column with the sets won. The winner's name and
- * sets are bold in full colour, the loser's grey; a draw (and a match still running) shows both
- * in full colour. A match without a result shows "–" and a chevron.
+ * sets are bold in full colour, the loser's grey; a draw shows both in full colour. A match that
+ * is still running shows both names in full colour and the set counts in grey. A match without a
+ * result shows "–" and a chevron.
  */
 export function MatchScoreRow({ match, onPress, testID }: MatchScoreRowProps) {
   const styles = useStyles();
@@ -30,18 +31,21 @@ export function MatchScoreRow({ match, onPress, testID }: MatchScoreRowProps) {
   const s = t.tournament.matches;
   const { teamA, teamB, sets, outcome } = match;
   const open = outcome.state === 'open';
+  // Not over yet: the sets so far are shown, the set counts stay quiet (a draw's are bold).
+  const running = outcome.state === 'running';
   const { winner } = outcome;
   // Who is drawn as the loser (grey): only the beaten side of a finished match.
   const lostA = winner === 'b';
   const lostB = winner === 'a';
+  const setList = sets.map((x) => `${x.a}:${x.b}`).join(', ');
   const label = open
     ? s.label.open(teamA.name, teamB.name)
-    : s.label.result(
+    : (running ? s.label.running : s.label.result)(
         teamA.name,
         teamB.name,
         outcome.setsA,
         outcome.setsB,
-        sets.map((x) => `${x.a}:${x.b}`).join(', '),
+        setList,
       );
   return (
     <Pressable
@@ -79,8 +83,8 @@ export function MatchScoreRow({ match, onPress, testID }: MatchScoreRowProps) {
             </View>
           ))}
           <View style={[styles.column, styles.total]}>
-            <Text style={[styles.sets, lostA && styles.lost]}>{outcome.setsA}</Text>
-            <Text style={[styles.sets, lostB && styles.lost]}>{outcome.setsB}</Text>
+            <Text style={[styles.sets, (lostA || running) && styles.lost]}>{outcome.setsA}</Text>
+            <Text style={[styles.sets, (lostB || running) && styles.lost]}>{outcome.setsB}</Text>
           </View>
         </>
       )}

@@ -2,6 +2,7 @@ import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 
 import { appHeaderOnly, Button, HeaderTitle, NotFound, Screen, SwipeTabs } from '@/components';
+import { tournamentTabPage } from '@/domain/tour';
 import type { HostedTournament } from '@/domain/types';
 import { TournamentMatches } from '@/features/hostedTournament/TournamentMatches';
 import { TournamentMeta } from '@/features/hostedTournament/TournamentMeta';
@@ -14,6 +15,7 @@ import {
   TOURNAMENT_TABS,
   type TournamentTab,
 } from '@/features/hostedTournament/tournamentTabs';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore, useHostedTournament } from '@/store';
 
@@ -37,6 +39,9 @@ export default function TournamentScreen() {
     ),
   );
   const tab = parseTournamentTab(params.tab, opensOn);
+  const mine = profile !== undefined && tournament?.profileId === profile.id;
+  // The shown tab's tips (never inside the tabs: the pager keeps their neighbours mounted).
+  useTourPage(mine ? tournamentTabPage(tab) : null);
 
   if (!profile) return <Redirect href="/" />;
   if (!tournament || tournament.profileId !== profile.id)

@@ -2,6 +2,7 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { NotFound, Screen, ScreenTitle, useGoBack } from '@/components';
 import { TournamentForm } from '@/features/hostedTournament/TournamentForm';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore, useHostedTournament } from '@/store';
 
@@ -17,10 +18,12 @@ export default function TournamentFormScreen() {
   const tournament = useHostedTournament(tournamentId);
   const goBack = useGoBack(tournamentId ? `/tournament/${tournamentId}` : '/tournaments');
   const s = t.tournament;
+  // A tournament of another profile is not edited here (and has no tips).
+  const missing = Boolean(tournamentId) && (!tournament || tournament.profileId !== profile?.id);
+  useTourPage(profile && !missing ? 'tournamentForm' : null);
 
   if (!profile) return <Redirect href="/" />;
-  // A tournament of another profile is not edited here.
-  if (tournamentId && (!tournament || tournament.profileId !== profile.id))
+  if (missing)
     return (
       <NotFound
         message={s.form.notFound}

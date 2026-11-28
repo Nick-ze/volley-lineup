@@ -3,6 +3,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { Screen } from '@/components';
 import { Avatar } from '@/features/roster/components/Avatar';
 import { TournamentList } from '@/features/hostedTournament/TournamentList';
+import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore } from '@/store';
 
@@ -18,6 +19,7 @@ export default function TournamentsScreen() {
   const router = useRouter();
   const t = useT();
   const profile = useAppStore(selectCurrentProfile);
+  useTourPage(profile ? 'tournaments' : null);
 
   if (!profile) return <Redirect href="/" />;
 

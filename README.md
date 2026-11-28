@@ -20,19 +20,22 @@ Available in English and German.
 - **Stats and performance**: results, set scores, points per rotation and how each player did, per match, season or
   tournament.
 - **Seasons and tournaments**: group your matches and keep a record against every opponent.
+- **Host a tournament**: enter all the teams and the results; the app keeps the plan and the table. Matches with 1
+  to 5 sets.
 - **Print**: a lineup sheet, and a player list (numbers and names) for the scorer, to print or share as a PDF.
 - **Guided tour**: short tips with pictures show you around; choose the full or quick tour, or none.
 - **Accounts and shared teams (optional)**: sign in with a code sent by email, see the same teams on every device and
   invite your players (view only) and other coaches (can edit) with a code.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 11.0**: a new look, and nothing else changes. The grey bar at the top is gone: every screen opens
-with its own big title. Orange now means two things only, the court and the one main button of a screen; yellow marks
-what is current (this set, the server). Scores and jersey numbers are large, in a sports typeface. The bottom bar is
-one rounded bar, the same in Teams and inside a team. In the lineup builder "Live" is at the top right, the court
-starts higher and the players stand out on it. Your data, backups and cloud sync are untouched. 10.0.1 made cloud
-sync safer; 10.0 added accounts
-and cloud sync (optional): your teams on all your devices, shared with an invite code — managers edit, players view.
+**What's new in 12.0**: host a tournament. A new tab, **Tournaments**, sits between Teams and Profile. Create a
+tournament, enter its teams (2 to 16) and type in the result of each match, set by set. The app works out the plan
+(everyone plays everyone once, in rounds) and keeps the table. A match has 1 to 5 sets, and you choose how it ends:
+"best of" (the table then counts matches) or "all sets are played" (the table counts sets, and a match can end in a
+draw). Tap a team to see how it played against each of the others. It is a scoreboard for all teams: no rosters,
+lineups or live scoring. Your own team's matches work as before, and its tournaments stay in the team's Matches tab.
+Hosted tournaments are on this device and in your backup file, not in cloud sync. 11.0 brought the new look; 10.0
+added accounts and cloud sync (optional): your teams on all your devices, shared with an invite code.
 [All versions →](docs/README_LEGACY.md#version-history)
 
 ## Install on Android (APK)
