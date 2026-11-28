@@ -56,6 +56,11 @@ describe('tour tips on the tournament screens', () => {
       tips.tournamentTeam.matches.title,
     ],
     [
+      'tournamentLive',
+      (x) => `/tournament/${x.cup.id}/live?a=${x.a.id}&b=${x.b.id}`,
+      tips.tournamentLive.score.title,
+    ],
+    [
       'tournamentResult',
       (x) => `/tournament/${x.cup.id}/match?a=${x.a.id}&b=${x.b.id}`,
       tips.tournamentResult.sets.title,

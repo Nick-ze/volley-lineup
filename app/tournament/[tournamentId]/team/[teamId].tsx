@@ -10,9 +10,10 @@ import {
   Screen,
   useFormStyles,
 } from '@/components';
-import { standings, teamMatches } from '@/domain/hostedTournament';
+import { playerLabelOf, standings, teamLiveStats, teamMatches } from '@/domain/hostedTournament';
 import type { HostedTournament } from '@/domain/types';
 import { MatchScoreRow } from '@/features/hostedTournament/MatchScoreRow';
+import { LiveStatsPanel } from '@/features/hostedTournament/LiveStatsPanel';
 import { matchHref, matchKey } from '@/features/hostedTournament/matchRoute';
 import { TeamNumbers } from '@/features/hostedTournament/TeamNumbers';
 import { TeamPlayers } from '@/features/hostedTournament/TeamPlayers';
@@ -23,6 +24,7 @@ import { useT } from '@/i18n';
 import {
   selectCurrentProfile,
   useAppStore,
+  useHostedPlayers,
   useHostedResults,
   useHostedTeams,
   useHostedTournament,
@@ -72,6 +74,9 @@ function TeamMatches({ tournament, teamId }: { tournament: HostedTournament; tea
   );
   const matches = useMemo(() => teamMatches(teamId, plan), [teamId, plan]);
   useTourPage(standing ? 'tournamentTeam' : null);
+  // v12.2: what the team's live-scored matches add up to ("blocked 4 times").
+  const players = useHostedPlayers(teamId);
+  const liveTotals = useMemo(() => teamLiveStats(teamId, results), [teamId, results]);
 
   if (!standing)
     return (
@@ -99,6 +104,16 @@ function TeamMatches({ tournament, teamId }: { tournament: HostedTournament; tea
           </View>
         ))}
       </View>
+      <LiveStatsPanel
+        sides={[
+          {
+            name: standing.team.name,
+            players,
+            label: playerLabelOf(standing.team),
+            stats: liveTotals,
+          },
+        ]}
+      />
       <TeamPlayers team={standing.team} />
     </Screen>
   );

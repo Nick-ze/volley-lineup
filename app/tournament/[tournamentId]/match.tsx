@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 
 import {
   appHeaderOnly,
+  Banner,
+  Button,
   ConfirmDialog,
   HeaderTitle,
   NotFound,
@@ -10,13 +12,16 @@ import {
   useConfirm,
   useGoBack,
 } from '@/components';
+import { hasLiveDetails, liveStats, playerLabelOf } from '@/domain/hostedTournament';
+import { LiveStatsPanel } from '@/features/hostedTournament/LiveStatsPanel';
+import { liveHref } from '@/features/hostedTournament/matchRoute';
 import { ResultForm } from '@/features/hostedTournament/ResultForm';
 import { formatText, matchLabel } from '@/features/hostedTournament/tournamentText';
 import { useTournamentPlan } from '@/features/hostedTournament/useTournamentPlan';
 import type { HostedTournament } from '@/domain/types';
 import { useTourPage } from '@/features/tour';
 import { useT } from '@/i18n';
-import { selectCurrentProfile, useAppStore, useHostedTournament } from '@/store';
+import { selectCurrentProfile, useAppStore, useHostedPlayers, useHostedTournament } from '@/store';
 
 /**
  * `/tournament/[tournamentId]/match?a=&b=` — the result of one match of a hosted tournament
@@ -77,6 +82,8 @@ function MatchResult({
     );
 
   useTourPage(match ? 'tournamentResult' : null);
+  const playersA = useHostedPlayers(match?.teamA.id);
+  const playersB = useHostedPlayers(match?.teamB.id);
 
   if (!match)
     return (
@@ -104,6 +111,18 @@ function MatchResult({
               goBack();
             })
         : undefined;
+  // v12.2: a match scored live keeps its sets as they were counted; they can be changed by hand
+  // once the rallies are deleted.
+  const live = hasLiveDetails(result);
+  // Rallies are stored from the result's team A; the plan may show the pair the other way round.
+  const stats = liveStats(result?.live ?? []);
+  const flipped = result !== undefined && result.teamAId !== teamA.id;
+  const side = (team: typeof teamA, players: typeof playersA, first: boolean) => ({
+    name: team.name,
+    players,
+    label: playerLabelOf(team),
+    stats: first !== flipped ? stats.a : stats.b,
+  });
   return (
     <Screen testID="result-screen">
       <ResultHeader
@@ -112,15 +131,35 @@ function MatchResult({
           matchLabel(t, plan.kind, match),
           formatText(t, tournament),
         )}
+        onLive={() => router.push(liveHref(tournament.id, plan.kind, match))}
       />
+      {live && result ? (
+        <Banner
+          testID="result-live-locked"
+          action={
+            <Button
+              label={s.live.deleteLive}
+              variant="dangerQuiet"
+              compact
+              onPress={() =>
+                ask(s.live.confirmDeleteLive, () => store().clearHostedLive(result.id))
+              }
+              testID="result-delete-live"
+            />
+          }
+        >
+          {s.live.locked}
+        </Banner>
+      ) : null}
       <ResultForm
-        // A result saved or deleted elsewhere starts the form afresh.
-        key={result?.id ?? 'new'}
+        // A result saved or deleted elsewhere, or freed from its rallies, starts the form afresh.
+        key={`${result?.id ?? 'new'}-${live ? 'live' : 'typed'}`}
         teamA={teamA.name}
         teamB={teamB.name}
         settings={tournament}
         initial={match.sets}
         allowEmpty={manual}
+        locked={live}
         deleteLabel={manual ? s.result.deleteMatch : undefined}
         onCancel={goBack}
         onSave={(sets) => {
@@ -130,21 +169,39 @@ function MatchResult({
         }}
         onDelete={onDelete}
       />
+      <LiveStatsPanel sides={[side(teamA, playersA, true), side(teamB, playersB, false)]} />
       <ConfirmDialog {...dialogProps} />
     </Screen>
   );
 }
 
-/** "Result" with the tournament, round and format as the quiet second line. */
-function ResultHeader({ subtitle }: { subtitle: string }) {
+/**
+ * "Result" with the tournament, round and format as the quiet second line; v12.2: "Live" at the
+ * right opens the match's live scoring.
+ */
+function ResultHeader({ subtitle, onLive }: { subtitle: string; onLive: () => void }) {
   const t = useT();
   const title = t.tournament.result.title;
+  const live = t.tournament.live;
   const options = useMemo(
     () => ({
       title,
       headerTitle: appHeaderOnly(() => <HeaderTitle subtitle={subtitle}>{title}</HeaderTitle>),
+      headerRight: appHeaderOnly(() => (
+        <Button
+          label={live.open}
+          accessibilityLabel={live.openLabel}
+          variant="secondary"
+          compact
+          onPress={onLive}
+          testID="result-live"
+        />
+      )),
     }),
-    [title, subtitle],
+    // `onLive` is a new function on every render; the route it opens depends on the subtitle's
+    // match only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [title, subtitle, live],
   );
   return <Stack.Screen options={options} />;
 }

@@ -15,3 +15,7 @@ export function matchHref(tournamentId: string, kind: HostedPlanKind, match: Pla
     ? `${base}?m=${match.result.id}`
     : `${base}?a=${match.teamA.id}&b=${match.teamB.id}`;
 }
+
+/** v12.2: live scoring of a match (the same match as `matchHref`). */
+export const liveHref = (tournamentId: string, kind: HostedPlanKind, match: PlanMatch): string =>
+  matchHref(tournamentId, kind, match).replace('/match?', '/live?');

@@ -82,6 +82,9 @@ export function parentRoute(
       return tournamentId
         ? { pathname: '/tournament/[tournamentId]', params: { tournamentId, tab: 'table' } }
         : '/tournaments';
+    // v12.2: live scoring is opened from a match's result screen; without history it goes back
+    // to the match list (the match itself is named by `a` / `b` or `m`, not by the route).
+    case 'tournament/[tournamentId]/live':
     case 'tournament/[tournamentId]/match':
       return tournamentId
         ? { pathname: '/tournament/[tournamentId]', params: { tournamentId, tab: 'matches' } }

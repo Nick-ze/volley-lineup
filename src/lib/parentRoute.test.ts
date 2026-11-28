@@ -133,6 +133,10 @@ describe('parentRoute', () => {
       params: { tournamentId, tab: 'matches' },
     });
     expect(parentRoute('tournament/[tournamentId]/match', undefined, lookup)).toBe('/tournaments');
+    expect(parentRoute('tournament/[tournamentId]/live', { tournamentId }, lookup)).toEqual({
+      pathname: '/tournament/[tournamentId]',
+      params: { tournamentId, tab: 'matches' },
+    });
   });
 
   it('falls back to /teams when params or the match are missing', () => {

@@ -16,6 +16,8 @@ export interface ScoreFieldProps {
   /** e.g. "Set 1, TV Nord". */
   accessibilityLabel: string;
   error?: boolean;
+  /** False: the score is shown but can't be changed (a live-scored match). */
+  editable?: boolean;
   autoFocus?: boolean;
   testID?: string;
 }
@@ -29,6 +31,7 @@ export function ScoreField({
   onChangeText,
   accessibilityLabel,
   error = false,
+  editable = true,
   autoFocus,
   testID,
 }: ScoreFieldProps) {
@@ -44,12 +47,19 @@ export function ScoreField({
       inputMode="numeric"
       maxLength={MAX_DIGITS}
       selectTextOnFocus
+      editable={editable}
+      aria-disabled={!editable}
       autoFocus={autoFocus}
       placeholder={PLACEHOLDER}
       placeholderTextColor={colors.textMuted}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      style={[styles.input, focused && styles.focused, error && styles.error]}
+      style={[
+        styles.input,
+        focused && styles.focused,
+        error && styles.error,
+        !editable && styles.locked,
+      ]}
       testID={testID}
     />
   );
@@ -75,4 +85,5 @@ const useStyles = makeStyles((theme) => ({
   },
   focused: { borderColor: theme.colors.primaryText },
   error: { borderColor: theme.colors.error },
+  locked: { backgroundColor: theme.colors.surface, color: theme.colors.textMuted },
 }));

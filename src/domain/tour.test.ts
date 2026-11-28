@@ -33,8 +33,9 @@ describe('tour pages', () => {
     expect(TOUR_PAGES).toEqual([...QUICK_PAGES, ...OTHER_PAGES]);
     expect(new Set(TOUR_PAGES).size).toBe(TOUR_PAGES.length);
     // v10: + account, signIn, cloudTeams, members, join; v12: + the seven tournament pages
-    expect(TOUR_PAGES).toHaveLength(36);
-    expect(OTHER_PAGES.filter((page) => page.startsWith('tournament'))).toHaveLength(7);
+    // v12.2: + tournamentLive
+    expect(TOUR_PAGES).toHaveLength(37);
+    expect(OTHER_PAGES.filter((page) => page.startsWith('tournament'))).toHaveLength(8);
   });
 
   it('tells quick pages from the others', () => {

@@ -87,6 +87,10 @@ const SCREENS: [string, string][] = [
   ['tournament3-result', '/tournament/h3/match?m=hfm2'],
   // v12.2: a team with players.
   ['tournament3-team', '/tournament/h3/team/hf1'],
+  // v12.2: live scoring and a live-scored result.
+  ['tournament3-live', '/tournament/h3/live?m=hfm3'],
+  ['tournament-live', '/tournament/h1/live?a=ht1&b=ht3'],
+  ['tournament3-result-live', '/tournament/h3/match?m=hfm3'],
 ];
 
 const CONTROL_ROLES = new Set([
