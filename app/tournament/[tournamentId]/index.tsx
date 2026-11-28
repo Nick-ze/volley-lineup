@@ -5,6 +5,7 @@ import { appHeaderOnly, Button, HeaderTitle, NotFound, Screen, SwipeTabs } from 
 import type { HostedTournament } from '@/domain/types';
 import { TournamentMatches } from '@/features/hostedTournament/TournamentMatches';
 import { TournamentMeta } from '@/features/hostedTournament/TournamentMeta';
+import { TournamentTable } from '@/features/hostedTournament/TournamentTable';
 import { TournamentTabBar } from '@/features/hostedTournament/TournamentTabBar';
 import { TournamentTeams } from '@/features/hostedTournament/TournamentTeams';
 import {
@@ -17,7 +18,7 @@ import { useT } from '@/i18n';
 import { selectCurrentProfile, useAppStore, useHostedTournament } from '@/store';
 
 /**
- * `/tournament/[tournamentId]?tab=matches|teams` — one hosted tournament (v12): its name as the
+ * `/tournament/[tournamentId]?tab=table|matches|teams` — one hosted tournament (v12): its name as the
  * title, Edit in the header, the quiet line with date, place and format, then the tabs (chips
  * with swipe, like a season). It opens on Teams while there are fewer than two teams, otherwise
  * on Matches; `?tab=` wins.
@@ -50,6 +51,13 @@ export default function TournamentScreen() {
   const selectTab = (next: TournamentTab) => router.setParams({ tab: next });
   const renderTab = (shown: TournamentTab) => {
     switch (shown) {
+      case 'table':
+        return (
+          <TournamentTable
+            tournament={tournament}
+            onOpenTeam={(teamId) => router.push(`/tournament/${tournament.id}/team/${teamId}`)}
+          />
+        );
       case 'matches':
         return (
           <TournamentMatches
@@ -58,7 +66,12 @@ export default function TournamentScreen() {
           />
         );
       case 'teams':
-        return <TournamentTeams tournamentId={tournament.id} />;
+        return (
+          <TournamentTeams
+            tournamentId={tournament.id}
+            onOpenTeam={(teamId) => router.push(`/tournament/${tournament.id}/team/${teamId}`)}
+          />
+        );
     }
   };
 

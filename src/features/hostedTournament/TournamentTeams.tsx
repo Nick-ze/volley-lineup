@@ -29,7 +29,14 @@ import { teamNameErrorText } from './tournamentText';
  * in the order they were added with Rename and Delete, how many of 16 there are, and the note
  * that the plan follows the teams. Removing a team with results asks and says how many go.
  */
-export function TournamentTeams({ tournamentId }: { tournamentId: string }) {
+export function TournamentTeams({
+  tournamentId,
+  onOpenTeam,
+}: {
+  tournamentId: string;
+  /** Tapping a team shows its matches. */
+  onOpenTeam: (teamId: string) => void;
+}) {
   const formStyles = useFormStyles();
   const listStyles = useListStyles();
   const t = useT();
@@ -84,6 +91,7 @@ export function TournamentTeams({ tournamentId }: { tournamentId: string }) {
           <HostedTeamRow
             key={team.id}
             team={team}
+            onOpen={() => onOpenTeam(team.id)}
             onDelete={() =>
               ask(s.confirmDelete(team.name, resultCountOfTeam(results, team.id)), () =>
                 useAppStore.getState().deleteHostedTeam(team.id),

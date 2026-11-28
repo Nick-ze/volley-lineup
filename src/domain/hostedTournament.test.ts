@@ -1,5 +1,6 @@
 import {
   bestOfAllowed,
+  drawsPossible,
   emptyHosted,
   emptyTournamentForm,
   hostedOf,
@@ -181,6 +182,13 @@ describe('settings', () => {
     expect(matchEndFor(5, 'bestOf')).toBe('bestOf');
     expect(matchEndFor(5, 'allSets')).toBe('allSets');
     expect(([1, 2, 3, 4, 5] as SetsPerMatch[]).map(setsToWin)).toEqual([1, 2, 2, 3, 3]);
+  });
+
+  it('knows when a match can end in a draw', () => {
+    expect(drawsPossible(ALL_2)).toBe(true);
+    expect(drawsPossible({ setsPerMatch: 4, matchEnd: 'allSets' })).toBe(true);
+    expect(drawsPossible(ALL_3)).toBe(false);
+    expect(drawsPossible(BEST_OF_3)).toBe(false);
   });
 
   it('says what the table counts', () => {
@@ -518,6 +526,15 @@ describe('standings', () => {
       [1, 't1'],
       [3, 't2'],
       [3, 't4'],
+    ]);
+  });
+
+  it('lists equal teams with numbers in their names in counting order', () => {
+    const list = [team('t1', 0, 'Team 10'), team('t2', 1, 'Team 2'), team('t3', 2, 'Team 1')];
+    expect(standings(tournament(), list, []).map((s) => s.team.name)).toEqual([
+      'Team 1',
+      'Team 2',
+      'Team 10',
     ]);
   });
 

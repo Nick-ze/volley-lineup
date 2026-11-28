@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Button, IconButton, TextField, useFormStyles, useListStyles } from '@/components';
+import { Button, IconButton, ListRow, TextField, useFormStyles, useListStyles } from '@/components';
 import {
   MAX_HOSTED_TEAM_NAME_LENGTH,
   MAX_HOSTED_TEAMS,
@@ -11,20 +11,23 @@ import {
 import type { HostedTeam } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/store';
-import { makeStyles, spacing, touchTarget } from '@/theme';
 
 import { teamNameErrorText } from './tournamentText';
 
 export interface HostedTeamRowProps {
   team: HostedTeam;
+  /** Tapping the row shows the team's matches. */
+  onOpen: () => void;
   onDelete: () => void;
 }
 
-/** One team of a hosted tournament: its name; Rename inline, Delete (the list asks first). */
-export function HostedTeamRow({ team, onDelete }: HostedTeamRowProps) {
+/**
+ * One team of a hosted tournament: its name (tap: its matches); Rename inline, Delete (the list
+ * asks first).
+ */
+export function HostedTeamRow({ team, onOpen, onDelete }: HostedTeamRowProps) {
   const formStyles = useFormStyles();
   const listStyles = useListStyles();
-  const styles = useStyles();
   const t = useT();
   const s = t.tournament.teams;
   const [editing, setEditing] = useState(false);
@@ -67,32 +70,29 @@ export function HostedTeamRow({ team, onDelete }: HostedTeamRowProps) {
     );
   }
   return (
-    <View style={[listStyles.row, styles.row]} testID={`hosted-team-${team.id}`}>
-      <Text style={[listStyles.title, styles.name]} numberOfLines={1}>
-        {team.name}
-      </Text>
-      <View style={listStyles.actions}>
-        <IconButton
-          icon="pencil"
-          accessibilityLabel={s.renameLabel(team.name)}
-          onPress={() => {
-            setName(team.name);
-            setError(undefined);
-            setEditing(true);
-          }}
-        />
-        <IconButton
-          icon="trash-outline"
-          accessibilityLabel={s.deleteLabel(team.name)}
-          onPress={onDelete}
-        />
-      </View>
-    </View>
+    <ListRow
+      title={team.name}
+      onPress={onOpen}
+      accessibilityLabel={s.open(team.name)}
+      testID={`hosted-team-${team.id}`}
+      actions={
+        <View style={listStyles.actions}>
+          <IconButton
+            icon="pencil"
+            accessibilityLabel={s.renameLabel(team.name)}
+            onPress={() => {
+              setName(team.name);
+              setError(undefined);
+              setEditing(true);
+            }}
+          />
+          <IconButton
+            icon="trash-outline"
+            accessibilityLabel={s.deleteLabel(team.name)}
+            onPress={onDelete}
+          />
+        </View>
+      }
+    />
   );
 }
-
-const useStyles = makeStyles(() => ({
-  // One line: the name takes the room the two icon buttons leave.
-  row: { flexWrap: 'nowrap', minHeight: touchTarget + spacing.md, paddingLeft: spacing.lg },
-  name: { flex: 1 },
-}));

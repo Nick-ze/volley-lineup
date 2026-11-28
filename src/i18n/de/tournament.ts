@@ -121,6 +121,7 @@ export const tournament: Strings['tournament'] = {
     record: (won: number, lost: number) => `${won}–${lost}`,
     recordWithDraws: (won: number, drawn: number, lost: number) => `${won}–${drawn}–${lost}`,
     sets: (won: number, lost: number) => `Sätze ${won}:${lost}`,
+    partLead: (part: string) => `${part} ·`,
     balls: (difference: string) => `Bälle ${difference}`,
     unit: { matches: 'Spiele', sets: 'Sätze' },
     rowLabel: (rank: number, name: string, line: string, points: number, unit: string) =>
@@ -139,6 +140,7 @@ export const tournament: Strings['tournament'] = {
     record: 'Bilanz',
     sets: 'Sätze',
     balls: 'Bälle',
+    points: 'Punkte',
     setsValue: (won: number, lost: number) => `${won}:${lost}`,
     empty: 'Noch keine Spiele: Das ist das einzige Team.',
     summaryLabel: (

@@ -29,6 +29,10 @@ export const matchEndChoices = (setsPerMatch: SetsPerMatch): MatchEnd[] =>
 export const matchEndFor = (setsPerMatch: SetsPerMatch, wanted: MatchEnd): MatchEnd =>
   bestOfAllowed(setsPerMatch) ? wanted : 'allSets';
 
+/** True when a match can end in a draw: every set is played and their number is even. */
+export const drawsPossible = (settings: HostedSettings): boolean =>
+  settings.matchEnd === 'allSets' && settings.setsPerMatch % 2 === 0;
+
 /** Sets a team must win to end a best-of match. */
 export const setsToWin = (setsPerMatch: SetsPerMatch): number => Math.floor(setsPerMatch / 2) + 1;
 

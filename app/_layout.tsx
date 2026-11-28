@@ -141,6 +141,10 @@ function ThemedRoot() {
                 options={{ title: t.tournament.nav.tournament }}
               />
               <Stack.Screen
+                name="tournament/[tournamentId]/team/[teamId]"
+                options={{ title: t.tournament.nav.team }}
+              />
+              <Stack.Screen
                 name="tournament/[tournamentId]/match"
                 options={{ title: t.tournament.nav.result }}
               />
