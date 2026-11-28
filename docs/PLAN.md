@@ -866,3 +866,24 @@ The owner's request after 12.1.0: players for a tournament's teams, shown by num
 - [x] No sideways scrolling; every control at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font (`scripts/layout-scan.js`, screenshots).
 - [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
 - [x] Released as 12.2.0: https://github.com/Nick-ze/volley-lineup/releases/tag/v12.2.0
+
+## 54. v12.3 — The table of a hosted tournament as a PDF
+
+The owner's request after 12.2.0: "print a PDF … which shows easily which team has how many points", for telling the points at the end.
+
+- **"Table (PDF)"** is a button on the Table tab, under the table (shown once the tournament has two teams). On the web it opens the browser's print dialog ("Save as PDF"); on a phone it makes an A4 PDF and opens the share sheet — the same two ways as the lineup sheet and the player list.
+- **The page** (A4 portrait, black on white): "Final table" once every match is played, "Table" before; the tournament's name; date, place, format and "9 of 15 matches played". Then the table in large type — rank, team, played, record (W–L, or W–D–L where a match can end in a draw), sets, ball difference and the **points** as the largest number of the row — and the ranking rule in one line.
+- **Under it, "Results"**: every match with its number, the two teams (the winner in bold), the sets won and each set's score; "not played yet" and "(not finished)" where that is so. A round robin shows its rounds with the resting team; own matches are one numbered list. A set being scored live is not on the page.
+- In the app's language. No stored-data change (store 16, export 13).
+
+## 55. v12.3 acceptance checklist
+
+- [x] The Table tab has "Table (PDF)" once the table is shown; it is at least 44 px high and its accessible name starts with its text.
+- [x] The page lists the teams in the table's order with the same numbers as the Table tab, the points largest.
+- [x] It says "Final table" only when every match is played, and how many matches are played.
+- [x] Every match is listed with its result; the winner is bold; unplayed and unfinished matches say so; rounds and the resting team for a round robin, match numbers for own matches.
+- [x] Team, tournament and place names are escaped; the page is in English or German with the app.
+- [x] A failed print says so and can be tried again.
+- [x] Sixteen teams with long names fit the table on the first page; a round is not split over two pages (looked at as PDFs from the web build).
+- [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
+- [ ] Released as 12.3.0.

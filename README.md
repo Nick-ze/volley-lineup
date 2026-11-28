@@ -28,7 +28,10 @@ Available in English and German.
   invite your players (view only) and other coaches (can edit) with a code.
 - **Make it yours**: light or dark mode, a dyslexia-friendly font, names or numbers on the player chips.
 
-**What's new in 12.2**: live scoring for the tournaments you host. Open a match and tap "Live": tap the team that
+**What's new in 12.3**: the table of a tournament you host as a PDF. On the Table tab tap "Table (PDF)": one page
+with every team's rank and points in large type, and all results under it, to print or to read out at the end.
+
+**New in 12.2**: live scoring for the tournaments you host. Open a match and tap "Live": tap the team that
 won the rally, "End set" when a set is over, "Undo" if you slipped. After a point you can say how it was won (attack,
 ace, block, opponent's error). You can also give a team players, shown by number or by name, on the team's screen;
 then the app asks who it was, and "Point details" counts it: "4 blocks" for a team, "Kelly: 1 ace" for a player.
