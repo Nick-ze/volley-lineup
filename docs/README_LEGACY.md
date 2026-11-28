@@ -258,7 +258,7 @@ was touched. The palette is the same; `src/theme/colors.ts` gained soft shades o
 ### v12.0: host a tournament (store 14, export schema 11)
 
 A coach who runs a tournament enters the teams and types in the results; the app keeps the plan and the table
-(`docs/V12_TOURNAMENT_DESIGN.md`, PLAN §48–49, DECISIONS #360–#385). It is a neutral scoreboard for all teams — names
+(`docs/V12_TOURNAMENT_DESIGN.md`, PLAN §48–49, DECISIONS #360–#386). It is a neutral scoreboard for all teams — names
 and results, no rosters, lineups or live scoring — and separate from a team's own seasons and matches, which behave
 as in 11.0.0 (their best-of-5 is unchanged).
 
@@ -289,6 +289,7 @@ as in 11.0.0 (their best-of-5 is unchanged).
   screen in EN / DE, dark / light, with the dyslexia font, at 375 and 1280 px; scans for controls under 44 px,
   touching panels and sideways scrolling; one independent QA pass over the acceptance list) and in Jest. Not checked
   on a phone before the release (owner: release when built, fixes follow as 12.0.x).
+- Released as `v12.0.0` on 2026-11-28.
 
 ## Backend
 

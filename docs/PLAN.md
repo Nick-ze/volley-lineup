@@ -808,6 +808,6 @@ Later, not now: knock-out rounds and finals; groups; playing each other twice; c
 - [x] No sideways scrolling on the new screens; every control is at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overlaps or is cut without "…".
 - [x] Tour pages exist for the new screens.
 - [x] Lint, typecheck and tests pass in CI; `src/domain` at 100 %; the web export builds.
-- [ ] Released as 12.0.0 (owner, 2026-11-28: release when it is done; fixes follow as 12.0.x). Ticked in HANDOFF §1 once the release workflow has run.
+- [x] Released as 12.0.0 (owner, 2026-11-28: release when it is done; fixes follow as 12.0.x): https://github.com/Nick-ze/volley-lineup/releases/tag/v12.0.0
 
 Checked in a browser and in Jest (DECISIONS #384); nothing was tried on a phone before the release (#385).
