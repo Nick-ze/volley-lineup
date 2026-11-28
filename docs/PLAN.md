@@ -865,4 +865,4 @@ The owner's request after 12.1.0: players for a tournament's teams, shown by num
 - [x] A team's own matches and their live mode are unchanged (their tests are untouched).
 - [x] No sideways scrolling; every control at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font (`scripts/layout-scan.js`, screenshots).
 - [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
-- [ ] Released as 12.2.0.
+- [x] Released as 12.2.0: https://github.com/Nick-ze/volley-lineup/releases/tag/v12.2.0

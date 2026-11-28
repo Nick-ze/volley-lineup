@@ -322,7 +322,7 @@ or by name, and a live mode for tournament matches that only keeps the score.
   live has its sets locked on the result screen until "Delete live details".
 - **Data**: `hostedPlayers`, `HostedTeam.playerLabel`, `HostedResult.live` (rallies per set). Store 16 and export
   schema 13 give older data an empty player list. Not in cloud sync.
-- Two pull requests (#132, #133), checked in a browser and in Jest (3114 tests); not on a phone.
+- Two pull requests (#132, #133), checked in a browser and in Jest (3114 tests); not on a phone. Released as `v12.2.0`.
 
 ## Backend
 
