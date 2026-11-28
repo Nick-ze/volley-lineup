@@ -114,6 +114,27 @@ describe('parentRoute', () => {
     expect(parentRoute('join', {}, lookup)).toBe('/teams');
   });
 
+  it('v12: hosted tournament screens go back to the tournament or the Tournaments tab', () => {
+    const tournamentId = 'h1';
+    expect(parentRoute('tournament/[tournamentId]/index', { tournamentId }, lookup)).toBe(
+      '/tournaments',
+    );
+    expect(parentRoute('tournament-new', {}, lookup)).toBe('/tournaments');
+    expect(parentRoute('tournament-new', { tournamentId }, lookup)).toEqual({
+      pathname: '/tournament/[tournamentId]',
+      params: { tournamentId },
+    });
+    expect(
+      parentRoute('tournament/[tournamentId]/team/[teamId]', { tournamentId, teamId: 'x' }, lookup),
+    ).toEqual({ pathname: '/tournament/[tournamentId]', params: { tournamentId, tab: 'table' } });
+    expect(parentRoute('tournament/[tournamentId]/team/[teamId]', {}, lookup)).toBe('/tournaments');
+    expect(parentRoute('tournament/[tournamentId]/match', { tournamentId }, lookup)).toEqual({
+      pathname: '/tournament/[tournamentId]',
+      params: { tournamentId, tab: 'matches' },
+    });
+    expect(parentRoute('tournament/[tournamentId]/match', undefined, lookup)).toBe('/tournaments');
+  });
+
   it('falls back to /teams when params or the match are missing', () => {
     expect(parentRoute('team/[teamId]/player', {}, lookup)).toBe('/teams');
     expect(parentRoute('team/[teamId]/match-new', { teamId: '' }, lookup)).toBe('/teams');

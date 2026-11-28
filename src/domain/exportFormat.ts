@@ -8,6 +8,9 @@ import { z } from 'zod';
 
 import type {
   ExportFile,
+  HostedResult,
+  HostedTeam,
+  HostedTournament,
   LineupPreset,
   ManagerProfile,
   Match,
@@ -22,16 +25,18 @@ import type {
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from './roles';
 import { SEASON_KINDS } from './seasonNames';
 import { isPhotoDataUri, isValidDescription } from './photos';
-import { ALL_POSITIONS, ERROR_TYPES, POINT_KINDS } from './types';
+import { ALL_POSITIONS, ERROR_TYPES, MATCH_ENDS, POINT_KINDS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 10 as const;
+export const EXPORT_SCHEMA_VERSION = 11 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 /**
- * The persisted collections. Derived from `ExportFile` (the domain layer can't import the
- * store): the store's `AppData` plus (v7) the photos, which live in their own storage.
+ * The persisted team collections. Derived from `ExportFile` (the domain layer can't import the
+ * store): the store's team data plus (v7) the photos, which live in their own storage. v11: the
+ * hosted tournaments are kept apart (`HostedData` in `hostedData.ts`) — they belong to a profile,
+ * never take part in cloud sync and have their own consistency and merge rules.
  */
 export type TransferData = Pick<
   ExportFile,
@@ -179,6 +184,36 @@ export const presetSchema = z.object({
   createdAt: z.string(),
 });
 
+/** v11 (app 12.0): a hosted tournament, its teams and results. */
+const hostedTournamentSchema = z.object({
+  id,
+  profileId: id,
+  name: z.string(),
+  date: z.string().optional(),
+  location: z.string().optional(),
+  setsPerMatch: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  matchEnd: z.enum(MATCH_ENDS),
+  createdAt: z.string(),
+});
+
+const hostedTeamSchema = z.object({
+  id,
+  tournamentId: id,
+  name: z.string(),
+  order: z.number().int().nonnegative(),
+});
+
+const hostedResultSchema = z.object({
+  id,
+  tournamentId: id,
+  teamAId: id,
+  teamBId: id,
+  sets: z
+    .array(z.object({ a: z.number().int().nonnegative(), b: z.number().int().nonnegative() }))
+    .min(1)
+    .max(5),
+});
+
 export const exportFileSchema = z.object({
   app: z.literal(EXPORT_APP_ID),
   schemaVersion: z.literal(EXPORT_SCHEMA_VERSION),
@@ -191,6 +226,9 @@ export const exportFileSchema = z.object({
   photos: z.array(photoSchema),
   seasons: z.array(seasonSchema),
   opponents: z.array(opponentSchema),
+  hostedTournaments: z.array(hostedTournamentSchema),
+  hostedTeams: z.array(hostedTeamSchema),
+  hostedResults: z.array(hostedResultSchema),
 });
 
 /*
@@ -210,5 +248,8 @@ export type SchemaMatchesTypes = [
   Assert<Same<z.infer<typeof photoSchema>, Photo>>,
   Assert<Same<z.infer<typeof seasonSchema>, Season>>,
   Assert<Same<z.infer<typeof opponentSchema>, Opponent>>,
+  Assert<Same<z.infer<typeof hostedTournamentSchema>, HostedTournament>>,
+  Assert<Same<z.infer<typeof hostedTeamSchema>, HostedTeam>>,
+  Assert<Same<z.infer<typeof hostedResultSchema>, HostedResult>>,
   Assert<Same<z.infer<typeof exportFileSchema>, ExportFile>>,
 ];

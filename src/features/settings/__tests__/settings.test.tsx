@@ -67,6 +67,9 @@ function otherData(): AppData {
     presets: [],
     seasons: [],
     opponents: [],
+    hostedTournaments: [],
+    hostedTeams: [],
+    hostedResults: [],
   };
 }
 
@@ -84,6 +87,131 @@ beforeEach(() => {
   jest.clearAllMocks();
   store().resetAll();
   useAppStore.setState({ hydrated: true });
+});
+
+/** v12: a hosted tournament of profile `x-pr` with two teams and one result. */
+function hostedFile(): AppData {
+  return {
+    ...otherData(),
+    hostedTournaments: [
+      {
+        id: 'x-h',
+        profileId: 'x-pr',
+        name: 'Imported cup',
+        setsPerMatch: 3,
+        matchEnd: 'bestOf',
+        createdAt: '2026-11-28T00:00:00Z',
+      },
+    ],
+    hostedTeams: [
+      { id: 'x-ht1', tournamentId: 'x-h', name: 'One', order: 0 },
+      { id: 'x-ht2', tournamentId: 'x-h', name: 'Two', order: 1 },
+    ],
+    hostedResults: [
+      {
+        id: 'x-hr',
+        tournamentId: 'x-h',
+        teamAId: 'x-ht1',
+        teamBId: 'x-ht2',
+        sets: [
+          { a: 25, b: 20 },
+          { a: 25, b: 22 },
+        ],
+      },
+    ],
+  };
+}
+
+describe('hosted tournaments in export and import (v12)', () => {
+  function seedCup() {
+    const { coach } = seed();
+    const cup = store().addHostedTournament({
+      profileId: coach.id,
+      name: 'Winter Cup',
+      setsPerMatch: 2,
+      matchEnd: 'allSets',
+    });
+    const a = store().addHostedTeam(cup.id, 'TV Nord');
+    const b = store().addHostedTeam(cup.id, 'Rivals');
+    store().setHostedResult(cup.id, a.id, b.id, [
+      { a: 25, b: 20 },
+      { a: 20, b: 25 },
+    ]);
+    return { cup, a, b };
+  }
+
+  it('"Export everything" includes them; a team\'s file does not', async () => {
+    seedCup();
+    const before = selectAppData(store());
+    await renderSettings();
+    await fireEvent.press(screen.getByLabelText('Export everything'));
+    const all = parseImport(mockSave.mock.calls[0][1]);
+    expect(all.ok && all.summary.hostedTournaments).toBe(1);
+    expect(all.ok && all.file.hostedTournaments).toEqual(before.hostedTournaments);
+    expect(all.ok && all.file.hostedTeams).toEqual(before.hostedTeams);
+    expect(all.ok && all.file.hostedResults).toEqual(before.hostedResults);
+
+    await fireEvent.press(screen.getByLabelText('Export Herren 1: only this team'));
+    const team = parseImport(mockSave.mock.calls[1][1]);
+    expect(team.ok && team.summary.hostedTournaments).toBe(0);
+  });
+
+  it('export, delete everything, import: the tournaments are back exactly', async () => {
+    seedCup();
+    const before = selectAppData(store());
+    await renderSettings();
+    await fireEvent.press(screen.getByLabelText('Export everything'));
+    const text = mockSave.mock.calls[0][1];
+    store().resetAll();
+    expect(store().hostedTournaments).toEqual([]);
+
+    mockPick.mockResolvedValue({ name: 'backup.json', text });
+    await fireEvent.press(screen.getByLabelText('Import from file'));
+    expect(await screen.findByText(/, 2 profiles, 1 hosted tournament$/)).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Replace'));
+    expect(selectAppData(store())).toEqual(before);
+  });
+
+  it("Replace takes the file's tournaments and drops the device's", async () => {
+    seedCup();
+    mockPick.mockResolvedValue({ name: 'backup.json', text: fileText(hostedFile()) });
+    await renderSettings();
+    await fireEvent.press(screen.getByLabelText('Import from file'));
+    await fireEvent.press(await screen.findByLabelText('Replace'));
+    expect(selectAppData(store())).toEqual(hostedFile());
+  });
+
+  it("Merge adds the file's tournaments and keeps the device's", async () => {
+    const { cup } = seedCup();
+    const before = selectAppData(store());
+    mockPick.mockResolvedValue({ name: 'backup.json', text: fileText(hostedFile()) });
+    await renderSettings();
+    await fireEvent.press(screen.getByLabelText('Import from file'));
+    await fireEvent.press(await screen.findByLabelText('Merge'));
+    const after = selectAppData(store());
+    expect(after.hostedTournaments.map((x) => x.id)).toEqual([cup.id, 'x-h']);
+    expect(after.hostedTeams).toEqual([...before.hostedTeams, ...hostedFile().hostedTeams]);
+    expect(after.hostedResults).toEqual([...before.hostedResults, ...hostedFile().hostedResults]);
+    expect(screen.getByText('Import complete: data merged.')).toBeTruthy();
+  });
+
+  it('a Merge that would leave a result that no longer fits is refused; nothing changes', async () => {
+    const { cup } = seedCup();
+    const before = selectAppData(store());
+    // The file has the same tournament with one set per match; the device's result has two.
+    const file: AppData = {
+      ...before,
+      hostedTournaments: [{ ...cup, setsPerMatch: 1, matchEnd: 'bestOf' }],
+      hostedTeams: [],
+      hostedResults: [],
+    };
+    mockPick.mockResolvedValue({ name: 'backup.json', text: fileText(file) });
+    await renderSettings();
+    await fireEvent.press(screen.getByLabelText('Import from file'));
+    await fireEvent.press(await screen.findByLabelText('Merge'));
+    expect(await screen.findByText(/Merging would make your data inconsistent/)).toBeTruthy();
+    expect(selectAppData(store())).toEqual(before);
+  });
 });
 
 describe('import', () => {
@@ -129,7 +257,7 @@ describe('import', () => {
     ['broken JSON', '{"app": "volley-lineup",', 'This file is not valid JSON.'],
     [
       'a newer schema version',
-      JSON.stringify({ app: 'volley-lineup', schemaVersion: 11 }),
+      JSON.stringify({ app: 'volley-lineup', schemaVersion: 12 }),
       'different version',
     ],
   ])('shows an error for %s and changes nothing', async (_label, text, message) => {
@@ -201,6 +329,7 @@ describe('export', () => {
       photos: 0,
       descriptions: 0,
       seasons: 1,
+      hostedTournaments: 0,
     });
     expect(await screen.findByText(`Exported ${name}.`)).toBeTruthy();
   });
@@ -223,6 +352,7 @@ describe('export', () => {
       photos: 0,
       descriptions: 0,
       seasons: 1,
+      hostedTournaments: 0,
     });
   });
 
@@ -309,6 +439,9 @@ describe('delete all and version', () => {
       presets: [],
       seasons: [],
       opponents: [],
+      hostedTournaments: [],
+      hostedTeams: [],
+      hostedResults: [],
     });
     expect(screen.getByText('All data deleted.')).toBeTruthy();
     expect(store().currentProfileId).toBeNull();

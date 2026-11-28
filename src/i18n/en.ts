@@ -27,6 +27,7 @@ import { tour } from './en/tour';
 import { account } from './en/account';
 import { members } from './en/members';
 import { sync } from './en/sync';
+import { tournament } from './en/tournament';
 import type { Widen } from './types';
 
 export const en = {
@@ -123,6 +124,7 @@ export const en = {
   account,
   members,
   sync,
+  tournament,
 } as const;
 
 /** The shape every language must have (see `./types.ts`). German is typed with it in `./de.ts`. */

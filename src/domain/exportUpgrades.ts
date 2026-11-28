@@ -35,7 +35,7 @@ function upgradeV5(raw: Rec): Rec {
  * descriptions and error types are optional, so nothing else changes), v7 → v8 (one season
  * per team with its opponents, `upgradeToSeasons`), v8 → v9 (teams may have a `photoId`, which
  * is optional, so nothing changes), v9 → v10 (teams may have a `captainId`, also optional, so
- * nothing changes).
+ * nothing changes), v10 → v11 (app 12.0: the three empty hosted-tournament collections).
  */
 export function upgradeToCurrent(raw: Rec): Rec {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
@@ -48,5 +48,9 @@ export function upgradeToCurrent(raw: Rec): Rec {
   // v8 → v9: teams may have a `photoId` (optional), so nothing changes.
   const v9 = v8.schemaVersion === 8 ? { ...v8, schemaVersion: 9 } : v8;
   // v9 → v10 (app 9.1): teams may have a `captainId` (optional), so nothing changes.
-  return v9.schemaVersion === 9 ? { ...v9, schemaVersion: 10 } : v9;
+  const v10 = v9.schemaVersion === 9 ? { ...v9, schemaVersion: 10 } : v9;
+  // v10 → v11 (app 12.0): hosted tournaments; older files have none.
+  return v10.schemaVersion === 10
+    ? { hostedTournaments: [], hostedTeams: [], hostedResults: [], ...v10, schemaVersion: 11 }
+    : v10;
 }

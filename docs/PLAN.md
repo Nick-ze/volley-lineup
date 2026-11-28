@@ -773,3 +773,39 @@ Built in seven pull requests: (1) plan and theme values, (2) the header, (3) sha
 - [ ] The owner tried the test build on the phone. Only then: release. — _open: the test build is ready, the release waits for the owner._
 
 _Checked 2026-11-27 on the web build (Playwright: all 528 screenshots per pull request, measurements at 390 × 844, a touch-target scan, a drag-and-drop and tab-bar run) and in Jest. Not checked on a phone._
+
+## 48. v12.0 — Host a tournament
+
+A coach who runs a tournament enters the teams, then the result of each match; the app keeps the plan and the table. It is a neutral scoreboard for all teams: names and results, no rosters, lineups or live scoring. The full brief (decisions, data model, every screen, the pull requests) is `docs/V12_TOURNAMENT_DESIGN.md`; the mock-ups are at https://claude.ai/artifact/Lxy4VJuy28wfEumLHncdix. A team's own seasons of the kind "Tournament" (§28) and the best-of-5 of its own matches are unchanged.
+
+- **Where**: a fourth app tab, Tournaments, between Teams and Profile. A hosted tournament belongs to the profile.
+- **Format**: one group, everyone plays everyone once. The plan (rounds by the circle method; with an odd number one team rests per round) is derived from the teams in the order they were added and never stored. 2 to 16 teams.
+- **Sets per match**: 1 to 5 (default 3), per tournament. A match ends **best of N** (1, 3, 5: over when a team has won more than half) or when **all N sets are played** (the only choice for 2 and 4; a draw is possible).
+- **Table**: best-of counts matches (2 per win), all-sets counts sets (1 per set won). Only finished matches count. Order: table points, set difference, ball difference, balls scored; teams equal in all four share a rank and are listed by name.
+- **Results** are typed in per set: two whole numbers 0–99 that differ; no rule on how long a set is. A result may be saved unfinished. Only results are stored.
+- **Settings can change later** while every stored result stays valid; otherwise the change is refused and names the match. **Removing a team** deletes its results (the confirmation says how many).
+- **Data model** (`src/domain/types.ts`): `HostedTournament` (profile, name, optional date and place, `setsPerMatch`, `matchEnd`), `HostedTeam` (name, `order`), `HostedResult` (a pair of teams, `sets: { a, b }[]`). Store **v14** adds `hostedTournaments`, `hostedTeams`, `hostedResults`; export **schemaVersion 11** has the same three lists (files v1–v10 upgrade to empty lists). They are not part of cloud sync: nothing under `src/lib/sync`, `src/domain/sync*` or `supabase/` changes.
+- **Logic** (`src/domain/hostedTournament.ts`, a barrel over `hostedPlan`, `hostedResult`, `hostedStandings`, `hostedForms`, `hostedData`): `roundRobin`, `matchOutcome`, `resultValidity`, `nextSetAllowed`, `tournamentPlan`, `standings`, `teamMatches`, `settingsChangeBlock`, form validation, `isHostedConsistent`, `importHosted`.
+- **Screens**: the Tournaments tab (list, New tournament) · `/tournament-new?tournamentId=` (form, modal) · `/tournament/[tournamentId]?tab=table|matches|teams` · `/tournament/[tournamentId]/team/[teamId]` (a team's matches) · `/tournament/[tournamentId]/match?a=&b=` (result). The V11 look; no sideways scrolling.
+- **Export / import**: "Export everything" includes the tournaments; a single team's file has none. Replace takes the file's tournaments; Merge matches by id (the file wins; the file's result for a pair of teams replaces the device's) and is refused when the combination doesn't fit together.
+
+Built in five pull requests: (1) foundation — types, logic, store v14, export v11, strings, route helpers, this plan; (2) the Tournaments tab, its list and the form; (3) the tournament screen with Teams and Matches, the result screen; (4) the table and a team's matches; (5) tour pages, the full check, docs and version 12.0.0.
+
+Later, not now: knock-out rounds and finals; groups; playing each other twice; courts and start times; printing the plan and the table; a live point counter; linking a hosted team to one of your own teams; sharing a hosted tournament through the cloud; the 1–5 sets option for a team's own matches.
+
+## 49. v12.0 acceptance checklist
+
+- [ ] A fourth tab "Tournaments" lists the profile's hosted tournaments; create, edit, delete (with confirmation). The four tabs swipe and tap as the three did, and their labels fit at 375 px in German with the dyslexia font.
+- [ ] Sets per match can be 1 to 5; "best of" is offered only for 1, 3 and 5; the form says what the table counts.
+- [ ] Teams can be added (2 to 16), renamed and removed; names are unique; removing a team with results asks and says how many results go.
+- [ ] The Matches tab shows every pair once, grouped in rounds, with a resting team when the number is odd.
+- [ ] A result can be entered, changed and deleted set by set; invalid sets are refused with a text; in best-of no set can be added after the deciding one.
+- [ ] The table follows the ranking order above and counts matches or sets by the format (unit tests for wins, draws, shared ranks, odd team numbers).
+- [ ] A team's screen shows all its matches with results.
+- [ ] A settings change that would make a result invalid is refused and names the match.
+- [ ] Old data (store 13) and export files v1–v10 open without loss; an export / import round trip restores tournaments exactly; deleting a profile removes its tournaments.
+- [ ] Nothing under `src/lib/sync`, `src/domain/sync*`, `supabase/` changed; a team's seasons, matches and live scoring behave as in 11.0.0.
+- [ ] No sideways scrolling on the new screens; every control is at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font: nothing overlaps or is cut without "…".
+- [ ] Tour pages exist for the new screens.
+- [ ] Lint, typecheck and tests pass in CI; `src/domain` at 100 %; the web export builds.
+- [ ] Released as 12.0.0 (owner, 2026-11-28: release when it is done; fixes follow as 12.0.x).

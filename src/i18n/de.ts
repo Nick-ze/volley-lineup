@@ -26,6 +26,7 @@ import { tour } from './de/tour';
 import { account } from './de/account';
 import { members } from './de/members';
 import { sync } from './de/sync';
+import { tournament } from './de/tournament';
 import type { Strings } from './en';
 
 export const de: Strings = {
@@ -119,4 +120,5 @@ export const de: Strings = {
   account,
   members,
   sync,
+  tournament,
 };

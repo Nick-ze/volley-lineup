@@ -26,6 +26,8 @@
  * changes.
  * v12 → v13 (app 10.0): device-only sync state `sync: { deviceId: null, account: null, teams: {} }`
  * (no account, no shared teams — the app behaves exactly as before until someone signs in).
+ * v13 → v14 (app 12.0): hosted tournaments — the state gains the empty collections
+ * `hostedTournaments`, `hostedTeams` and `hostedResults` (device and backup only, never synced).
  *
  * Every step from v13 on (v10 audit L6): the shared teams' pull cursors go back to the start
  * (`withPullCursorsReset`: -1, a normal pull of everything, not the "replace by the cloud's copy"
@@ -46,7 +48,7 @@ import {
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
 import { storedSyncData, withPullCursorsReset } from '@/domain/syncSchema';
-export const STORE_VERSION = 13;
+export const STORE_VERSION = 14;
 
 /** The first store version with shared teams (the `sync` slice). */
 const FIRST_SYNC_VERSION = 13;
@@ -85,6 +87,8 @@ export function migrateStore(
   // v11 → v12: `Team.captainId` is optional, so nothing changes.
   if (fromVersion < 13 && isRec(state))
     state = { sync: { deviceId: null, account: null, teams: {} }, ...state };
+  if (fromVersion < 14 && isRec(state))
+    state = { hostedTournaments: [], hostedTeams: [], hostedResults: [], ...state };
   // An update from any version that already had shared teams (see the head of this file).
   if (fromVersion >= FIRST_SYNC_VERSION && fromVersion < toVersion && isRec(state))
     state = { ...state, sync: withPullCursorsReset(storedSyncData(state.sync)) };

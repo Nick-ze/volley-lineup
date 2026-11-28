@@ -14,6 +14,9 @@ const LARGE_HEADER_ROUTES: ReadonlySet<string> = new Set([
   'account/sign-in',
   'account/teams',
   'join',
+  // v12: a hosted tournament and one of its teams open with their name.
+  'tournament/[tournamentId]/index',
+  'tournament/[tournamentId]/team/[teamId]',
 ]);
 
 /**

@@ -7,11 +7,12 @@
     "presets": 2,
     "photos": 0,
     "descriptions": 0,
-    "seasons": 2
+    "seasons": 2,
+    "hostedTournaments": 0
   },
   "file": {
     "app": "volley-lineup",
-    "schemaVersion": 10,
+    "schemaVersion": 11,
     "exportedAt": "2026-11-20T10:00:00.000Z",
     "profiles": [
       {
@@ -449,6 +450,9 @@
         "name": "X",
         "createdAt": "2026-01-03T00:00:00.000Z"
       }
-    ]
+    ],
+    "hostedTournaments": [],
+    "hostedTeams": [],
+    "hostedResults": []
   }
 }

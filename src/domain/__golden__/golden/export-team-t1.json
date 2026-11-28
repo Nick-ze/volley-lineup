@@ -1,6 +1,6 @@
 {
   "app": "volley-lineup",
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "exportedAt": "2026-11-23T12:00:00.000Z",
   "profiles": [
     {
@@ -407,5 +407,8 @@
       "name": "Cup Team",
       "createdAt": "2026-02-01T00:00:00.000Z"
     }
-  ]
+  ],
+  "hostedTournaments": [],
+  "hostedTeams": [],
+  "hostedResults": []
 }

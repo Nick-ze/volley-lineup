@@ -1,0 +1,454 @@
+{
+  "app": "volley-lineup",
+  "schemaVersion": 10,
+  "exportedAt": "2026-11-23T12:00:00.000Z",
+  "profiles": [
+    {
+      "id": "pr1",
+      "name": "Coach Müller",
+      "color": "#FF6B00",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "photoId": "ph1"
+    },
+    {
+      "id": "pr2",
+      "name": "Other",
+      "color": "#3D8BFF",
+      "createdAt": "2026-01-02T00:00:00.000Z"
+    }
+  ],
+  "teams": [
+    {
+      "id": "t1",
+      "profileId": "pr1",
+      "name": "Herren 1 – Süd",
+      "season": "2026/27",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "photoId": "ph3",
+      "captainId": "p3"
+    },
+    {
+      "id": "t2",
+      "profileId": "pr2",
+      "name": "Damen",
+      "createdAt": "2026-01-03T00:00:00.000Z"
+    }
+  ],
+  "players": [
+    {
+      "id": "p1",
+      "teamId": "t1",
+      "firstName": "Anna",
+      "lastName": "Meier",
+      "number": 7,
+      "positions": ["S", "OPP"],
+      "active": true,
+      "photoId": "ph2",
+      "description": "Strong serve. Knee tape."
+    },
+    {
+      "id": "p2",
+      "teamId": "t1",
+      "firstName": "Anna",
+      "lastName": "Müller",
+      "number": 3,
+      "positions": ["OH"],
+      "active": true
+    },
+    {
+      "id": "p3",
+      "teamId": "t1",
+      "firstName": "Lea",
+      "lastName": "Schmid",
+      "number": 12,
+      "positions": ["MB"],
+      "active": true
+    },
+    {
+      "id": "p4",
+      "teamId": "t1",
+      "firstName": "Mia",
+      "lastName": "Keller",
+      "number": 9,
+      "positions": ["OPP"],
+      "active": true
+    },
+    {
+      "id": "p5",
+      "teamId": "t1",
+      "firstName": "Zoë",
+      "lastName": "Frei",
+      "number": 5,
+      "positions": ["OH"],
+      "active": true
+    },
+    {
+      "id": "p6",
+      "teamId": "t1",
+      "firstName": "Nora",
+      "lastName": "Weber",
+      "number": 14,
+      "positions": ["MB"],
+      "active": true
+    },
+    {
+      "id": "p7",
+      "teamId": "t1",
+      "firstName": "Lia",
+      "lastName": "Graf",
+      "number": 1,
+      "positions": ["L"],
+      "active": true
+    },
+    {
+      "id": "p8",
+      "teamId": "t1",
+      "firstName": "Sara",
+      "lastName": "Bühler",
+      "number": 10,
+      "positions": ["OH", "MB"],
+      "active": false
+    },
+    {
+      "id": "p9",
+      "teamId": "t2",
+      "firstName": "Eva",
+      "lastName": "Huber",
+      "number": 7,
+      "positions": ["S"],
+      "active": true
+    }
+  ],
+  "matches": [
+    {
+      "id": "m1",
+      "teamId": "t1",
+      "seasonId": "s1",
+      "opponentId": "o1",
+      "opponent": "Rivals",
+      "date": "2026-11-01",
+      "home": true,
+      "sets": [
+        {
+          "setNumber": 1,
+          "slots": {
+            "1": "p1",
+            "2": "p2",
+            "3": "p3",
+            "4": "p4",
+            "5": "p5",
+            "6": "p6"
+          },
+          "liberoId": "p7",
+          "weServeFirst": true,
+          "liberoReplaces": ["p3", "p6"],
+          "events": [
+            {
+              "type": "point",
+              "winner": "us",
+              "kind": "ace",
+              "playerId": "p1",
+              "at": "2026-11-01T18:00:10.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "them",
+              "kind": "ourError",
+              "playerId": "p2",
+              "errorType": "reception",
+              "at": "2026-11-01T18:00:40.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "us",
+              "kind": "kill",
+              "playerId": "p4",
+              "at": "2026-11-01T18:01:10.000Z"
+            },
+            {
+              "type": "sub",
+              "outPlayerId": "p5",
+              "inPlayerId": "p8"
+            },
+            {
+              "type": "point",
+              "winner": "them",
+              "at": "2026-11-01T18:01:50.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "them",
+              "kind": "opponentKill",
+              "at": "2026-11-01T18:02:20.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "us",
+              "kind": "opponentError",
+              "at": "2026-11-01T18:02:50.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "us",
+              "kind": "block",
+              "playerId": "p3",
+              "at": "2026-11-01T18:03:20.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "them",
+              "kind": "ourError",
+              "errorType": "serve",
+              "at": "2026-11-01T18:03:55.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "us"
+            }
+          ],
+          "formation": {
+            "system": "5-1",
+            "order": "outside",
+            "setterAt": 1
+          },
+          "liberoActive": true
+        },
+        {
+          "setNumber": 2,
+          "slots": {
+            "1": "p8",
+            "2": "p1",
+            "3": "p2",
+            "4": "p3",
+            "5": "p4",
+            "6": "p5"
+          },
+          "liberoId": null,
+          "weServeFirst": false,
+          "liberoReplaces": [],
+          "events": [
+            {
+              "type": "point",
+              "winner": "them",
+              "kind": "opponentAce",
+              "at": "2026-11-01T18:30:00.000Z"
+            },
+            {
+              "type": "point",
+              "winner": "us",
+              "kind": "kill",
+              "playerId": "p8",
+              "at": "2026-11-01T18:30:30.000Z"
+            }
+          ],
+          "formation": {
+            "system": "6-2",
+            "order": "middle",
+            "setterAt": 2
+          },
+          "liberoActive": false
+        },
+        {
+          "setNumber": 3,
+          "slots": {
+            "1": null,
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+            "6": null
+          },
+          "liberoId": null,
+          "weServeFirst": true,
+          "liberoReplaces": [],
+          "events": [],
+          "formation": {
+            "system": "5-1",
+            "order": "outside",
+            "setterAt": 1
+          },
+          "liberoActive": true
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "teamId": "t1",
+      "seasonId": "s2",
+      "opponentId": "o3",
+      "opponent": "Cup Team",
+      "date": "2026-12-05",
+      "home": false,
+      "sets": [
+        {
+          "setNumber": 1,
+          "slots": {
+            "1": "p1",
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+            "6": null
+          },
+          "liberoId": null,
+          "weServeFirst": true,
+          "liberoReplaces": [],
+          "events": [],
+          "formation": {
+            "system": "5-1",
+            "order": "outside",
+            "setterAt": 1
+          },
+          "liberoActive": true
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "teamId": "t2",
+      "seasonId": "s3",
+      "opponentId": "o4",
+      "opponent": "X",
+      "date": "2026-11-02",
+      "home": false,
+      "sets": [
+        {
+          "setNumber": 1,
+          "slots": {
+            "1": null,
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+            "6": null
+          },
+          "liberoId": null,
+          "weServeFirst": true,
+          "liberoReplaces": [],
+          "events": [],
+          "formation": {
+            "system": "5-1",
+            "order": "outside",
+            "setterAt": 1
+          },
+          "liberoActive": true
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "id": "ps1",
+      "teamId": "t1",
+      "name": "",
+      "kind": "starters",
+      "slots": {
+        "1": "p1",
+        "2": "p2",
+        "3": "p3",
+        "4": "p4",
+        "5": "p5",
+        "6": "p6"
+      },
+      "liberoId": "p7",
+      "liberoReplaces": ["p3"],
+      "formation": {
+        "system": "5-1",
+        "order": "outside",
+        "setterAt": 1
+      },
+      "liberoActive": true,
+      "createdAt": "2026-01-05T00:00:00.000Z"
+    },
+    {
+      "id": "ps2",
+      "teamId": "t1",
+      "name": "Strong serve",
+      "kind": "preset",
+      "slots": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": "p1",
+        "5": null,
+        "6": null
+      },
+      "liberoId": null,
+      "liberoReplaces": [],
+      "formation": {
+        "system": "6-2",
+        "order": "middle",
+        "setterAt": 4
+      },
+      "liberoActive": false,
+      "createdAt": "2026-01-06T00:00:00.000Z"
+    }
+  ],
+  "photos": [
+    {
+      "id": "ph1",
+      "dataUri": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=="
+    },
+    {
+      "id": "ph2",
+      "dataUri": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=="
+    },
+    {
+      "id": "ph3",
+      "dataUri": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=="
+    }
+  ],
+  "seasons": [
+    {
+      "id": "s1",
+      "teamId": "t1",
+      "name": "2026/27",
+      "kind": "season",
+      "startDate": "2026-09-01",
+      "endDate": "2027-04-30",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "s2",
+      "teamId": "t1",
+      "name": "Winter Cup",
+      "kind": "tournament",
+      "startDate": "2026-12-05",
+      "location": "Halle Süd",
+      "createdAt": "2026-02-01T00:00:00.000Z"
+    },
+    {
+      "id": "s3",
+      "teamId": "t2",
+      "name": "2026",
+      "kind": "season",
+      "createdAt": "2026-01-03T00:00:00.000Z"
+    }
+  ],
+  "opponents": [
+    {
+      "id": "o1",
+      "seasonId": "s1",
+      "name": "Rivals",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "o2",
+      "seasonId": "s1",
+      "name": "Upcoming VC",
+      "createdAt": "2026-01-02T00:00:00.000Z"
+    },
+    {
+      "id": "o3",
+      "seasonId": "s2",
+      "name": "Cup Team",
+      "createdAt": "2026-02-01T00:00:00.000Z"
+    },
+    {
+      "id": "o4",
+      "seasonId": "s3",
+      "name": "X",
+      "createdAt": "2026-01-03T00:00:00.000Z"
+    }
+  ]
+}

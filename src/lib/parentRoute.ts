@@ -6,7 +6,7 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' && v ? v 
 
 /**
  * Where "Back" goes when there is no history (deep link / page reload): the logical parent screen.
- * The tab screens (teams, profile, settings) have no back button.
+ * The tab screens (teams, tournaments, profile, settings) have no back button.
  * `teamIdOfMatch` looks up a match's team (from the store) so a match can go back to its team;
  * v7: `seasonIdOfMatch` (optional) its season, so it goes back to the season screen.
  */
@@ -20,6 +20,7 @@ export function parentRoute(
   const matchId = str(params?.matchId);
   const seasonId = str(params?.seasonId);
   const set = str(params?.set);
+  const tournamentId = str(params?.tournamentId);
   switch (routeName) {
     case 'team/[teamId]/player':
     case 'team/[teamId]/players/[playerId]':
@@ -69,6 +70,22 @@ export function parentRoute(
       return '/account';
     case 'team/[teamId]/members':
       return teamId ? { pathname: '/team/[teamId]', params: { teamId } } : '/teams';
+    // v12: hosted tournaments (the Tournaments tab and the screens pushed over it).
+    case 'tournament/[tournamentId]/index':
+      return '/tournaments';
+    case 'tournament-new':
+      // Editing goes back to the tournament; a new one to the list.
+      return tournamentId
+        ? { pathname: '/tournament/[tournamentId]', params: { tournamentId } }
+        : '/tournaments';
+    case 'tournament/[tournamentId]/team/[teamId]':
+      return tournamentId
+        ? { pathname: '/tournament/[tournamentId]', params: { tournamentId, tab: 'table' } }
+        : '/tournaments';
+    case 'tournament/[tournamentId]/match':
+      return tournamentId
+        ? { pathname: '/tournament/[tournamentId]', params: { tournamentId, tab: 'matches' } }
+        : '/tournaments';
     default:
       return '/teams';
   }
