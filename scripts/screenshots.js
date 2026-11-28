@@ -76,6 +76,8 @@ const SCREENS = [
   ['tournament3-matches', '/tournament/h3?tab=matches'],
   ['tournament3-teams', '/tournament/h3?tab=teams'],
   ['tournament3-result', '/tournament/h3/match?m=hfm2'],
+  // v12.2: a team with players (shown by name).
+  ['tournament3-team', '/tournament/h3/team/hf1'],
 ];
 
 const WIDTHS = [
@@ -113,6 +115,7 @@ function storage(variant) {
     hostedTournaments: DATA.hostedTournaments,
     hostedTeams: DATA.hostedTeams,
     hostedResults: DATA.hostedResults,
+    hostedPlayers: DATA.hostedPlayers,
     currentProfileId: 'pr1',
     chipLabel: 'number',
     // v9.0: no tour, so no tip popups over the screens.

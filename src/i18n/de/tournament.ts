@@ -181,6 +181,37 @@ export const tournament: Strings['tournament'] = {
     ) =>
       `Rang ${rank}, ${played} gespielt, Bilanz ${record}, Sätze ${sets}, Bälle ${balls}, ${points} ${unit}`,
   },
+  players: {
+    title: 'Spieler',
+    hint: 'Optional. Mit Spielern kann der Live-Modus sagen, wer gepunktet hat; ohne wird das Team als Ganzes gezählt.',
+    shownBy: 'Spieler werden angezeigt mit',
+    label: { number: 'Nummer', name: 'Name' },
+    labelOption: {
+      number: 'Nummer: Spieler werden mit ihrer Nummer angezeigt',
+      name: 'Name: Spieler werden mit ihrem Namen angezeigt',
+    },
+    number: 'Nummer',
+    numberPlaceholder: 'Nr.',
+    name: 'Name',
+    namePlaceholder: 'Name des Spielers',
+    add: 'Hinzufügen',
+    addLabel: 'Hinzufügen: Spieler',
+    count: (n: number, max: number) => `${n} von ${max} Spielern`,
+    empty: 'Noch keine Spieler.',
+    numberText: (n: number) => `#${n}`,
+    editLabel: (player: string) => `Bearbeiten: Spieler ${player}`,
+    deleteLabel: (player: string) => `Löschen: Spieler ${player}`,
+    confirmDelete: (player: string) => `Spieler ${player} löschen?`,
+    editNumber: (player: string) => `Nummer von ${player}`,
+    editName: (player: string) => `Name von ${player}`,
+    errors: {
+      REQUIRED: 'Gib eine Nummer oder einen Namen ein.',
+      INVALID_NUMBER: 'Gib eine ganze Zahl von 0 bis 999 ein.',
+      DUPLICATE_NUMBER: 'Dieses Team hat schon einen Spieler mit dieser Nummer.',
+      TOO_LONG: 'Das ist zu lang.',
+      TOO_MANY: (max: number) => `Ein Team hat höchstens ${max} Spieler.`,
+    },
+  },
   result: {
     title: 'Ergebnis',
     subtitle: (tournament: string, label: string, format: string) =>

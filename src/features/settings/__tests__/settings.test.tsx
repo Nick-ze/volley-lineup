@@ -70,6 +70,7 @@ function otherData(): AppData {
     hostedTournaments: [],
     hostedTeams: [],
     hostedResults: [],
+    hostedPlayers: [],
   };
 }
 
@@ -258,7 +259,7 @@ describe('import', () => {
     ['broken JSON', '{"app": "volley-lineup",', 'This file is not valid JSON.'],
     [
       'a newer schema version',
-      JSON.stringify({ app: 'volley-lineup', schemaVersion: 13 }),
+      JSON.stringify({ app: 'volley-lineup', schemaVersion: 14 }),
       'different version',
     ],
   ])('shows an error for %s and changes nothing', async (_label, text, message) => {
@@ -443,6 +444,7 @@ describe('delete all and version', () => {
       hostedTournaments: [],
       hostedTeams: [],
       hostedResults: [],
+      hostedPlayers: [],
     });
     expect(screen.getByText('All data deleted.')).toBeTruthy();
     expect(store().currentProfileId).toBeNull();

@@ -837,4 +837,4 @@ The owner's request after 12.0.0: "add that you can write the matches in yoursel
 - [x] A round robin behaves as in 12.0.0 (its tests are unchanged apart from the versions and the new field).
 - [x] No sideways scrolling; every control at least 44 × 44; EN and DE at 375 px, both themes, with and without the dyslexia font (`scripts/layout-scan.js`, screenshots).
 - [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
-- [ ] Released as 12.1.0.
+- [x] Released as 12.1.0: https://github.com/Nick-ze/volley-lineup/releases/tag/v12.1.0

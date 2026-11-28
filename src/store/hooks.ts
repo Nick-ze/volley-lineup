@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { isCaptain } from '@/domain/captain';
 import { shortName } from '@/domain/playerNames';
 import type {
+  HostedPlayer,
   HostedResult,
   HostedTeam,
   HostedTournament,
@@ -16,6 +17,7 @@ import type {
 
 import { useAppStore } from './appStore';
 import {
+  selectHostedPlayers,
   selectHostedResults,
   selectHostedTeams,
   selectHostedTournaments,
@@ -119,3 +121,7 @@ export const useHostedTeams = (tournamentId: string | null | undefined): HostedT
 /** v14: a hosted tournament's results. */
 export const useHostedResults = (tournamentId: string | null | undefined): HostedResult[] =>
   useAppStore(useShallow((s) => (tournamentId ? selectHostedResults(s, tournamentId) : [])));
+
+/** v16: a hosted team's players, by number, then by name. */
+export const useHostedPlayers = (teamId: string | null | undefined): HostedPlayer[] =>
+  useAppStore(useShallow((s) => (teamId ? selectHostedPlayers(s, teamId) : [])));

@@ -1,5 +1,12 @@
-import type { HostedData, TournamentFormValue } from '@/domain/hostedTournament';
 import type {
+  HostedData,
+  HostedPlayerValue,
+  LiveState,
+  TournamentFormValue,
+} from '@/domain/hostedTournament';
+import type {
+  HostedPlayer,
+  HostedPlayerLabel,
   HostedResult,
   HostedSetScore,
   HostedTeam,
@@ -94,6 +101,10 @@ export type HostedTournamentValue = Omit<TournamentFormValue, 'plan'> &
   Partial<Pick<TournamentFormValue, 'plan'>>;
 export type NewHostedTournament = Pick<HostedTournament, 'profileId'> & HostedTournamentValue;
 
+/** v16: a hosted match — an added match by its id, or a round robin's pair of teams. */
+export type HostedMatchRef =
+  { matchId: string } | { tournamentId: string; teamAId: string; teamBId: string };
+
 export type NewPreset = Pick<LineupPreset, 'teamId' | 'name'> & Partial<PresetLineup>;
 
 export interface AppActions {
@@ -174,6 +185,22 @@ export interface AppActions {
   setHostedMatchSets(matchId: string, sets: readonly HostedSetScore[]): void;
   /** v15: removes one added match. */
   deleteHostedMatch(matchId: string): void;
+  // v16 (app 12.2): a hosted team's optional players, and live scoring
+  /** How the team's players are named: by number or by name. */
+  setHostedPlayerLabel(teamId: string, label: HostedPlayerLabel): void;
+  addHostedPlayer(teamId: string, value: HostedPlayerValue): HostedPlayer;
+  /** Replaces the player's number and name (a field left out is removed). */
+  updateHostedPlayer(id: string, value: HostedPlayerValue): void;
+  /** Deletes the player; rallies that named them keep how the point was won. */
+  deleteHostedPlayer(id: string): void;
+  /**
+   * Stores where live scoring of a match stands (its finished sets and its rallies). `match` is
+   * an added match's id, or a round robin's pair with `state` as seen from `teamAId`. A state
+   * without anything removes a round robin's result and empties an added match.
+   */
+  saveHostedLive(match: HostedMatchRef, state: LiveState): void;
+  /** Removes a result's rallies and keeps its finished sets, so they can be changed by hand. */
+  clearHostedLive(resultId: string): void;
   // whole-data operations (used by import / settings)
   /** Replaces all data; hosted tournaments that are left out are removed. */
   replaceAll(data: TeamCollections & Partial<HostedData>): void;

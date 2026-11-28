@@ -235,13 +235,47 @@ export interface HostedTournament {
   createdAt: string;
 }
 
-/** v12: a team of a hosted tournament (only a name). */
+/** v12.2: how a hosted team's players are named in live scoring and its numbers. */
+export type HostedPlayerLabel = 'number' | 'name';
+
+/** v12: a team of a hosted tournament (a name; v12.2: optionally players). */
 export interface HostedTeam {
   id: string;
   tournamentId: string;
   name: string;
   /** The order added; the plan is built from it. */
   order: number;
+  /** v12.2: its players go by number (the default when left out) or by name. */
+  playerLabel?: HostedPlayerLabel;
+}
+
+/**
+ * v12.2 (store 16, export 13): a player of a hosted team — optional; a team without players is
+ * scored as a team. A jersey number, a name, or both (at least one).
+ */
+export interface HostedPlayer {
+  id: string;
+  teamId: string;
+  number?: number;
+  name?: string;
+}
+
+/**
+ * v12.2: how a point of a live-scored hosted match was won (optional). `attack`, `ace` and
+ * `block` are the scoring team's; `error` is a mistake of the other team.
+ */
+export type HostedPointKind = 'attack' | 'ace' | 'block' | 'error';
+
+/** v12.2: one rally of a live-scored hosted match. */
+export interface HostedPoint {
+  /** Who got the point: the result's team A or team B. */
+  team: 'a' | 'b';
+  kind?: HostedPointKind;
+  /**
+   * Who it was (only with a kind): for `attack` / `ace` / `block` a player of the scoring team,
+   * for `error` a player of the other team.
+   */
+  playerId?: string;
 }
 
 /** v12: one set of a hosted match: the ball points of the pair's two teams. */
@@ -265,11 +299,17 @@ export interface HostedResult {
   teamBId: string;
   /** The sets in the order played, at most `setsPerMatch` (see above for "none"). */
   sets: HostedSetScore[];
+  /**
+   * v12.2: the rallies of live scoring, one list per set. The first `sets.length` lists belong
+   * to the finished sets (empty for a set whose score was typed in); one more list is the set
+   * being played, which is not in `sets` yet. Left out for a result that was only typed in.
+   */
+  live?: HostedPoint[][];
 }
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 12;
+  schemaVersion: 13;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
@@ -285,6 +325,8 @@ export interface ExportFile {
   hostedTournaments: HostedTournament[];
   hostedTeams: HostedTeam[];
   hostedResults: HostedResult[];
+  /** v13 (app 12.2): the players of hosted teams. */
+  hostedPlayers: HostedPlayer[];
 }
 
 /* ---- v9.0 tutorial (device settings in the app store; not exported) ---- */
@@ -477,6 +519,15 @@ export const SET_NUMBERS: readonly SetNumber[] = [1, 2, 3, 4, 5] as const;
 /** v12: the choices for a hosted tournament's sets per match. */
 export const SETS_PER_MATCH: readonly SetsPerMatch[] = [1, 2, 3, 4, 5] as const;
 export const MATCH_ENDS: readonly MatchEnd[] = ['bestOf', 'allSets'] as const;
+/** v12.2: how a hosted team's players are named, the default first. */
+export const HOSTED_PLAYER_LABELS: readonly HostedPlayerLabel[] = ['number', 'name'] as const;
+/** v12.2: the ways a live-scored point was won, in chip order. */
+export const HOSTED_POINT_KINDS: readonly HostedPointKind[] = [
+  'attack',
+  'ace',
+  'block',
+  'error',
+] as const;
 /** v12.1: the plan kinds, the default first. */
 export const HOSTED_PLAN_KINDS: readonly HostedPlanKind[] = ['roundRobin', 'manual'] as const;
 /** v7: error types in display order. */

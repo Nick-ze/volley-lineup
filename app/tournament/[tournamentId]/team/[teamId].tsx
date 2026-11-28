@@ -15,6 +15,7 @@ import type { HostedTournament } from '@/domain/types';
 import { MatchScoreRow } from '@/features/hostedTournament/MatchScoreRow';
 import { matchHref, matchKey } from '@/features/hostedTournament/matchRoute';
 import { TeamNumbers } from '@/features/hostedTournament/TeamNumbers';
+import { TeamPlayers } from '@/features/hostedTournament/TeamPlayers';
 import { matchLabel } from '@/features/hostedTournament/tournamentText';
 import { useTournamentPlan } from '@/features/hostedTournament/useTournamentPlan';
 import { useTourPage } from '@/features/tour';
@@ -31,7 +32,8 @@ import { spacing } from '@/theme';
 /**
  * `/tournament/[tournamentId]/team/[teamId]` — one team of a hosted tournament (v12): its rank
  * and numbers as a band of large numbers, then its matches in plan order as scoreboard rows —
- * how it played against each of the others. Tapping a match opens its result.
+ * how it played against each of the others. Tapping a match opens its result. v12.2: below them
+ * the team's optional players (shown by number or by name).
  */
 export default function TournamentTeamScreen() {
   const t = useT();
@@ -97,6 +99,7 @@ function TeamMatches({ tournament, teamId }: { tournament: HostedTournament; tea
           </View>
         ))}
       </View>
+      <TeamPlayers team={standing.team} />
     </Screen>
   );
 }

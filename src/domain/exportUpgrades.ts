@@ -43,7 +43,8 @@ function upgradeV5(raw: Rec): Rec {
  * per team with its opponents, `upgradeToSeasons`), v8 → v9 (teams may have a `photoId`, which
  * is optional, so nothing changes), v9 → v10 (teams may have a `captainId`, also optional, so
  * nothing changes), v10 → v11 (app 12.0: the three empty hosted-tournament collections),
- * v11 → v12 (app 12.1: every hosted tournament gains `plan: 'roundRobin'`).
+ * v11 → v12 (app 12.1: every hosted tournament gains `plan: 'roundRobin'`), v12 → v13 (app 12.2:
+ * the empty list of hosted teams' players; player labels and live rallies are optional).
  */
 export function upgradeToCurrent(raw: Rec): Rec {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
@@ -63,9 +64,12 @@ export function upgradeToCurrent(raw: Rec): Rec {
       ? { hostedTournaments: [], hostedTeams: [], hostedResults: [], ...v10, schemaVersion: 11 }
       : v10;
   // v11 → v12 (app 12.1): so far the app made every plan.
-  return v11.schemaVersion === 11
-    ? { ...v11, schemaVersion: 12, hostedTournaments: withRoundRobinPlan(v11.hostedTournaments) }
-    : v11;
+  const v12 =
+    v11.schemaVersion === 11
+      ? { ...v11, schemaVersion: 12, hostedTournaments: withRoundRobinPlan(v11.hostedTournaments) }
+      : v11;
+  // v12 → v13 (app 12.2): hosted teams may have players; older files have none.
+  return v12.schemaVersion === 12 ? { hostedPlayers: [], ...v12, schemaVersion: 13 } : v12;
 }
 
 /**

@@ -7,11 +7,14 @@ import {
   addMatchError,
   DEFAULT_PLAN_KIND,
   emptyHosted,
+  flippedState,
   hostedOf,
   hostedOfProfiles,
   nextTeamOrder,
   pairKey,
+  storedLive,
   teamsOfTournament,
+  withoutHostedPlayer,
   withoutHostedTeam,
   withoutHostedTournament,
 } from '@/domain/hostedTournament';
@@ -22,6 +25,7 @@ import { goneTeamLinks, withoutTeamLinks } from '@/domain/syncAccess';
 import { storedSyncData } from '@/domain/syncSchema';
 import { withSeen } from '@/domain/tour';
 import type {
+  HostedPlayer,
   HostedResult,
   HostedTeam,
   HostedTournament,
@@ -384,11 +388,95 @@ export const useAppStore = create<AppStore>()(
       setHostedMatchSets: (matchId, sets) =>
         set((s) => ({
           hostedResults: s.hostedResults.map((r) =>
-            r.id === matchId ? { ...r, sets: sets.map((x) => ({ a: x.a, b: x.b })) } : r,
+            // Typed-in sets take the place of live scoring's rallies.
+            r.id === matchId
+              ? {
+                  id: r.id,
+                  tournamentId: r.tournamentId,
+                  teamAId: r.teamAId,
+                  teamBId: r.teamBId,
+                  sets: sets.map((x) => ({ a: x.a, b: x.b })),
+                }
+              : r,
           ),
         })),
       deleteHostedMatch: (matchId) =>
         set((s) => ({ hostedResults: s.hostedResults.filter((r) => r.id !== matchId) })),
+      setHostedPlayerLabel: (teamId, playerLabel) =>
+        set((s) => ({
+          hostedTeams: s.hostedTeams.map((x) => (x.id === teamId ? { ...x, playerLabel } : x)),
+        })),
+      addHostedPlayer: (teamId, value) => {
+        const player: HostedPlayer = { id: createId(), teamId, ...value };
+        set((s) => ({ hostedPlayers: [...s.hostedPlayers, player] }));
+        return player;
+      },
+      updateHostedPlayer: (id, value) =>
+        set((s) => ({
+          hostedPlayers: s.hostedPlayers.map((p) =>
+            p.id === id ? { id: p.id, teamId: p.teamId, ...value } : p,
+          ),
+        })),
+      deleteHostedPlayer: (id) => set((s) => withoutHostedPlayer(hostedOf(s), id)),
+      saveHostedLive: (match, state) =>
+        set((s) => {
+          if ('matchId' in match) {
+            return {
+              hostedResults: s.hostedResults.map((r) =>
+                r.id === match.matchId
+                  ? {
+                      id: r.id,
+                      tournamentId: r.tournamentId,
+                      teamAId: r.teamAId,
+                      teamBId: r.teamBId,
+                      ...storedLive(state),
+                    }
+                  : r,
+              ),
+            };
+          }
+          const { tournamentId, teamAId, teamBId } = match;
+          const order = teamsOfTournament(s.hostedTeams, tournamentId).map((x) => x.id);
+          const [one, other] = [order.indexOf(teamAId), order.indexOf(teamBId)];
+          if (one < 0 || other < 0 || one === other) return {};
+          // Stored as seen from the pair's first team in the tournament's order.
+          const flip = one > other;
+          const stored = storedLive(flip ? flippedState(state) : state);
+          const key = pairKey(teamAId, teamBId);
+          const old = s.hostedResults.find(
+            (r) => r.tournamentId === tournamentId && pairKey(r.teamAId, r.teamBId) === key,
+          );
+          const others = s.hostedResults.filter((r) => r !== old);
+          // Nothing left (the only rally was taken back): the pair has no result again.
+          if (stored.sets.length === 0 && stored.live === undefined) {
+            return old ? { hostedResults: others } : {};
+          }
+          const result: HostedResult = {
+            id: old?.id ?? createId(),
+            tournamentId,
+            teamAId: flip ? teamBId : teamAId,
+            teamBId: flip ? teamAId : teamBId,
+            ...stored,
+          };
+          return {
+            hostedResults: old
+              ? s.hostedResults.map((r) => (r === old ? result : r))
+              : [...s.hostedResults, result],
+          };
+        }),
+      clearHostedLive: (resultId) =>
+        set((s) => {
+          const result = s.hostedResults.find((r) => r.id === resultId);
+          if (!result) return {};
+          const manual =
+            s.hostedTournaments.find((x) => x.id === result.tournamentId)?.plan === 'manual';
+          // A round robin's result that was only a running set is gone with its rallies.
+          if (result.sets.length === 0 && !manual) {
+            return { hostedResults: s.hostedResults.filter((r) => r.id !== resultId) };
+          }
+          const { live: _live, ...rest } = result;
+          return { hostedResults: s.hostedResults.map((r) => (r.id === resultId ? rest : r)) };
+        }),
       replaceAll: (data) =>
         set((s) => {
           // v10: keep the shared teams' bookkeeping; the account link goes with its profile, and
@@ -453,6 +541,7 @@ export const useAppStore = create<AppStore>()(
         hostedTournaments: s.hostedTournaments,
         hostedTeams: s.hostedTeams,
         hostedResults: s.hostedResults,
+        hostedPlayers: s.hostedPlayers,
         currentProfileId: s.currentProfileId,
         language: s.language,
         chipLabel: s.chipLabel,
@@ -491,5 +580,6 @@ export function selectAppData(s: AppData): AppData {
     hostedTournaments: s.hostedTournaments,
     hostedTeams: s.hostedTeams,
     hostedResults: s.hostedResults,
+    hostedPlayers: s.hostedPlayers,
   };
 }
