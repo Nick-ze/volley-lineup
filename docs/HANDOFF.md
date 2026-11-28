@@ -4,7 +4,7 @@ This file lets a fresh Claude session continue Volley Lineup where the last one 
 **Run `/start` in a new chat** (it reads this file and the right docs).
 **Run `/wrap-up` before you close a chat** (it updates this file).
 
-Last updated: 2026-11-28, with **v12.3.0** (the table of a hosted tournament as a PDF) merged and its release started. The latest release is **v12.3.0** once the release workflow has finished (check `get_release_by_tag v12.3.0`); before it, **v12.2.0**.
+Last updated: 2026-11-28, after the release of **v12.3.0** (the table of a hosted tournament as a PDF). The latest release is **v12.3.0**. The owner has asked for an estimate of a **sync for hosted tournaments** and said "do not work yet" (#411): it is not started and waits for their answers.
 
 ---
 
@@ -105,6 +105,7 @@ Last updated: 2026-11-28, with **v12.3.0** (the table of a hosted tournament as 
 - v8 follow-ups: next-set setup mini court (so its rotate slides), live reduce-motion updates, swipe for nested set filters, `SystemUI.setBackgroundColorAsync` per theme, white-panel icon variant if the owner wants it, dyslexia font size setting (now 0.85×, #200).
 - v7 follow-ups (QA nits, not done): a new match's date defaults to today even inside a dated tournament; matches on the same date list oldest-created first; the new-match form's season chooser / "new season in the form" paths are only reachable without `?seasonId` (no UI link does that now); performance / player detail have no season filter (player detail sums all seasons).
 - v10 follow-ups: Supabase Realtime instead of polling for live viewers; store the last sync time (store v14); per-member "last seen"; transfer a team to another manager on account deletion; a web URL for joining that also opens the app on phones (universal links).
+- **Tournament sync (asked as an estimate, 2026-11-28, #411)**: not started. Before building: the owner's answers (what a guest may do; view-only guests), their go-ahead for new tables in the live database, and a design note like `docs/V10_SYNC_DESIGN.md` — the v12 rule "nothing under the sync folders" ends with this feature.
 - v12.2 follow-ups (not asked for, not built): a points target that ends a set by itself; who serves; time-outs; rotations and lineups for tournament teams (the owner: "leave them out for now"); a ranking of players over the tournament; changing an earlier point's details (only the last point can be changed); keeping the screen awake while scoring.
 - v12.1 follow-ups (not asked for, not built): extra matches on top of an app-made plan (a final, a second leg); rounds, dates or courts for added matches; changing the order of added matches; switching a tournament between the two kinds once it has results.
 - v12 follow-ups (the brief's "Later, not now"): knock-out rounds and finals; groups; playing each other twice; courts and start times; printing the plan and the table; linking a hosted team to one of your own teams; sharing a hosted tournament through the cloud; the 1–5 sets option for a team's own matches (touches live scoring and synced data — its own version).
