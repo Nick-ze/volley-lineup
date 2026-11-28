@@ -1,6 +1,6 @@
 {
   "app": "volley-lineup",
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "exportedAt": "2026-11-23T12:00:00.000Z",
   "profiles": [
     {
@@ -485,6 +485,7 @@
       "location": "Halle Süd",
       "setsPerMatch": 3,
       "matchEnd": "bestOf",
+      "plan": "roundRobin",
       "createdAt": "2026-11-28T09:00:00.000Z"
     },
     {
@@ -493,7 +494,18 @@
       "name": "Mixed-Abend",
       "setsPerMatch": 2,
       "matchEnd": "allSets",
+      "plan": "roundRobin",
       "createdAt": "2026-11-28T10:00:00.000Z"
+    },
+    {
+      "id": "h3",
+      "profileId": "pr1",
+      "name": "Freundschaftsspiele",
+      "date": "2026-12-12",
+      "setsPerMatch": 3,
+      "matchEnd": "bestOf",
+      "plan": "manual",
+      "createdAt": "2026-11-28T11:00:00.000Z"
     }
   ],
   "hostedTeams": [
@@ -549,6 +561,24 @@
       "id": "hm3",
       "tournamentId": "h2",
       "name": "Grün",
+      "order": 2
+    },
+    {
+      "id": "hf1",
+      "tournamentId": "h3",
+      "name": "Gastgeber",
+      "order": 0
+    },
+    {
+      "id": "hf2",
+      "tournamentId": "h3",
+      "name": "TV Nord",
+      "order": 1
+    },
+    {
+      "id": "hf3",
+      "tournamentId": "h3",
+      "name": "Rivals",
       "order": 2
     }
   ],
@@ -720,6 +750,61 @@
           "b": 21
         }
       ]
+    },
+    {
+      "id": "hfm1",
+      "tournamentId": "h3",
+      "teamAId": "hf1",
+      "teamBId": "hf2",
+      "sets": [
+        {
+          "a": 25,
+          "b": 21
+        },
+        {
+          "a": 25,
+          "b": 23
+        }
+      ]
+    },
+    {
+      "id": "hfm2",
+      "tournamentId": "h3",
+      "teamAId": "hf3",
+      "teamBId": "hf1",
+      "sets": [
+        {
+          "a": 25,
+          "b": 22
+        },
+        {
+          "a": 19,
+          "b": 25
+        },
+        {
+          "a": 15,
+          "b": 12
+        }
+      ]
+    },
+    {
+      "id": "hfm3",
+      "tournamentId": "h3",
+      "teamAId": "hf2",
+      "teamBId": "hf1",
+      "sets": [
+        {
+          "a": 25,
+          "b": 20
+        }
+      ]
+    },
+    {
+      "id": "hfm4",
+      "tournamentId": "h3",
+      "teamAId": "hf2",
+      "teamBId": "hf3",
+      "sets": []
     }
   ]
 }

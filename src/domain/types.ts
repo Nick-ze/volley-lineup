@@ -209,6 +209,13 @@ export type SetsPerMatch = 1 | 2 | 3 | 4 | 5;
 export type MatchEnd = 'bestOf' | 'allSets';
 
 /**
+ * v12.1: where a hosted tournament's matches come from: `roundRobin` — the app works out the
+ * plan (everyone plays everyone once); `manual` — the coach adds every match (two teams can meet
+ * more than once).
+ */
+export type HostedPlanKind = 'roundRobin' | 'manual';
+
+/**
  * v12: a tournament the coach hosts: a neutral scoreboard for all its teams (names and results,
  * no rosters, lineups or live scoring). It belongs to a profile, not to a team.
  */
@@ -223,6 +230,8 @@ export interface HostedTournament {
   setsPerMatch: SetsPerMatch;
   /** Always `allSets` when `setsPerMatch` is 2 or 4. */
   matchEnd: MatchEnd;
+  /** v12.1 (store 15, export 12): who makes the plan. */
+  plan: HostedPlanKind;
   createdAt: string;
 }
 
@@ -242,21 +251,25 @@ export interface HostedSetScore {
 }
 
 /**
- * v12: a result of a hosted tournament. At most one per pair of teams; `teamAId` is the pair's
- * team with the lower `order`. Only this is stored: plan, outcome and table are derived.
+ * v12: a result of a hosted tournament. Only this is stored: outcome and table are derived.
+ * - In a `roundRobin` tournament the plan is derived too: there is at most one result per pair of
+ *   teams, `teamAId` is the pair's team with the lower `order`, and it has at least one set.
+ * - v12.1: in a `manual` tournament every match the coach added is one of these, in the order
+ *   added (the list's order): `sets` is empty until its result is typed in, team A is the team
+ *   chosen first, and a pair may have several.
  */
 export interface HostedResult {
   id: string;
   tournamentId: string;
   teamAId: string;
   teamBId: string;
-  /** 1 … `setsPerMatch` sets, in the order played. */
+  /** The sets in the order played, at most `setsPerMatch` (see above for "none"). */
   sets: HostedSetScore[];
 }
 
 export interface ExportFile {
   app: 'volley-lineup';
-  schemaVersion: 11;
+  schemaVersion: 12;
   exportedAt: string;
   profiles: ManagerProfile[];
   teams: Team[];
@@ -464,6 +477,8 @@ export const SET_NUMBERS: readonly SetNumber[] = [1, 2, 3, 4, 5] as const;
 /** v12: the choices for a hosted tournament's sets per match. */
 export const SETS_PER_MATCH: readonly SetsPerMatch[] = [1, 2, 3, 4, 5] as const;
 export const MATCH_ENDS: readonly MatchEnd[] = ['bestOf', 'allSets'] as const;
+/** v12.1: the plan kinds, the default first. */
+export const HOSTED_PLAN_KINDS: readonly HostedPlanKind[] = ['roundRobin', 'manual'] as const;
 /** v7: error types in display order. */
 export const ERROR_TYPES: readonly ErrorType[] = [
   'serve',

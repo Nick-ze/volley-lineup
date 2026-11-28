@@ -28,8 +28,12 @@ export interface ResultFormProps {
   initial: readonly HostedSetScore[];
   onSave: (sets: HostedSetScore[]) => void;
   onCancel: () => void;
-  /** Only when a result is stored. */
+  /** Only when a result is stored (round robin) — or always, for a match the coach added. */
   onDelete?: () => void;
+  /** The delete button's text ("Delete result"; own matches: "Delete match"). */
+  deleteLabel?: string;
+  /** Own matches (v12.1): saving without a set is fine — the match has no result then. */
+  allowEmpty?: boolean;
 }
 
 const EMPTY_ROW: SetInput = { a: '', b: '' };
@@ -47,6 +51,8 @@ export function ResultForm({
   onSave,
   onCancel,
   onDelete,
+  deleteLabel,
+  allowEmpty = false,
 }: ResultFormProps) {
   const formStyles = useFormStyles();
   const styles = useStyles();
@@ -82,7 +88,7 @@ export function ResultForm({
       setMissing(result.errors);
       return setResultError(result.resultError);
     }
-    if (result.sets.length === 0) return setResultError('EMPTY');
+    if (result.sets.length === 0 && !allowEmpty) return setResultError('EMPTY');
     onSave(result.sets);
   };
 
@@ -137,7 +143,7 @@ export function ResultForm({
       <View style={styles.actions}>
         {onDelete ? (
           <Button
-            label={s.delete}
+            label={deleteLabel ?? s.delete}
             variant="dangerQuiet"
             style={styles.delete}
             compact

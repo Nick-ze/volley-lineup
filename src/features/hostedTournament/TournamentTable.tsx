@@ -27,10 +27,10 @@ export function TournamentTable({ tournament, onOpenTeam }: TournamentTableProps
   const s = t.tournament.table;
   const teams = useHostedTeams(tournament.id);
   const results = useHostedResults(tournament.id);
-  const { id, setsPerMatch, matchEnd } = tournament;
+  const { id, plan, setsPerMatch, matchEnd } = tournament;
   const table = useMemo(
-    () => standings({ id, setsPerMatch, matchEnd }, teams, results),
-    [id, setsPerMatch, matchEnd, teams, results],
+    () => standings({ id, plan, setsPerMatch, matchEnd }, teams, results),
+    [id, plan, setsPerMatch, matchEnd, teams, results],
   );
 
   if (table.length < 2) return <EmptyState testID="table-empty">{s.empty}</EmptyState>;

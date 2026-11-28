@@ -1,19 +1,36 @@
 /**
  * v12 hosted tournaments: the plan with its results, the table and one team's matches. All
- * derived from the teams and the stored results.
+ * derived from the teams and the stored results. v12.1: in a tournament with own matches the
+ * stored results are the matches (`manualRounds`).
  *
  * Part of the `hostedTournament.ts` barrel: import sibling modules directly, never the barrel.
  */
 import { pairKey, resultsByPair, roundRobin, teamsOfTournament } from './hostedPlan';
 import { matchOutcome, setsSeenFrom, type HostedSettings, type MatchOutcome } from './hostedResult';
 import { foldName } from './seasonNames';
-import type { HostedResult, HostedSetScore, HostedTeam, HostedTournament } from './types';
+import type {
+  HostedPlanKind,
+  HostedResult,
+  HostedSetScore,
+  HostedTeam,
+  HostedTournament,
+} from './types';
+
+/** What a plan is worked out from: the tournament's id, plan kind and settings. */
+export type PlanSource = Pick<HostedTournament, 'id' | 'plan'> & HostedSettings;
 
 /** A match of the plan: the pair, its result (if any) and what it means. */
 export interface PlanMatch {
+  /** The round (round robin); 1 in a tournament with own matches, which has no rounds. */
   round: number;
+  /** The match's place in the plan, counted from 1. */
+  number: number;
   teamA: HostedTeam;
   teamB: HostedTeam;
+  /**
+   * The stored result. Round robin: undefined until one is typed in. Own matches: always there
+   * (it is the match itself), with no sets until its result is typed in.
+   */
   result: HostedResult | undefined;
   /** The sets as seen from team A (empty without a result). */
   sets: HostedSetScore[];
@@ -27,29 +44,33 @@ export interface PlanRound {
 }
 
 export interface TournamentPlan {
+  kind: HostedPlanKind;
   teams: HostedTeam[];
+  /** Round robin: the rounds. Own matches: one "round" with every match, or none. */
   rounds: PlanRound[];
   /** Matches in the plan and how many of them are over. */
   total: number;
   played: number;
 }
 
-/** The whole plan of a tournament with every match's result and outcome. */
-export function tournamentPlan(
-  tournament: Pick<HostedTournament, 'id'> & HostedSettings,
-  allTeams: readonly HostedTeam[],
+/** A round robin's rounds with the result of every pair. */
+function roundRobinRounds(
+  tournament: PlanSource,
+  teams: readonly HostedTeam[],
   allResults: readonly HostedResult[],
-): TournamentPlan {
-  const teams = teamsOfTournament(allTeams, tournament.id);
+): PlanRound[] {
   const byId = new Map(teams.map((t) => [t.id, t]));
   const results = resultsByPair(allResults, tournament.id);
   const team = (id: string) => byId.get(id) as HostedTeam;
-  const rounds = roundRobin(teams.map((t) => t.id)).map((r): PlanRound => {
+  let number = 0;
+  return roundRobin(teams.map((t) => t.id)).map((r): PlanRound => {
     const matches = r.pairs.map(([a, b]): PlanMatch => {
       const result = results.get(pairKey(a, b));
       const sets = result ? setsSeenFrom(result, a) : [];
+      number += 1;
       return {
         round: r.round,
+        number,
         teamA: team(a),
         teamB: team(b),
         result,
@@ -59,8 +80,47 @@ export function tournamentPlan(
     });
     return { round: r.round, matches, resting: r.resting === null ? null : team(r.resting) };
   });
+}
+
+/** v12.1: the matches the coach added, in the order added, as one list. */
+function manualRounds(
+  tournament: PlanSource,
+  teams: readonly HostedTeam[],
+  allResults: readonly HostedResult[],
+): PlanRound[] {
+  const byId = new Map(teams.map((t) => [t.id, t]));
+  const matches: PlanMatch[] = [];
+  for (const result of allResults) {
+    const teamA = byId.get(result.teamAId);
+    const teamB = byId.get(result.teamBId);
+    if (result.tournamentId !== tournament.id || !teamA || !teamB) continue;
+    matches.push({
+      round: 1,
+      number: matches.length + 1,
+      teamA,
+      teamB,
+      result,
+      sets: result.sets,
+      outcome: matchOutcome(result.sets, tournament),
+    });
+  }
+  return matches.length === 0 ? [] : [{ round: 1, matches, resting: null }];
+}
+
+/** The whole plan of a tournament with every match's result and outcome. */
+export function tournamentPlan(
+  tournament: PlanSource,
+  allTeams: readonly HostedTeam[],
+  allResults: readonly HostedResult[],
+): TournamentPlan {
+  const teams = teamsOfTournament(allTeams, tournament.id);
+  const rounds =
+    tournament.plan === 'manual'
+      ? manualRounds(tournament, teams, allResults)
+      : roundRobinRounds(tournament, teams, allResults);
   const all = rounds.flatMap((r) => r.matches);
   return {
+    kind: tournament.plan,
     teams,
     rounds,
     total: all.length,
@@ -111,7 +171,7 @@ function compareStandings(x: Standing, y: Standing): number {
  * difference, balls scored; teams equal in all four share a rank and are listed by name.
  */
 export function standings(
-  tournament: Pick<HostedTournament, 'id'> & HostedSettings,
+  tournament: PlanSource,
   allTeams: readonly HostedTeam[],
   allResults: readonly HostedResult[],
 ): Standing[] {
@@ -176,7 +236,7 @@ export interface TeamMatch {
   match: PlanMatch;
 }
 
-/** A team's matches in plan order (every other team once). */
+/** A team's matches in plan order (round robin: every other team once). */
 export function teamMatches(teamId: string, plan: TournamentPlan): TeamMatch[] {
   return plan.rounds.flatMap((r) =>
     r.matches

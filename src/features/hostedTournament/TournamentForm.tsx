@@ -5,10 +5,12 @@ import { Banner, Button, TextField, useFormStyles, useTrackStyles } from '@/comp
 import { DATE_INPUT_MAX_LENGTH, formatDateInput } from '@/domain/dates';
 import {
   DEFAULT_MATCH_END,
+  DEFAULT_PLAN_KIND,
   DEFAULT_SETS_PER_MATCH,
   matchEndChoices,
   matchEndFor,
   MAX_TOURNAMENT_NAME_LENGTH,
+  planKindLocked,
   settingsChangeBlock,
   tableCounts,
   validateTournamentForm,
@@ -18,10 +20,16 @@ import {
   type TournamentFormValue,
 } from '@/domain/hostedTournament';
 import { MAX_LOCATION_LENGTH } from '@/domain/seasons';
-import { SETS_PER_MATCH, type HostedTournament, type MatchEnd } from '@/domain/types';
+import {
+  HOSTED_PLAN_KINDS,
+  SETS_PER_MATCH,
+  type HostedPlanKind,
+  type HostedTournament,
+  type MatchEnd,
+} from '@/domain/types';
 import { Segmented } from '@/features/lineup/Segmented';
 import { useT } from '@/i18n';
-import { useAppStore } from '@/store';
+import { useAppStore, useHostedResults } from '@/store';
 
 import { StackedChoice } from './StackedChoice';
 import { settingsBlockText, tournamentErrorText } from './tournamentText';
@@ -37,8 +45,9 @@ export interface TournamentFormProps {
 type SetsKey = `${(typeof SETS_PER_MATCH)[number]}`;
 
 /**
- * Name, optional date and place, sets per match (1–5) and how a match ends ("best of N" only
- * for 1, 3 and 5 sets), with a line that says what the table counts. Editing refuses settings
+ * Name, optional date and place, who makes the plan (v12.1: the app, or the coach adds the
+ * matches), sets per match (1–5) and how a match ends ("best of N" only for 1, 3 and 5 sets),
+ * with a line that says what the table counts. Editing refuses settings
  * that would make a stored result invalid and names the match.
  */
 export function TournamentForm({ profileId, tournament, onSubmit, onCancel }: TournamentFormProps) {
@@ -58,6 +67,9 @@ export function TournamentForm({ profileId, tournament, onSubmit, onCancel }: To
     {},
   );
   const [block, setBlock] = useState<SettingsBlock | null>(null);
+  // v12.1: who makes the plan; fixed once the tournament has results or matches.
+  const [plan, setPlan] = useState<HostedPlanKind>(tournament?.plan ?? DEFAULT_PLAN_KIND);
+  const planLocked = planKindLocked(tournament?.id ?? '', useHostedResults(tournament?.id));
   const matchEnd = matchEndFor(setsPerMatch, wantedEnd);
   const choices = matchEndChoices(setsPerMatch);
   const err = (field: TournamentFormField) => tournamentErrorText(t, errors[field]);
@@ -65,7 +77,7 @@ export function TournamentForm({ profileId, tournament, onSubmit, onCancel }: To
 
   const submit = () => {
     const store = useAppStore.getState();
-    const input = { name, date, location, setsPerMatch, matchEnd };
+    const input = { name, date, location, setsPerMatch, matchEnd, plan };
     const result = validateTournamentForm(
       input,
       store.hostedTournaments,
@@ -75,7 +87,7 @@ export function TournamentForm({ profileId, tournament, onSubmit, onCancel }: To
     setErrors(result.ok ? {} : result.errors);
     if (!result.ok) return setBlock(null);
     const blocked = tournament
-      ? settingsChangeBlock(tournament.id, result.value, store.hostedTeams, store.hostedResults)
+      ? settingsChangeBlock(tournament, result.value, store.hostedTeams, store.hostedResults)
       : null;
     setBlock(blocked);
     if (!blocked) onSubmit(result.value);
@@ -111,6 +123,22 @@ export function TournamentForm({ profileId, tournament, onSubmit, onCancel }: To
         error={err('location')}
         testID="tournament-location"
       />
+      <Text style={formStyles.sectionLabel}>{s.plan}</Text>
+      <StackedChoice<HostedPlanKind>
+        groupLabel={s.plan}
+        style={track.trackOnPanel}
+        value={plan}
+        onChange={setPlan}
+        disabled={planLocked}
+        options={HOSTED_PLAN_KINDS.map((kind) => ({
+          value: kind,
+          text: s.planOption[kind],
+          testID: `tournament-plan-${kind}`,
+        }))}
+      />
+      <Text style={formStyles.hint} testID="tournament-plan-hint">
+        {planLocked ? `${s.planHint[plan]} ${s.planLocked}` : s.planHint[plan]}
+      </Text>
       <Text style={formStyles.sectionLabel}>{s.setsPerMatch}</Text>
       <Segmented<SetsKey>
         groupLabel={s.setsPerMatch}

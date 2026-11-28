@@ -5,7 +5,14 @@
  *
  * Sub-module of the `exportSchema.ts` barrel: import siblings directly, never the barrel.
  */
-import { addRoleDefaults, addSetLogDefaults, mapLineups, mapSets, type Rec } from './legacyData';
+import {
+  addRoleDefaults,
+  addSetLogDefaults,
+  isRecord,
+  mapLineups,
+  mapSets,
+  type Rec,
+} from './legacyData';
 import { upgradeLineupToFormation } from './roles';
 import { upgradeToSeasons } from './seasonUpgrade';
 
@@ -35,7 +42,8 @@ function upgradeV5(raw: Rec): Rec {
  * descriptions and error types are optional, so nothing else changes), v7 → v8 (one season
  * per team with its opponents, `upgradeToSeasons`), v8 → v9 (teams may have a `photoId`, which
  * is optional, so nothing changes), v9 → v10 (teams may have a `captainId`, also optional, so
- * nothing changes), v10 → v11 (app 12.0: the three empty hosted-tournament collections).
+ * nothing changes), v10 → v11 (app 12.0: the three empty hosted-tournament collections),
+ * v11 → v12 (app 12.1: every hosted tournament gains `plan: 'roundRobin'`).
  */
 export function upgradeToCurrent(raw: Rec): Rec {
   const v2 = raw.schemaVersion === 1 ? upgradeV1(raw) : raw;
@@ -50,7 +58,22 @@ export function upgradeToCurrent(raw: Rec): Rec {
   // v9 → v10 (app 9.1): teams may have a `captainId` (optional), so nothing changes.
   const v10 = v9.schemaVersion === 9 ? { ...v9, schemaVersion: 10 } : v9;
   // v10 → v11 (app 12.0): hosted tournaments; older files have none.
-  return v10.schemaVersion === 10
-    ? { hostedTournaments: [], hostedTeams: [], hostedResults: [], ...v10, schemaVersion: 11 }
-    : v10;
+  const v11 =
+    v10.schemaVersion === 10
+      ? { hostedTournaments: [], hostedTeams: [], hostedResults: [], ...v10, schemaVersion: 11 }
+      : v10;
+  // v11 → v12 (app 12.1): so far the app made every plan.
+  return v11.schemaVersion === 11
+    ? { ...v11, schemaVersion: 12, hostedTournaments: withRoundRobinPlan(v11.hostedTournaments) }
+    : v11;
+}
+
+/**
+ * v11 → v12 (also the store's v14 → v15 step): hosted tournaments from before 12.1 get
+ * `plan: 'roundRobin'`. Anything that isn't a list of records is passed through for the shape
+ * check to report.
+ */
+export function withRoundRobinPlan(tournaments: unknown): unknown {
+  if (!Array.isArray(tournaments)) return tournaments;
+  return tournaments.map((x) => (isRecord(x) ? { plan: 'roundRobin', ...x } : x));
 }

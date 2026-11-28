@@ -25,12 +25,12 @@ import type {
 import { FORMATION_ORDERS, FORMATION_SYSTEMS } from './roles';
 import { SEASON_KINDS } from './seasonNames';
 import { isPhotoDataUri, isValidDescription } from './photos';
-import { ALL_POSITIONS, ERROR_TYPES, MATCH_ENDS, POINT_KINDS } from './types';
+import { ALL_POSITIONS, ERROR_TYPES, HOSTED_PLAN_KINDS, MATCH_ENDS, POINT_KINDS } from './types';
 
 export const EXPORT_APP_ID = 'volley-lineup' as const;
-export const EXPORT_SCHEMA_VERSION = 11 as const;
+export const EXPORT_SCHEMA_VERSION = 12 as const;
 /** Older file versions that `parseImport` still accepts (upgraded on the fly). */
-export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+export const SUPPORTED_IMPORT_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 /**
  * The persisted team collections. Derived from `ExportFile` (the domain layer can't import the
@@ -193,6 +193,8 @@ const hostedTournamentSchema = z.object({
   location: z.string().optional(),
   setsPerMatch: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   matchEnd: z.enum(MATCH_ENDS),
+  /** v12: who makes the plan. */
+  plan: z.enum(HOSTED_PLAN_KINDS),
   createdAt: z.string(),
 });
 
@@ -209,8 +211,8 @@ const hostedResultSchema = z.object({
   teamAId: id,
   teamBId: id,
   sets: z
+    // v12: a match of a tournament with own matches has no sets until its result is typed in.
     .array(z.object({ a: z.number().int().nonnegative(), b: z.number().int().nonnegative() }))
-    .min(1)
     .max(5),
 });
 

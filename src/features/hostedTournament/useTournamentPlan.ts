@@ -8,9 +8,9 @@ import { useHostedResults, useHostedTeams } from '@/store';
 export function useTournamentPlan(tournament: HostedTournament): TournamentPlan {
   const teams = useHostedTeams(tournament.id);
   const results = useHostedResults(tournament.id);
-  const { id, setsPerMatch, matchEnd } = tournament;
+  const { id, plan, setsPerMatch, matchEnd } = tournament;
   return useMemo(
-    () => tournamentPlan({ id, setsPerMatch, matchEnd }, teams, results),
-    [id, setsPerMatch, matchEnd, teams, results],
+    () => tournamentPlan({ id, plan, setsPerMatch, matchEnd }, teams, results),
+    [id, plan, setsPerMatch, matchEnd, teams, results],
   );
 }

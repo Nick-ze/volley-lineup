@@ -4,11 +4,12 @@ import {
   tableCounts,
   type HostedSettings,
   type HostedTeamNameError,
+  type PlanMatch,
   type SettingsBlock,
   type Standing,
   type TournamentFormError,
 } from '@/domain/hostedTournament';
-import type { HostedTournament } from '@/domain/types';
+import type { HostedPlanKind, HostedTournament } from '@/domain/types';
 import type { Strings } from '@/i18n';
 
 /** The format in a quiet line: "best of 3" or "2 sets". */
@@ -102,3 +103,13 @@ export function standingParts(t: Strings, standing: Standing, settings: HostedSe
 /** The label under the table points: "Matches" or "Sets". */
 export const pointsUnit = (t: Strings, settings: HostedSettings): string =>
   t.tournament.table.unit[tableCounts(settings)];
+
+/** A match's label: "Round 3" in a round robin, "Match 3" in a tournament with own matches. */
+export const matchLabel = (
+  t: Strings,
+  kind: HostedPlanKind,
+  match: Pick<PlanMatch, 'round' | 'number'>,
+): string =>
+  kind === 'manual'
+    ? t.tournament.matches.match(match.number)
+    : t.tournament.matches.round(match.round);

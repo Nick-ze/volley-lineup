@@ -15,6 +15,8 @@ export interface StackedChoiceProps<V extends string> {
   options: readonly StackedOption<V>[];
   value: V;
   onChange: (value: V) => void;
+  /** The choice can't be changed right now: the chosen option is grey, the others quiet. */
+  disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -28,6 +30,7 @@ export function StackedChoice<V extends string>({
   options,
   value,
   onChange,
+  disabled = false,
   style,
 }: StackedChoiceProps<V>) {
   const track = useTrackStyles();
@@ -45,14 +48,23 @@ export function StackedChoice<V extends string>({
             key={o.value}
             accessibilityRole="radio"
             accessibilityLabel={o.text}
-            accessibilityState={{ checked: active }}
+            accessibilityState={{ checked: active, disabled }}
             // react-native-web ignores accessibilityState: expose the state with aria-* too.
             aria-checked={active}
+            aria-disabled={disabled}
+            disabled={disabled}
             onPress={() => onChange(o.value)}
-            style={[track.segment, styles.row, active && track.choice]}
+            style={[track.segment, styles.row, active && (disabled ? track.locked : track.choice)]}
             testID={o.testID}
           >
-            <Text style={[track.text, active && track.choiceText]}>{o.text}</Text>
+            <Text
+              style={[
+                track.text,
+                disabled ? !active && track.textMuted : active && track.choiceText,
+              ]}
+            >
+              {o.text}
+            </Text>
           </Pressable>
         );
       })}

@@ -28,6 +28,8 @@
  * (no account, no shared teams — the app behaves exactly as before until someone signs in).
  * v13 → v14 (app 12.0): hosted tournaments — the state gains the empty collections
  * `hostedTournaments`, `hostedTeams` and `hostedResults` (device and backup only, never synced).
+ * v14 → v15 (app 12.1): every hosted tournament gains `plan: 'roundRobin'` (the app made every
+ * plan so far; a tournament can now have matches the coach adds).
  *
  * Every step from v13 on (v10 audit L6): the shared teams' pull cursors go back to the start
  * (`withPullCursorsReset`: -1, a normal pull of everything, not the "replace by the cloud's copy"
@@ -45,10 +47,11 @@ import {
   mapSets,
   type Rec,
 } from '@/domain/legacyData';
+import { withRoundRobinPlan } from '@/domain/exportUpgrades';
 import { upgradeLineupToFormation } from '@/domain/roles';
 import { upgradeToSeasons } from '@/domain/seasons';
 import { storedSyncData, withPullCursorsReset } from '@/domain/syncSchema';
-export const STORE_VERSION = 14;
+export const STORE_VERSION = 15;
 
 /** The first store version with shared teams (the `sync` slice). */
 const FIRST_SYNC_VERSION = 13;
@@ -89,6 +92,8 @@ export function migrateStore(
     state = { sync: { deviceId: null, account: null, teams: {} }, ...state };
   if (fromVersion < 14 && isRec(state))
     state = { hostedTournaments: [], hostedTeams: [], hostedResults: [], ...state };
+  if (fromVersion < 15 && isRec(state))
+    state = { ...state, hostedTournaments: withRoundRobinPlan(state.hostedTournaments) };
   // An update from any version that already had shared teams (see the head of this file).
   if (fromVersion >= FIRST_SYNC_VERSION && fromVersion < toVersion && isRec(state))
     state = { ...state, sync: withPullCursorsReset(storedSyncData(state.sync)) };

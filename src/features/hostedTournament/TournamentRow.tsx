@@ -34,7 +34,7 @@ export function TournamentRow({ tournament, onOpen, onEdit, onDelete }: Tourname
   const played = t.tournament.matches.played(plan.played, plan.total);
   const summary = s.summary(teams, played);
   const date = formatOptionalDate(tournament.date);
-  const results = plan.rounds.flatMap((r) => r.matches).filter((m) => m.result).length;
+  const results = plan.rounds.flatMap((r) => r.matches).filter((m) => m.sets.length > 0).length;
   return (
     <ListRow
       title={tournament.name}

@@ -50,6 +50,18 @@ export const tournament: Strings['tournament'] = {
     bestOf: (sets: number) => `Best of ${sets}`,
     allSets: 'Alle Sätze werden gespielt',
     onlyAllSets: (sets: number) => `Bei ${sets} Sätzen werden immer alle Sätze gespielt.`,
+    plan: 'Die Spiele',
+    planOption: {
+      roundRobin: 'Jeder spielt einmal gegen jeden',
+      manual: 'Ich trage die Spiele selbst ein',
+    },
+    planHint: {
+      roundRobin: 'Die App erstellt den Spielplan aus den Teams.',
+      manual:
+        'Du fügst jedes Spiel im Tab „Spiele“ hinzu. Zwei Teams können mehrmals gegeneinander spielen.',
+    },
+    planLocked:
+      'Das lässt sich nur ändern, solange das Turnier keine Ergebnisse und keine Spiele hat.',
     counts: {
       matches: 'Die Tabelle zählt Spiele: 2 Punkte für einen Sieg.',
       sets: 'Die Tabelle zählt Sätze: 1 Punkt pro gewonnenem Satz. Ein Spiel kann unentschieden enden.',
@@ -89,6 +101,8 @@ export const tournament: Strings['tournament'] = {
     addLabel: 'Hinzufügen: Team',
     count: (n: number, max: number) => `${n} von ${max} Teams`,
     hint: 'Ein neues oder entferntes Team ändert den Spielplan; Ergebnisse bleiben.',
+    hintManual:
+      'Die Spiele trägst du im Tab „Spiele“ selbst ein. Mit einem entfernten Team werden seine Spiele gelöscht.',
     empty: 'Noch keine Teams. Füg die Teams hinzu, die in diesem Turnier spielen.',
     open: (name: string) => `${name}, Spiele anzeigen`,
     rename: 'Umbenennen',
@@ -100,10 +114,21 @@ export const tournament: Strings['tournament'] = {
       results === 0
         ? `„${name}“ aus dem Turnier entfernen?`
         : `„${name}“ aus dem Turnier entfernen? ${results === 1 ? 'Sein 1 Ergebnis wird' : `Seine ${results} Ergebnisse werden`} mitgelöscht.`,
+    confirmDeleteManual: (name: string, matches: number) =>
+      matches === 0
+        ? `„${name}“ aus dem Turnier entfernen?`
+        : `„${name}“ aus dem Turnier entfernen? ${matches === 1 ? 'Sein 1 Spiel wird' : `Seine ${matches} Spiele werden`} mitgelöscht.`,
   },
   matches: {
     played: (played: number, total: number) => `${played} von ${total} gespielt`,
     round: (n: number) => `Runde ${n}`,
+    match: (n: number) => `Spiel ${n}`,
+    add: 'Spiel hinzufügen',
+    choose: 'Wähle zwei Teams',
+    chosen: (teamA: string, teamB: string) => `${teamA} – ${teamB}`,
+    emptyManual: 'Noch keine Spiele. Wähle oben zwei Teams und tippe auf „Spiel hinzufügen“.',
+    emptyManualTeams: 'Füg mindestens zwei Teams hinzu, dann trägst du hier die Spiele ein.',
+    tooMany: (max: number) => `Ein Turnier hat höchstens ${max} Spiele.`,
     resting: (name: string) => `${name} spielfrei`,
     empty: 'Füg mindestens zwei Teams hinzu, um den Spielplan zu sehen.',
     open: '–',
@@ -158,8 +183,8 @@ export const tournament: Strings['tournament'] = {
   },
   result: {
     title: 'Ergebnis',
-    subtitle: (tournament: string, round: number, format: string) =>
-      `${tournament} · Runde ${round} · ${format}`,
+    subtitle: (tournament: string, label: string, format: string) =>
+      `${tournament} · ${label} · ${format}`,
     set: (n: number) => `Satz ${n}`,
     colon: ':',
     scoreLabel: (set: number, team: string) => `Satz ${set}, ${team}`,
@@ -168,6 +193,8 @@ export const tournament: Strings['tournament'] = {
     hint: 'Zwei verschiedene Zahlen. Jede Satzlänge.',
     delete: 'Ergebnis löschen',
     confirmDelete: (teamA: string, teamB: string) => `Ergebnis von ${teamA} – ${teamB} löschen?`,
+    deleteMatch: 'Spiel löschen',
+    confirmDeleteMatch: (teamA: string, teamB: string) => `Spiel ${teamA} – ${teamB} löschen?`,
     errors: {
       EQUAL: 'Die beiden Zahlen müssen verschieden sein.',
       RANGE: 'Gib ganze Zahlen von 0 bis 99 ein.',

@@ -52,6 +52,17 @@ export const tournament = {
     bestOf: (sets: number) => `Best of ${sets}`,
     allSets: 'All sets are played',
     onlyAllSets: (sets: number) => `With ${sets} sets, all sets are always played.`,
+    /** v12.1: who makes the plan. */
+    plan: 'The matches',
+    planOption: {
+      roundRobin: 'Everyone plays everyone once',
+      manual: 'I enter the matches myself',
+    },
+    planHint: {
+      roundRobin: 'The app makes the plan from the teams.',
+      manual: 'You add each match on the Matches tab. Two teams can meet more than once.',
+    },
+    planLocked: 'This can only be changed while the tournament has no results and no matches.',
     counts: {
       matches: 'The table counts matches: 2 points for a win.',
       sets: 'The table counts sets: 1 point per set won. A match can end in a draw.',
@@ -91,6 +102,8 @@ export const tournament = {
     addLabel: 'Add team',
     count: (n: number, max: number) => `${n} of ${max} teams`,
     hint: 'Adding or removing a team changes the plan; results stay.',
+    hintManual:
+      'You add the matches yourself on the Matches tab. Removing a team deletes its matches.',
     empty: 'No teams yet. Add the teams that play in this tournament.',
     open: (name: string) => `${name}, show matches`,
     rename: 'Rename',
@@ -102,10 +115,22 @@ export const tournament = {
       results === 0
         ? `Remove “${name}” from the tournament?`
         : `Remove “${name}” from the tournament? ${results === 1 ? 'Its 1 result is' : `Its ${results} results are`} deleted with it.`,
+    confirmDeleteManual: (name: string, matches: number) =>
+      matches === 0
+        ? `Remove “${name}” from the tournament?`
+        : `Remove “${name}” from the tournament? ${matches === 1 ? 'Its 1 match is' : `Its ${matches} matches are`} deleted with it.`,
   },
   matches: {
     played: (played: number, total: number) => `${played} of ${total} played`,
     round: (n: number) => `Round ${n}`,
+    /** v12.1, a tournament with own matches: the match's number, and adding one. */
+    match: (n: number) => `Match ${n}`,
+    add: 'Add match',
+    choose: 'Choose two teams',
+    chosen: (teamA: string, teamB: string) => `${teamA} – ${teamB}`,
+    emptyManual: 'No matches yet. Choose two teams above and tap “Add match”.',
+    emptyManualTeams: 'Add at least two teams, then add the matches here.',
+    tooMany: (max: number) => `A tournament has at most ${max} matches.`,
     resting: (name: string) => `${name} rests`,
     empty: 'Add at least two teams to see the plan.',
     /** Shown instead of scores for a match without a result. */
@@ -163,8 +188,9 @@ export const tournament = {
   },
   result: {
     title: 'Result',
-    subtitle: (tournament: string, round: number, format: string) =>
-      `${tournament} · Round ${round} · ${format}`,
+    /** `label` is "Round 3" or (own matches) "Match 3". */
+    subtitle: (tournament: string, label: string, format: string) =>
+      `${tournament} · ${label} · ${format}`,
     set: (n: number) => `Set ${n}`,
     /** Between the two scores of a set. */
     colon: ':',
@@ -174,6 +200,8 @@ export const tournament = {
     hint: 'Two numbers that differ. Any set length.',
     delete: 'Delete result',
     confirmDelete: (teamA: string, teamB: string) => `Delete the result of ${teamA} – ${teamB}?`,
+    deleteMatch: 'Delete match',
+    confirmDeleteMatch: (teamA: string, teamB: string) => `Delete the match ${teamA} – ${teamB}?`,
     errors: {
       EQUAL: 'The two scores must differ.',
       RANGE: 'Enter whole numbers from 0 to 99.',

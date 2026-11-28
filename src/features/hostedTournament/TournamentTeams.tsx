@@ -17,6 +17,7 @@ import {
   validateHostedTeamName,
   type HostedTeamNameError,
 } from '@/domain/hostedTournament';
+import type { HostedPlanKind } from '@/domain/types';
 import { useT } from '@/i18n';
 import { useAppStore, useHostedResults, useHostedTeams } from '@/store';
 import { spacing } from '@/theme';
@@ -31,9 +32,12 @@ import { teamNameErrorText } from './tournamentText';
  */
 export function TournamentTeams({
   tournamentId,
+  plan,
   onOpenTeam,
 }: {
   tournamentId: string;
+  /** v12.1: with own matches the hint and the question speak of matches, not of the plan. */
+  plan: HostedPlanKind;
   /** Tapping a team shows its matches. */
   onOpenTeam: (teamId: string) => void;
 }) {
@@ -46,6 +50,7 @@ export function TournamentTeams({
   const [name, setName] = useState('');
   const [error, setError] = useState<HostedTeamNameError | undefined>();
   const { ask, dialogProps } = useConfirm();
+  const confirmText = plan === 'manual' ? s.confirmDeleteManual : s.confirmDelete;
 
   const add = () => {
     const store = useAppStore.getState();
@@ -93,14 +98,14 @@ export function TournamentTeams({
             team={team}
             onOpen={() => onOpenTeam(team.id)}
             onDelete={() =>
-              ask(s.confirmDelete(team.name, resultCountOfTeam(results, team.id)), () =>
+              ask(confirmText(team.name, resultCountOfTeam(results, team.id)), () =>
                 useAppStore.getState().deleteHostedTeam(team.id),
               )
             }
           />
         ))}
       </View>
-      <Text style={formStyles.hint}>{s.hint}</Text>
+      <Text style={formStyles.hint}>{plan === 'manual' ? s.hintManual : s.hint}</Text>
       <ConfirmDialog {...dialogProps} />
     </View>
   );

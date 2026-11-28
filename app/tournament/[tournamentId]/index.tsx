@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { appHeaderOnly, Button, HeaderTitle, NotFound, Screen, SwipeTabs } from '@/components';
 import { tournamentTabPage } from '@/domain/tour';
 import type { HostedTournament } from '@/domain/types';
+import { matchHref } from '@/features/hostedTournament/matchRoute';
 import { TournamentMatches } from '@/features/hostedTournament/TournamentMatches';
 import { TournamentMeta } from '@/features/hostedTournament/TournamentMeta';
 import { TournamentTable } from '@/features/hostedTournament/TournamentTable';
@@ -67,13 +68,14 @@ export default function TournamentScreen() {
         return (
           <TournamentMatches
             tournament={tournament}
-            onOpenMatch={(a, b) => router.push(`/tournament/${tournament.id}/match?a=${a}&b=${b}`)}
+            onOpenMatch={(match) => router.push(matchHref(tournament.id, tournament.plan, match))}
           />
         );
       case 'teams':
         return (
           <TournamentTeams
             tournamentId={tournament.id}
+            plan={tournament.plan}
             onOpenTeam={(teamId) => router.push(`/tournament/${tournament.id}/team/${teamId}`)}
           />
         );

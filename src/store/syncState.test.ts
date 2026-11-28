@@ -67,7 +67,7 @@ describe('sync state in the store', () => {
     store().setSyncAccount({ userId: 'u1', email: 'a@example.test', profileId: 'p1' });
     await new Promise((r) => setTimeout(r, 0));
     const parsed = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
-    expect(parsed.version).toBe(14);
+    expect(parsed.version).toBe(15);
     expect(parsed.state.sync).toEqual({
       deviceId: 'dev9',
       account: { userId: 'u1', email: 'a@example.test', profileId: 'p1' },
@@ -149,7 +149,7 @@ describe('sync state in the store', () => {
     useAppStore.setState({ sync: shared() });
     const after = buildExport({ ...selectAppData(store()), photos: [] }, { now: NOW });
     expect(JSON.stringify(after)).toBe(JSON.stringify(before));
-    expect(after.schemaVersion).toBe(11);
+    expect(after.schemaVersion).toBe(12);
   });
 });
 

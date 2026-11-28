@@ -8,6 +8,8 @@ import type { HostedResult, HostedTeam } from './types';
 
 export const MIN_HOSTED_TEAMS = 2;
 export const MAX_HOSTED_TEAMS = 16;
+/** v12.1: how many matches a coach can add to a tournament with own matches. */
+export const MAX_MANUAL_MATCHES = 200;
 
 /** A pair of teams; the first is the one earlier in the team order. */
 export type HostedPair = readonly [string, string];
