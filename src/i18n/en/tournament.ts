@@ -306,4 +306,29 @@ export const tournament = {
     },
     notFound: 'This match was not found.',
   },
+  /** v12.3: the table and the results as a printable page / PDF (the Table tab's button). */
+  sheet: {
+    button: 'Table (PDF)',
+    buttonLabel: 'Table (PDF): print the table and all results, or save them as a PDF',
+    dialogTitle: 'Share table',
+    documentTitle: (tournament: string) => `Table · ${tournament}`,
+    /** Above the tournament's name: once every match is played, and before. */
+    finalTitle: 'Final table',
+    interimTitle: 'Table',
+    progress: (played: number, total: number) => `${played} of ${total} matches played`,
+    rank: 'Rank',
+    team: 'Team',
+    played: 'Played',
+    /** Column headers of the record: won–lost, won–drawn–lost. */
+    record: 'W–L',
+    recordWithDraws: 'W–D–L',
+    sets: 'Sets',
+    balls: 'Balls',
+    points: 'Points',
+    score: (a: number, b: number) => `${a}:${b}`,
+    results: 'Results',
+    versus: ' – ',
+    notPlayed: 'not played yet',
+    notFinished: '(not finished)',
+  },
 } as const;

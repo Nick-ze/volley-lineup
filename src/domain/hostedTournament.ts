@@ -16,3 +16,5 @@ export * from './hostedData';
 // v12.2: a team's optional players, and live scoring of a match (point tags, what they add up to).
 export * from './hostedPlayers';
 export * from './hostedLive';
+// v12.3: the table and the results as a printable page.
+export * from './hostedSheet';

@@ -8,6 +8,7 @@ import { useT } from '@/i18n';
 import { useHostedResults, useHostedTeams } from '@/store';
 import { makeStyles, radius, spacing, touchTarget, typography } from '@/theme';
 
+import { TablePdfButton } from './TablePdfButton';
 import { pointsUnit, standingParts } from './tournamentText';
 
 export interface TournamentTableProps {
@@ -19,7 +20,8 @@ export interface TournamentTableProps {
 /**
  * The table as a list of rows, not a grid (no sideways scrolling): the rank as a large number,
  * the name, one line "4 played · 3–1 · sets 7:3 · balls +24", and at the right the table points
- * over what they count. A line under the list explains the ranking order.
+ * over what they count. A line under the list explains the ranking order; v12.3: under it
+ * "Table (PDF)" prints the table and the results.
  */
 export function TournamentTable({ tournament, onOpenTeam }: TournamentTableProps) {
   const formStyles = useFormStyles();
@@ -50,6 +52,7 @@ export function TournamentTable({ tournament, onOpenTeam }: TournamentTableProps
       <Text style={[formStyles.hint, styles.explain]} testID="table-explain">
         {s.explain[tableCounts(tournament)]}
       </Text>
+      <TablePdfButton tournament={tournament} />
     </View>
   );
 }

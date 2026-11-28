@@ -324,6 +324,16 @@ or by name, and a live mode for tournament matches that only keeps the score.
   schema 13 give older data an empty player list. Not in cloud sync.
 - Two pull requests (#132, #133), checked in a browser and in Jest (3114 tests); not on a phone. Released as `v12.2.0`.
 
+### v12.3: the table of a hosted tournament as a PDF (no stored-data change)
+
+The owner's request after 12.2.0 (PLAN §54–55, DECISIONS #405–#409): a PDF that shows which team has how many points.
+
+- **"Table (PDF)"** on the Table tab: the print dialog on the web, an A4 PDF in the share sheet on a phone
+  (`src/lib/print`, as for the lineup sheet).
+- **The page** (`src/domain/hostedSheet.ts`): "Final table" once every match is played, otherwise "Table"; the table
+  in large type with the points largest; under it every result, by round (round robin) or by number (own matches).
+- One pull request (#135), checked as rendered PDFs from the web build and in Jest (3131 tests); not on a phone.
+
 ## Backend
 
 Since v10 the app can sync shared teams through **Supabase** (hosted project "Volleylineup manager",
