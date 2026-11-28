@@ -886,4 +886,4 @@ The owner's request after 12.2.0: "print a PDF … which shows easily which team
 - [x] A failed print says so and can be tried again.
 - [x] Sixteen teams with long names fit the table on the first page; a round is not split over two pages (looked at as PDFs from the web build).
 - [x] Lint, typecheck and tests pass; `src/domain` at 100 %; the web export builds; nothing under the sync folders changed.
-- [ ] Released as 12.3.0.
+- [x] Released as 12.3.0: https://github.com/Nick-ze/volley-lineup/releases/tag/v12.3.0

@@ -333,6 +333,7 @@ The owner's request after 12.2.0 (PLAN §54–55, DECISIONS #405–#409): a PDF 
 - **The page** (`src/domain/hostedSheet.ts`): "Final table" once every match is played, otherwise "Table"; the table
   in large type with the points largest; under it every result, by round (round robin) or by number (own matches).
 - One pull request (#135), checked as rendered PDFs from the web build and in Jest (3131 tests); not on a phone.
+  Released as `v12.3.0`.
 
 ## Backend
 
