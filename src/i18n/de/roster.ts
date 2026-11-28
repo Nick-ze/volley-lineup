@@ -14,7 +14,7 @@ export const roster: Strings['roster'] = {
   confirm: {
     title: 'Bist du sicher?',
     deleteProfile: (name: string) =>
-      `Profil „${name}“ löschen? Alle Teams, Spieler und Spiele darin werden ebenfalls gelöscht.`,
+      `Profil „${name}“ löschen? Alle Teams, Spieler, Spiele und eigenen Turniere darin werden ebenfalls gelöscht.`,
     deleteTeam: (name: string) => `Team „${name}“ mit allen Spielern und Spielen löschen?`,
     deletePlayer: (name: string) =>
       `Spieler „${name}“ löschen? Die Person wird aus allen Aufstellungen entfernt.`,

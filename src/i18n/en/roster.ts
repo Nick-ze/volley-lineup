@@ -12,7 +12,7 @@ export const roster = {
   confirm: {
     title: 'Are you sure?',
     deleteProfile: (name: string) =>
-      `Delete profile "${name}"? All its teams, players and matches are deleted too.`,
+      `Delete profile "${name}"? All its teams, players, matches and hosted tournaments are deleted too.`,
     deleteTeam: (name: string) => `Delete team "${name}" with all its players and matches?`,
     deletePlayer: (name: string) => `Delete player "${name}"? They are removed from all lineups.`,
     deleteMatch: (name: string) => `Delete the match against "${name}"?`,

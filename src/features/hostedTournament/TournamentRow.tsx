@@ -38,6 +38,8 @@ export function TournamentRow({ tournament, onOpen, onEdit, onDelete }: Tourname
   return (
     <ListRow
       title={tournament.name}
+      // Beside the mark, the chevron and two icon buttons a name has little room at 375 px.
+      titleLines={2}
       subtitle={
         <View style={own.lines}>
           {/* Two parts that share a line when they fit; on a narrow row each takes its own. */}

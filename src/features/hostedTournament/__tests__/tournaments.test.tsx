@@ -105,6 +105,12 @@ describe('Tournaments tab', () => {
     ).toBeTruthy();
   });
 
+  it('gives a long name two lines before it is cut', async () => {
+    seedCup();
+    await renderApp('/tournaments');
+    expect(screen.getByText('Winter Cup').props.numberOfLines).toBe(2);
+  });
+
   it('opens a tournament', async () => {
     const { cup } = seedCup();
     await renderApp('/tournaments');

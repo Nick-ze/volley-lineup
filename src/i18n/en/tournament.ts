@@ -116,6 +116,8 @@ export const tournament = {
       open: (teamA: string, teamB: string) => `${teamA} – ${teamB}, not played yet. Enter result`,
       result: (teamA: string, teamB: string, setsA: number, setsB: number, sets: string) =>
         `${teamA} – ${teamB}, ${setsA}:${setsB} (${sets}). Change result`,
+      running: (teamA: string, teamB: string, setsA: number, setsB: number, sets: string) =>
+        `${teamA} – ${teamB}, ${setsA}:${setsB} (${sets}), not finished. Change result`,
     },
   },
   table: {

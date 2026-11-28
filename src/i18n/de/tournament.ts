@@ -113,6 +113,8 @@ export const tournament: Strings['tournament'] = {
         `${teamA} – ${teamB}, noch nicht gespielt. Ergebnis eintragen`,
       result: (teamA: string, teamB: string, setsA: number, setsB: number, sets: string) =>
         `${teamA} – ${teamB}, ${setsA}:${setsB} (${sets}). Ergebnis ändern`,
+      running: (teamA: string, teamB: string, setsA: number, setsB: number, sets: string) =>
+        `${teamA} – ${teamB}, ${setsA}:${setsB} (${sets}), noch nicht beendet. Ergebnis ändern`,
     },
   },
   table: {

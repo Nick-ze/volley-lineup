@@ -7,6 +7,8 @@ import { useListStyles } from './formStyles';
 
 export interface ListRowProps {
   title: string;
+  /** Lines the title may take before it ends in "…" (default 1). */
+  titleLines?: number;
   subtitle?: ReactNode;
   leading?: ReactNode;
   /** Trailing action buttons (rename, delete, toggles…). */
@@ -19,6 +21,7 @@ export interface ListRowProps {
 /** A card-like list row: a large pressable main area plus optional trailing actions. */
 export function ListRow({
   title,
+  titleLines = 1,
   subtitle,
   leading,
   actions,
@@ -43,7 +46,7 @@ export function ListRow({
       >
         {leading}
         <View style={styles.text}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={titleLines}>
             {title}
           </Text>
           {typeof subtitle === 'string' ? (
