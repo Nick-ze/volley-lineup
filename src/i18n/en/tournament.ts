@@ -161,6 +161,8 @@ export const tournament = {
     subtitle: (tournament: string, round: number, format: string) =>
       `${tournament} · Round ${round} · ${format}`,
     set: (n: number) => `Set ${n}`,
+    /** Between the two scores of a set. */
+    colon: ':',
     scoreLabel: (set: number, team: string) => `Set ${set}, ${team}`,
     scoreboardLabel: (teamA: string, setsA: number, teamB: string, setsB: number) =>
       `${teamA} ${setsA}, ${teamB} ${setsB}`,

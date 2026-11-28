@@ -140,6 +140,10 @@ function ThemedRoot() {
                 name="tournament/[tournamentId]/index"
                 options={{ title: t.tournament.nav.tournament }}
               />
+              <Stack.Screen
+                name="tournament/[tournamentId]/match"
+                options={{ title: t.tournament.nav.result }}
+              />
             </Stack>
             {/* v10: background sync (does nothing without an account and shared teams). */}
             <SyncHost />
