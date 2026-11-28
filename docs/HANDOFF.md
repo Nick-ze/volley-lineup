@@ -44,7 +44,7 @@ Last updated: 2026-11-28, after the release of **v11.0.0** (the design release, 
 - **Migration `20261126140000_v10_audit_medium_low.sql` (M9, L1, L2) is applied** to the live project (2026-11-26, the owner confirmed the connector's prompts; recorded under its version; 10 migrations). Afterwards the whole `supabase/tests/rls.sql` (T1–T34) passed and the security advisor lists only the intended items (12 RPCs under 0029, the `team_removals` INFO).
 - **10.0.1 is released** (2026-11-27): everything the v10 audit and its follow-ups put on `main` (PRs #96–#110; three database migrations `20261126120000`, `20261126130000`, `20261126140000`, all applied). Before the release the owner checked a test build of `main` on one Android phone: the update over 10.0.0 keeps the data, sign-in with the email code, sharing a team (the server then held the team, its 8 players and a photo), still signed in after reopening, and the offline status. **Not checked on a device** (one phone only; covered by the two-device engine tests): the delete / import gates while another device scores live, a changed picture arriving on a second phone, the 200-character limit with emoji, and the "ask first" dialog (share sheet from inside it, its height on a small screen in German). The first real sign-in showed that the dashboard setup was incomplete (Gmail app password, both email templates, 8-digit codes) — fixed by the owner; `docs/SUPABASE.md` now has a "When sign-in doesn't work" table.
 - Current versions: app **11.0.0** (`app.json` + `package.json`, must match), store **13** (v13 adds the device-only `sync` slice, not exported), export `schemaVersion` **10** (device settings `language`, `chipLabel`, `themeMode`, `dyslexiaFont`, `tourMode`, `tourSeen` aren't exported; photos live outside the store but are exported, incl. team photos).
-- Last decision number in `docs/DECISIONS.md`: **#360**. Continue at #361.
+- Last decision number in `docs/DECISIONS.md`: **#361**. Continue at #362.
 - Releases: https://github.com/Nick-ze/volley-lineup/releases (APK per version).
 
 ### Open items / known gaps
@@ -77,7 +77,7 @@ Last updated: 2026-11-28, after the release of **v11.0.0** (the design release, 
 
 ### Next version: V12 — hosting a tournament (designed, not built)
 
-- **The owner asked for it on 2026-11-28 and the design is decided** (DECISIONS #360): read `docs/V12_TOURNAMENT_DESIGN.md` — decisions, data model, screens, five pull requests, acceptance list — and the mock-ups at https://claude.ai/artifact/Lxy4VJuy28wfEumLHncdix. The owner has the prompt for the build chat. Nothing of it is in the code yet. Not part of it: the 1–5 sets option for a team's own matches.
+- **The owner asked for it on 2026-11-28 and the design is decided** (DECISIONS #360–#361): read `docs/V12_TOURNAMENT_DESIGN.md` — decisions, data model, screens, five pull requests, acceptance list — and the mock-ups at https://claude.ai/artifact/Lxy4VJuy28wfEumLHncdix. The owner has the prompt for the build chat. Nothing of it is in the code yet. Not part of it: the 1–5 sets option for a team's own matches.
 
 ### Ideas for next versions (from the owner's requests and the plan)
 
@@ -99,7 +99,7 @@ Last updated: 2026-11-28, after the release of **v11.0.0** (the design release, 
 1. `CLAUDE.md` — binding rules (code, tests, git, agents).
 2. `docs/HANDOFF.md` — this file.
 3. `docs/PLAN.md` — features and data model (v11 look §46–47; §1–10 v1, §11–13 v2, §14 v2.2, §15–17 v3, §18 v3.1, §19–21 v4, §22–24 v5, §25–27 v6, §28–30 v7, §31–33 v8, §34–35 v8.3). PLAN §36–37 v8.4, §38–39 v9.0, §40–41 v9.1, §42–43 v9.2. `docs/AUDIT.md` — the v8.3 code audit (ranked findings, results, what was skipped).
-4. `docs/DECISIONS.md` — every choice made so far (#1–360; the look of v11 #336–359; the design of v12 #360; v10 accounts / sync #253–291, v10 audit #292–303, its follow-ups #304–308, its medium / low fixes #309–316, its engine fixes #317–334). `docs/AUDIT_V10.md` — the v10 audit: access-control matrix, every finding with where / why / fix, what was fixed (fix log at the end) and what was left. Skim headings; read the ones touching your task.
+4. `docs/DECISIONS.md` — every choice made so far (#1–360; the look of v11 #336–359; the design of v12 #360–361; v10 accounts / sync #253–291, v10 audit #292–303, its follow-ups #304–308, its medium / low fixes #309–316, its engine fixes #317–334). `docs/AUDIT_V10.md` — the v10 audit: access-control matrix, every finding with where / why / fix, what was fixed (fix log at the end) and what was left. Skim headings; read the ones touching your task.
 5. `docs/WORKER_BRIEF.md` — the brief given to worker agents (conventions, testing notes). Rewritten in v8.3 (conventions, tests, proof of no change).
 6. `docs/VOLLEYBALL_RULES.md` — the volleyball rules that matter for the app (FIVB / DVV, with sources) and a numbered list of checks (PASS / NOT MODELLED). **Check new features against it and keep it updated.**
 7. **Backend (v10)**: `docs/V10_SYNC_DESIGN.md` (the sync design; the orchestrator amendments at the top win), `docs/SUPABASE.md` (schema, RLS, RPCs, error codes, quotas, advisors, test users, owner steps), PLAN §44–45.
